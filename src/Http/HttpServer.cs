@@ -224,20 +224,20 @@ namespace Sisk.Core.Http
                 {
                     sw.Start();
 
-                    if (ServerConfiguration.Verbose == VerboseMode.Normal)
-                    {
-                        verbosePrefix = $"{context.Request.HttpMethod,8} ({baseRequest.UserHostName}) {context.Request.Url?.AbsolutePath ?? "/"}";
-                    }
-                    else if (ServerConfiguration.Verbose == VerboseMode.Detailed)
-                    {
-                        verbosePrefix = $"{context.Request.HttpMethod,8} %%STATUS%% ({baseRequest.Url?.Scheme} {baseRequest.UserHostName}) {context.Request.Url?.AbsolutePath ?? "/"}";
-                    }
-
                     if (baseRequest.Url is null)
                     {
                         baseResponse.StatusCode = 400;
                         executionResult.Status = HttpServerExecutionStatus.DnsFailed;
                         return;
+                    }
+
+                    if (ServerConfiguration.Verbose == VerboseMode.Normal)
+                    {
+                        verbosePrefix = $"{context.Request.HttpMethod,8} ({baseRequest.Url.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
+                    }
+                    else if (ServerConfiguration.Verbose == VerboseMode.Detailed)
+                    {
+                        verbosePrefix = $"{context.Request.HttpMethod,8} %%STATUS%% ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
                     }
 
                     // detect the listening host for this listener

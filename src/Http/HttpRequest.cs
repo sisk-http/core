@@ -116,7 +116,7 @@ namespace Sisk.Core.Http
         /// Get the requested host header (without port) from this HTTP request.
         /// </summary>
         /// <definition>
-        /// public string? Host { get; }
+        /// public string Host { get; }
         /// </definition>
         /// <type>
         /// Property
@@ -124,21 +124,26 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public string? Host
+        public string Host
         {
-            get
-            {
-                string? hostStr = GetHeader("Host");
-                if (hostStr == null) return null;
-                if (hostStr.Contains(":"))
-                {
-                    return hostStr.Substring(0, hostStr.IndexOf(':'));
-                }
-                else
-                {
-                    return hostStr;
-                }
-            }
+            get => listenerRequest.Url!.Host;
+        }
+
+        /// <summary>
+        /// Get the requested host header with the port from this HTTP request.
+        /// </summary>
+        /// <definition>
+        /// public string Authority { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public string Authority
+        {
+            get => listenerRequest.Url!.Authority;
         }
 
         /// <summary>
