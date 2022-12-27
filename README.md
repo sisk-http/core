@@ -5,9 +5,9 @@
 <div align="center">
 
   <a href="">[![Nuget](https://img.shields.io/nuget/dt/Sisk.HttpServer)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
-  <a href="">[![Nuget](https://img.shields.io/github/license/CypherPotato/Sisk)](https://github.com/CypherPotato/Sisk/blob/master/LICENSE.txt)</a>
+  <a href="">[![Nuget](https://img.shields.io/github/license/sisk-http/core)](https://github.com/sisk-http/core/blob/master/LICENSE.txt)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/.net%20version-.NET%206-blue.svg)](#)</a>
-  <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](https://github.com/CypherPotato/Sisk/blob/master/LICENSE.txt)</a>
+  <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
 </div>
 
 ------

@@ -11,11 +11,11 @@
 		<Title>Sisk.HttpServer</Title>
 		<Authors>CypherPotato</Authors>
 		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
-		<RepositoryUrl>https://github.com/CypherPotato/Sisk</RepositoryUrl>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<AssemblyVersion>0.7.3</AssemblyVersion>
-		<FileVersion>0.7.3</FileVersion>
-		<Version>0.7.3</Version>
+		<AssemblyVersion>0.7.4</AssemblyVersion>
+		<FileVersion>0.7.4</FileVersion>
+		<Version>0.7.4</Version>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>

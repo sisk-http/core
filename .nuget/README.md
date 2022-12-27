@@ -19,7 +19,7 @@ Sisk is a powerful framework for building powerful web applications. It is writt
 
 ## Documentation
 
-You can access the Sisk documentation [here](https://cypherpotato.github.io/Sisk/Docs/#/). The specification is complete, however, tutorials are yet to come.
+The specification is complete, however, tutorials are yet to come. By the way, you can access the Sisk documentation [here](https://sisk-http.github.io/docs/static/#/).
 
 ## Installation
 
