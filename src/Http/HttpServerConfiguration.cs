@@ -17,7 +17,35 @@ namespace Sisk.Core.Http
     public class HttpServerConfiguration : IDisposable
     {
         /// <summary>
-        /// Determines the default encoding for sending and decoding messages.
+        /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using Sisk through a reverse proxy.
+        /// </summary>
+        /// <definition>
+        /// public bool ResolveForwardedOriginAddress { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool ResolveForwardedOriginAddress { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should resolve remote forwarded hosts by the header X-Forwarded-Host.
+        /// </summary>
+        /// <definition>
+        /// public bool ResolveForwardedOriginHost { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool ResolveForwardedOriginHost { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the default encoding for sending and decoding messages.
         /// </summary>
         /// <definition>
         /// public Encoding DefaultEncoding { get; set; }
@@ -31,7 +59,7 @@ namespace Sisk.Core.Http
         public Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
-        /// Defines the maximum size of a request body before it is closed by the socket.
+        /// Gets or sets the maximum size of a request body before it is closed by the socket.
         /// </summary>
         /// <definition>
         /// public long MaximumContentLength { get; set; }
@@ -42,6 +70,9 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
+        /// <remarks>
+        /// Leave it as "0" to set the maximum content length to unlimited.
+        /// </remarks>
         public long MaximumContentLength { get; set; } = 0;
 
         /// <summary>
@@ -59,7 +90,21 @@ namespace Sisk.Core.Http
         public VerboseMode Verbose { get; set; } = VerboseMode.Normal;
 
         /// <summary>
-        /// Determines whether the server should include the "X-Request-Id" header in response headers.
+        /// Gets or sets whether the server should write colorful messages while <see cref="Verbose"/> ins't silent.
+        /// </summary>
+        /// <definition>
+        /// public bool EnableVerboseColors { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool EnableVerboseColors { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether the server should include the "X-Request-Id" header in response headers.
         /// </summary>
         /// <definition>
         /// public bool IncludeRequestIdHeader { get; set; }

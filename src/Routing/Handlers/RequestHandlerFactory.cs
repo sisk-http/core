@@ -1,38 +1,37 @@
-﻿using Sisk.Core.Http;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 
-namespace Sisk.Core.Routing
+namespace Sisk.Core.Routing.Handlers
 {
     /// <summary>
-    /// Provides a class that instantiates a router, capable of porting applications for use with Agirax.
+    /// Provides a class that instantiates request handlers, capable of porting them to Agirax.
     /// </summary>
     /// <definition>
-    /// public abstract class RouterFactory
+    /// public abstract class RequestHandlerFactory
     /// </definition>
     /// <type>
     /// Class
     /// </type>
     /// <namespace>
-    /// Sisk.Core.Routing
+    /// Sisk.Core.Routing.Handlers
     /// </namespace>
-    public abstract class RouterFactory
+    public abstract class RequestHandlerFactory
     {
         /// <summary>
-        /// Build and gets a router that will be used later by an <see cref="ListeningHost"/>.
+        /// Builds and gets the <see cref="IRequestHandler"/> instance objects used later by an <see cref="Route"/>.
         /// </summary>
         /// <definition>
-        /// public abstract Router BuildRouter();
+        /// public abstract IRequestHandler[] BuildRequestHandlers();
         /// </definition>
         /// <type>
         /// Method
         /// </type>
         /// <namespace>
-        /// Sisk.Core.Routing
+        /// Sisk.Core.Routing.Handlers
         /// </namespace>
-        public abstract Router BuildRouter();
+        public abstract IRequestHandler[] BuildRequestHandlers();
 
         /// <summary>
-        /// Method that is called by the Agirax instantiator with the parameters defined in configuration before calling <see cref="BuildRouter()"/>.
+        /// Method that is called by the Agirax instantiator with the parameters defined in configuration before calling <see cref="BuildRequestHandlers()"/>.
         /// </summary>
         /// <param name="setupParameters">Parameters that are defined in a configuration file.</param>
         /// <definition>
@@ -42,7 +41,7 @@ namespace Sisk.Core.Routing
         /// Method
         /// </type>
         /// <namespace>
-        /// Sisk.Core.Routing
+        /// Sisk.Core.Routing.Handlers
         /// </namespace>
         public abstract void Setup(NameValueCollection setupParameters);
     }

@@ -28,7 +28,7 @@ namespace Sisk.Core.Entity
     {
         private const string Dot = ".";
         private const string QuestionMark = "?";
-        private const string DefaultMimeType = "application/octet-stream";
+        private const string DefaultMimeType = "text/plain";
         private static readonly Lazy<IDictionary<string, string>> _mappings = new Lazy<IDictionary<string, string>>(BuildMappings);
 
         private static IDictionary<string, string> BuildMappings()

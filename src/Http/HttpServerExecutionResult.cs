@@ -102,6 +102,20 @@
         /// </namespace>
         public Exception? ServerException { get; internal set; }
 
+        /// <summary>
+        /// Gets an boolean indicating if this execution status is an success status.
+        /// </summary>
+        /// <definition>
+        /// public bool IsSuccessStatus { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.EventSourceClosed; }
+
         internal HttpServerExecutionResult() { }
     }
 

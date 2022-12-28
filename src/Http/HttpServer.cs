@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -19,6 +20,8 @@ namespace Sisk.Core.Http
     /// </namespace>
     public class HttpServer : IDisposable
     {
+        private bool _isDisposing = false;
+
         /// <summary>
         /// Gets or sets the Server Configuration object.
         /// </summary>
@@ -189,8 +192,10 @@ namespace Sisk.Core.Http
 
         private void ListenerCallback(IAsyncResult result)
         {
-            if (httpListener.IsListening)
+            if (!_isDisposing && httpListener.IsListening)
             {
+                httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
+
                 HttpListenerContext context;
                 try
                 {
@@ -201,9 +206,6 @@ namespace Sisk.Core.Http
                     // Requested to shut down the server while processing the request.
                     return;
                 }
-
-                HttpListener listenerAsyncState = ((HttpListener)result.AsyncState!);
-                listenerAsyncState.BeginGetContext(new AsyncCallback(ListenerCallback), listenerAsyncState);
 
                 Stopwatch sw = new Stopwatch();
                 HttpListenerResponse baseResponse = context.Response;
@@ -231,18 +233,25 @@ namespace Sisk.Core.Http
                         return;
                     }
 
+                    string dnsSafeHost = baseRequest.Url.DnsSafeHost;
+                    string? forwardedHost = baseRequest.Headers["X-Forwarded-Host"];
+                    if (ServerConfiguration.ResolveForwardedOriginHost && forwardedHost != null)
+                    {
+                        dnsSafeHost = forwardedHost;
+                    }
+
                     if (ServerConfiguration.Verbose == VerboseMode.Normal)
                     {
-                        verbosePrefix = $"{context.Request.HttpMethod,8} ({baseRequest.Url.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
+                        verbosePrefix = $"&e{context.Request.HttpMethod,8} &8(&7{baseRequest.Url.Authority}&8) &f{context.Request.Url?.AbsolutePath ?? " / "}";
                     }
                     else if (ServerConfiguration.Verbose == VerboseMode.Detailed)
                     {
-                        verbosePrefix = $"{context.Request.HttpMethod,8} %%STATUS%% ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
+                        verbosePrefix = $"&e{context.Request.HttpMethod,8} &7{DateTime.Now:G} %%STATUS%% &e{request.Origin} &8(&7{baseRequest.Url?.Scheme} &e{baseRequest.Url!.Authority}&8) &f{context.Request.Url?.AbsolutePath ?? "/"}";
                     }
 
                     // detect the listening host for this listener
                     ListeningHost? matchedHost = ServerConfiguration.ListeningHosts?.Where(
-                        lh => HostMatchWildcard(lh.Hostname, baseRequest.Url.DnsSafeHost) && lh._numericPorts.Contains(baseRequest.LocalEndPoint.Port)).FirstOrDefault();
+                        lh => HostMatchWildcard(lh.Hostname, dnsSafeHost) && lh._numericPorts.Contains(baseRequest.LocalEndPoint.Port)).FirstOrDefault();
 
                     if (matchedHost is null)
                     {
@@ -251,6 +260,7 @@ namespace Sisk.Core.Http
                         return;
                     }
 
+                    baseResponse.Headers.Set("Server", poweredByHeader);
                     baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
                     if (ServerConfiguration.IncludeRequestIdHeader)
                     {
@@ -335,38 +345,37 @@ namespace Sisk.Core.Http
                     baseResponse.StatusCode = (int)response.Status;
                     baseResponse.SendChunked = response.SendChunked;
 
-                    foreach (string incameHeader in response.Headers.Keys)
+                    NameValueCollection resHeaders = new NameValueCollection
                     {
-                        baseResponse.AddHeader(incameHeader, response.Headers[incameHeader] ?? "");
+                        response.Headers
+                    };
+                    foreach (string incameHeader in resHeaders)
+                    {
+                        baseResponse.AddHeader(incameHeader, resHeaders[incameHeader] ?? "");
                     }
 
                     if (responseBytes.Length > 0 && context.Request.HttpMethod != "HEAD")
                     {
-                        baseResponse.ContentType = response.GetHeader("Content-Type") ?? response.Content!.Headers.ContentType!.MediaType ?? "text/plain";
+                        baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content!.Headers.ContentType!.MediaType ?? "text/plain";
 
-                        if (response.GetHeader("Content-Encoding") != null)
+                        if (resHeaders["Content-Encoding"] != null)
                         {
-                            baseResponse.ContentEncoding = Encoding.GetEncoding(response.GetHeader("Content-Encoding")!);
+                            baseResponse.ContentEncoding = Encoding.GetEncoding(resHeaders["Content-Encoding"]!);
                         }
                         else
                         {
                             baseResponse.ContentEncoding = ServerConfiguration.DefaultEncoding;
                         }
 
-                        if (response.GetHeader("Content-Length") != null)
-                        {
-                            baseResponse.ContentLength64 = Int64.Parse(response.GetHeader("Content-Length")!);
-                        }
-                        else
-                        {
-                            baseResponse.ContentLength64 = responseBytes.Length;
-                        }
-
+                        baseResponse.ContentLength64 = responseBytes.Length;
                         baseResponse.OutputStream.Write(responseBytes);
                     }
 
                     executionResult.Status = HttpServerExecutionStatus.Executed;
-                    verboseSuffix = $"[{(int)response.Status} {response.Status.ToString()}] {HumanReadableSize((int)context.Request.ContentLength64) + " -> " + HumanReadableSize(responseBytes.Length)}";
+                    verboseSuffix = $"&8[&b{(int)response.Status} &3{response.Status}&8] &7{HumanReadableSize((int)context.Request.ContentLength64) + " &8-> &7" + HumanReadableSize(responseBytes.Length)}";
+
+                    sw.Stop();
+                    baseResponse.Close();
                 }
                 catch (Exception ex)
                 {
@@ -387,8 +396,7 @@ namespace Sisk.Core.Http
                         OnConnectionClose(this, executionResult);
                     }
 
-                    sw.Stop();
-                    baseResponse.Close();
+                    bool canWriteColor = ServerConfiguration.EnableVerboseColors;
 
                     if (ServerConfiguration.Verbose == VerboseMode.Normal)
                     {
@@ -396,18 +404,30 @@ namespace Sisk.Core.Http
                         {
                             if (verboseSuffix == "")
                             {
-                                Console.WriteLine($"{verbosePrefix} -> {executionResult.Status}");
+                                Util.WriteColorfulLine($"{verbosePrefix} -> {executionResult.Status}", canWriteColor);
                             }
                             else
                             {
-                                Console.WriteLine($"{verbosePrefix} {verboseSuffix}");
+                                Util.WriteColorfulLine($"{verbosePrefix} {verboseSuffix}", canWriteColor);
                             }
                         }
                     }
                     else if (ServerConfiguration.Verbose == VerboseMode.Detailed)
                     {
                         if (!string.IsNullOrEmpty(verbosePrefix))
-                            Console.WriteLine($"{verbosePrefix.Replace("%%STATUS%%", executionResult.Status.ToString())} {verboseSuffix} after {sw.ElapsedMilliseconds}ms");
+                        {
+                            string statusStr = executionResult.Status.ToString();
+                            if (executionResult.IsSuccessStatus)
+                            {
+                                statusStr = "&b" + statusStr;
+                            }
+                            else
+                            {
+                                statusStr = "&c" + statusStr;
+                            }
+                            verbosePrefix = verbosePrefix.Replace("%%STATUS%%", statusStr);
+                            Util.WriteColorfulLine($"{verbosePrefix} {verboseSuffix} &8after &7{sw.ElapsedMilliseconds}ms", canWriteColor);
+                        }
                     }
                 }
             }
@@ -427,6 +447,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public void Dispose()
         {
+            _isDisposing = true;
             this.httpListener.Close();
             this.ServerConfiguration.Dispose();
         }

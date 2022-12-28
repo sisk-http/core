@@ -37,10 +37,34 @@ namespace Sisk.Core.Http
             this.contextServerConfiguration = contextServerConfiguration;
             this.listenerResponse = listenerResponse;
             this.listenerRequest = listenerRequest;
+            this.hasContents = listenerRequest.ContentLength64 > 0;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
-            this.Origin = new IPAddress(listenerRequest.LocalEndPoint.Address.GetAddressBytes());
-            hasContents = listenerRequest.ContentLength64 > 0;
+
+            IPAddress requestRealAddress = new IPAddress(listenerRequest.LocalEndPoint.Address.GetAddressBytes());
+            this.Origin = requestRealAddress;
+
+            if (contextServerConfiguration.ResolveForwardedOriginAddress)
+            {
+                string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
+                if (forwardedIp != null)
+                {
+                    /*
+                     * the first entry from the header value is the real client ip.
+                     * source: https://datatracker.ietf.org/doc/html/rfc2616#section-4.2
+                     */
+                    string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(0, forwardedIp.IndexOf(',')) : forwardedIp;
+                    bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
+                    if (!ok || forwardedAddress == null)
+                    {
+                        throw new InvalidOperationException("The forwarded IP address is invalid.");
+                    }
+                    else
+                    {
+                        this.Origin = forwardedAddress;
+                    }
+                }
+            }
         }
 
         internal void ImportContents(Stream listenerRequest)
@@ -307,7 +331,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public IPAddress Origin
         {
-            get; private init;
+            get; internal set;
         }
 
         /// <summary>
