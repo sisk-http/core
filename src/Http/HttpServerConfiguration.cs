@@ -90,20 +90,6 @@ namespace Sisk.Core.Http
         public VerboseMode Verbose { get; set; } = VerboseMode.Normal;
 
         /// <summary>
-        /// Gets or sets whether the server should write colorful messages while <see cref="Verbose"/> ins't silent.
-        /// </summary>
-        /// <definition>
-        /// public bool EnableVerboseColors { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public bool EnableVerboseColors { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets whether the server should include the "X-Request-Id" header in response headers.
         /// </summary>
         /// <definition>
@@ -118,10 +104,10 @@ namespace Sisk.Core.Http
         public bool IncludeRequestIdHeader { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets the listening hosts that the <see cref="HttpServer"/> instance will listen to.
+        /// Gets or sets the listening hosts repository that the <see cref="HttpServer"/> instance will listen to.
         /// </summary>
         /// <definition>
-        /// public ListeningHost[]? ListeningHosts { get; set; }
+        /// public ListeningHostRepository ListeningHosts { get; set; }
         /// </definition>
         /// <type>
         /// Property
@@ -129,10 +115,10 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost[]? ListeningHosts { get; set; }
+        public ListeningHostRepository ListeningHosts { get; set; } = new ListeningHostRepository();
 
         /// <summary>
-        /// Gets or sets whether the server should throw exceptions instead of returing it on <see cref="HttpServerExecutionStatus"/> if any is thrown while processing requests.
+        /// Gets or sets whether the server should throw exceptions instead of reporting it on <see cref="HttpServerExecutionStatus"/> if any is thrown while processing requests.
         /// </summary>
         /// <definition>
         /// public bool ThrowExceptions { get; set; } = false;
@@ -175,7 +161,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public void Dispose()
         {
-            ListeningHosts = new ListeningHost[0];
+            ListeningHosts.Clear();
         }
     }
 

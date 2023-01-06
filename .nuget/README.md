@@ -21,6 +21,8 @@ Sisk is a powerful framework for building powerful web applications. It is writt
 
 The specification is complete, however, tutorials are yet to come. By the way, you can access the Sisk documentation [here](https://sisk-http.github.io/docs/static/#/).
 
+You can also view release change logs [here](https://github.com/sisk-http/docs/blob/master/Changelog.md).
+
 ## Installation
 
 You can install the latest release from Nuget:

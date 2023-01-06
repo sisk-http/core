@@ -82,7 +82,7 @@ namespace Sisk.Core.Http
         {
             isClosed = true;
             Flush();
-            return HttpResponse.Empty;
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE);
         }
 
         /// <summary>

@@ -20,20 +20,9 @@ namespace Sisk.Core.Http
     /// </namespace>
     public class HttpResponse
     {
-        /// <summary>
-        /// Gets an empty HTTP response. This field is read-only.
-        /// </summary>
-        /// <definition>
-        /// public readonly static HttpResponse Empty;
-        /// </definition>
-        /// <type>
-        /// Static Field
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        /// <static>True</static>
-        public readonly static HttpResponse Empty = new HttpResponse(true);
+        internal const byte HTTPRESPONSE_EMPTY = 2;
+        internal const byte HTTPRESPONSE_EVENTSOURCE_CLOSE = 4;
+        internal const byte HTTPRESPONSE_ERROR = 8;
 
         /// <summary>
         /// Gets or sets the HTTP response status code.
@@ -106,11 +95,11 @@ namespace Sisk.Core.Http
         /// </namespace>
         public bool SendChunked { get; set; } = false;
 
-        internal bool isEmpty = false;
+        internal byte internalStatus = 0;
 
-        private HttpResponse(bool empty)
+        internal HttpResponse(byte internalStatus)
         {
-            this.isEmpty = empty;
+            this.internalStatus = internalStatus;
         }
 
         internal HttpResponse(HttpListenerResponse res)
@@ -288,6 +277,13 @@ namespace Sisk.Core.Http
                 }
             }
             return null;
+        }
+
+        internal long CalcHeadersSize()
+        {
+            long l = 0;
+            l += DefaultEncoding.GetByteCount(GetRawHttpResponse(false));
+            return l;
         }
     }
 }

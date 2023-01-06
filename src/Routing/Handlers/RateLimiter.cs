@@ -209,7 +209,7 @@ namespace Sisk.Core.Routing.Handlers
                 var requestsByIP = limiterCache.Where((e) =>
                 {
                     return (DateTime.Now - e.RequestedAt) <= policy.TimeToLive
-                        && (e.GetHeader("Cookie") ?? "A") == (request.GetHeader("Cookie") ?? "B")
+                        && (e.Headers["Cookie"] ?? "A") == (request.Headers["Cookie"] ?? "B")
                         && e.Path == request.Path;
                 });
                 if (requestsByIP.Count() >= policy.MaximumRequests)

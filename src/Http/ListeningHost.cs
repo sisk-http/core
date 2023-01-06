@@ -17,8 +17,37 @@ namespace Sisk.Core.Http
     /// </namespace>
     public class ListeningHost
     {
+        private static Random handleGenerator = new Random();
         private ListeningPort[] _ports = null!;
         internal int[] _numericPorts = null!;
+
+        /// <summary>
+        /// Gets an unique handle to this router instance.
+        /// </summary>
+        /// <definition>
+        /// public int Handle { get; init; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public int Handle { get; init; } = handleGenerator.Next();
+
+        /// <summary>
+        /// Gets whether this <see cref="ListeningHost"/> can be listened by it's host <see cref="HttpServer"/>.
+        /// </summary>
+        /// <definition>
+        /// public bool CanListen { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool CanListen { get => Router is not null; }
 
         /// <summary>
         /// Gets or sets the CORS sharing policy object.
@@ -91,7 +120,7 @@ namespace Sisk.Core.Http
         /// Gets or sets the <see cref="Sisk.Core.Routing.Router"/> for this <see cref="ListeningHost"/> instance.
         /// </summary>
         /// <definition>
-        /// public Router Router { get; set; }
+        /// public Router? Router { get; set; }
         /// </definition>
         /// <type>
         /// Property
@@ -99,7 +128,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public Router Router { get; set; }
+        public Router? Router { get; set; }
 
         /// <summary>
         /// Creates an new <see cref="ListeningHost"/> value with given parameters.
@@ -195,6 +224,27 @@ namespace Sisk.Core.Http
         {
             Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Router = r;
+            Ports = ports;
+        }
+
+        /// <summary>
+        /// Creates the instance of a routerless listener host without any <see cref="Sisk.Core.Routing.Router"/>. This instance will not be listened until it has a router.
+        /// </summary>
+        /// <param name="hostname">The hostname (without the port) that this host will listen on the local machine.</param>
+        /// <param name="ports">The ports which this host will listen on.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <definition>
+        /// public ListeningHost(string hostname, ListeningPort[] ports)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public ListeningHost(string hostname, ListeningPort[] ports)
+        {
+            Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Ports = ports;
         }
 

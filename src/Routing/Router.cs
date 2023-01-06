@@ -330,86 +330,148 @@ namespace Sisk.Core.Routing
 
         internal HttpResponse? Execute(HttpRequest request)
         {
-            HttpContext? context = null;
-            Route? matchedRoute = null;
-            RouteMatchResult matchResult = RouteMatchResult.NotMatched;
-
-            foreach (Route route in routes)
+            try
             {
-                // test path
-                RoutePathMatchResult pathTest;
-                if (route.UseRegex)
-                {
-                    pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
-                }
-                else
-                {
-                    pathTest = TestRouteMatchUsingDefaultTemplate(route.Path, request.Path);
-                }
+                HttpContext? context = null;
+                Route? matchedRoute = null;
+                RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
-                if (!pathTest.Matched)
+                foreach (Route route in routes)
                 {
-                    continue;
-                }
-
-                matchResult = RouteMatchResult.PathMatched;
-                bool isMethodMatched = false;
-
-                // test method
-                if (route.Method == RouteMethod.Any)
-                {
-                    isMethodMatched = true;
-                }
-                else if (request.Method == HttpMethod.Options)
-                {
-                    matchResult = RouteMatchResult.OptionsMatched;
-                    break;
-                }
-                else if (IsMethodMatching(request.Method.Method, route.Method))
-                {
-                    isMethodMatched = true;
-                }
-
-                if (isMethodMatched)
-                {
-                    if (pathTest.RouteParameters is not null)
+                    // test path
+                    RoutePathMatchResult pathTest;
+                    if (route.UseRegex)
                     {
-                        foreach (KeyValuePair<string, string> routeParam in pathTest.RouteParameters)
+                        pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
+                    }
+                    else
+                    {
+                        pathTest = TestRouteMatchUsingDefaultTemplate(route.Path, request.Path);
+                    }
+
+                    if (!pathTest.Matched)
+                    {
+                        continue;
+                    }
+
+                    matchResult = RouteMatchResult.PathMatched;
+                    bool isMethodMatched = false;
+
+                    // test method
+                    if (route.Method == RouteMethod.Any)
+                    {
+                        isMethodMatched = true;
+                    }
+                    else if (request.Method == HttpMethod.Options)
+                    {
+                        matchResult = RouteMatchResult.OptionsMatched;
+                        break;
+                    }
+                    else if (IsMethodMatching(request.Method.Method, route.Method))
+                    {
+                        isMethodMatched = true;
+                    }
+
+                    if (isMethodMatched)
+                    {
+                        if (pathTest.RouteParameters is not null)
                         {
-                            request.Query.Add(routeParam.Key, HttpUtility.UrlDecode(routeParam.Value));
+                            foreach (KeyValuePair<string, string> routeParam in pathTest.RouteParameters)
+                            {
+                                request.Query.Add(routeParam.Key, HttpUtility.UrlDecode(routeParam.Value));
+                            }
+                        }
+                        matchResult = RouteMatchResult.FullyMatched;
+                        matchedRoute = route;
+                        break;
+                    }
+                }
+
+                if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
+                {
+                    return NotFoundErrorHandler();
+                }
+                else if (matchResult == RouteMatchResult.OptionsMatched)
+                {
+                    HttpResponse corsResponse = new HttpResponse();
+                    corsResponse.Status = System.Net.HttpStatusCode.OK;
+
+                    return corsResponse;
+                }
+                else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
+                {
+                    return MethodNotAllowedErrorHandler();
+                }
+                else if (matchResult == RouteMatchResult.FullyMatched)
+                {
+                    HttpResponse? result = null;
+                    context = new HttpContext(new Dictionary<string, object?>(), this.ParentServer, matchedRoute);
+                    request.Context = context;
+
+                    // (BEFORE) global handlers
+                    if (this.GlobalRequestHandlers is not null)
+                    {
+                        foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                        {
+                            bool isBypassed = false;
+                            foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
+                            {
+                                if (bypassed.Identifier == handler.Identifier)
+                                {
+                                    isBypassed = true;
+                                }
+                            }
+                            if (isBypassed)
+                                continue;
+                            HttpResponse? handlerResponse = handler.Execute(request, context);
+                            if (handlerResponse is not null)
+                            {
+                                return handlerResponse;
+                            }
                         }
                     }
-                    matchResult = RouteMatchResult.FullyMatched;
-                    matchedRoute = route;
-                    break;
+
+                    // specific before handlers for route
+                    if (matchedRoute!.RequestHandlers is not null)
+                    {
+                        foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                        {
+                            HttpResponse? handlerResponse = handler.Execute(request, context);
+                            if (handlerResponse is not null)
+                            {
+                                return handlerResponse;
+                            }
+                        }
+                    }
+
+                    if (matchedRoute.Callback is null)
+                    {
+                        throw new ArgumentNullException(nameof(matchedRoute.Callback));
+                    }
+
+                    if (CallbackErrorHandler is not null)
+                    {
+                        try
+                        {
+                            result = matchedRoute.Callback(request);
+                        }
+                        catch (Exception ex)
+                        {
+                            result = CallbackErrorHandler(ex, request);
+                        }
+                    }
+                    else
+                    {
+                        result = matchedRoute.Callback(request);
+                    }
+
+                    context.RouterResponse = result;
                 }
-            }
 
-            if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
-            {
-                return NotFoundErrorHandler();
-            }
-            else if (matchResult == RouteMatchResult.OptionsMatched)
-            {
-                HttpResponse corsResponse = new HttpResponse();
-                corsResponse.Status = System.Net.HttpStatusCode.OK;
-
-                return corsResponse;
-            }
-            else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
-            {
-                return MethodNotAllowedErrorHandler();
-            }
-            else if (matchResult == RouteMatchResult.FullyMatched)
-            {
-                HttpResponse? result = null;
-                context = new HttpContext(new Dictionary<string, object?>(), this.ParentServer, matchedRoute);
-                request.Context = context;
-
-                // (BEFORE) global handlers
-                if (this.GlobalRequestHandlers is not null)
+                // after GLOBAL request handlers
+                if (this.GlobalRequestHandlers is not null && context != null)
                 {
-                    foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                    foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
                     {
                         bool isBypassed = false;
                         foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
@@ -419,9 +481,12 @@ namespace Sisk.Core.Routing
                                 isBypassed = true;
                             }
                         }
+
                         if (isBypassed)
                             continue;
+
                         HttpResponse? handlerResponse = handler.Execute(request, context);
+
                         if (handlerResponse is not null)
                         {
                             return handlerResponse;
@@ -429,12 +494,13 @@ namespace Sisk.Core.Routing
                     }
                 }
 
-                // specific before handlers for route
-                if (matchedRoute!.RequestHandlers is not null)
+                // after SPECIFIC request handlers
+                if (matchedRoute!.RequestHandlers is not null && context != null)
                 {
-                    foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                    foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
                     {
                         HttpResponse? handlerResponse = handler.Execute(request, context);
+
                         if (handlerResponse is not null)
                         {
                             return handlerResponse;
@@ -442,71 +508,19 @@ namespace Sisk.Core.Routing
                     }
                 }
 
-                if (matchedRoute.Callback is null)
+                return context?.RouterResponse;
+            }
+            catch (Exception)
+            {
+                if (ParentServer?.ServerConfiguration.ThrowExceptions ?? false)
                 {
-                    throw new ArgumentNullException(nameof(matchedRoute.Callback));
-                }
-
-                if (CallbackErrorHandler is not null)
-                {
-                    try
-                    {
-                        result = matchedRoute.Callback(request);
-                    }
-                    catch (Exception ex)
-                    {
-                        result = CallbackErrorHandler(ex, request);
-                    }
+                    throw;
                 }
                 else
                 {
-                    result = matchedRoute.Callback(request);
-                }
-
-                context.RouterResponse = result;
-            }
-
-            // after GLOBAL request handlers
-            if (this.GlobalRequestHandlers is not null && context != null)
-            {
-                foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
-                {
-                    bool isBypassed = false;
-                    foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
-                    {
-                        if (bypassed.Identifier == handler.Identifier)
-                        {
-                            isBypassed = true;
-                        }
-                    }
-
-                    if (isBypassed)
-                        continue;
-
-                    HttpResponse? handlerResponse = handler.Execute(request, context);
-
-                    if (handlerResponse is not null)
-                    {
-                        return handlerResponse;
-                    }
+                    return new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR);
                 }
             }
-
-            // after SPECIFIC request handlers
-            if (matchedRoute!.RequestHandlers is not null && context != null)
-            {
-                foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
-                {
-                    HttpResponse? handlerResponse = handler.Execute(request, context);
-
-                    if (handlerResponse is not null)
-                    {
-                        return handlerResponse;
-                    }
-                }
-            }
-
-            return context?.RouterResponse;
         }
     }
 

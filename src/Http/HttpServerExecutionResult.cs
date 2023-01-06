@@ -116,6 +116,34 @@
         /// </namespace>
         public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.EventSourceClosed; }
 
+        /// <summary>
+        /// Gets the request size in bytes.
+        /// </summary>
+        /// <definition>
+        /// public long RequestSize { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public long RequestSize { get; internal set; }
+
+        /// <summary>
+        /// Gets the response size in bytes, if any.
+        /// </summary>
+        /// <definition>
+        /// public long ResponseSize { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public long ResponseSize { get; internal set; }
+
         internal HttpServerExecutionResult() { }
     }
 
@@ -171,6 +199,16 @@
         /// <summary>
         /// Indicates that the server encountered an exception while processing the request.
         /// </summary>
-        ExceptionThrown
+        ExceptionThrown,
+
+        /// <summary>
+        /// Indicates that the router encontered an uncaught exception while calling it's callback function.
+        /// </summary>
+        UncaughtExceptionThrown,
+
+        /// <summary>
+        /// Indicates that the DNS was successful, however the matched <see cref="ListeningHost"/> does not have an valid initialized router .
+        /// </summary>
+        ListeningHostNotReady
     }
 }

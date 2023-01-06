@@ -78,10 +78,10 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a unique random ID for this request that is generated on server input.
+        /// Gets a unique random ID for this request.
         /// </summary>
         /// <definition>
-        /// public Guid RequestId { get; }
+        /// public Guid RequestId { get; init; }
         /// </definition>
         /// <type>
         /// Property
@@ -90,6 +90,20 @@ namespace Sisk.Core.Http
         /// Sisk.Core.Http
         /// </namespace>
         public Guid RequestId { get; init; } = Guid.NewGuid();
+
+        /// <summary>
+        /// Gets a boolean indicating whether this request was made by an secure transport context (SSL/TLS) or not.
+        /// </summary>
+        /// <definition>
+        /// public bool IsSecure { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool IsSecure { get => listenerRequest.IsSecureConnection; }
 
         /// <summary>
         /// Gets a boolean indicating whether the content of this request has been processed by the server.
@@ -440,32 +454,6 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a header value using a case-insensitive search.
-        /// </summary>
-        /// <param name="headerName">The header name.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public string? GetHeader(string headerName)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public string? GetHeader(string headerName)
-        {
-            foreach (string header in Headers.Keys)
-            {
-                if (string.Compare(header, headerName, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    return Headers[header];
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
         /// Gets a query value using an case-insensitive search.
         /// </summary>
         /// <param name="queryKeyName">The query value name.</param>
@@ -479,17 +467,23 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public string? GetQueryValue(string queryKeyName)
-        {
-            foreach (string q in Query.Keys)
-            {
-                if (string.Compare(q, queryKeyName, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    return Query[q];
-                }
-            }
-            return null;
-        }
+        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName];
+
+        /// <summary>
+        /// Gets a header value using a case-insensitive search.
+        /// </summary>
+        /// <param name="headerName">The header name.</param>
+        /// <returns></returns>
+        /// <definition>
+        /// public string? GetHeader(string headerName)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public string? GetHeader(string headerName) => Headers[headerName];
 
         /// <summary>
         /// Create an HTTP response with code 200 OK without any body.
@@ -627,6 +621,14 @@ namespace Sisk.Core.Http
             isServingEventSourceEvents = true;
             activeEventSource = new HttpRequestEventSource(listenerResponse, listenerRequest, contextServerConfiguration);
             return activeEventSource;
+        }
+
+        internal long CalcRequestSize()
+        {
+            long l = 0;
+            l += listenerRequest.ContentLength64;
+            l += RequestEncoding.GetByteCount(GetRawHttpRequest(false));
+            return l;
         }
     }
 }

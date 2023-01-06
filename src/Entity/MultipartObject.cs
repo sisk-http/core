@@ -190,7 +190,7 @@ namespace Sisk.Core.Entity
 
         internal static MultipartObject[] ParseMultipartObjects(HttpRequest req)
         {
-            string? contentType = req.GetHeader("Content-Type");
+            string? contentType = req.Headers["Content-Type"];
             if (contentType is null)
             {
                 throw new InvalidOperationException("Content-Type header cannot be null when retriving a multipart form content");
