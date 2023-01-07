@@ -6,12 +6,6 @@ using System.Web;
 
 namespace Sisk.Core.Routing
 {
-    internal class RoutePathMatchResult
-    {
-        public bool Matched { get; set; }
-        public Dictionary<string, string>? RouteParameters { get; set; }
-    }
-
     /// <summary>
     /// Represents a collection of Routes and main executor of callbacks in an <see cref="HttpServer"/>.
     /// </summary>
@@ -26,9 +20,24 @@ namespace Sisk.Core.Routing
     /// </namespace>
     public class Router
     {
-        private List<Route> routes = new List<Route>();
+        private Internal.WildcardMatching _pathMatcher = new Internal.WildcardMatching();
+        private List<Route> _routes = new List<Route>();
         internal HttpServer? ParentServer { get; set; }
         internal ListeningHost ParentListenerHost { get; set; } = null!;
+
+        /// <summary>
+        /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
+        /// </summary>
+        /// <definition>
+        /// public bool MatchRoutesIgnoreCase { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public bool MatchRoutesIgnoreCase { get; set; } = false;
 
         /// <summary>
         /// Creates an new <see cref="Router"/> instance with default properties values.
@@ -115,7 +124,7 @@ namespace Sisk.Core.Routing
         /// <namespace>
         /// Sisk.Core.Routing
         /// </namespace>
-        public Route[] GetDefinedRoutes() => routes.ToArray();
+        public Route[] GetDefinedRoutes() => _routes.ToArray();
 
         /// <summary>
         /// Gets an route object by their name that is defined in this Router.
@@ -133,7 +142,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public Route? GetRouteFromName(string name)
         {
-            foreach (Route r in this.routes)
+            foreach (Route r in this._routes)
             {
                 if (r.Name == name)
                 {
@@ -160,7 +169,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback)
         {
-            routes.Add(new Route(method, path, null, callback, null));
+            _routes.Add(new Route(method, path, null, callback, null));
         }
 
         /// <summary>
@@ -181,7 +190,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name)
         {
-            routes.Add(new Route(method, path, name, callback, null));
+            _routes.Add(new Route(method, path, name, callback, null));
         }
 
         /// <summary>
@@ -203,7 +212,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name, IRequestHandler[] middlewares)
         {
-            routes.Add(new Route(method, path, name, callback, middlewares));
+            _routes.Add(new Route(method, path, name, callback, middlewares));
         }
 
         /// <summary>
@@ -223,11 +232,11 @@ namespace Sisk.Core.Routing
         {
             if (r.Path == "*")
             {
-                routes.Insert(0, r);
+                _routes.Insert(0, r);
             }
             else
             {
-                routes.Add(r);
+                _routes.Add(r);
             }
         }
 
@@ -289,43 +298,9 @@ namespace Sisk.Core.Routing
             return method.HasFlag(ogRqParsed);
         }
 
-        private RoutePathMatchResult TestRouteMatchUsingRegex(string routePath, string requestPath)
+        private Internal.WildcardMatching.PathMatchResult TestRouteMatchUsingRegex(string routePath, string requestPath)
         {
-            return new RoutePathMatchResult()
-            {
-                Matched = Regex.IsMatch(requestPath, routePath, RegexOptions.Compiled),
-                RouteParameters = null
-            };
-        }
-
-        private RoutePathMatchResult TestRouteMatchUsingDefaultTemplate(string routePath, string requestPath)
-        {
-            routePath = Regex.Escape(routePath);
-            routePath = routePath.Replace("<", "(?<");
-            routePath = routePath.Replace(">", ">[^/\\?#])+[/\\?#]?");
-            routePath = $"^{routePath.Trim()}$";
-
-            Dictionary<string, string> routeParams = new Dictionary<string, string>();
-            var matches = Regex.Matches(requestPath, routePath, RegexOptions.Compiled);
-            foreach (Match match in matches)
-            {
-                foreach (Group group in match.Groups)
-                {
-                    if (Int32.TryParse(group.Name, out _))
-                        continue;
-                    string grpName = group.Name;
-                    string grpContent = "";
-                    if (grpName.Trim() == "")
-                        continue;
-                    foreach (Capture capture in group.Captures)
-                    {
-                        grpContent += capture.Value;
-                    }
-                    routeParams.Add(grpName, grpContent);
-                }
-            }
-
-            return new RoutePathMatchResult() { Matched = matches.Count > 0, RouteParameters = routeParams };
+            return new Internal.WildcardMatching.PathMatchResult(Regex.IsMatch(requestPath, routePath), new System.Collections.Specialized.NameValueCollection());
         }
 
         internal HttpResponse? Execute(HttpRequest request)
@@ -336,20 +311,20 @@ namespace Sisk.Core.Routing
                 Route? matchedRoute = null;
                 RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
-                foreach (Route route in routes)
+                foreach (Route route in _routes)
                 {
                     // test path
-                    RoutePathMatchResult pathTest;
+                    Internal.WildcardMatching.PathMatchResult pathTest;
                     if (route.UseRegex)
                     {
                         pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
                     }
                     else
                     {
-                        pathTest = TestRouteMatchUsingDefaultTemplate(route.Path, request.Path);
+                        pathTest = _pathMatcher.IsPathMatch(route.Path, request.Path, MatchRoutesIgnoreCase);
                     }
 
-                    if (!pathTest.Matched)
+                    if (!pathTest.IsMatched)
                     {
                         continue;
                     }
@@ -374,12 +349,9 @@ namespace Sisk.Core.Routing
 
                     if (isMethodMatched)
                     {
-                        if (pathTest.RouteParameters is not null)
+                        foreach (string routeParam in pathTest.Query)
                         {
-                            foreach (KeyValuePair<string, string> routeParam in pathTest.RouteParameters)
-                            {
-                                request.Query.Add(routeParam.Key, HttpUtility.UrlDecode(routeParam.Value));
-                            }
+                            request.Query.Add(routeParam, HttpUtility.UrlDecode(pathTest.Query[routeParam]));
                         }
                         matchResult = RouteMatchResult.FullyMatched;
                         matchedRoute = route;

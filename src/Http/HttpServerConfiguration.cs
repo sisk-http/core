@@ -17,6 +17,40 @@ namespace Sisk.Core.Http
     public class HttpServerConfiguration : IDisposable
     {
         /// <summary>
+        /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server access messages to.
+        /// </summary>
+        /// <remarks>
+        /// This property defaults to Console.Out. By setting this property to null, no output will be written, completely ignoring the `Verbose` property.
+        /// </remarks>
+        /// <definition>
+        /// public TextWriter? AccessLogsStream { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public TextWriter? AccessLogsStream { get; set; } = Console.Out;
+
+        /// <summary>
+        /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server error transcriptions to.
+        /// </summary>
+        /// <remarks>
+        /// This stream could be empty if ThrowExceptions is true.
+        /// </remarks>
+        /// <definition>
+        /// public TextWriter? ErrorsLogsStream { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public TextWriter? ErrorsLogsStream { get; set; }
+
+        /// <summary>
         /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using Sisk through a reverse proxy.
         /// </summary>
         /// <definition>
@@ -76,17 +110,22 @@ namespace Sisk.Core.Http
         public long MaximumContentLength { get; set; } = 0;
 
         /// <summary>
-        /// Gets or sets the message level the console will write.
+        /// Gets or sets the message level the console will write. This property is now deprecated. Use <see cref="AccessLogsStream"/> or <see cref="ErrorsLogsStream"/> instead.
         /// </summary>
         /// <definition>
+        /// [Obsolete]
         /// public VerboseMode Verbose { get; set; }
         /// </definition>
+        /// <remarks>
+        /// Since Sisk 0.8.1, this property was deprecated. The defaults for the <see cref="AccessLogsStream"/> it's the <see cref="VerboseMode.Detailed"/> verbose mode.
+        /// </remarks>
         /// <type>
         /// Property
         /// </type>
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
+        [Obsolete]
         public VerboseMode Verbose { get; set; } = VerboseMode.Normal;
 
         /// <summary>
@@ -162,6 +201,8 @@ namespace Sisk.Core.Http
         public void Dispose()
         {
             ListeningHosts.Clear();
+            AccessLogsStream?.Close();
+            ErrorsLogsStream?.Close();
         }
     }
 

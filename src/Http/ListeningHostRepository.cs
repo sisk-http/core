@@ -23,6 +23,7 @@ namespace Sisk.Core.Http
     public class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
     {
         private List<ListeningHost> _hosts = new List<ListeningHost>();
+        private Internal.WildcardMatching dnsMatcher = new Internal.WildcardMatching();
 
         /// <summary>
         /// Creates a new instance of an empty <see cref="ListeningHostRepository"/>.
@@ -230,11 +231,27 @@ namespace Sisk.Core.Http
             return this.GetEnumerator();
         }
 
+        /// <summary>
+        /// Gets a listening host through its index.
+        /// </summary>
+        /// <param name="index">The Listening Host index</param>
+        /// <returns></returns>
+        /// <definition>
+        /// public ListeningHost this[int index]
+        /// </definition>
+        /// <type>
+        /// Indexer
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public ListeningHost this[int index] { get => _hosts[index]; }
+
         internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)
         {
             foreach (ListeningHost h in this._hosts)
             {
-                if (isWildcardMatch(h.Hostname, dnsSafeHost) && h._numericPorts.Contains(port))
+                if (dnsMatcher.IsDnsMatch(h.Hostname, dnsSafeHost) && h._numericPorts.Contains(port))
                 {
                     return h;
                 }
@@ -245,85 +262,6 @@ namespace Sisk.Core.Http
         private bool CompareListeningHost(ListeningHost a, ListeningHost b)
         {
             return a.Handle == b.Handle;
-        }
-
-        private bool isWildcardMatch(string wildcardPattern, string subject)
-        {
-            if (string.IsNullOrWhiteSpace(wildcardPattern))
-            {
-                return false;
-            }
-
-            int wildcardCount = wildcardPattern.Count(x => x.Equals('*'));
-            if (wildcardCount <= 0)
-            {
-                return subject.Equals(wildcardPattern, StringComparison.CurrentCultureIgnoreCase);
-            }
-            else if (wildcardCount == 1)
-            {
-                string newWildcardPattern = wildcardPattern.Replace("*", "");
-
-                if (wildcardPattern.StartsWith("*"))
-                {
-                    return subject.EndsWith(newWildcardPattern, StringComparison.CurrentCultureIgnoreCase);
-                }
-                else if (wildcardPattern.EndsWith("*"))
-                {
-                    return subject.StartsWith(newWildcardPattern, StringComparison.CurrentCultureIgnoreCase);
-                }
-                else
-                {
-                    return isWildcardMatchRgx(wildcardPattern, subject);
-                }
-            }
-            else
-            {
-                return isWildcardMatchRgx(wildcardPattern, subject);
-            }
-        }
-
-        private bool isWildcardMatchRgx(string pattern, string subject)
-        {
-            string[] parts = pattern.Split('*');
-            if (parts.Length <= 1)
-            {
-                return subject.Equals(pattern, StringComparison.CurrentCultureIgnoreCase);
-            }
-
-            int pos = 0;
-
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (i <= 0)
-                {
-                    // first
-                    pos = subject.IndexOf(parts[i], pos, StringComparison.CurrentCultureIgnoreCase);
-                    if (pos != 0)
-                    {
-                        return false;
-                    }
-                }
-                else if (i >= (parts.Length - 1))
-                {
-                    // last
-                    if (!subject.EndsWith(parts[i], StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    pos = subject.IndexOf(parts[i], pos, StringComparison.CurrentCultureIgnoreCase);
-                    if (pos < 0)
-                    {
-                        return false;
-                    }
-
-                    pos += parts[i].Length;
-                }
-            }
-
-            return true;
         }
     }
 }

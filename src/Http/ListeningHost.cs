@@ -1,5 +1,6 @@
 ﻿using Sisk.Core.Entity;
 using Sisk.Core.Routing;
+using System.Runtime.Serialization;
 
 namespace Sisk.Core.Http
 {
@@ -15,17 +16,16 @@ namespace Sisk.Core.Http
     /// <namespace>
     /// Sisk.Core.Http
     /// </namespace>
-    public class ListeningHost
+    public unsafe class ListeningHost
     {
-        private static Random handleGenerator = new Random();
         private ListeningPort[] _ports = null!;
         internal int[] _numericPorts = null!;
 
         /// <summary>
-        /// Gets an unique handle to this router instance.
+        /// Gets an unique identifier to this listening host instance.
         /// </summary>
         /// <definition>
-        /// public int Handle { get; init; }
+        /// public long Handle { get; }
         /// </definition>
         /// <type>
         /// Property
@@ -33,7 +33,8 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public int Handle { get; init; } = handleGenerator.Next();
+        public long Handle { get; private set; }
+        private long _handle = 0;
 
         /// <summary>
         /// Gets whether this <see cref="ListeningHost"/> can be listened by it's host <see cref="HttpServer"/>.
@@ -130,6 +131,15 @@ namespace Sisk.Core.Http
         /// </namespace>
         public Router? Router { get; set; }
 
+        private ListeningHost()
+        {
+            Hostname = null!;
+            fixed (long* h = &_handle)
+            {
+                Handle = (long)h;
+            }
+        }
+
         /// <summary>
         /// Creates an new <see cref="ListeningHost"/> value with given parameters.
         /// </summary>
@@ -146,7 +156,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost(string hostname, int port, Router r)
+        public ListeningHost(string hostname, int port, Router r) : this()
         {
             Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Ports = new ListeningPort[] { new ListeningPort(port) };
@@ -169,7 +179,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost(string hostname, ListeningPort port, Router r)
+        public ListeningHost(string hostname, ListeningPort port, Router r) : this()
         {
             Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Ports = new ListeningPort[] { port };
@@ -192,7 +202,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost(string hostname, int[] ports, Router r)
+        public ListeningHost(string hostname, int[] ports, Router r) : this()
         {
             Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Router = r;
@@ -220,7 +230,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost(string hostname, ListeningPort[] ports, Router r)
+        public ListeningHost(string hostname, ListeningPort[] ports, Router r) : this()
         {
             Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Router = r;
@@ -242,7 +252,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost(string hostname, ListeningPort[] ports)
+        public ListeningHost(string hostname, ListeningPort[] ports) : this()
         {
             Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
             Ports = ports;
@@ -262,7 +272,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public ListeningHost(string uri, Router r)
+        public ListeningHost(string uri, Router r) : this()
         {
             Uri uriInstance = new Uri(uri);
             this.Hostname = uriInstance.Host;

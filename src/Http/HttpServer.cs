@@ -19,6 +19,8 @@ namespace Sisk.Core.Http
     /// </namespace>
     public class HttpServer : IDisposable
     {
+        private Mutex _accessLogMutex = new Mutex();
+        private Mutex _errorLogMutex = new Mutex();
         private bool _isListening = false;
         private bool _isDisposing = false;
 
@@ -253,14 +255,7 @@ namespace Sisk.Core.Http
                     dnsSafeHost = forwardedHost;
                 }
 
-                if (ServerConfiguration.Verbose == VerboseMode.Normal)
-                {
-                    verbosePrefix = $"{context.Request.HttpMethod,8} ({baseRequest.Url.Authority}) {context.Request.Url?.AbsolutePath ?? " / "}";
-                }
-                else if (ServerConfiguration.Verbose == VerboseMode.Detailed)
-                {
-                    verbosePrefix = $"{context.Request.HttpMethod,8} {DateTime.Now:G} %%STATUS%% {request.Origin} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
-                }
+                verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {context.Request.HttpMethod} {request.Origin.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
 
                 // detect the listening host for this listener
                 ListeningHost? matchedListeningHost = ServerConfiguration.ListeningHosts
@@ -394,16 +389,16 @@ namespace Sisk.Core.Http
 
                 string httpStatusVerbose = $"{(int)response.Status} {response.Status}";
 
-                executionResult.Status = HttpServerExecutionStatus.Executed;
-                verboseSuffix = $"[{httpStatusVerbose}] {HumanReadableSize((int)incomingSize) + " -> " + HumanReadableSize((int)outcomingSize)}";
-
                 executionResult.RequestSize = incomingSize;
                 executionResult.ResponseSize = outcomingSize;
                 executionResult.Response = response;
 
                 sw.Stop();
                 baseResponse.Close();
+
                 closeStream = false;
+                executionResult.Status = HttpServerExecutionStatus.Executed;
+                verboseSuffix = $"[{httpStatusVerbose}] {HumanReadableSize((int)incomingSize) + " -> " + HumanReadableSize((int)outcomingSize)}";
             }
             catch (ObjectDisposedException objException)
             {
@@ -439,27 +434,31 @@ namespace Sisk.Core.Http
                     OnConnectionClose(this, executionResult);
                 }
 
-                if (ServerConfiguration.Verbose == VerboseMode.Normal)
+                if (executionResult.ServerException != null)
                 {
-                    if (!string.IsNullOrEmpty(verbosePrefix))
+                    _errorLogMutex.WaitOne();
+                    ServerConfiguration.ErrorsLogsStream?.WriteLine($"Exception thrown at {DateTime.Now:R}");
+                    ServerConfiguration.ErrorsLogsStream?.WriteLine(executionResult.ServerException);
+                    if (executionResult.ServerException.InnerException != null)
                     {
-                        if (verboseSuffix == "")
-                        {
-                            Console.WriteLine($"{verbosePrefix} -> {executionResult.Status}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"{verbosePrefix} {verboseSuffix}");
-                        }
+                        ServerConfiguration.ErrorsLogsStream?.WriteLine(executionResult.ServerException.InnerException);
                     }
+                    _errorLogMutex.ReleaseMutex();
                 }
-                else if (ServerConfiguration.Verbose == VerboseMode.Detailed)
+
+                if (ServerConfiguration.AccessLogsStream != null)
                 {
+                    _accessLogMutex.WaitOne();
                     if (!string.IsNullOrEmpty(verbosePrefix))
                     {
                         verbosePrefix = verbosePrefix.Replace("%%STATUS%%", executionResult.Status.ToString());
-                        Console.WriteLine($"{verbosePrefix} {verboseSuffix} after {sw.ElapsedMilliseconds}ms");
+                        ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix} {verboseSuffix} after {sw.ElapsedMilliseconds}ms");
                     }
+                    else
+                    {
+                        ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix} -> {executionResult.Status}");
+                    }
+                    _accessLogMutex.ReleaseMutex();
                 }
             }
         }
