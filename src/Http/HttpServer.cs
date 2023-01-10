@@ -39,6 +39,20 @@ namespace Sisk.Core.Http
         public HttpServerConfiguration ServerConfiguration { get; set; } = new HttpServerConfiguration();
 
         /// <summary>
+        /// Gets an boolean indicating if this HTTP server is running and listening.
+        /// </summary>
+        /// <definition>
+        /// public bool IsListening { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public bool IsListening { get => _isListening && !_isDisposing; }
+
+        /// <summary>
         /// Event that is called when this <see cref="HttpServer"/> computes an request and it's response.
         /// </summary>
         /// <definition>
@@ -145,18 +159,17 @@ namespace Sisk.Core.Http
             List<string> listeningPrefixes = new List<string>();
             foreach (ListeningHost listeningHost in this.ServerConfiguration.ListeningHosts)
             {
-                // dns checking is made on the server callback
                 foreach (ListeningPort port in listeningHost.Ports)
                 {
                     string prefix;
 
                     if (port.Secure)
                     {
-                        prefix = $"https://+:{port.Port}/";
+                        prefix = $"https://{listeningHost.Hostname}:{port.Port}/";
                     }
                     else
                     {
-                        prefix = $"http://+:{port.Port}/";
+                        prefix = $"http://{listeningHost.Hostname}:{port.Port}/";
                     }
 
                     if (!listeningPrefixes.Contains(prefix)) listeningPrefixes.Add(prefix);

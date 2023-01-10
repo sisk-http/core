@@ -256,7 +256,30 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetObject(object attrClassInstance)
         {
-            Type t = attrClassInstance.GetType();
+            this.SetTypeRoutes(attrClassInstance.GetType());
+        }
+
+        /// <summary>
+        /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
+        /// </summary>
+        /// <param name="attrClassType">The type of the class where the methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
+        /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
+        /// <definition>
+        /// public void SetObject(Type attrClassType)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public void SetObject(Type attrClassType)
+        {
+            this.SetTypeRoutes(attrClassType);
+        }
+
+        private void SetTypeRoutes(Type t)
+        {
             foreach (var method in t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public))
             {
                 RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
@@ -300,7 +323,8 @@ namespace Sisk.Core.Routing
 
         private Internal.WildcardMatching.PathMatchResult TestRouteMatchUsingRegex(string routePath, string requestPath)
         {
-            return new Internal.WildcardMatching.PathMatchResult(Regex.IsMatch(requestPath, routePath), new System.Collections.Specialized.NameValueCollection());
+            return new Internal.WildcardMatching.PathMatchResult
+                (Regex.IsMatch(requestPath, routePath, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), new System.Collections.Specialized.NameValueCollection());
         }
 
         internal HttpResponse? Execute(HttpRequest request)

@@ -116,8 +116,6 @@ namespace Sisk.Core.Http
                 {
                     res.OutputStream.Write(itemBytes);
                     sendQueue.RemoveAt(0);
-                    if (HttpServerConfiguration.Verbose != VerboseMode.Silent)
-                        Console.WriteLine($"{"Send-Event",18} {req.Url?.AbsolutePath ?? "/"} -> {itemBytes.Length} bytes");
                 }
                 catch (Exception)
                 {
