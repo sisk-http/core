@@ -33,7 +33,7 @@ Sisk is a powerful framework for building powerful web applications. It is writt
 
 ## Documentation
 
-You can access the Sisk documentation [here](https://sisk-http.github.io/docs/static/#/) or access it's repository [here](https://github.com/sisk-http/docs).
+You can access the Sisk documentation [here](https://sisk.proj.pw/) or access it's repository [here](https://github.com/sisk-http/docs).
 The specification is complete, however, tutorials are yet to come.
 
 ## Installation
