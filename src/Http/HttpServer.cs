@@ -1,4 +1,5 @@
-﻿using System.Collections.Specialized;
+﻿using Sisk.Core.Routing;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -215,6 +216,19 @@ namespace Sisk.Core.Http
             return String.Format("{0:0.##}{1}", size, sizes[order]);
         }
 
+        private void TryCloseStream(ref HttpListenerResponse response)
+        {
+            try
+            {
+                response.Headers.Set("X-Powered-By", poweredByHeader);
+                response.Close();
+            }
+            catch (Exception)
+            {
+                ;
+            }
+        }
+
         private void ListenerCallback(IAsyncResult result)
         {
             if (_isDisposing || !_isListening)
@@ -222,6 +236,8 @@ namespace Sisk.Core.Http
 
             httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
             HttpListenerContext context;
+            HttpRequest request = null!;
+            HttpResponse? response = null;
 
             try
             {
@@ -240,9 +256,8 @@ namespace Sisk.Core.Http
             long incomingSize = 0;
             long outcomingSize = 0;
             bool closeStream = true;
+            LogOutput logMode = LogOutput.Both;
 
-            HttpRequest request = new HttpRequest(ref baseRequest, ref baseResponse, this.ServerConfiguration);
-            HttpResponse? response = null;
             HttpServerExecutionResult? executionResult = new HttpServerExecutionResult()
             {
                 Request = request,
@@ -252,6 +267,9 @@ namespace Sisk.Core.Http
 
             try
             {
+                verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {baseRequest.RemoteEndPoint.Address.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {baseRequest.Url?.AbsolutePath ?? "/"}";
+                request = new HttpRequest(ref baseRequest, ref baseResponse, this.ServerConfiguration);
+
                 sw.Start();
 
                 if (baseRequest.Url is null)
@@ -267,8 +285,6 @@ namespace Sisk.Core.Http
                 {
                     dnsSafeHost = forwardedHost;
                 }
-
-                verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {context.Request.HttpMethod} {request.Origin.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {context.Request.Url?.AbsolutePath ?? "/"}";
 
                 // detect the listening host for this listener
                 ListeningHost? matchedListeningHost = ServerConfiguration.ListeningHosts
@@ -288,8 +304,6 @@ namespace Sisk.Core.Http
                     return;
                 }
 
-                baseResponse.Headers.Set("Server", poweredByHeader);
-                baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
                 if (ServerConfiguration.IncludeRequestIdHeader)
                 {
                     baseResponse.Headers.Set("X-Request-Id", request.RequestId.ToString());
@@ -323,26 +337,24 @@ namespace Sisk.Core.Http
                     return;
                 }
 
-                {
-                    string corsAlHd = matchedListeningHost.CrossOriginResourceSharingPolicy.GetAllowHeadersHeader();
-                    string corsAlMt = matchedListeningHost.CrossOriginResourceSharingPolicy.GetAllowMethodsHeader();
-                    string corsAlOr = matchedListeningHost.CrossOriginResourceSharingPolicy.GetAllowOriginsHeader();
-                    string corsMxAg = matchedListeningHost.CrossOriginResourceSharingPolicy.GetMaxAgeHeader();
-
-                    if (!string.IsNullOrEmpty(corsAlHd))
-                        baseResponse.Headers.Set("Access-Control-Allow-Headers", corsAlHd);
-                    if (!string.IsNullOrEmpty(corsAlMt))
-                        baseResponse.Headers.Set("Access-Control-Allow-Methods", corsAlMt);
-                    if (!string.IsNullOrEmpty(corsAlOr))
-                        baseResponse.Headers.Set("Access-Control-Allow-Origin", corsAlOr);
-                    if (!string.IsNullOrEmpty(corsMxAg) && corsMxAg != "0")
-                        baseResponse.Headers.Set("Access-Control-Allow-Max-Age", corsMxAg);
-                }
-
                 // get response
                 matchedListeningHost.Router.ParentServer = this;
                 matchedListeningHost.Router.ParentListenerHost = matchedListeningHost;
-                response = matchedListeningHost.Router.Execute(request);
+
+                var routerResult = matchedListeningHost.Router.Execute(request);
+                response = routerResult.Response;
+                logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
+
+                if (routerResult.Route?.UseCors ?? false)
+                {
+                    var cors = matchedListeningHost.CrossOriginResourceSharingPolicy;
+                    if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
+                    if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
+                    if (cors.AllowOrigins.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Origin", string.Join(", ", cors.AllowOrigins));
+                    if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
+                    if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Allow-Max-Age", cors.MaxAge.TotalSeconds.ToString());
+                    if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
+                }
 
                 if (response is null)
                 {
@@ -363,6 +375,7 @@ namespace Sisk.Core.Http
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_ERROR)
                 {
                     executionResult.Status = HttpServerExecutionStatus.UncaughtExceptionThrown;
+                    baseResponse.StatusCode = 500;
                     return;
                 }
 
@@ -423,6 +436,12 @@ namespace Sisk.Core.Http
                 executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
                 executionResult.ServerException = netException;
             }
+            catch (HttpRequestException requestException)
+            {
+                baseResponse.StatusCode = 400;
+                executionResult.Status = HttpServerExecutionStatus.MalformedRequest;
+                executionResult.ServerException = requestException;
+            }
             catch (Exception ex)
             {
                 if (!ServerConfiguration.ThrowExceptions)
@@ -439,7 +458,7 @@ namespace Sisk.Core.Http
             {
                 if (closeStream)
                 {
-                    baseResponse.Close();
+                    TryCloseStream(ref baseResponse);
                 }
 
                 if (OnConnectionClose != null)
@@ -447,7 +466,10 @@ namespace Sisk.Core.Http
                     OnConnectionClose(this, executionResult);
                 }
 
-                if (executionResult.ServerException != null)
+                bool canAccessLog = logMode == LogOutput.AccessLog || logMode == LogOutput.Both;
+                bool canErrorLog = logMode == LogOutput.ErrorLog || logMode == LogOutput.Both;
+
+                if (executionResult.ServerException != null && canErrorLog)
                 {
                     _errorLogMutex.WaitOne();
                     ServerConfiguration.ErrorsLogsStream?.WriteLine($"Exception thrown at {DateTime.Now:R}");
@@ -459,17 +481,17 @@ namespace Sisk.Core.Http
                     _errorLogMutex.ReleaseMutex();
                 }
 
-                if (ServerConfiguration.AccessLogsStream != null)
+                if (ServerConfiguration.AccessLogsStream != null && canAccessLog)
                 {
                     _accessLogMutex.WaitOne();
-                    if (!string.IsNullOrEmpty(verbosePrefix))
+                    verbosePrefix = verbosePrefix.Replace("%%STATUS%%", executionResult.Status.ToString());
+                    if (!string.IsNullOrEmpty(verboseSuffix))
                     {
-                        verbosePrefix = verbosePrefix.Replace("%%STATUS%%", executionResult.Status.ToString());
                         ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix} {verboseSuffix} after {sw.ElapsedMilliseconds}ms");
                     }
                     else
                     {
-                        ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix} -> {executionResult.Status}");
+                        ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix}");
                     }
                     _accessLogMutex.ReleaseMutex();
                 }

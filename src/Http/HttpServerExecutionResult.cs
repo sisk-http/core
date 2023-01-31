@@ -209,6 +209,11 @@
         /// <summary>
         /// Indicates that the DNS was successful, however the matched <see cref="ListeningHost"/> does not have an valid initialized router .
         /// </summary>
-        ListeningHostNotReady
+        ListeningHostNotReady,
+
+        /// <summary>
+        /// Indicates that the server cannot or will not process the request due to something that is perceived to be a client error.
+        /// </summary>
+        MalformedRequest
     }
 }

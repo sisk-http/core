@@ -18,6 +18,34 @@ namespace Sisk.Provider
     public class ServiceProvider
     {
         /// <summary>
+        /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.
+        /// </summary>
+        /// <definition>
+        /// public TextWriter? AccessLogs { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Provider
+        /// </namespace>
+        public TextWriter? AccessLogs { get => ServerConfiguration?.AccessLogsStream; }
+
+        /// <summary>
+        /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
+        /// </summary>
+        /// <definition>
+        /// public TextWriter? ErrorLogs { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Provider
+        /// </namespace>
+        public TextWriter? ErrorLogs { get => ServerConfiguration?.AccessLogsStream; }
+
+        /// <summary>
         /// Gets or sets the Sisk server portable configuration file.
         /// </summary>
         /// <definition>

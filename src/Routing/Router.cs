@@ -20,6 +20,7 @@ namespace Sisk.Core.Routing
     /// </namespace>
     public class Router
     {
+        internal record RouterExecutionResult(HttpResponse? Response, Route? Route);
         private Internal.WildcardMatching _pathMatcher = new Internal.WildcardMatching();
         private List<Route> _routes = new List<Route>();
         internal HttpServer? ParentServer { get; set; }
@@ -300,7 +301,16 @@ namespace Sisk.Core.Routing
                     try
                     {
                         RouterCallback r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
-                        SetRoute(atrInstance.Method, atrInstance.Path, r, atrInstance.Name, methodHandlers.ToArray());
+                        Route route = new Route()
+                        {
+                            Method = atrInstance.Method,
+                            Path = atrInstance.Path,
+                            Callback = r,
+                            Name = atrInstance.Name,
+                            RequestHandlers = methodHandlers.ToArray(),
+                            LogMode = atrInstance.LogMode
+                        };
+                        SetRoute(route);
                     }
                     catch (Exception ex)
                     {
@@ -327,14 +337,14 @@ namespace Sisk.Core.Routing
                 (Regex.IsMatch(requestPath, routePath, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), new System.Collections.Specialized.NameValueCollection());
         }
 
-        internal HttpResponse? Execute(HttpRequest request)
+        internal RouterExecutionResult Execute(HttpRequest request)
         {
+            HttpContext? context = null;
+            Route? matchedRoute = null;
+            RouteMatchResult matchResult = RouteMatchResult.NotMatched;
+
             try
             {
-                HttpContext? context = null;
-                Route? matchedRoute = null;
-                RouteMatchResult matchResult = RouteMatchResult.NotMatched;
-
                 foreach (Route route in _routes)
                 {
                     // test path
@@ -385,18 +395,18 @@ namespace Sisk.Core.Routing
 
                 if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
                 {
-                    return NotFoundErrorHandler();
+                    return new RouterExecutionResult(NotFoundErrorHandler(), null);
                 }
                 else if (matchResult == RouteMatchResult.OptionsMatched)
                 {
                     HttpResponse corsResponse = new HttpResponse();
                     corsResponse.Status = System.Net.HttpStatusCode.OK;
 
-                    return corsResponse;
+                    return new RouterExecutionResult(corsResponse, null);
                 }
                 else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
                 {
-                    return MethodNotAllowedErrorHandler();
+                    return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute);
                 }
                 else if (matchResult == RouteMatchResult.FullyMatched)
                 {
@@ -422,7 +432,7 @@ namespace Sisk.Core.Routing
                             HttpResponse? handlerResponse = handler.Execute(request, context);
                             if (handlerResponse is not null)
                             {
-                                return handlerResponse;
+                                return new RouterExecutionResult(handlerResponse, matchedRoute);
                             }
                         }
                     }
@@ -435,7 +445,7 @@ namespace Sisk.Core.Routing
                             HttpResponse? handlerResponse = handler.Execute(request, context);
                             if (handlerResponse is not null)
                             {
-                                return handlerResponse;
+                                return new RouterExecutionResult(handlerResponse, matchedRoute);
                             }
                         }
                     }
@@ -485,7 +495,7 @@ namespace Sisk.Core.Routing
 
                         if (handlerResponse is not null)
                         {
-                            return handlerResponse;
+                            return new RouterExecutionResult(handlerResponse, matchedRoute);
                         }
                     }
                 }
@@ -499,12 +509,12 @@ namespace Sisk.Core.Routing
 
                         if (handlerResponse is not null)
                         {
-                            return handlerResponse;
+                            return new RouterExecutionResult(handlerResponse, matchedRoute);
                         }
                     }
                 }
 
-                return context?.RouterResponse;
+                return new RouterExecutionResult(context?.RouterResponse, matchedRoute);
             }
             catch (Exception)
             {
@@ -514,7 +524,7 @@ namespace Sisk.Core.Routing
                 }
                 else
                 {
-                    return new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR);
+                    return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute);
                 }
             }
         }

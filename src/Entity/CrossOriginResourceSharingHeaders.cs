@@ -29,7 +29,37 @@
         public static CrossOriginResourceSharingHeaders Empty = new CrossOriginResourceSharingHeaders();
 
         /// <summary>
-        /// The origin hostnames allowed by the browser.
+        /// From MDN: The Access-Control-Allow-Credentials header indicates whether or not the response to the request can be exposed when the credentials flag is true. When used as part of a
+        /// response to a preflight request, this indicates whether or not the actual request can be made using credentials.
+        /// </summary>
+        /// <definition>
+        /// public bool AllowCredentials { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Entity
+        /// </namespace>
+        public bool? AllowCredentials { get; set; }
+
+        /// <summary>
+        /// From MDN: The Access-Control-Expose-Headers header adds the specified headers to the allowlist that JavaScript in browsers is allowed to access.
+        /// </summary>
+        /// <definition>
+        /// public string[] ExposeHeaders { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Entity
+        /// </namespace>
+        public string[] ExposeHeaders { get; set; }
+
+        /// <summary>
+        /// From MDN: Access-Control-Allow-Origin specifies either a single origin which tells browsers to allow that origin to access the resource; or else — for requests
+        /// without credentials — the "*" wildcard tells browsers to allow any origin to access the resource.
         /// </summary>
         /// <definition>
         /// public string[] AllowOrigins { get; set; }
@@ -43,7 +73,7 @@
         public string[] AllowOrigins { get; set; }
 
         /// <summary>
-        /// The allowed HTTP request methods.
+        /// From MDN: The Access-Control-Allow-Methods header specifies the method or methods allowed when accessing the resource. 
         /// </summary>
         /// <definition>
         /// public string[] AllowMethods { get; set; }
@@ -57,7 +87,7 @@
         public string[] AllowMethods { get; set; }
 
         /// <summary>
-        /// The allowed HTTP request headers.
+        /// From MDN: The Access-Control-Allow-Headers header is used in response to a preflight request to indicate which HTTP headers can be used when making the actual request. 
         /// </summary>
         /// <definition>
         /// public string[] AllowHeaders { get; set; }
@@ -71,7 +101,7 @@
         public string[] AllowHeaders { get; set; }
 
         /// <summary>
-        /// Defines the Max-Age cache expirity.
+        /// From MDN: The Access-Control-Max-Age header indicates how long the results of a preflight request can be cached.
         /// </summary>
         /// <definition>
         /// public TimeSpan MaxAge { get; set; }
@@ -100,12 +130,14 @@
         /// <namespace>
         /// Sisk.Core.Entity
         /// </namespace>
+        [Obsolete("This constructor is obsolete. Please, create an new class instance without any parameter instead.")]
         public CrossOriginResourceSharingHeaders(string[] allowOrigins, string[] allowMethods, string[] allowHeaders, TimeSpan maxAge)
         {
             AllowOrigins = allowOrigins;
             AllowMethods = allowMethods;
             AllowHeaders = allowHeaders;
             MaxAge = maxAge;
+            ExposeHeaders = new string[] { };
         }
 
         /// <summary>
@@ -122,68 +154,12 @@
         /// </namespace>
         public CrossOriginResourceSharingHeaders()
         {
+            ExposeHeaders = new string[] { };
             AllowOrigins = new string[0];
             AllowMethods = new string[0];
             AllowHeaders = new string[0];
             MaxAge = TimeSpan.Zero;
         }
-
-        /// <summary>
-        /// Get the Cross-Origin Resource Sharing header for the allowed origins.
-        /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public string GetAllowOriginsHeader()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
-        public string GetAllowOriginsHeader() => string.Join(",", AllowOrigins);
-
-        /// <summary>
-        /// Get the Cross-Origin Resource Sharing header for the allowed request methods.
-        /// </summary>
-        /// <definition>
-        /// public string GetAllowMethodsHeader()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
-        public string GetAllowMethodsHeader() => string.Join(",", AllowMethods);
-
-        /// <summary>
-        /// Get the Cross-Origin Resource Sharing header for the allowed request headers.
-        /// </summary>
-        /// <definition>
-        /// public string GetAllowHeadersHeader()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
-        public string GetAllowHeadersHeader() => string.Join(",", AllowHeaders);
-
-        /// <summary>
-        /// Get the total of seconds in the Max-Age property as a request header.
-        /// </summary>
-        /// <definition>
-        /// public string GetMaxAgeHeader()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
-        public string GetMaxAgeHeader() => MaxAge.TotalSeconds.ToString();
 
         /// <summary>
         /// Create an instance of Cross-Origin Resource Sharing that allows any origin, any method, and any header in the request.
@@ -200,7 +176,14 @@
         /// <static>True</static>
         public static CrossOriginResourceSharingHeaders CreatePublicContext()
         {
-            return new CrossOriginResourceSharingHeaders(new string[] { "*" }, new string[] { "*" }, new string[] { "*" }, TimeSpan.FromMinutes(10));
+            return new CrossOriginResourceSharingHeaders()
+            {
+                AllowHeaders = new string[] { "*" },
+                AllowOrigins = new string[] { "*" },
+                AllowMethods = new string[] { "*" },
+                AllowCredentials = true,
+                MaxAge = TimeSpan.FromSeconds(3600)
+            };
         }
     }
 }

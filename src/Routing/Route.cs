@@ -17,7 +17,21 @@ namespace Sisk.Core.Routing
     public class Route
     {
         /// <summary>
-        /// Defines if this route should use regex to be interpreted instead of predefined templates.
+        /// Gets or sets how this route can write messages to log files on the server.
+        /// </summary>
+        /// <definition>
+        /// public LogOutput LogMode { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public LogOutput LogMode { get; set; } = LogOutput.Both;
+
+        /// <summary>
+        /// Get or sets if this route should use regex to be interpreted instead of predefined templates.
         /// </summary>
         /// <definition>
         /// public bool UseRegex { get; set; }
@@ -29,6 +43,20 @@ namespace Sisk.Core.Routing
         /// Sisk.Core.Routing
         /// </namespace>
         public bool UseRegex { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether this route should send Cross-Origin Resource Sharing headers in the response.
+        /// </summary>
+        /// <definition>
+        /// public bool UseCors { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public bool UseCors { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.
@@ -155,5 +183,37 @@ namespace Sisk.Core.Routing
         public Route()
         {
         }
+    }
+
+    /// <summary>
+    /// Determines the way the server can write log messages. This enumerator is for giving permissions for certain contexts to be able or not to write to the logs.
+    /// </summary>
+    /// <definition>
+    /// public enum LogOutput
+    /// </definition>
+    /// <type>
+    /// Constructor
+    /// </type>
+    /// <namespace>
+    /// Sisk.Core.Routing
+    /// </namespace>
+    public enum LogOutput
+    {
+        /// <summary>
+        /// Determines that the context or the route can write log messages only to the access logs.
+        /// </summary>
+        AccessLog,
+        /// <summary>
+        /// Determines that the context or the route can write error messages only to the error logs.
+        /// </summary>
+        ErrorLog,
+        /// <summary>
+        /// Determines that the context or the route can write log messages to both error and access logs.
+        /// </summary>
+        Both,
+        /// <summary>
+        /// Determines that the context or the route cannot write any log messages.
+        /// </summary>
+        None
     }
 }

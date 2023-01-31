@@ -75,10 +75,14 @@ namespace Sisk.Core.Http
         /// <type>
         /// Static Property
         /// </type>
+        /// <remarks>
+        /// This property is no longer useful and ins't used anywhere. Please, avoid using it.
+        /// </remarks>
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
         /// <static>True</static>
+        [Obsolete("This property is deprecated and ins't used anywhere. Please, avoid using it.")]
         public static Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
@@ -226,6 +230,7 @@ namespace Sisk.Core.Http
         /// <param name="path">The path where the cookie will be valid.</param>
         /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
         /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
+        /// <param name="sameSite">The cookie SameSite parameter.</param>
         /// <definition>
         /// public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly)
         /// </definition>
@@ -235,13 +240,13 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly)
+        public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
         {
             List<string> syntax = new List<string>();
             syntax.Add($"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
             if (expires != null)
             {
-                syntax.Add($"Expires={expires.Value.ToUniversalTime().ToString("r")}");
+                syntax.Add($"Expires={expires.Value.ToUniversalTime():r}");
             }
             if (maxAge != null)
             {
@@ -253,7 +258,7 @@ namespace Sisk.Core.Http
             }
             if (path != null)
             {
-                syntax.Add($"Path={domain}");
+                syntax.Add($"Path={path}");
             }
             if (secure == true)
             {
@@ -262,6 +267,10 @@ namespace Sisk.Core.Http
             if (httpOnly == true)
             {
                 syntax.Add($"HttpOnly");
+            }
+            if (sameSite != null)
+            {
+                syntax.Add($"SameSite=${sameSite}");
             }
 
             Headers.Add("Set-Cookie", String.Join("; ", syntax));
@@ -282,7 +291,8 @@ namespace Sisk.Core.Http
         internal long CalcHeadersSize()
         {
             long l = 0;
-            l += DefaultEncoding.GetByteCount(GetRawHttpResponse(false));
+            // RFC-5987 tells that headers should use UTF-8 characters.
+            l += Encoding.UTF8.GetByteCount(GetRawHttpResponse(false));
             return l;
         }
     }

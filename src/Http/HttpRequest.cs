@@ -7,6 +7,23 @@ using System.Web;
 namespace Sisk.Core.Http
 {
     /// <summary>
+    /// Represents an exception that is thrown while a request is being interpreted by the HTTP server.
+    /// </summary>
+    /// <definition>
+    /// public class HttpRequestException : Exception
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    /// <namespace>
+    /// Sisk.Core.Http
+    /// </namespace>
+    public class HttpRequestException : Exception
+    {
+        internal HttpRequestException(string message) : base(message) { }
+    }
+
+    /// <summary>
     /// Represents an HTTP request received by a Sisk server.
     /// </summary>
     /// <definition>
@@ -57,12 +74,35 @@ namespace Sisk.Core.Http
                     bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
                     if (!ok || forwardedAddress == null)
                     {
-                        throw new InvalidOperationException("The forwarded IP address is invalid.");
+                        throw new HttpRequestException("The forwarded IP address is invalid.");
                     }
                     else
                     {
                         this.Origin = forwardedAddress;
                     }
+                }
+            }
+
+            string? cookieHeader = listenerRequest.Headers["cookie"];
+            if (cookieHeader != null)
+            {
+                string[] cookieParts = cookieHeader.Split(';');
+                foreach (string cookieExpression in cookieParts)
+                {
+                    int eqPos = cookieExpression.IndexOf("=");
+                    if (eqPos < 0)
+                    {
+                        throw new HttpRequestException("The cookie header is invalid or is it has an malformed syntax.");
+                    }
+                    string key = cookieExpression.Substring(0, eqPos).Trim();
+                    string value = cookieExpression.Substring(eqPos + 1).Trim();
+
+                    if (string.IsNullOrEmpty(key))
+                    {
+                        throw new HttpRequestException("The cookie header is invalid or is it has an malformed syntax.");
+                    }
+
+                    this.Cookies[key] = WebUtility.UrlDecode(value);
                 }
             }
         }
@@ -149,6 +189,20 @@ namespace Sisk.Core.Http
         {
             get => listenerRequest.Headers;
         }
+
+        /// <summary>
+        /// Gets an <see cref="NameValueCollection"/> object with all cookies set in this request.
+        /// </summary>
+        /// <definition>
+        /// public NameValueCollection Cookies { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public NameValueCollection Cookies { get; private set; } = new NameValueCollection();
 
         /// <summary>
         /// Get the requested host header (without port) from this HTTP request.

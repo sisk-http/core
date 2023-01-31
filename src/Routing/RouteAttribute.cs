@@ -59,6 +59,34 @@
         public string? Name { get; set; }
 
         /// <summary>
+        /// Gets or sets whether this route should send Cross-Origin Resource Sharing headers in the response.
+        /// </summary>
+        /// <definition>
+        /// public bool UseCors { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public bool UseCors { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets how this route can write messages to log files on the server.
+        /// </summary>
+        /// <definition>
+        /// public LogOutput LogMode { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public LogOutput LogMode { get; set; } = LogOutput.Both;
+
+        /// <summary>
         /// Creates an new <see cref="RouteAttribute"/> instance with given route method and path pattern.
         /// </summary>
         /// <param name="method">The route entry point method.</param>

@@ -243,8 +243,6 @@ namespace Sisk.Provider
             listeningHost.Label = label;
             listeningHost.CrossOriginResourceSharingPolicy = corsPolicy ?? new CrossOriginResourceSharingHeaders();
 
-            //listeningHost.CrossOriginResourceSharingPolicy
-
             provider.ServerConfiguration.ListeningHosts.Add(listeningHost);
             provider.HttpServer = new HttpServer(provider.ServerConfiguration);
             provider.HttpServer.Start();

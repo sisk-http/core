@@ -125,7 +125,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        [Obsolete]
+        [Obsolete("This property is deprecated and ins't used anymore. Please, use AccessLogsStream and ErrorLogsStream instead.")]
         public VerboseMode Verbose { get; set; } = VerboseMode.Normal;
 
         /// <summary>
