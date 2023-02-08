@@ -37,6 +37,7 @@ namespace Sisk.Core.Http
     /// </namespace>
     public sealed class HttpRequest
     {
+        internal ListeningHost hostContext;
         private HttpServerConfiguration contextServerConfiguration;
         private HttpListenerResponse listenerResponse;
         private HttpListenerRequest listenerRequest;
@@ -47,13 +48,15 @@ namespace Sisk.Core.Http
         private bool hasContents = false;
 
         internal HttpRequest(
-            ref HttpListenerRequest listenerRequest,
-            ref HttpListenerResponse listenerResponse,
-            HttpServerConfiguration contextServerConfiguration)
+            HttpListenerRequest listenerRequest,
+            HttpListenerResponse listenerResponse,
+            HttpServerConfiguration contextServerConfiguration,
+            ListeningHost host)
         {
             this.contextServerConfiguration = contextServerConfiguration;
             this.listenerResponse = listenerResponse;
             this.listenerRequest = listenerRequest;
+            this.hostContext = host;
             this.hasContents = listenerRequest.ContentLength64 > 0;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
@@ -670,10 +673,10 @@ namespace Sisk.Core.Http
         {
             if (isServingEventSourceEvents)
             {
-                throw new InvalidOperationException("This HTTP request is already listening to Event Sources.");
+                throw new InvalidOperationException("This HTTP request is already listening to Event Source.");
             }
             isServingEventSourceEvents = true;
-            activeEventSource = new HttpRequestEventSource(listenerResponse, listenerRequest, contextServerConfiguration);
+            activeEventSource = new HttpRequestEventSource(listenerResponse, listenerRequest, this, contextServerConfiguration);
             return activeEventSource;
         }
 

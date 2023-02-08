@@ -20,7 +20,7 @@ namespace Sisk.Core.Routing
     /// </namespace>
     public class Router
     {
-        internal record RouterExecutionResult(HttpResponse? Response, Route? Route);
+        internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result);
         private Internal.WildcardMatching _pathMatcher = new Internal.WildcardMatching();
         private List<Route> _routes = new List<Route>();
         internal HttpServer? ParentServer { get; set; }
@@ -395,18 +395,18 @@ namespace Sisk.Core.Routing
 
                 if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
                 {
-                    return new RouterExecutionResult(NotFoundErrorHandler(), null);
+                    return new RouterExecutionResult(NotFoundErrorHandler(), null, matchResult);
                 }
                 else if (matchResult == RouteMatchResult.OptionsMatched)
                 {
                     HttpResponse corsResponse = new HttpResponse();
                     corsResponse.Status = System.Net.HttpStatusCode.OK;
 
-                    return new RouterExecutionResult(corsResponse, null);
+                    return new RouterExecutionResult(corsResponse, null, matchResult);
                 }
                 else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
                 {
-                    return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute);
+                    return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute, matchResult);
                 }
                 else if (matchResult == RouteMatchResult.FullyMatched)
                 {
@@ -432,7 +432,7 @@ namespace Sisk.Core.Routing
                             HttpResponse? handlerResponse = handler.Execute(request, context);
                             if (handlerResponse is not null)
                             {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute);
+                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
                             }
                         }
                     }
@@ -445,7 +445,7 @@ namespace Sisk.Core.Routing
                             HttpResponse? handlerResponse = handler.Execute(request, context);
                             if (handlerResponse is not null)
                             {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute);
+                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
                             }
                         }
                     }
@@ -495,7 +495,7 @@ namespace Sisk.Core.Routing
 
                         if (handlerResponse is not null)
                         {
-                            return new RouterExecutionResult(handlerResponse, matchedRoute);
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
                         }
                     }
                 }
@@ -509,12 +509,12 @@ namespace Sisk.Core.Routing
 
                         if (handlerResponse is not null)
                         {
-                            return new RouterExecutionResult(handlerResponse, matchedRoute);
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
                         }
                     }
                 }
 
-                return new RouterExecutionResult(context?.RouterResponse, matchedRoute);
+                return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult);
             }
             catch (Exception)
             {
@@ -524,7 +524,7 @@ namespace Sisk.Core.Routing
                 }
                 else
                 {
-                    return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute);
+                    return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult);
                 }
             }
         }

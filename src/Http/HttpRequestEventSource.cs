@@ -6,7 +6,7 @@ namespace Sisk.Core.Http
     /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
     /// </summary>
     /// <definition>
-    /// public class HttpRequestEventSource
+    /// public class HttpRequestEventSource : IDisposable
     /// </definition>
     /// <type>
     /// Class
@@ -14,15 +14,18 @@ namespace Sisk.Core.Http
     /// <namespace>
     /// Sisk.Core.Http
     /// </namespace>
-    public class HttpRequestEventSource
+    public class HttpRequestEventSource : IDisposable
     {
         private HttpServerConfiguration HttpServerConfiguration;
         private HttpListenerResponse res;
         private HttpListenerRequest req;
+        private HttpRequest host;
 
         private List<string> sendQueue = new List<string>();
         private int failedSentResponses = 0;
         private bool isClosed = false;
+        internal int Length = 0;
+        bool hasSentData = false;
 
         /// <summary>
         /// Maximum attempts to resend a message if it fails. Leave it as -1 to never stop trying to resent failed messages.
@@ -38,13 +41,39 @@ namespace Sisk.Core.Http
         /// </namespace>
         public int MaximumErrorAttempts { get; set; } = 3;
 
-        internal HttpRequestEventSource(HttpListenerResponse res, HttpListenerRequest req, HttpServerConfiguration httpServerConfiguration)
+        internal HttpRequestEventSource(HttpListenerResponse res, HttpListenerRequest req, HttpRequest host, HttpServerConfiguration httpServerConfiguration)
         {
             this.res = res ?? throw new ArgumentNullException(nameof(res));
             this.req = req ?? throw new ArgumentNullException(nameof(req));
+            this.host = host;
             this.HttpServerConfiguration = httpServerConfiguration;
-            res.AddHeader("Content-Type", "text/event-stream");
             res.AddHeader("Cache-Control", "no-store");
+            res.AddHeader("Content-Type", "text/event-stream");
+            res.AddHeader("X-Powered-By", HttpServer.poweredByHeader);
+            HttpServer.SetCorsHeaders(host.hostContext.CrossOriginResourceSharingPolicy, res);
+        }
+
+        /// <summary>
+        /// Sends an header to the streaming context.
+        /// </summary>
+        /// <param name="name">The header name.</param>
+        /// <param name="value">The header value.</param>
+        /// <definition>
+        /// public void AppendHeader(string name, string value)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public void AppendHeader(string name, string value)
+        {
+            if (hasSentData)
+            {
+                throw new InvalidOperationException("You cannot set headers after a message has been sent in this context.");
+            }
+            this.res.AddHeader(name, value);
         }
 
         /// <summary>
@@ -62,6 +91,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public void Send(string data)
         {
+            hasSentData = true;
             sendQueue.Add($"data: {data}\n\n");
             Flush();
         }
@@ -82,7 +112,10 @@ namespace Sisk.Core.Http
         {
             isClosed = true;
             Flush();
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE);
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
+            {
+                CalculedLength = Length
+            };
         }
 
         /// <summary>
@@ -115,6 +148,7 @@ namespace Sisk.Core.Http
                 try
                 {
                     res.OutputStream.Write(itemBytes);
+                    Length += itemBytes.Length;
                     sendQueue.RemoveAt(0);
                 }
                 catch (Exception)
@@ -127,6 +161,24 @@ namespace Sisk.Core.Http
                     Flush();
                 }
             }
+        }
+
+        /// <summary>
+        /// Flushes and releases the used resources of this class instance.
+        /// </summary>
+        /// <definition>
+        /// public void Dispose()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public void Dispose()
+        {
+            Close();
+            sendQueue.Clear();
         }
     }
 }

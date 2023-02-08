@@ -1,4 +1,5 @@
-﻿using Sisk.Core.Routing;
+﻿using Sisk.Core.Entity;
+using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
@@ -24,6 +25,14 @@ namespace Sisk.Core.Http
         private Mutex _errorLogMutex = new Mutex();
         private bool _isListening = false;
         private bool _isDisposing = false;
+        private HttpListener httpListener = new HttpListener();
+        internal static string poweredByHeader = "";
+
+        static HttpServer()
+        {
+            Version assVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!;
+            poweredByHeader = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
+        }
 
         /// <summary>
         /// Gets or sets the Server Configuration object.
@@ -80,9 +89,6 @@ namespace Sisk.Core.Http
         /// Sisk.Core.Http
         /// </namespace>
         public event ReceiveRequestEventHandler? OnConnectionOpen;
-
-        private HttpListener httpListener = new HttpListener();
-        private string poweredByHeader = "";
 
         /// <summary>
         /// Get Sisk version label.
@@ -149,9 +155,6 @@ namespace Sisk.Core.Http
         /// </namespace>
         public void Start()
         {
-            Version assVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!;
-            poweredByHeader = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
-
             if (this.ServerConfiguration.ListeningHosts is null)
             {
                 throw new InvalidOperationException("Cannot start the HTTP server with no listening hosts.");
@@ -204,7 +207,7 @@ namespace Sisk.Core.Http
             httpListener.Stop();
         }
 
-        private string HumanReadableSize(int size)
+        private string HumanReadableSize(float size)
         {
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
             int order = 0;
@@ -216,7 +219,7 @@ namespace Sisk.Core.Http
             return String.Format("{0:0.##}{1}", size, sizes[order]);
         }
 
-        private void TryCloseStream(ref HttpListenerResponse response)
+        private void TryCloseStream(HttpListenerResponse response)
         {
             try
             {
@@ -227,6 +230,16 @@ namespace Sisk.Core.Http
             {
                 ;
             }
+        }
+
+        internal static void SetCorsHeaders(CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+        {
+            if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
+            if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
+            if (cors.AllowOrigins.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Origin", string.Join(", ", cors.AllowOrigins));
+            if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
+            if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
+            if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
         }
 
         private void ListenerCallback(IAsyncResult result)
@@ -268,8 +281,6 @@ namespace Sisk.Core.Http
             try
             {
                 verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {baseRequest.RemoteEndPoint.Address.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {baseRequest.Url?.AbsolutePath ?? "/"}";
-                request = new HttpRequest(ref baseRequest, ref baseResponse, this.ServerConfiguration);
-
                 sw.Start();
 
                 if (baseRequest.Url is null)
@@ -295,6 +306,10 @@ namespace Sisk.Core.Http
                     baseResponse.StatusCode = 400; // Bad Request
                     executionResult.Status = HttpServerExecutionStatus.DnsUnknownHost;
                     return;
+                }
+                else
+                {
+                    request = new HttpRequest(baseRequest, baseResponse, this.ServerConfiguration, matchedListeningHost);
                 }
 
                 if (matchedListeningHost.Router == null || !matchedListeningHost.CanListen)
@@ -345,15 +360,11 @@ namespace Sisk.Core.Http
                 response = routerResult.Response;
                 logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
 
-                if (routerResult.Route?.UseCors ?? false)
+                if ((routerResult.Result == RouteMatchResult.OptionsMatched || (routerResult.Route?.UseCors ?? false))
+                    && response?.internalStatus != HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
                 {
                     var cors = matchedListeningHost.CrossOriginResourceSharingPolicy;
-                    if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
-                    if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
-                    if (cors.AllowOrigins.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Origin", string.Join(", ", cors.AllowOrigins));
-                    if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
-                    if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Allow-Max-Age", cors.MaxAge.TotalSeconds.ToString());
-                    if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
+                    SetCorsHeaders(cors, baseResponse);
                 }
 
                 if (response is null)
@@ -363,6 +374,7 @@ namespace Sisk.Core.Http
                 }
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
                 {
+                    verboseSuffix = $"{HumanReadableSize((int)incomingSize) + " -> " + HumanReadableSize(response.CalculedLength)}";
                     executionResult.Status = HttpServerExecutionStatus.EventSourceClosed;
                     baseResponse.StatusCode = 200;
                     return;
@@ -458,7 +470,7 @@ namespace Sisk.Core.Http
             {
                 if (closeStream)
                 {
-                    TryCloseStream(ref baseResponse);
+                    TryCloseStream(baseResponse);
                 }
 
                 if (OnConnectionClose != null)

@@ -23,6 +23,7 @@ namespace Sisk.Core.Http
         internal const byte HTTPRESPONSE_EMPTY = 2;
         internal const byte HTTPRESPONSE_EVENTSOURCE_CLOSE = 4;
         internal const byte HTTPRESPONSE_ERROR = 8;
+        internal int CalculedLength = 0;
 
         /// <summary>
         /// Gets or sets the HTTP response status code.
