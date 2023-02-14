@@ -1,8 +1,48 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Routing;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 
 namespace Sisk.Provider
 {
+    /// <summary>
+    /// Provides an access to manage assembly hot reloads.
+    /// </summary>
+    public static class ServiceReloadManager
+    {
+        private static List<ServiceProvider> _services = new List<ServiceProvider>();
+
+        /// <summary>
+        /// Registers a <see cref="ServiceProvider"/> to be recompiled every time the assembly is reloaded.
+        /// </summary>
+        /// <param name="reloadAwareService">The service provider which will be registered.</param>
+        public static void RegisterServiceProvider(ServiceProvider reloadAwareService)
+        {
+            _services.Add(reloadAwareService);
+        }
+
+        /// <summary>
+        /// Clears all registrations from the assembly.
+        /// </summary>
+        public static void Clear()
+        {
+            _services.Clear();
+        }
+
+        static void ClearCache(Type[]? types)
+        {
+            ;
+        }
+
+        static void UpdateApplication(Type[]? types)
+        {
+            foreach (ServiceProvider pr in _services)
+            {
+                pr.Rebuild();
+            }
+        }
+    }
+
     /// <summary>
     /// Provides a class that organizes and facilitates the porting management of a service or application that uses Sisk.
     /// </summary>
@@ -193,7 +233,26 @@ namespace Sisk.Provider
         /// </namespace>
         public void Initialize()
         {
-            ConfigParser.ParseConfiguration(this);
+            ConfigParser.ParseConfiguration(this, true);
+        }
+
+        /// <summary>
+        /// Opens and reads the configuration file, parses it and starts the HTTP server with the router and settings parsed from the file.
+        /// </summary>
+        /// <param name="registerReloadManager">If true, this <see cref="ServiceProvider"/> is registered in the <see cref="ServiceReloadManager"/> to support hot reloads.</param>
+        public void Initialize(bool registerReloadManager)
+        {
+            Initialize();
+            if (registerReloadManager)
+            {
+                ServiceReloadManager.RegisterServiceProvider(this);
+            }
+        }
+
+        internal void Rebuild()
+        {
+            this.ServerConfiguration?.ListeningHosts.Clear();
+            ConfigParser.ParseConfiguration(this, false);
         }
 
         /// <summary>

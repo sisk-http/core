@@ -167,9 +167,16 @@
         Executed,
 
         /// <summary>
-        /// Represents that the request sent an request body, but it's method does not allow sending of contents.
+        /// Represents that the request has sent an request body with an with a HTTP method that is not indicated for
+        /// receiving request contents.
         /// </summary>
-        ContentServedOnNotSupportedMethod,
+        ContentServedOnIllegalMethod,
+
+        /// <summary>
+        /// This enum is deprecated. Use <see cref="ContentServedOnIllegalMethod"/> instead.
+        /// </summary>
+        [Obsolete]
+        ContentServedOnNotSupportedMethod = ContentServedOnIllegalMethod,
 
         /// <summary>
         /// Represents that the content of the request is too large than what was configured on the server.

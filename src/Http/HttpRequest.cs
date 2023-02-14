@@ -555,10 +555,29 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
+        [Obsolete("This method is now obsolete. Use CreateEmptyResponse() instead.")]
         public HttpResponse CreateHeadResponse()
         {
+            return CreateEmptyResponse();
+        }
+
+        /// <summary>
+        /// Create an HTTP response with code 204 No Content without any body.
+        /// </summary>
+        /// <returns></returns>
+        /// <definition>
+        /// public HttpResponse CreateEmptyResponse()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public HttpResponse CreateEmptyResponse()
+        {
             HttpResponse res = new HttpResponse();
-            res.Status = System.Net.HttpStatusCode.OK;
+            res.Status = System.Net.HttpStatusCode.NoContent;
             return res;
         }
 

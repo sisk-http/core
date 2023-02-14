@@ -244,7 +244,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
         /// </summary>
-        /// <param name="attrClassInstance">The instance of the class where the methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
+        /// <param name="attrClassInstance">The instance of the class where the instance methods are. The routing methods must be instance methods and marked with <see cref="RouteAttribute"/>.</param>
         /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
         /// <definition>
         /// public void SetObject(object attrClassInstance)
@@ -257,13 +257,13 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetObject(object attrClassInstance)
         {
-            this.SetTypeRoutes(attrClassInstance.GetType());
+            this.SetTypeRoutes(attrClassInstance, true);
         }
 
         /// <summary>
         /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
         /// </summary>
-        /// <param name="attrClassType">The type of the class where the methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
+        /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
         /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
         /// <definition>
         /// public void SetObject(Type attrClassType)
@@ -276,12 +276,21 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetObject(Type attrClassType)
         {
-            this.SetTypeRoutes(attrClassType);
+            this.SetTypeRoutes(attrClassType, false);
         }
 
-        private void SetTypeRoutes(Type t)
+        private void SetTypeRoutes(object t, bool isInstance)
         {
-            foreach (var method in t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public))
+            MethodInfo[] methods;
+            if (isInstance)
+            {
+                methods = t.GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+            else
+            {
+                methods = ((Type)t).GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+            foreach (var method in methods)
             {
                 RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
                 IEnumerable<RequestHandlerAttribute> handlersInstances = method.GetCustomAttributes<RequestHandlerAttribute>();
@@ -300,7 +309,15 @@ namespace Sisk.Core.Routing
 
                     try
                     {
-                        RouterCallback r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                        RouterCallback r;
+                        if (isInstance)
+                        {
+                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), t, method);
+                        }
+                        else
+                        {
+                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                        }
                         Route route = new Route()
                         {
                             Method = atrInstance.Method,
@@ -375,6 +392,10 @@ namespace Sisk.Core.Routing
                     {
                         matchResult = RouteMatchResult.OptionsMatched;
                         break;
+                    }
+                    else if (ParentServer!.ServerConfiguration.Flags.TreatHeadAsGetMethod && (request.Method == HttpMethod.Head && route.Method == RouteMethod.Get))
+                    {
+                        isMethodMatched = true;
                     }
                     else if (IsMethodMatching(request.Method.Method, route.Method))
                     {
@@ -535,6 +556,7 @@ namespace Sisk.Core.Routing
         FullyMatched,
         PathMatched,
         OptionsMatched,
+        HeadMatched,
         NotMatched
     }
 }

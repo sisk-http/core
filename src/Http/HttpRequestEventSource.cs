@@ -50,7 +50,7 @@ namespace Sisk.Core.Http
             res.AddHeader("Cache-Control", "no-store");
             res.AddHeader("Content-Type", "text/event-stream");
             res.AddHeader("X-Powered-By", HttpServer.poweredByHeader);
-            HttpServer.SetCorsHeaders(host.hostContext.CrossOriginResourceSharingPolicy, res);
+            HttpServer.SetCorsHeaders(host.hostContext.CrossOriginResourceSharingPolicy, res, httpServerConfiguration.Flags);
         }
 
         /// <summary>

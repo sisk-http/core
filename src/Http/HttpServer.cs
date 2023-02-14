@@ -232,8 +232,9 @@ namespace Sisk.Core.Http
             }
         }
 
-        internal static void SetCorsHeaders(CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+        internal static void SetCorsHeaders(CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse, HttpServerFlags flag)
         {
+            if (!flag.SendCorsHeaders) return;
             if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
             if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
             if (cors.AllowOrigins.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Origin", string.Join(", ", cors.AllowOrigins));
@@ -261,6 +262,7 @@ namespace Sisk.Core.Http
                 return;
             }
 
+            HttpServerFlags flag = ServerConfiguration.Flags;
             Stopwatch sw = new Stopwatch();
             HttpListenerResponse baseResponse = context.Response;
             HttpListenerRequest baseRequest = context.Request;
@@ -312,6 +314,11 @@ namespace Sisk.Core.Http
                     request = new HttpRequest(baseRequest, baseResponse, this.ServerConfiguration, matchedListeningHost);
                 }
 
+                if (ServerConfiguration.ResolveForwardedOriginAddress)
+                {
+                    verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {request.Origin.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {baseRequest.Url?.AbsolutePath ?? "/"}";
+                }
+
                 if (matchedListeningHost.Router == null || !matchedListeningHost.CanListen)
                 {
                     baseResponse.StatusCode = 503; // Service Unavailable
@@ -321,7 +328,7 @@ namespace Sisk.Core.Http
 
                 if (ServerConfiguration.IncludeRequestIdHeader)
                 {
-                    baseResponse.Headers.Set("X-Request-Id", request.RequestId.ToString());
+                    baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
                 }
 
                 if (OnConnectionOpen != null)
@@ -340,14 +347,14 @@ namespace Sisk.Core.Http
                 incomingSize += request.CalcRequestSize();
 
                 // check for illegal body content requests
-                if ((
+                if (flag.ThrowContentOnNonSemanticMethods && (
                        request.Method == HttpMethod.Get
                     || request.Method == HttpMethod.Options
                     || request.Method == HttpMethod.Head
                     || request.Method == HttpMethod.Trace
                     ) && context.Request.ContentLength64 > 0)
                 {
-                    executionResult.Status = HttpServerExecutionStatus.ContentServedOnNotSupportedMethod;
+                    executionResult.Status = HttpServerExecutionStatus.ContentServedOnIllegalMethod;
                     baseResponse.StatusCode = 400;
                     return;
                 }
@@ -364,7 +371,7 @@ namespace Sisk.Core.Http
                     && response?.internalStatus != HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
                 {
                     var cors = matchedListeningHost.CrossOriginResourceSharingPolicy;
-                    SetCorsHeaders(cors, baseResponse);
+                    SetCorsHeaders(cors, baseResponse, flag);
                 }
 
                 if (response is null)
@@ -400,12 +407,13 @@ namespace Sisk.Core.Http
                     {
                         response.Headers
                     };
+
                 foreach (string incameHeader in resHeaders)
                 {
                     baseResponse.AddHeader(incameHeader, resHeaders[incameHeader] ?? "");
                 }
 
-                if (responseBytes.Length > 0 && context.Request.HttpMethod != "HEAD")
+                if (responseBytes.Length > 0)
                 {
                     baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content!.Headers.ContentType!.MediaType ?? "text/plain";
 
@@ -419,8 +427,11 @@ namespace Sisk.Core.Http
                     }
 
                     baseResponse.ContentLength64 = responseBytes.Length;
-                    baseResponse.OutputStream.Write(responseBytes);
-                    outcomingSize += responseBytes.Length;
+                    if (context.Request.HttpMethod != "HEAD")
+                    {
+                        baseResponse.OutputStream.Write(responseBytes);
+                        outcomingSize += responseBytes.Length;
+                    }
                 }
 
                 outcomingSize += response.CalcHeadersSize();

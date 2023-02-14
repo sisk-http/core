@@ -17,6 +17,11 @@ namespace Sisk.Core.Http
     public class HttpServerConfiguration : IDisposable
     {
         /// <summary>
+        /// Gets or sets advanced flags and configuration settings for the HTTP server.
+        /// </summary>
+        public HttpServerFlags Flags { get; set; } = new HttpServerFlags();
+
+        /// <summary>
         /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server access messages to.
         /// </summary>
         /// <remarks>

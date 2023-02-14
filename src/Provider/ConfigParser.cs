@@ -32,7 +32,7 @@ namespace Sisk.Provider
             }
         }
 
-        public static void ParseConfiguration(ServiceProvider provider)
+        public static void ParseConfiguration(ServiceProvider provider, bool startServer)
         {
             string filePath = Path.GetFullPath(provider.ConfigurationFile);
             if (!File.Exists(filePath))
@@ -62,7 +62,9 @@ namespace Sisk.Provider
                 return;
             }
 
-            provider.ServerConfiguration = new HttpServerConfiguration();
+            if (provider.ServerConfiguration is null)
+                provider.ServerConfiguration = new HttpServerConfiguration();
+
             JToken? serverToken = jsonFile["Server"];
             if (serverToken != null)
             {
@@ -244,11 +246,16 @@ namespace Sisk.Provider
             listeningHost.CrossOriginResourceSharingPolicy = corsPolicy ?? new CrossOriginResourceSharingHeaders();
 
             provider.ServerConfiguration.ListeningHosts.Add(listeningHost);
-            provider.HttpServer = new HttpServer(provider.ServerConfiguration);
-            provider.HttpServer.Start();
+
+            if (startServer)
+            {
+                provider.HttpServer = new HttpServer(provider.ServerConfiguration);
+                provider.HttpServer.Start();
+            }
+
             provider.Initialized = true;
 
-            if (provider.Verbose)
+            if (provider.Verbose && startServer)
             {
                 foreach (ListeningPort port in ports)
                 {

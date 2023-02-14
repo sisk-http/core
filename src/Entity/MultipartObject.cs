@@ -139,7 +139,7 @@ namespace Sisk.Core.Entity
         /// <namespace>
         /// Sisk.Core.Entity
         /// </namespace>
-        public MultipartObjectImageFormat GetImageFormat()
+        public MultipartObjectCommonFormat GetCommonFileFormat()
         {
             IEnumerable<byte> len8 = ContentBytes.Take(8);
             IEnumerable<byte> len4 = ContentBytes.Take(4);
@@ -147,35 +147,39 @@ namespace Sisk.Core.Entity
 
             if (len8.SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
             {
-                return MultipartObjectImageFormat.PNG;
-            }
-            else if (len3.SequenceEqual(new byte[] { 0xFF, 0xD8, 0xFF }))
-            {
-                return MultipartObjectImageFormat.JPEG;
-            }
-            else if (len3.SequenceEqual(new byte[] { 73, 73, 42 }))
-            {
-                return MultipartObjectImageFormat.TIFF;
-            }
-            else if (len3.SequenceEqual(new byte[] { 77, 77, 42 }))
-            {
-                return MultipartObjectImageFormat.TIFF;
-            }
-            else if (len3.SequenceEqual(new byte[] { 0x42, 0x4D }))
-            {
-                return MultipartObjectImageFormat.BMP;
-            }
-            else if (len3.SequenceEqual(new byte[] { 0x47, 0x46, 0x49 }))
-            {
-                return MultipartObjectImageFormat.GIF;
+                return MultipartObjectCommonFormat.PNG;
             }
             else if (len4.SequenceEqual(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F' }))
             {
-                return MultipartObjectImageFormat.WEBP;
+                return MultipartObjectCommonFormat.WEBP;
+            }
+            else if (len4.SequenceEqual(new byte[] { 0x25, 0x50, 0x44, 0x46 }))
+            {
+                return MultipartObjectCommonFormat.PDF;
+            }
+            else if (len3.SequenceEqual(new byte[] { 0xFF, 0xD8, 0xFF }))
+            {
+                return MultipartObjectCommonFormat.JPEG;
+            }
+            else if (len3.SequenceEqual(new byte[] { 73, 73, 42 }))
+            {
+                return MultipartObjectCommonFormat.TIFF;
+            }
+            else if (len3.SequenceEqual(new byte[] { 77, 77, 42 }))
+            {
+                return MultipartObjectCommonFormat.TIFF;
+            }
+            else if (len3.SequenceEqual(new byte[] { 0x42, 0x4D }))
+            {
+                return MultipartObjectCommonFormat.BMP;
+            }
+            else if (len3.SequenceEqual(new byte[] { 0x47, 0x46, 0x49 }))
+            {
+                return MultipartObjectCommonFormat.GIF;
             }
             else
             {
-                return MultipartObjectImageFormat.Unknown;
+                return MultipartObjectCommonFormat.Unknown;
             }
         }
 
@@ -367,7 +371,7 @@ namespace Sisk.Core.Entity
     /// <namespace>
     /// Sisk.Core.Entity
     /// </namespace>
-    public enum MultipartObjectImageFormat
+    public enum MultipartObjectCommonFormat
     {
         /// <summary>
         /// Represents that the object is not a recognized image.
@@ -465,6 +469,20 @@ namespace Sisk.Core.Entity
         /// <namespace>
         /// Sisk.Core.Entity
         /// </namespace>
-        WEBP = 105
+        WEBP = 105,
+
+        /// <summary>
+        /// Represents an PDF file.
+        /// </summary>
+        /// <definition>
+        /// PDF = 200
+        /// </definition>
+        /// <type>
+        /// Enum Value
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Entity
+        /// </namespace>
+        PDF = 200
     }
 }
