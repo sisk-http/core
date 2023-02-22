@@ -555,6 +555,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This method is now obsolete. Use CreateEmptyResponse() instead.")]
         public HttpResponse CreateHeadResponse()
         {

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Sisk.Core.Http
+﻿namespace Sisk.Core.Http
 {
     /// <summary>
     /// Provides advanced fields for Sisk server behavior.
@@ -30,5 +24,12 @@ namespace Sisk.Core.Http
         /// Determines if the HTTP server should automatically send HTTP headers of an pre-processed GET response if the request is using HEAD method.
         /// </summary>
         public bool TreatHeadAsGetMethod = true;
+
+        /// <summary>
+        /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
+        /// </summary>
+        public HttpServerFlags()
+        {
+        }
     }
 }

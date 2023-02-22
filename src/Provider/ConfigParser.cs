@@ -1,268 +1,179 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using Sisk.Core.Entity;
-using Sisk.Core.Http;
+﻿using Sisk.Core.Http;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Text;
+using System.Text.Json.Nodes;
 
 namespace Sisk.Provider
 {
     internal class ConfigParser
     {
-        private class IntTimeSpanConverter : JsonConverter
+        internal static void ParseConfiguration(ServiceProvider prov, bool softReload)
         {
-            public override bool CanConvert(Type objectType)
+            string filename = Path.GetFullPath(prov.ConfigurationFile);
+            if (!File.Exists(filename))
             {
-                return objectType == typeof(TimeSpan);
+                throw new ArgumentException($"Configuration file {prov.ConfigurationFile} was not found.");
             }
 
-            public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+            string fileContents = File.ReadAllText(filename);
+            ConfigStructureFile? config = System.Text.Json.JsonSerializer.Deserialize<ConfigStructureFile>(fileContents, new System.Text.Json.JsonSerializerOptions()
             {
-                bool ok = Int32.TryParse(reader.Value?.ToString(), out int seconds);
-                if (!ok) throw new Exception($"Couldn't parse {existingValue} to an valid numeric value.");
-                return TimeSpan.FromSeconds(seconds);
+                AllowTrailingCommas = true,
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
+            });
+
+            if (config is null)
+            {
+                throw new Exception("Couldn't read the configuration file.");
             }
 
-            public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+            if (prov.ServerConfiguration == null)
             {
-                ;
-            }
-        }
-
-        public static void ParseConfiguration(ServiceProvider provider, bool startServer)
-        {
-            string filePath = Path.GetFullPath(provider.ConfigurationFile);
-            if (!File.Exists(filePath))
-            {
-                provider.Throw(new Exception("Couldn't open configuration file " + provider.ConfigurationFile));
-                return;
+                prov.ServerConfiguration = new HttpServerConfiguration();
             }
 
-            JsonLoadSettings loadSettings = new JsonLoadSettings()
+            prov.ServerConfiguration.ResolveForwardedOriginAddress = config.Server.ResolveForwardedOriginAddress;
+            prov.ServerConfiguration.ResolveForwardedOriginHost = config.Server.ResolveForwardedOriginHost;
+            prov.ServerConfiguration.DefaultEncoding = Encoding.GetEncoding(config.Server.DefaultEncoding);
+            prov.ServerConfiguration.MaximumContentLength = config.Server.MaximumContentLength;
+            prov.ServerConfiguration.IncludeRequestIdHeader = config.Server.IncludeRequestIdHeader;
+            prov.ServerConfiguration.ThrowExceptions = config.Server.ThrowExceptions;
+
+
+            if (config.Server.AccessLogsStream?.ToLower() == "console")
             {
-                CommentHandling = CommentHandling.Ignore
-            };
-
-            var serializerSettings = new JsonSerializer();
-            serializerSettings.Converters.Add(new StringEnumConverter());
-            serializerSettings.Converters.Add(new IntTimeSpanConverter());
-
-            JObject jsonFile;
-
-            try
-            {
-                jsonFile = JObject.Parse(File.ReadAllText(filePath), loadSettings);
+                prov.ServerConfiguration.AccessLogsStream = Console.Out;
             }
-            catch (Exception ex)
+            else if (config.Server.AccessLogsStream != null)
             {
-                provider.Throw(ex);
-                return;
-            }
-
-            if (provider.ServerConfiguration is null)
-                provider.ServerConfiguration = new HttpServerConfiguration();
-
-            JToken? serverToken = jsonFile["Server"];
-            if (serverToken != null)
-            {
-                string actualNode = "";
-                #region SettingsParsing
-                try
+                prov.ServerConfiguration.AccessLogsStream = new StreamWriter(config.Server.AccessLogsStream, true, prov.ServerConfiguration.DefaultEncoding)
                 {
-                    {
-                        actualNode = "DefaultEncoding";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            provider.ServerConfiguration.DefaultEncoding = Encoding.GetEncoding(parsingNode);
-                        }
-                    };
-                    {
-                        actualNode = "AccessLogsStream";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            if (parsingNode.ToLower() == "console")
-                            {
-                                provider.ServerConfiguration.AccessLogsStream = Console.Out;
-                            }
-                            else if (parsingNode.ToLower() == "none")
-                            {
-                                provider.ServerConfiguration.AccessLogsStream = null;
-                            }
-                            else
-                            {
-                                provider.ServerConfiguration.AccessLogsStream = new StreamWriter(parsingNode, true, provider.ServerConfiguration.DefaultEncoding)
-                                {
-                                    AutoFlush = true
-                                };
-                            }
-                        }
-                    };
-                    {
-                        actualNode = "ErrorsLogsStream";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            if (parsingNode.ToLower() == "console")
-                            {
-                                provider.ServerConfiguration.ErrorsLogsStream = Console.Out;
-                            }
-                            else if (parsingNode.ToLower() == "none")
-                            {
-                                provider.ServerConfiguration.ErrorsLogsStream = null;
-                            }
-                            else
-                            {
-                                provider.ServerConfiguration.ErrorsLogsStream = new StreamWriter(parsingNode, true, provider.ServerConfiguration.DefaultEncoding)
-                                {
-                                    AutoFlush = true
-                                };
-                            }
-                        }
-                    };
-                    {
-                        actualNode = "ThrowExceptions";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            provider.ServerConfiguration.ThrowExceptions = bool.Parse(parsingNode);
-                        }
-                    };
-                    {
-                        actualNode = "MaximumContentLength";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            provider.ServerConfiguration.MaximumContentLength = Int64.Parse(parsingNode);
-                        }
-                    };
-                    {
-                        actualNode = "ResolveForwardedOriginAddress";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            provider.ServerConfiguration.ResolveForwardedOriginAddress = bool.Parse(parsingNode);
-                        }
-                    };
-                    {
-                        actualNode = "ResolveForwardedOriginHost";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            provider.ServerConfiguration.ResolveForwardedOriginHost = bool.Parse(parsingNode);
-                        }
-                    };
-                    {
-                        actualNode = "IncludeRequestIdHeader";
-                        string? parsingNode = serverToken[actualNode]?.Value<string>();
-                        if (parsingNode != null)
-                        {
-                            provider.ServerConfiguration.IncludeRequestIdHeader = bool.Parse(parsingNode);
-                        }
-                    };
-                }
-                catch (Exception ex)
+                    AutoFlush = true
+                };
+            }
+            else
+            {
+                prov.ServerConfiguration.AccessLogsStream = null;
+            }
+
+            if (config.Server.ErrorsLogsStream?.ToLower() == "console")
+            {
+                prov.ServerConfiguration.ErrorsLogsStream = Console.Out;
+            }
+            else if (config.Server.ErrorsLogsStream != null)
+            {
+                prov.ServerConfiguration.ErrorsLogsStream = new StreamWriter(config.Server.ErrorsLogsStream, true, prov.ServerConfiguration.DefaultEncoding)
                 {
-                    provider.Throw(new Exception($"Couldn't parse node Server.{actualNode}: {ex.Message}"));
-                    return;
-                }
-                #endregion
+                    AutoFlush = true
+                };
+            }
+            else
+            {
+                prov.ServerConfiguration.ErrorsLogsStream = null;
             }
 
-            JToken? hostNode = jsonFile["ListeningHost"];
-            if (hostNode == null)
+            // build parameters
+            NameValueCollection parameters = new NameValueCollection();
+            if (config.ListeningHost.Parameters != null)
             {
-                provider.Throw(new Exception("Couldn't find the ListeningHost node."));
-                return;
-            }
-
-            string? hostname = hostNode["Hostname"]?.Value<string>();
-            string? label = hostNode["Label"]?.Value<string>();
-            JToken? portsNode = hostNode["Ports"];
-            JToken? parameters = hostNode["Parameters"];
-            JToken? corsPolicyObj = hostNode["CrossOriginResourceSharingPolicy"];
-            if (portsNode == null)
-            {
-                provider.Throw(new Exception("Couldn't find the ListeningHost.Ports node."));
-                return;
-            }
-            if (string.IsNullOrEmpty(hostname))
-            {
-                provider.Throw(new Exception("ListeningHost.Hostname node cannot be empty or null."));
-                return;
-            }
-
-            CrossOriginResourceSharingHeaders? corsPolicy = new CrossOriginResourceSharingHeaders();
-            if (corsPolicyObj != null)
-            {
-                corsPolicy = corsPolicyObj.ToObject<CrossOriginResourceSharingHeaders>(serializerSettings);
-                if (corsPolicy == null)
+                foreach (var prop in config.ListeningHost.Parameters)
                 {
-                    provider.Throw(new Exception("Failed to parse CrossOriginResourceSharingPolicy."));
-                    return;
+                    parameters.Add(prop.Key, prop.Value?.AsValue().GetValue<object>().ToString());
                 }
             }
 
-
-            NameValueCollection parametersCollection = new NameValueCollection();
-            if (parameters != null)
+            if (config.ListeningHost.Ports is null || config.ListeningHost.Ports.Length == 0)
             {
-                foreach (JProperty property in parameters)
-                {
-                    parametersCollection.Add(property.Name, property.Value.ToString());
-                }
+                throw new InvalidOperationException("The configuration file must define at least one listening host port.");
             }
 
-            provider.RouterFactoryInstance.Setup(parametersCollection);
-            Router r = provider.RouterFactoryInstance.BuildRouter();
+            RouterFactory fac = prov.RouterFactoryInstance;
+            fac.Setup(parameters);
+            var router = fac.BuildRouter();
 
-            List<ListeningPort> ports = new List<ListeningPort>();
-            foreach (JToken obj in portsNode)
+            ListeningHost host = new ListeningHost(config.ListeningHost.Hostname, config.ListeningHost.Ports);
+            host.Router = router;
+            host.Label = config.ListeningHost.Label;
+
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.MaxAge != null)
+                host.CrossOriginResourceSharingPolicy.MaxAge = TimeSpan.FromSeconds((double)config.ListeningHost.CrossOriginResourceSharingPolicy.MaxAge);
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowOrigins != null)
+                host.CrossOriginResourceSharingPolicy.AllowOrigins = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowOrigins;
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowMethods != null)
+                host.CrossOriginResourceSharingPolicy.AllowMethods = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowMethods;
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowCredentials != null)
+                host.CrossOriginResourceSharingPolicy.AllowCredentials = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowCredentials;
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowHeaders != null)
+                host.CrossOriginResourceSharingPolicy.AllowHeaders = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowHeaders;
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.ExposeHeaders != null)
+                host.CrossOriginResourceSharingPolicy.ExposeHeaders = config.ListeningHost.CrossOriginResourceSharingPolicy.ExposeHeaders;
+
+            if (softReload)
             {
-                bool p0 = Int32.TryParse(obj["Port"]?.Value<string>(), out Int32 port);
-                bool p1 = Boolean.TryParse(obj["Secure"]?.Value<string>(), out Boolean secure);
-
-                if (p0 == false)
-                {
-                    provider.Throw(new Exception($"Listening port {p0} is an invalid port."));
-                    return;
-                }
-                if (p1 == false)
-                {
-                    provider.Throw(new Exception($"Listening port {p1} secure status is invalid."));
-                    return;
-                }
-
-                ListeningPort p = new ListeningPort(port, secure);
-                ports.Add(p);
+                prov.ServerConfiguration.ListeningHosts.Clear();
             }
 
-            ListeningHost listeningHost = new ListeningHost(hostname, ports.ToArray(), r);
-            listeningHost.Label = label;
-            listeningHost.CrossOriginResourceSharingPolicy = corsPolicy ?? new CrossOriginResourceSharingHeaders();
+            prov.ServerConfiguration.ListeningHosts.Add(host);
 
-            provider.ServerConfiguration.ListeningHosts.Add(listeningHost);
-
-            if (startServer)
+            if (prov.HttpServer == null)
             {
-                provider.HttpServer = new HttpServer(provider.ServerConfiguration);
-                provider.HttpServer.Start();
+                prov.HttpServer = new HttpServer(prov.ServerConfiguration);
             }
 
-            provider.Initialized = true;
+            prov.HttpServer.Start();
 
-            if (provider.Verbose && startServer)
+            if (prov.Verbose)
             {
-                foreach (ListeningPort port in ports)
+                foreach (ListeningPort p in config.ListeningHost.Ports)
                 {
-                    Console.WriteLine($"Service {label ?? "(unknown)"} is listening at {(port.Secure ? "https" : "http")}://{hostname}" +
-                        $"{(port.Port == 443 || port.Port == 80 ? "" : ":" + port.Port)}/");
+                    string portStr = "";
+                    if (p.Port != 443 && p.Port != 80) portStr = ":" + p.Port;
+                    Console.WriteLine($"{config.ListeningHost.Label ?? "Sisk"} service is listening on {(p.Secure ? "https" : "http")}://{config.ListeningHost.Hostname}{portStr}/");
                 }
             }
         }
+    }
+
+
+    internal class ConfigStructureFile
+    {
+        public ConfigStructureFile__ServerConfiguration Server { get; set; } = null!;
+        public ConfigStructureFile__ListeningHost ListeningHost { get; set; } = null!;
+    }
+
+    internal class ConfigStructureFile__ServerConfiguration
+    {
+        public HttpServerFlags? Flags { get; set; }
+        public string? AccessLogsStream { get; set; } = "console";
+        public string? ErrorsLogsStream { get; set; }
+        public bool ResolveForwardedOriginAddress { get; set; } = false;
+        public bool ResolveForwardedOriginHost { get; set; } = false;
+        public string DefaultEncoding { get; set; } = "UTF-8";
+        public long MaximumContentLength { get; set; } = 0;
+        public bool IncludeRequestIdHeader { get; set; } = false;
+        public bool ThrowExceptions { get; set; } = true;
+    }
+
+    internal class ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy
+    {
+        public bool? AllowCredentials { get; set; } = null;
+        public string[]? ExposeHeaders { get; set; }
+        public string[]? AllowOrigins { get; set; }
+        public string[]? AllowMethods { get; set; }
+        public string[]? AllowHeaders { get; set; }
+        public int? MaxAge { get; set; } = null;
+    }
+
+    internal class ConfigStructureFile__ListeningHost
+    {
+        public string Hostname { get; set; } = "";
+        public string? Label { get; set; }
+        public ListeningPort[]? Ports { get; set; }
+
+        public ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy? CrossOriginResourceSharingPolicy { get; set; }
+
+        public JsonObject? Parameters { get; set; }
     }
 }

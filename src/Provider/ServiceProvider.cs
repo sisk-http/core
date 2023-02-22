@@ -1,7 +1,5 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Routing;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 
 namespace Sisk.Provider
 {
@@ -128,6 +126,20 @@ namespace Sisk.Provider
         public HttpServer? HttpServer { get; internal set; }
 
         /// <summary>
+        /// Gets or sets advanced configuration settings for the HTTP server initialization.
+        /// </summary>
+        /// <definition>
+        /// public HttpServerFlags Flags { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Provider
+        /// </namespace>
+        public HttpServerFlags Flags { get; set; } = new HttpServerFlags();
+
+        /// <summary>
         /// Gets an boolean indicating if the configuration was successfully interpreted and the server is functional.
         /// </summary>
         /// <definition>
@@ -233,7 +245,7 @@ namespace Sisk.Provider
         /// </namespace>
         public void Initialize()
         {
-            ConfigParser.ParseConfiguration(this, true);
+            ConfigParser.ParseConfiguration(this, false);
         }
 
         /// <summary>
@@ -252,7 +264,7 @@ namespace Sisk.Provider
         internal void Rebuild()
         {
             this.ServerConfiguration?.ListeningHosts.Clear();
-            ConfigParser.ParseConfiguration(this, false);
+            ConfigParser.ParseConfiguration(this, true);
         }
 
         /// <summary>

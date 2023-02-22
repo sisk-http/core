@@ -119,6 +119,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <definition>
         /// [Obsolete]
+        /// [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         /// public VerboseMode Verbose { get; set; }
         /// </definition>
         /// <remarks>
@@ -130,6 +131,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This property is deprecated and ins't used anymore. Please, use AccessLogsStream and ErrorLogsStream instead.")]
         public VerboseMode Verbose { get; set; } = VerboseMode.Normal;
 

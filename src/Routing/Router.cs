@@ -20,6 +20,7 @@ namespace Sisk.Core.Routing
     /// </namespace>
     public class Router
     {
+        internal Regex routePathComparator = new Regex(@"<[^>]+>", RegexOptions.Compiled);
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result);
         private Internal.WildcardMatching _pathMatcher = new Internal.WildcardMatching();
         private List<Route> _routes = new List<Route>();
@@ -170,6 +171,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback)
         {
+            if (IsRouteDefined(method, path)) throw new ArgumentException("An route with the same or similar path has already been added.");
             _routes.Add(new Route(method, path, null, callback, null));
         }
 
@@ -191,6 +193,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name)
         {
+            if (IsRouteDefined(method, path)) throw new ArgumentException("An route with the same or similar path has already been added.");
             _routes.Add(new Route(method, path, name, callback, null));
         }
 
@@ -213,6 +216,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name, IRequestHandler[] middlewares)
         {
+            if (IsRouteDefined(method, path)) throw new ArgumentException("An route with the same or similar path has already been added.");
             _routes.Add(new Route(method, path, name, callback, middlewares));
         }
 
@@ -231,14 +235,11 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(Route r)
         {
-            if (r.Path == "*")
+            if (!r.UseRegex && IsRouteDefined(r.Method, r.Path))
             {
-                _routes.Insert(0, r);
+                throw new ArgumentException("An route with the same or similar path has already been added.");
             }
-            else
-            {
-                _routes.Add(r);
-            }
+            _routes.Add(r);
         }
 
         /// <summary>
@@ -325,8 +326,10 @@ namespace Sisk.Core.Routing
                             Callback = r,
                             Name = atrInstance.Name,
                             RequestHandlers = methodHandlers.ToArray(),
-                            LogMode = atrInstance.LogMode
+                            LogMode = atrInstance.LogMode,
+                            UseCors = atrInstance.UseCors
                         };
+                        if (IsRouteDefined(route.Method, route.Path)) throw new ArgumentException($"An route with the same or similar path has already been added. Callback name: {t.GetType().FullName}.{method.Name}");
                         SetRoute(route);
                     }
                     catch (Exception ex)
@@ -352,6 +355,24 @@ namespace Sisk.Core.Routing
         {
             return new Internal.WildcardMatching.PathMatchResult
                 (Regex.IsMatch(requestPath, routePath, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), new System.Collections.Specialized.NameValueCollection());
+        }
+
+        private bool IsRouteDefined(RouteMethod method, string path)
+        {
+            if (!path.StartsWith('/'))
+            {
+                throw new ArgumentException("Route paths should start with /.");
+            }
+            foreach (Route r in this._routes)
+            {
+                string sanitizedPath1 = routePathComparator.Replace(r.Path, "").TrimEnd('/');
+                string sanitizedPath2 = routePathComparator.Replace(path, "").TrimEnd('/');
+                if (r.Method == method && string.Compare(sanitizedPath1, sanitizedPath2, MatchRoutesIgnoreCase) == 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         internal RouterExecutionResult Execute(HttpRequest request)

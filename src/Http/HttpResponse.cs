@@ -83,6 +83,7 @@ namespace Sisk.Core.Http
         /// Sisk.Core.Http
         /// </namespace>
         /// <static>True</static>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This property is deprecated and ins't used anywhere. Please, avoid using it.")]
         public static Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
 

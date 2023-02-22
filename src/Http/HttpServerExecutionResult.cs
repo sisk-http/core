@@ -175,6 +175,7 @@
         /// <summary>
         /// This enum is deprecated. Use <see cref="ContentServedOnIllegalMethod"/> instead.
         /// </summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete]
         ContentServedOnNotSupportedMethod = ContentServedOnIllegalMethod,
 

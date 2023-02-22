@@ -130,6 +130,7 @@
         /// <namespace>
         /// Sisk.Core.Entity
         /// </namespace>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This constructor is obsolete. Please, create an new class instance without any parameter instead.")]
         public CrossOriginResourceSharingHeaders(string[] allowOrigins, string[] allowMethods, string[] allowHeaders, TimeSpan maxAge)
         {

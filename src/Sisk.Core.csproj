@@ -13,9 +13,9 @@
 		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<AssemblyVersion>0.8.9</AssemblyVersion>
-		<FileVersion>0.8.9</FileVersion>
-		<Version>0.8.9</Version>
+		<AssemblyVersion>0.9.0</AssemblyVersion>
+		<FileVersion>0.9.0</FileVersion>
+		<Version>0.9.0</Version>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -26,15 +26,15 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+		<DocumentationFile></DocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DebugType>embedded</DebugType>
+		<DebugType>none</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<DebugType>embedded</DebugType>
+		<DebugType>none</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -54,10 +54,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
 	</ItemGroup>
 
 </Project>
