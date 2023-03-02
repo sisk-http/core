@@ -1,5 +1,6 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Routing.Handlers;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -258,39 +259,8 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetObject(object attrClassInstance)
         {
-            this.SetTypeRoutes(attrClassInstance, true);
-        }
-
-        /// <summary>
-        /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
-        /// </summary>
-        /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
-        /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
-        /// <definition>
-        /// public void SetObject(Type attrClassType)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
-        public void SetObject(Type attrClassType)
-        {
-            this.SetTypeRoutes(attrClassType, false);
-        }
-
-        private void SetTypeRoutes(object t, bool isInstance)
-        {
-            MethodInfo[] methods;
-            if (isInstance)
-            {
-                methods = t.GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            }
-            else
-            {
-                methods = ((Type)t).GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-            }
+            Type attrClassType = attrClassInstance.GetType();
+            MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
             foreach (var method in methods)
             {
                 RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
@@ -310,15 +280,7 @@ namespace Sisk.Core.Routing
 
                     try
                     {
-                        RouterCallback r;
-                        if (isInstance)
-                        {
-                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), t, method);
-                        }
-                        else
-                        {
-                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
-                        }
+                        RouterCallback r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), attrClassInstance, method);
                         Route route = new Route()
                         {
                             Method = atrInstance.Method,
@@ -329,7 +291,71 @@ namespace Sisk.Core.Routing
                             LogMode = atrInstance.LogMode,
                             UseCors = atrInstance.UseCors
                         };
-                        if (IsRouteDefined(route.Method, route.Path)) throw new ArgumentException($"An route with the same or similar path has already been added. Callback name: {t.GetType().FullName}.{method.Name}");
+                        if (IsRouteDefined(route.Method, route.Path))
+                        {
+                            throw new ArgumentException($"An route with the same or similar path has already been added. Callback name: {attrClassType.FullName}.{method.Name}");
+                        }
+                        SetRoute(route);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"Couldn't set method {method.Name} as an route. See inner exception.", ex);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
+        /// </summary>
+        /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
+        /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
+        /// <definition>
+        /// public void SetObject(Type attrClassType)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Routing
+        /// </namespace>
+        public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
+        {
+            MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            foreach (var method in methods)
+            {
+                RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
+                IEnumerable<RequestHandlerAttribute> handlersInstances = method.GetCustomAttributes<RequestHandlerAttribute>();
+
+                if (atrInstance != null)
+                {
+                    List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
+                    if (handlersInstances.Count() > 0)
+                    {
+                        foreach (RequestHandlerAttribute atr in handlersInstances)
+                        {
+                            IRequestHandler rhandler = (IRequestHandler)Activator.CreateInstance(atr.RequestHandlerType, atr.ConstructorArguments)!;
+                            methodHandlers.Add(rhandler);
+                        }
+                    }
+
+                    try
+                    {
+                        RouterCallback r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                        Route route = new Route()
+                        {
+                            Method = atrInstance.Method,
+                            Path = atrInstance.Path,
+                            Callback = r,
+                            Name = atrInstance.Name,
+                            RequestHandlers = methodHandlers.ToArray(),
+                            LogMode = atrInstance.LogMode,
+                            UseCors = atrInstance.UseCors
+                        };
+                        if (IsRouteDefined(route.Method, route.Path))
+                        {
+                            throw new ArgumentException($"An route with the same or similar path has already been added. Callback name: {attrClassType.FullName}.{method.Name}");
+                        }
                         SetRoute(route);
                     }
                     catch (Exception ex)
@@ -365,8 +391,8 @@ namespace Sisk.Core.Routing
             }
             foreach (Route r in this._routes)
             {
-                string sanitizedPath1 = routePathComparator.Replace(r.Path, "").TrimEnd('/');
-                string sanitizedPath2 = routePathComparator.Replace(path, "").TrimEnd('/');
+                string sanitizedPath1 = routePathComparator.Replace(r.Path, "$arg").TrimEnd('/');
+                string sanitizedPath2 = routePathComparator.Replace(path, "$arg").TrimEnd('/');
                 if (r.Method == method && string.Compare(sanitizedPath1, sanitizedPath2, MatchRoutesIgnoreCase) == 0)
                 {
                     return true;

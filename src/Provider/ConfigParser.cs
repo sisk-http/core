@@ -3,6 +3,7 @@ using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace Sisk.Provider
 {
@@ -17,12 +18,13 @@ namespace Sisk.Provider
             }
 
             string fileContents = File.ReadAllText(filename);
-            ConfigStructureFile? config = System.Text.Json.JsonSerializer.Deserialize<ConfigStructureFile>(fileContents, new System.Text.Json.JsonSerializerOptions()
-            {
-                AllowTrailingCommas = true,
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
-            });
+            ConfigStructureFile? config = System.Text.Json.JsonSerializer.Deserialize(fileContents, typeof(ConfigStructureFile),
+                new SourceGenerationContext(new System.Text.Json.JsonSerializerOptions()
+                {
+                    AllowTrailingCommas = true,
+                    PropertyNameCaseInsensitive = true,
+                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
+                })) as ConfigStructureFile;
 
             if (config is null)
             {
@@ -122,7 +124,15 @@ namespace Sisk.Provider
                 prov.HttpServer = new HttpServer(prov.ServerConfiguration);
             }
 
-            prov.HttpServer.Start();
+            try
+            {
+                prov.HttpServer.Start();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Couldn't start the Sisk service: " + ex.Message);
+                Environment.Exit(14);
+            }
 
             if (prov.Verbose)
             {
@@ -136,16 +146,16 @@ namespace Sisk.Provider
         }
     }
 
-
+    [JsonSerializable(typeof(ConfigStructureFile))]
     internal class ConfigStructureFile
     {
         public ConfigStructureFile__ServerConfiguration Server { get; set; } = null!;
         public ConfigStructureFile__ListeningHost ListeningHost { get; set; } = null!;
     }
 
+    [JsonSerializable(typeof(ConfigStructureFile__ServerConfiguration))]
     internal class ConfigStructureFile__ServerConfiguration
     {
-        public HttpServerFlags? Flags { get; set; }
         public string? AccessLogsStream { get; set; } = "console";
         public string? ErrorsLogsStream { get; set; }
         public bool ResolveForwardedOriginAddress { get; set; } = false;
@@ -156,6 +166,7 @@ namespace Sisk.Provider
         public bool ThrowExceptions { get; set; } = true;
     }
 
+    [JsonSerializable(typeof(ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy))]
     internal class ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy
     {
         public bool? AllowCredentials { get; set; } = null;
@@ -166,6 +177,7 @@ namespace Sisk.Provider
         public int? MaxAge { get; set; } = null;
     }
 
+    [JsonSerializable(typeof(ConfigStructureFile__ListeningHost))]
     internal class ConfigStructureFile__ListeningHost
     {
         public string Hostname { get; set; } = "";
@@ -175,5 +187,11 @@ namespace Sisk.Provider
         public ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy? CrossOriginResourceSharingPolicy { get; set; }
 
         public JsonObject? Parameters { get; set; }
+    }
+
+    [JsonSourceGenerationOptions(WriteIndented = true)]
+    [JsonSerializable(typeof(ConfigStructureFile))]
+    internal partial class SourceGenerationContext : JsonSerializerContext
+    {
     }
 }

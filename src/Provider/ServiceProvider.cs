@@ -81,7 +81,7 @@ namespace Sisk.Provider
         /// <namespace>
         /// Sisk.Provider
         /// </namespace>
-        public TextWriter? ErrorLogs { get => ServerConfiguration?.AccessLogsStream; }
+        public TextWriter? ErrorLogs { get => ServerConfiguration?.ErrorsLogsStream; }
 
         /// <summary>
         /// Gets or sets the Sisk server portable configuration file.
@@ -263,6 +263,8 @@ namespace Sisk.Provider
 
         internal void Rebuild()
         {
+            this.AccessLogs?.Close();
+            this.ErrorLogs?.Close();
             this.ServerConfiguration?.ListeningHosts.Clear();
             ConfigParser.ParseConfiguration(this, true);
         }

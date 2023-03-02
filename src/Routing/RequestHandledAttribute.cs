@@ -1,4 +1,5 @@
 ﻿using Sisk.Core.Routing.Handlers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Core.Routing
 {
@@ -30,6 +31,15 @@ namespace Sisk.Core.Routing
         /// <namespace>
         /// Sisk.Core.Routing
         /// </namespace>
+        [DynamicallyAccessedMembers(
+              DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicFields
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors
+        )]
         public Type RequestHandlerType { get; set; }
 
         /// <summary>
@@ -59,7 +69,15 @@ namespace Sisk.Core.Routing
         /// <namespace>
         /// Sisk.Core.Routing
         /// </namespace>
-        public RequestHandlerAttribute(Type handledBy)
+        public RequestHandlerAttribute([DynamicallyAccessedMembers(
+              DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicFields
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors
+        )] Type handledBy)
         {
             RequestHandlerType = handledBy;
             ConstructorArguments = new object?[] { };
