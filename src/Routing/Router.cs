@@ -387,7 +387,7 @@ namespace Sisk.Core.Routing
         {
             if (!path.StartsWith('/'))
             {
-                throw new ArgumentException("Route paths should start with /.");
+                throw new ArgumentException("Route paths must start with /.");
             }
             foreach (Route r in this._routes)
             {
@@ -584,9 +584,16 @@ namespace Sisk.Core.Routing
 
                 return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult);
             }
-            catch (Exception)
+            catch (Exception baseEx)
             {
-                if (ParentServer?.ServerConfiguration.ThrowExceptions ?? false)
+                bool throwException = ParentServer?.ServerConfiguration.ThrowExceptions ?? false;
+
+                if (CallbackErrorHandler != null && !throwException)
+                {
+                    HttpResponse res = CallbackErrorHandler(baseEx, request);
+                    return new RouterExecutionResult(res, matchedRoute, matchResult);
+                }
+                else if (throwException)
                 {
                     throw;
                 }

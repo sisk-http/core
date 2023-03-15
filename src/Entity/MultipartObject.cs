@@ -19,6 +19,34 @@ namespace Sisk.Core.Entity
     public class MultipartObject
     {
         /// <summary>
+        /// Gets or sets the default content encoding for decoding objects contents as strings.
+        /// </summary>
+        /// <definition>
+        /// public static Encoding DefaultContentEncoding { get; set; }
+        /// </definition>
+        /// <type>
+        /// Static property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Entity
+        /// </namespace>
+        public static Encoding DefaultContentEncoding { get; set; } = Encoding.UTF8;
+
+        /// <summary>
+        /// Gets or sets the default content encoding for decoding multipart-form headers names and values.
+        /// </summary>
+        /// <definition>
+        /// public static Encoding DefaultHeadersEncoding { get; set; }
+        /// </definition>
+        /// <type>
+        /// Static property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Entity
+        /// </namespace>
+        public static Encoding DefaultHeadersEncoding { get; set; } = Encoding.UTF8;
+
+        /// <summary>
         /// The multipart form data object headers.
         /// </summary>
         /// <definition>
@@ -123,7 +151,7 @@ namespace Sisk.Core.Entity
         /// </namespace>
         public string? ReadContentAsString()
         {
-            return ReadContentAsString(Encoding.ASCII);
+            return ReadContentAsString(DefaultContentEncoding);
         }
 
         /// <summary>
@@ -257,7 +285,6 @@ namespace Sisk.Core.Entity
             }
             /////////
 
-            byte[] matchingContent = new byte[0xFFFFFF];
             byte[][] matchedResults = Separate(req.RawBody, boundaryBytes);
 
             List<MultipartObject> outputObjects = new List<MultipartObject>();
@@ -267,14 +294,14 @@ namespace Sisk.Core.Entity
                 NameValueCollection headers = new NameValueCollection();
                 byte[] result = matchedResults[i].ToArray();
                 int resultLength = result.Length - 4;
-                string content = Encoding.ASCII.GetString(result);
+                //string content = Encoding.ASCII.GetString(result);
 
                 int spaceLength = 0;
                 bool parsingContent = false;
                 bool headerNameParsed = false;
                 bool headerValueParsed = false;
-                string headerName = "";
-                string headerValue = "";
+                List<byte> headerNameBytes = new();
+                List<byte> headerValueBytes = new();
 
                 int headerSize = 0;
                 for (int j = 0; j < resultLength; j++)
@@ -282,7 +309,9 @@ namespace Sisk.Core.Entity
                     byte J = result[j];
                     if (spaceLength == 2 && headerNameParsed && !headerValueParsed)
                     {
-                        headerValueParsed = true;
+                        string headerName = DefaultHeadersEncoding.GetString(headerNameBytes.ToArray());
+                        string headerValue = DefaultHeadersEncoding.GetString(headerValueBytes.ToArray());
+
                         headers.Add(headerName, headerValue.Trim());
                         headerNameParsed = false;
                         headerValueParsed = false;
@@ -312,12 +341,12 @@ namespace Sisk.Core.Entity
                             }
                             else
                             {
-                                headerName += (char)J;
+                                headerNameBytes.Add(J);
                             }
                         }
                         else if (!headerValueParsed)
                         {
-                            headerValue += (char)J;
+                            headerValueBytes.Add(J);
                         }
                     }
                     else

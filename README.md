@@ -12,7 +12,35 @@
 
 ------
 
-Sisk is a powerful framework for building powerful web applications. It is written in .NET 6 and uses Microsoft-HTTPAPI/2.0 as their main http Engine.
+Sisk is an cross-platform web framework for building powerful web applications and cloud services. It is written in C# with .NET 6 and uses Microsoft-HTTPAPI/2.0 as their main HTTP engine. Compatible with Native AOT and .NET runtime.
+
+It can handle multiple requests asynchronously, provides useful tools to manage and accelerate web development.
+
+```c#
+using Sisk.Core.Http;
+using Sisk.Core.Routing;
+
+namespace myProgram;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Router router = new Router();
+        HttpServerConfiguration config = new HttpServerConfiguration();
+        config.ListeningHosts.Add(new ListeningHost("localhost", 5555, router));
+        HttpServer server = new HttpServer(config);
+
+        router.SetRoute(RouteMethod.Get, "/", (req) =>
+        {
+            return req.CreateOkResponse("Hello, world!");
+        });
+
+        server.Start();
+        Thread.Sleep(-1); // prevent hauting
+    }
+}
+```
 
 ## Features
 
@@ -29,16 +57,13 @@ Sisk is a powerful framework for building powerful web applications. It is writt
 - Easy Cross-Origin Resource Sharing setup
 - Written in C#
 
-> You can use Sisk with HTTPS, HTTP/2 and HTTP/3 QUIC if you follow [this Microsoft tutorial](https://learn.microsoft.com/en-us/iis/manage/configuring-security/how-to-set-up-ssl-on-iis). Requires installation of IIS on Windows.
-
 ## Documentation
 
 You can access the Sisk documentation [here](https://sisk.proj.pw/) or access it's repository [here](https://github.com/sisk-http/docs).
-The specification is complete, however, tutorials are yet to come.
 
 ## Installation
 
-You can install the latest release from Nuget:
+You can install the latest release from Nuget packages:
 
 ```
 PM> dotnet add package Sisk.HttpServer

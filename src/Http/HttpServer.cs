@@ -223,7 +223,6 @@ namespace Sisk.Core.Http
         {
             try
             {
-                response.Headers.Set("X-Powered-By", poweredByHeader);
                 response.Close();
             }
             catch (Exception)
@@ -232,12 +231,11 @@ namespace Sisk.Core.Http
             }
         }
 
-        internal static void SetCorsHeaders(CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse, HttpServerFlags flag)
+        internal static void SetCorsHeaders(CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
         {
-            if (!flag.SendCorsHeaders) return;
             if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
             if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
-            if (cors.AllowOrigins.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Origin", string.Join(", ", cors.AllowOrigins));
+            if (cors.AllowOrigin != null) baseResponse.Headers.Set("Access-Control-Allow-Origin", cors.AllowOrigin);
             if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
             if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
             if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
@@ -271,6 +269,7 @@ namespace Sisk.Core.Http
             long incomingSize = 0;
             long outcomingSize = 0;
             bool closeStream = true;
+            bool useCors = false;
             LogOutput logMode = LogOutput.Both;
 
             HttpServerExecutionResult? executionResult = new HttpServerExecutionResult()
@@ -282,7 +281,17 @@ namespace Sisk.Core.Http
 
             try
             {
-                verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {baseRequest.RemoteEndPoint.Address.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {baseRequest.Url?.AbsolutePath ?? "/"}";
+                string logAbsPath = "";
+                if (flag.IncludeFullPathOnLog)
+                {
+                    logAbsPath = baseRequest.Url?.PathAndQuery ?? "/";
+                }
+                else
+                {
+                    logAbsPath = baseRequest.Url?.AbsolutePath ?? "/";
+                }
+
+                verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {baseRequest.RemoteEndPoint.Address.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {logAbsPath}";
                 sw.Start();
 
                 if (baseRequest.Url is null)
@@ -366,13 +375,10 @@ namespace Sisk.Core.Http
                 var routerResult = matchedListeningHost.Router.Execute(request);
                 response = routerResult.Response;
                 logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
+                useCors = routerResult.Route?.UseCors ?? true;
 
-                if ((routerResult.Result == RouteMatchResult.OptionsMatched || (routerResult.Route?.UseCors ?? false))
-                    && response?.internalStatus != HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
-                {
-                    var cors = matchedListeningHost.CrossOriginResourceSharingPolicy;
-                    SetCorsHeaders(cors, baseResponse, flag);
-                }
+                if (flag.SendSiskHeader)
+                    baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
 
                 if (response is null)
                 {
@@ -397,10 +403,33 @@ namespace Sisk.Core.Http
                     baseResponse.StatusCode = 500;
                     return;
                 }
+                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_CLOSE)
+                {
+                    executionResult.Status = HttpServerExecutionStatus.ClosedStream;
+                    baseResponse.Close();
+                    return;
+                }
+
+                if (useCors && flag.SendCorsHeaders)
+                {
+                    SetCorsHeaders(matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
+                }
+                if (routerResult.Result == RouteMatchResult.OptionsMatched)
+                {
+                    logMode = flag.OptionsLogMode;
+                }
 
                 byte[] responseBytes = response!.Content?.ReadAsByteArrayAsync().Result ?? new byte[] { };
 
-                baseResponse.StatusCode = (int)response.Status;
+                if (response.CustomStatus != null)
+                {
+                    baseResponse.StatusCode = response.CustomStatus.Value.StatusCode;
+                    baseResponse.StatusDescription = response.CustomStatus.Value.Description;
+                }
+                else
+                {
+                    baseResponse.StatusCode = (int)response.Status;
+                }
                 baseResponse.SendChunked = response.SendChunked;
 
                 NameValueCollection resHeaders = new NameValueCollection
@@ -415,7 +444,7 @@ namespace Sisk.Core.Http
 
                 if (responseBytes.Length > 0)
                 {
-                    baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content!.Headers.ContentType!.MediaType ?? "text/plain";
+                    baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content?.Headers.ContentType?.ToString();
 
                     if (resHeaders["Content-Encoding"] != null)
                     {

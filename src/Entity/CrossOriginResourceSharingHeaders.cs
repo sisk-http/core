@@ -62,7 +62,7 @@
         /// without credentials — the "*" wildcard tells browsers to allow any origin to access the resource.
         /// </summary>
         /// <definition>
-        /// public string[] AllowOrigins { get; set; }
+        /// public string? AllowOrigin { get; set; }
         /// </definition>
         /// <type>
         /// Property
@@ -70,7 +70,7 @@
         /// <namespace>
         /// Sisk.Core.Entity
         /// </namespace>
-        public string[] AllowOrigins { get; set; }
+        public string? AllowOrigin { get; set; }
 
         /// <summary>
         /// From MDN: The Access-Control-Allow-Methods header specifies the method or methods allowed when accessing the resource. 
@@ -117,7 +117,7 @@
         /// <summary>
         /// Create a new <see cref="CrossOriginResourceSharingHeaders"/> class instance with given parameters.
         /// </summary>
-        /// <param name="allowOrigins">The origin hostnames allowed by the browser.</param>
+        /// <param name="allowOrigin">The origin hostname allowed by the browser.</param>
         /// <param name="allowMethods">The allowed HTTP request methods.</param>
         /// <param name="allowHeaders">The allowed HTTP request headers.</param>
         /// <param name="maxAge">Defines the max-age cache expirity time.</param>
@@ -132,9 +132,9 @@
         /// </namespace>
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This constructor is obsolete. Please, create an new class instance without any parameter instead.")]
-        public CrossOriginResourceSharingHeaders(string[] allowOrigins, string[] allowMethods, string[] allowHeaders, TimeSpan maxAge)
+        public CrossOriginResourceSharingHeaders(string allowOrigin, string[] allowMethods, string[] allowHeaders, TimeSpan maxAge)
         {
-            AllowOrigins = allowOrigins;
+            AllowOrigin = allowOrigin;
             AllowMethods = allowMethods;
             AllowHeaders = allowHeaders;
             MaxAge = maxAge;
@@ -155,8 +155,8 @@
         /// </namespace>
         public CrossOriginResourceSharingHeaders()
         {
-            ExposeHeaders = new string[] { };
-            AllowOrigins = new string[0];
+            ExposeHeaders = new string[0];
+            AllowOrigin = null;
             AllowMethods = new string[0];
             AllowHeaders = new string[0];
             MaxAge = TimeSpan.Zero;
@@ -180,7 +180,7 @@
             return new CrossOriginResourceSharingHeaders()
             {
                 AllowHeaders = new string[] { "*" },
-                AllowOrigins = new string[] { "*" },
+                AllowOrigin = "*",
                 AllowMethods = new string[] { "*" },
                 AllowCredentials = true,
                 MaxAge = TimeSpan.FromSeconds(3600)

@@ -44,7 +44,7 @@ namespace Sisk.Core.Routing
     /// Delegate
     /// </type>
     /// <namespace>
-    /// Sisk.Core.Routing
+    /// Sisk.Core.Routing 
     /// </namespace>
     public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpRequest request);
 }

@@ -6,16 +6,16 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
 		<PackageId>Sisk.HttpServer</PackageId>
 		<Title>Sisk.HttpServer</Title>
 		<Authors>CypherPotato</Authors>
 		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<AssemblyVersion>0.9.1</AssemblyVersion>
-		<FileVersion>0.9.1</FileVersion>
-		<Version>0.9.1</Version>
+		<AssemblyVersion>0.10.0</AssemblyVersion>
+		<FileVersion>0.10.0</FileVersion>
+		<Version>0.10.0</Version>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -38,7 +38,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Content Include="..\.nuget\README.html" Link="README.html" />
+		<Content Include="..\.nuget\README.html" Link="README.html" />
 	</ItemGroup>
 
 	<ItemGroup>

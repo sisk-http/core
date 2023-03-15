@@ -45,7 +45,6 @@ namespace Sisk.Core.Http
         internal bool isServingEventSourceEvents;
         private HttpRequestEventSource? activeEventSource;
         private bool isContentAvailable = false;
-        private bool hasContents = false;
 
         internal HttpRequest(
             HttpListenerRequest listenerRequest,
@@ -57,9 +56,9 @@ namespace Sisk.Core.Http
             this.listenerResponse = listenerResponse;
             this.listenerRequest = listenerRequest;
             this.hostContext = host;
-            this.hasContents = listenerRequest.ContentLength64 > 0;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
+            this.GenerateRequestId(this.RequestedAt.Ticks);
 
             IPAddress requestRealAddress = new IPAddress(listenerRequest.LocalEndPoint.Address.GetAddressBytes());
             this.Origin = requestRealAddress;
@@ -110,6 +109,22 @@ namespace Sisk.Core.Http
             }
         }
 
+        internal unsafe void GenerateRequestId(long seeder)
+        {
+            long seed = DateTime.Now.Ticks;
+            byte* reqIdBytes = stackalloc byte[16];
+
+            for (int i = 0; i < 16; i++)
+            {
+                int j = i / 4;
+                long k = (seed >> j) + (i * 9);
+                reqIdBytes[i] = (byte)(k & 0xFF);
+            }
+
+            ReadOnlySpan<byte> reqSpan = new ReadOnlySpan<byte>(reqIdBytes, 16);
+            this.RequestId = new Guid(reqSpan);
+        }
+
         internal void ImportContents(Stream listenerRequest)
         {
             using (var memoryStream = new MemoryStream())
@@ -124,7 +139,7 @@ namespace Sisk.Core.Http
         /// Gets a unique random ID for this request.
         /// </summary>
         /// <definition>
-        /// public Guid RequestId { get; init; }
+        /// public string RequestId { get; }
         /// </definition>
         /// <type>
         /// Property
@@ -132,7 +147,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public Guid RequestId { get; init; } = Guid.NewGuid();
+        public Guid RequestId { get; private set; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request was made by an secure transport context (SSL/TLS) or not.
@@ -174,7 +189,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public bool HasContents { get => hasContents; }
+        public bool HasContents { get => this.ContentLength > 0; }
 
         /// <summary>
         /// Gets the HTTP request headers.
@@ -327,7 +342,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the HTTP request body as string.
+        /// Gets the HTTP request body as string, decoded by the request content encoding.
         /// </summary>
         /// <definition>
         /// public string Body { get; }
@@ -358,6 +373,23 @@ namespace Sisk.Core.Http
         public byte[] RawBody
         {
             get => contentBytes ?? new byte[] { };
+        }
+
+        /// <summary>
+        /// Gets the content length in bytes.
+        /// </summary>
+        /// <definition>
+        /// public long ContentLength { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public long ContentLength
+        {
+            get => listenerRequest.ContentLength64;
         }
 
         /// <summary>
@@ -543,6 +575,24 @@ namespace Sisk.Core.Http
         public string? GetHeader(string headerName) => Headers[headerName];
 
         /// <summary>
+        /// Closes this HTTP request and their connection with the remote client without sending any response.
+        /// </summary>
+        /// <returns></returns>
+        /// <definition>
+        /// public HttpResponse Close()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public HttpResponse Close()
+        {
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_CLOSE);
+        }
+
+        /// <summary>
         /// Create an HTTP response with code 200 OK without any body.
         /// </summary>
         /// <returns></returns>
@@ -696,7 +746,7 @@ namespace Sisk.Core.Http
                 throw new InvalidOperationException("This HTTP request is already listening to Event Source.");
             }
             isServingEventSourceEvents = true;
-            activeEventSource = new HttpRequestEventSource(listenerResponse, listenerRequest, this, contextServerConfiguration);
+            activeEventSource = new HttpRequestEventSource(listenerResponse, listenerRequest, this);
             return activeEventSource;
         }
 

@@ -16,10 +16,8 @@ namespace Sisk.Core.Http
     /// </namespace>
     public class HttpRequestEventSource : IDisposable
     {
-        private HttpServerConfiguration HttpServerConfiguration;
         private HttpListenerResponse res;
         private HttpListenerRequest req;
-        private HttpRequest host;
 
         private List<string> sendQueue = new List<string>();
         private int failedSentResponses = 0;
@@ -41,16 +39,14 @@ namespace Sisk.Core.Http
         /// </namespace>
         public int MaximumErrorAttempts { get; set; } = 3;
 
-        internal HttpRequestEventSource(HttpListenerResponse res, HttpListenerRequest req, HttpRequest host, HttpServerConfiguration httpServerConfiguration)
+        internal HttpRequestEventSource(HttpListenerResponse res, HttpListenerRequest req, HttpRequest host)
         {
             this.res = res ?? throw new ArgumentNullException(nameof(res));
             this.req = req ?? throw new ArgumentNullException(nameof(req));
-            this.host = host;
-            this.HttpServerConfiguration = httpServerConfiguration;
             res.AddHeader("Cache-Control", "no-store");
             res.AddHeader("Content-Type", "text/event-stream");
             res.AddHeader("X-Powered-By", HttpServer.poweredByHeader);
-            HttpServer.SetCorsHeaders(host.hostContext.CrossOriginResourceSharingPolicy, res, httpServerConfiguration.Flags);
+            HttpServer.SetCorsHeaders(host.hostContext.CrossOriginResourceSharingPolicy, res);
         }
 
         /// <summary>

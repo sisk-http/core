@@ -23,7 +23,23 @@ namespace Sisk.Core.Http
         internal const byte HTTPRESPONSE_EMPTY = 2;
         internal const byte HTTPRESPONSE_EVENTSOURCE_CLOSE = 4;
         internal const byte HTTPRESPONSE_ERROR = 8;
+        internal const byte HTTPRESPONSE_CLOSE = 16;
         internal int CalculedLength = 0;
+
+        /// <summary>
+        /// Gets or sets an custom HTTP status code and description for this HTTP response. If this property ins't null, it will overwrite
+        /// the <see cref="Status"/> property in this class.
+        /// </summary>
+        /// <definition>
+        /// public HttpStatusInformation? CustomStatus { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public HttpStatusInformation? CustomStatus { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the HTTP response status code.
