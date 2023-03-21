@@ -18,7 +18,7 @@
         /// Gets an instance of CrossOriginResourceSharingHeaders that does not allow CORS by default.
         /// </summary>
         /// <definition>
-        /// public static CrossOriginResourceSharingHeaders Empty { get; }
+        /// public static CrossOriginResourceSharingHeaders Empty 
         /// </definition>
         /// <type>
         /// Field

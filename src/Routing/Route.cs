@@ -192,7 +192,7 @@ namespace Sisk.Core.Routing
     /// public enum LogOutput
     /// </definition>
     /// <type>
-    /// Constructor
+    /// Enum
     /// </type>
     /// <namespace>
     /// Sisk.Core.Routing
