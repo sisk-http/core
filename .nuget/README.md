@@ -1,7 +1,6 @@
-Sisk is a powerful framework for building powerful web applications. It is written in .NET 6 and uses Microsoft-HTTPAPI/2.0 as their main http Engine.
+Sisk is a powerful framework for building powerful web applications for Windows, Linux and Mac. With Sisk, you can use the full power of .NET to create fast, dynamic and poweful web applications. It's an alternative to Microsoft's ASP.NET Core, which it's simpler and easy to understand and control.
 
-## Features
-
+## Main features:
 - Multi-platform and cross-operating system
 - Ultra fast response/second average
 - Support to operating system's native HTTP interface listener
@@ -15,18 +14,8 @@ Sisk is a powerful framework for building powerful web applications. It is writt
 - Easy Cross-Origin Resource Sharing setup
 - Written in C#
 
-> You can use Sisk with HTTPS, HTTP/2 and HTTP/3 QUIC if you follow [this Microsoft tutorial](https://learn.microsoft.com/en-us/iis/manage/configuring-security/how-to-set-up-ssl-on-iis). Requires installation of IIS on Windows.
-
 ## Documentation
 
-The specification is complete, however, tutorials are yet to come. By the way, you can access the Sisk documentation [here](https://sisk-http.github.io/docs/static/#/).
+The specification is complete, however, tutorials are yet to come. By the way, you can access the Sisk documentation [here](https://sisk.proj.pw/#/docs/getting-started) or it's specification [here](https://sisk.proj.pw/#/spec/index).
 
 You can also view release change logs [here](https://github.com/sisk-http/docs/blob/master/Changelog.md).
-
-## Installation
-
-You can install the latest release from Nuget:
-
-```
-PM> dotnet add package Sisk.HttpServer
-```

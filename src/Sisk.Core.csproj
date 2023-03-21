@@ -1,33 +1,51 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<OutputType>Library</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+		<OutputType>Library</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		
+		<!-- You should enable this when generating docs -->
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
+		
 		<PackageId>Sisk.HttpServer</PackageId>
 		<Title>Sisk.HttpServer</Title>
 		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.HttpServer</Product>
+		<NeutralLanguage>en-US</NeutralLanguage>
 		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
+		<Summary>Sisk is an powerful framework for building web applications with .NET.</Summary>
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
-		<AssemblyVersion>0.10.0</AssemblyVersion>
-		<FileVersion>0.10.0</FileVersion>
-		<Version>0.10.0</Version>
+		<PackageTags>http-server,http,web framework</PackageTags>
+		
+		
+		<AssemblyVersion>0.10.1</AssemblyVersion>
+		<FileVersion>0.10.1</FileVersion>
+		<Version>0.10.1</Version>
+		
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackRelease>True</PackRelease>
 		<RootNamespace>Sisk.Core</RootNamespace>
 		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<DocumentationFile></DocumentationFile>
-	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DebugType>portable</DebugType>
