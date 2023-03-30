@@ -1,11 +1,21 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Routing;
+using System.Globalization;
+using System.Reflection.Metadata;
+
+[assembly: MetadataUpdateHandler(typeof(Sisk.Provider.ServiceReloadManager))]
 
 namespace Sisk.Provider
 {
     /// <summary>
     /// Provides an access to manage assembly hot reloads.
     /// </summary>
+    /// <definition>
+    /// public static class ServiceReloadManager
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
     public static class ServiceReloadManager
     {
         private static List<ServiceProvider> _services = new List<ServiceProvider>();
@@ -14,6 +24,12 @@ namespace Sisk.Provider
         /// Registers a <see cref="ServiceProvider"/> to be recompiled every time the assembly is reloaded.
         /// </summary>
         /// <param name="reloadAwareService">The service provider which will be registered.</param>
+        /// <definition>
+        /// public static void RegisterServiceProvider(ServiceProvider reloadAwareService)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public static void RegisterServiceProvider(ServiceProvider reloadAwareService)
         {
             _services.Add(reloadAwareService);
@@ -22,6 +38,12 @@ namespace Sisk.Provider
         /// <summary>
         /// Clears all registrations from the assembly.
         /// </summary>
+        /// <definition>
+        /// public static void Clear()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public static void Clear()
         {
             _services.Clear();
@@ -55,6 +77,9 @@ namespace Sisk.Provider
     /// </namespace>
     public class ServiceProvider
     {
+        internal ServiceProviderConfiguratorHandler? __cfg = null;
+        internal bool __handleHault = true;
+
         /// <summary>
         /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.
         /// </summary>
@@ -67,7 +92,7 @@ namespace Sisk.Provider
         /// <namespace>
         /// Sisk.Provider
         /// </namespace>
-        public TextWriter? AccessLogs { get => ServerConfiguration?.AccessLogsStream; }
+        public LogStream? AccessLogs { get => ServerConfiguration?.AccessLogsStream; }
 
         /// <summary>
         /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
@@ -81,7 +106,7 @@ namespace Sisk.Provider
         /// <namespace>
         /// Sisk.Provider
         /// </namespace>
-        public TextWriter? ErrorLogs { get => ServerConfiguration?.ErrorsLogsStream; }
+        public LogStream? ErrorLogs { get => ServerConfiguration?.ErrorsLogsStream; }
 
         /// <summary>
         /// Gets or sets the Sisk server portable configuration file.
@@ -228,7 +253,42 @@ namespace Sisk.Provider
         public ServiceProvider(RouterFactory instance, string configurationFile)
         {
             this.RouterFactoryInstance = instance;
-            ConfigurationFile = configurationFile;
+            this.ConfigurationFile = configurationFile;
+        }
+
+        /// <summary>
+        /// Creates an new <see cref="ServiceProvider"/> instance with given router factory, custom settings file name and constructor callback.
+        /// </summary>
+        /// <param name="instance">Specifies the <see cref="RouterFactory"/> object instance which will provide an entry point for this service.</param>
+        /// <param name="configurationFile">Specifies the Sisk server portable configuration file.</param>
+        /// <param name="configurator">Defines the generation callback executed after the JSON file is interpreted by the server.</param>
+        /// <definition>
+        /// public ServiceProvider(RouterFactory instance, string configurationFile, ServiceProviderConfiguratorHandler configurator)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public ServiceProvider(RouterFactory instance, string configurationFile, ServiceProviderConfiguratorHandler configurator)
+        {
+            this.RouterFactoryInstance = instance;
+            this.ConfigurationFile = configurationFile;
+            this.__cfg = configurator;
+        }
+
+        /// <summary>
+        /// Defines the generation callback executed after the JSON file is interpreted by the server and then initializes the application.
+        /// </summary>
+        /// <param name="configurator">The generation callback executed after the JSON file is interpreted by the server.</param>
+        /// <definition>
+        /// public void ConfigureInit(ServiceProviderConfiguratorHandler configurator)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void ConfigureInit(ServiceProviderConfiguratorHandler configurator)
+        {
+            this.__cfg = configurator;
+            Initialize();
         }
 
         /// <summary>
@@ -246,18 +306,9 @@ namespace Sisk.Provider
         public void Initialize()
         {
             ConfigParser.ParseConfiguration(this, false);
-        }
-
-        /// <summary>
-        /// Opens and reads the configuration file, parses it and starts the HTTP server with the router and settings parsed from the file.
-        /// </summary>
-        /// <param name="registerReloadManager">If true, this <see cref="ServiceProvider"/> is registered in the <see cref="ServiceReloadManager"/> to support hot reloads.</param>
-        public void Initialize(bool registerReloadManager)
-        {
-            Initialize();
-            if (registerReloadManager)
+            if (__handleHault)
             {
-                ServiceReloadManager.RegisterServiceProvider(this);
+                Thread.Sleep(-1);
             }
         }
 
@@ -268,22 +319,97 @@ namespace Sisk.Provider
             this.ServerConfiguration?.ListeningHosts.Clear();
             ConfigParser.ParseConfiguration(this, true);
         }
+    }
+
+    /// <summary>
+    /// Represents the callback that runs after the server interprets the settings file.
+    /// </summary>
+    /// <param name="configurator">The generation callback executed after the JSON file is interpreted by the server.</param>
+    /// <definition>
+    /// public delegate void ServiceProviderConfiguratorHandler(ServiceProviderConfigurator configurator);
+    /// </definition>
+    /// <type>
+    /// Delegate
+    /// </type>
+    public delegate void ServiceProviderConfiguratorHandler(ServiceProviderConfigurator configurator);
+
+    /// <summary>
+    /// Represents the configurator that associates post-interpretation generation functions on the server.
+    /// </summary>
+    /// <definition>
+    /// public class ServiceProviderConfigurator
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    public class ServiceProviderConfigurator
+    {
+        private HttpServerConfiguration _config;
+        private ServiceProvider _provider;
+
+        internal ServiceProviderConfigurator(HttpServerConfiguration config, ServiceProvider provider)
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        }
 
         /// <summary>
-        /// Prevents the executable from closing automatically after starting the executable.
+        /// Determines if the HTTP server should handle the application hauting for blocking the main loop or not.
         /// </summary>
         /// <definition>
-        /// public void Wait()
+        /// public void UseHauting(bool preventHauting)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Provider
-        /// </namespace>
-        public void Wait()
+        public void UseHauting(bool preventHauting)
         {
-            Thread.Sleep(-1);
+            _provider.__handleHault = preventHauting;
+        }
+
+        /// <summary>
+        /// Overrides the <see cref="HttpServerConfiguration.DefaultCultureInfo"/> property in the HTTP server configuration.
+        /// </summary>
+        /// <param name="locale">The default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.</param>
+        /// <definition>
+        /// public void UseLocale(CultureInfo locale)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void UseLocale(CultureInfo locale)
+        {
+            _config.DefaultCultureInfo = locale;
+        }
+
+        /// <summary>
+        /// Overrides the HTTP server flags with the provided flags.
+        /// </summary>
+        /// <param name="flags">The flags that will be set on the HTTP server.</param>
+        /// <definition>
+        /// public void UseFlags(HttpServerFlags flags)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void UseFlags(HttpServerFlags flags)
+        {
+            _config.Flags = flags;
+        }
+
+        /// <summary>
+        /// Calls a callback that has the HTTP server configuration as an argument.
+        /// </summary>
+        /// <param name="overrideCallback">An action where the first argument is an <see cref="HttpServerConfiguration"/>.</param>
+        /// <definition>
+        /// public void UseOverrides(Action overrideCallback)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void UseOverrides(Action<HttpServerConfiguration> overrideCallback)
+        {
+            overrideCallback(_config);
         }
     }
 }

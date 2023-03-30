@@ -1,6 +1,7 @@
 ﻿using Sisk.Core.Http;
-using Sisk.Core.Routing.Handlers;
+using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -22,7 +23,7 @@ namespace Sisk.Core.Routing
     public class Router
     {
         internal Regex routePathComparator = new Regex(@"<[^>]+>", RegexOptions.Compiled);
-        internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result);
+        internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
         private Internal.WildcardMatching _pathMatcher = new Internal.WildcardMatching();
         private List<Route> _routes = new List<Route>();
         internal HttpServer? ParentServer { get; set; }
@@ -401,7 +402,7 @@ namespace Sisk.Core.Routing
             return false;
         }
 
-        internal RouterExecutionResult Execute(HttpRequest request)
+        internal RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest)
         {
             HttpContext? context = null;
             Route? matchedRoute = null;
@@ -463,24 +464,62 @@ namespace Sisk.Core.Routing
 
                 if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
                 {
-                    return new RouterExecutionResult(NotFoundErrorHandler(), null, matchResult);
+                    return new RouterExecutionResult(NotFoundErrorHandler(), null, matchResult, null);
                 }
                 else if (matchResult == RouteMatchResult.OptionsMatched)
                 {
                     HttpResponse corsResponse = new HttpResponse();
                     corsResponse.Status = System.Net.HttpStatusCode.OK;
 
-                    return new RouterExecutionResult(corsResponse, null, matchResult);
+                    return new RouterExecutionResult(corsResponse, null, matchResult, null);
                 }
                 else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
                 {
-                    return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute, matchResult);
+                    return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute, matchResult, null);
                 }
                 else if (matchResult == RouteMatchResult.FullyMatched)
                 {
                     HttpResponse? result = null;
                     context = new HttpContext(new Dictionary<string, object?>(), this.ParentServer, matchedRoute);
                     request.Context = context;
+
+                    // (BEFORE-CONTENTS) global handlers
+                    if (this.GlobalRequestHandlers is not null)
+                    {
+                        foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
+                        {
+                            bool isBypassed = false;
+                            foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
+                            {
+                                if (bypassed.Identifier == handler.Identifier)
+                                {
+                                    isBypassed = true;
+                                }
+                            }
+                            if (isBypassed)
+                                continue;
+                            HttpResponse? handlerResponse = handler.Execute(request, context);
+                            if (handlerResponse is not null)
+                            {
+                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                            }
+                        }
+                    }
+
+                    // (BEFORE-CONTENTS) specific handlers
+                    if (matchedRoute!.RequestHandlers is not null)
+                    {
+                        foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
+                        {
+                            HttpResponse? handlerResponse = handler.Execute(request, context);
+                            if (handlerResponse is not null)
+                            {
+                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                            }
+                        }
+                    }
+
+                    request.ImportContents(baseRequest.InputStream);
 
                     // (BEFORE) global handlers
                     if (this.GlobalRequestHandlers is not null)
@@ -500,7 +539,7 @@ namespace Sisk.Core.Routing
                             HttpResponse? handlerResponse = handler.Execute(request, context);
                             if (handlerResponse is not null)
                             {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
+                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
                             }
                         }
                     }
@@ -513,7 +552,7 @@ namespace Sisk.Core.Routing
                             HttpResponse? handlerResponse = handler.Execute(request, context);
                             if (handlerResponse is not null)
                             {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
+                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
                             }
                         }
                     }
@@ -523,23 +562,22 @@ namespace Sisk.Core.Routing
                         throw new ArgumentNullException(nameof(matchedRoute.Callback));
                     }
 
-                    if (CallbackErrorHandler is not null)
+                    try
                     {
-                        try
-                        {
-                            result = matchedRoute.Callback(request);
-                        }
-                        catch (Exception ex)
+                        result = matchedRoute.Callback(request);
+                        context.RouterResponse = result;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (CallbackErrorHandler is not null)
                         {
                             result = CallbackErrorHandler(ex, request);
                         }
+                        else
+                        {
+                            return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, ex);
+                        }
                     }
-                    else
-                    {
-                        result = matchedRoute.Callback(request);
-                    }
-
-                    context.RouterResponse = result;
                 }
 
                 // after GLOBAL request handlers
@@ -563,7 +601,7 @@ namespace Sisk.Core.Routing
 
                         if (handlerResponse is not null)
                         {
-                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
                         }
                     }
                 }
@@ -577,12 +615,12 @@ namespace Sisk.Core.Routing
 
                         if (handlerResponse is not null)
                         {
-                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult);
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
                         }
                     }
                 }
 
-                return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult);
+                return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult, null);
             }
             catch (Exception baseEx)
             {
@@ -591,7 +629,7 @@ namespace Sisk.Core.Routing
                 if (CallbackErrorHandler != null && !throwException)
                 {
                     HttpResponse res = CallbackErrorHandler(baseEx, request);
-                    return new RouterExecutionResult(res, matchedRoute, matchResult);
+                    return new RouterExecutionResult(res, matchedRoute, matchResult, baseEx);
                 }
                 else if (throwException)
                 {
@@ -599,7 +637,7 @@ namespace Sisk.Core.Routing
                 }
                 else
                 {
-                    return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult);
+                    return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, baseEx);
                 }
             }
         }

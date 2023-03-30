@@ -1,4 +1,4 @@
-﻿using Sisk.Core.Routing.Handlers;
+﻿using Sisk.Core.Routing;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Core.Routing

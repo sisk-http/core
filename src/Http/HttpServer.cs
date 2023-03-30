@@ -2,7 +2,9 @@
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Sisk.Core.Http
@@ -21,12 +23,11 @@ namespace Sisk.Core.Http
     /// </namespace>
     public class HttpServer : IDisposable
     {
-        private Mutex _accessLogMutex = new Mutex();
-        private Mutex _errorLogMutex = new Mutex();
         private bool _isListening = false;
         private bool _isDisposing = false;
         private HttpListener httpListener = new HttpListener();
         internal static string poweredByHeader = "";
+        private static TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
 
         static HttpServer()
         {
@@ -207,8 +208,9 @@ namespace Sisk.Core.Http
             httpListener.Stop();
         }
 
-        private string HumanReadableSize(float size)
+        private static string HumanReadableSize(float? size)
         {
+            if (size == null) return "";
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
             int order = 0;
             while (size >= 1024 && order < sizes.Length - 1)
@@ -216,7 +218,7 @@ namespace Sisk.Core.Http
                 order++;
                 size = size / 1024;
             }
-            return String.Format("{0:0.##}{1}", size, sizes[order]);
+            return string.Format("{0:0.##}{1}", size, sizes[order]);
         }
 
         private void TryCloseStream(HttpListenerResponse response)
@@ -241,6 +243,79 @@ namespace Sisk.Core.Http
             if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
         }
 
+        internal static string FormatAccessLog(
+            [In] string format,
+            [In] HttpServerExecutionResult res,
+            [In] DateTime d,
+            [In] Uri? bReqUri,
+            [In] IPAddress bReqIpAddr,
+            [In] NameValueCollection? reqHeaders,
+            [In] int bResStatusCode,
+            [In] string bResStatusDescr,
+            [In] float? incomingSize,
+            [In] float? outcomingSize,
+            [In] long execTime)
+        {
+            void replaceEntity(ref string format, string piece, Func<string?> result)
+            {
+                if (format.Contains(piece))
+                {
+                    string? repl = result();
+                    format = format.Replace(piece, repl);
+                }
+            }
+
+            void replaceHeaders(ref string format)
+            {
+                int pos = 0;
+                while ((pos = format.IndexOf("%{")) > 0)
+                {
+                    int end = format.IndexOf('}');
+                    string headerName = format.Substring(pos + 2, end - pos - 2);
+                    string? headerValue = reqHeaders?[headerName];
+                    format = format.Replace($"%{{{headerName}}}", headerValue);
+                }
+            }
+
+            Dictionary<string, Func<string?>> staticReplacements = new Dictionary<string, Func<string?>>()
+            {
+                { "%dd", () => $"{d.Day:D2}" },
+                { "%dmmm", () => $"{d:MMMM}" },
+                { "%dmm", () => $"{d:MMM}" },
+                { "%dm", () => $"{d.Month:D2}" },
+                { "%dy", () => $"{d.Year:D4}" },
+                { "%th", () => $"{d:hh}" },
+                { "%tH", () => $"{d:HH}" },
+                { "%ti", () => $"{d.Minute:D2}" },
+                { "%ts", () => $"{d.Second:D2}" },
+                { "%tm", () => $"{d.Millisecond:D3}" },// 
+                { "%tz", () => $"{currentTimezoneDiff.TotalHours:00}00" },
+                { "%ri", () => bReqIpAddr.ToString() },
+                { "%rs", () => bReqUri?.Scheme },
+                { "%ra", () => bReqUri?.Authority },
+                { "%rh", () => bReqUri?.Host },
+                { "%rp", () => bReqUri?.Port.ToString() },
+                { "%rz", () => bReqUri?.AbsolutePath ?? "/" },
+                { "%rq", () => bReqUri?.Query },
+                { "%sc", () => bResStatusCode.ToString() },
+                { "%sd", () => bResStatusDescr },
+                { "%lin", () => HumanReadableSize(incomingSize) },
+                { "%lou", () => HumanReadableSize(outcomingSize) },
+                { "%lms", () => execTime.ToString() },
+                { "%ls", () => res.Status.ToString() }
+            };
+
+            foreach (var k in staticReplacements)
+            {
+                replaceEntity(ref format, k.Key, k.Value);
+            }
+
+            replaceHeaders(ref format);
+
+            return format;
+        }
+
+
         private void ListenerCallback(IAsyncResult result)
         {
             if (_isDisposing || !_isListening)
@@ -264,13 +339,24 @@ namespace Sisk.Core.Http
             Stopwatch sw = new Stopwatch();
             HttpListenerResponse baseResponse = context.Response;
             HttpListenerRequest baseRequest = context.Request;
-            string verbosePrefix = "";
-            string verboseSuffix = "";
             long incomingSize = 0;
             long outcomingSize = 0;
             bool closeStream = true;
             bool useCors = false;
+            bool hasAccessLogging = ServerConfiguration.AccessLogsStream != null;
+            bool hasErrorLogging = ServerConfiguration.ErrorsLogsStream != null;
             LogOutput logMode = LogOutput.Both;
+            IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
+            Uri? connectingUri = baseRequest.Url;
+            int responseStatus = 0;
+            string responseDescription = "";
+            NameValueCollection? reqHeaders = null;
+
+            if (ServerConfiguration.DefaultCultureInfo != null)
+            {
+                Thread.CurrentThread.CurrentCulture = ServerConfiguration.DefaultCultureInfo;
+                Thread.CurrentThread.CurrentUICulture = ServerConfiguration.DefaultCultureInfo;
+            }
 
             HttpServerExecutionResult? executionResult = new HttpServerExecutionResult()
             {
@@ -281,27 +367,16 @@ namespace Sisk.Core.Http
 
             try
             {
-                string logAbsPath = "";
-                if (flag.IncludeFullPathOnLog)
-                {
-                    logAbsPath = baseRequest.Url?.PathAndQuery ?? "/";
-                }
-                else
-                {
-                    logAbsPath = baseRequest.Url?.AbsolutePath ?? "/";
-                }
-
-                verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {baseRequest.RemoteEndPoint.Address.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {logAbsPath}";
                 sw.Start();
 
-                if (baseRequest.Url is null)
+                if (connectingUri is null)
                 {
                     baseResponse.StatusCode = 400;
                     executionResult.Status = HttpServerExecutionStatus.DnsFailed;
                     return;
                 }
 
-                string dnsSafeHost = baseRequest.Url.DnsSafeHost;
+                string dnsSafeHost = connectingUri.DnsSafeHost;
                 string? forwardedHost = baseRequest.Headers["X-Forwarded-Host"];
                 if (ServerConfiguration.ResolveForwardedOriginHost && forwardedHost != null)
                 {
@@ -321,11 +396,11 @@ namespace Sisk.Core.Http
                 else
                 {
                     request = new HttpRequest(baseRequest, baseResponse, this.ServerConfiguration, matchedListeningHost);
-                }
-
-                if (ServerConfiguration.ResolveForwardedOriginAddress)
-                {
-                    verbosePrefix = $"{DateTime.Now:g} %%STATUS%% {request.Origin.ToString().TrimEnd('\0')} ({baseRequest.Url?.Scheme} {baseRequest.Url!.Authority}) {baseRequest.HttpMethod.ToUpper()} {baseRequest.Url?.AbsolutePath ?? "/"}";
+                    reqHeaders = new NameValueCollection(baseRequest.Headers);
+                    if (ServerConfiguration.ResolveForwardedOriginAddress || ServerConfiguration.ResolveForwardedOriginHost)
+                    {
+                        otherParty = request.Origin;
+                    }
                 }
 
                 if (matchedListeningHost.Router == null || !matchedListeningHost.CanListen)
@@ -352,7 +427,6 @@ namespace Sisk.Core.Http
                 }
 
                 // imports the request contents
-                request.ImportContents(baseRequest.InputStream);
                 incomingSize += request.CalcRequestSize();
 
                 // check for illegal body content requests
@@ -372,7 +446,7 @@ namespace Sisk.Core.Http
                 matchedListeningHost.Router.ParentServer = this;
                 matchedListeningHost.Router.ParentListenerHost = matchedListeningHost;
 
-                var routerResult = matchedListeningHost.Router.Execute(request);
+                var routerResult = matchedListeningHost.Router.Execute(request, baseRequest);
                 response = routerResult.Response;
                 logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
                 useCors = routerResult.Route?.UseCors ?? true;
@@ -387,7 +461,6 @@ namespace Sisk.Core.Http
                 }
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
                 {
-                    verboseSuffix = $"{HumanReadableSize((int)incomingSize) + " -> " + HumanReadableSize(response.CalculedLength)}";
                     executionResult.Status = HttpServerExecutionStatus.EventSourceClosed;
                     baseResponse.StatusCode = 200;
                     return;
@@ -400,7 +473,9 @@ namespace Sisk.Core.Http
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_ERROR)
                 {
                     executionResult.Status = HttpServerExecutionStatus.UncaughtExceptionThrown;
+                    executionResult.ServerException = routerResult.Exception;
                     baseResponse.StatusCode = 500;
+
                     return;
                 }
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_CLOSE)
@@ -425,10 +500,14 @@ namespace Sisk.Core.Http
                 {
                     baseResponse.StatusCode = response.CustomStatus.Value.StatusCode;
                     baseResponse.StatusDescription = response.CustomStatus.Value.Description;
+                    responseStatus = response.CustomStatus.Value.StatusCode;
+                    responseDescription = response.CustomStatus.Value.Description;
                 }
                 else
                 {
                     baseResponse.StatusCode = (int)response.Status;
+                    responseStatus = baseResponse.StatusCode;
+                    responseDescription = baseResponse.StatusDescription;
                 }
                 baseResponse.SendChunked = response.SendChunked;
 
@@ -476,7 +555,6 @@ namespace Sisk.Core.Http
 
                 closeStream = false;
                 executionResult.Status = HttpServerExecutionStatus.Executed;
-                verboseSuffix = $"[{httpStatusVerbose}] {HumanReadableSize((int)incomingSize) + " -> " + HumanReadableSize((int)outcomingSize)}";
             }
             catch (ObjectDisposedException objException)
             {
@@ -518,10 +596,43 @@ namespace Sisk.Core.Http
                     OnConnectionClose(this, executionResult);
                 }
 
-                bool canAccessLog = logMode == LogOutput.AccessLog || logMode == LogOutput.Both;
-                bool canErrorLog = logMode == LogOutput.ErrorLog || logMode == LogOutput.Both;
+                bool canAccessLog = logMode.HasFlag(LogOutput.AccessLog) && hasAccessLogging;
+                bool canErrorLog = logMode.HasFlag(LogOutput.ErrorLog) && hasAccessLogging;
 
                 if (executionResult.ServerException != null && canErrorLog)
+                {
+                    StringBuilder exceptionStr = new StringBuilder();
+                    exceptionStr.AppendLine($"Exception thrown at {DateTime.Now:R}");
+                    exceptionStr.AppendLine($"-------------\nRequest:");
+                    exceptionStr.AppendLine(request.GetRawHttpRequest(false));
+                    exceptionStr.AppendLine($"\n-------------\nError contents:");
+                    exceptionStr.AppendLine(executionResult.ServerException.ToString());
+
+                    if (executionResult.ServerException.InnerException != null)
+                    {
+                        exceptionStr.AppendLine($"\n-------------\nInner exception:");
+                        exceptionStr.AppendLine(executionResult.ServerException.InnerException.ToString());
+                    }
+
+                    ServerConfiguration.ErrorsLogsStream?.WriteLine(exceptionStr.ToString());
+                }
+                if (canAccessLog)
+                {
+                    string line = FormatAccessLog(ServerConfiguration.AccessLogsFormat,
+                        executionResult,
+                        DateTime.Now,
+                        connectingUri,
+                        otherParty,
+                        reqHeaders,
+                        responseStatus,
+                        responseDescription,
+                        incomingSize,
+                        outcomingSize,
+                        sw.ElapsedMilliseconds);
+                    ServerConfiguration.AccessLogsStream?.WriteLine(line);
+                }
+
+                /*if (executionResult.ServerException != null && canErrorLog)
                 {
                     _errorLogMutex.WaitOne();
                     ServerConfiguration.ErrorsLogsStream?.WriteLine($"Exception thrown at {DateTime.Now:R}");
@@ -546,7 +657,7 @@ namespace Sisk.Core.Http
                         ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix}");
                     }
                     _accessLogMutex.ReleaseMutex();
-                }
+                }*/
             }
         }
 

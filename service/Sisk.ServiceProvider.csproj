@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>Sisk.ServiceProvider</Title>
+		<PackageId>Sisk.ServiceProvider</PackageId>
+		<Version>0.11</Version>
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.ServiceProvider</Product>
+		<Description>This package includes tools for easily porting your Sisk service.</Description>
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PackageTags>http-server,http,web framework</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		<AssemblyVersion>0.11</AssemblyVersion>
+		<FileVersion>0.11</FileVersion>
+		<NeutralLanguage>en</NeutralLanguage>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include="..\.github\Icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\.nuget\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\LICENSE.txt">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\src\Sisk.Core.csproj" />
+	</ItemGroup>
+
+</Project>

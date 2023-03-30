@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Sisk.Core.Http
 {
@@ -22,11 +25,36 @@ namespace Sisk.Core.Http
         public HttpServerFlags Flags { get; set; } = new HttpServerFlags();
 
         /// <summary>
+        /// Gets or sets the access logging format for incoming HTTP requests.
+        /// </summary>
+        /// <definition>
+        /// public string AccessLogsFormat { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public string AccessLogsFormat { get; set; } = "%dd-%dm-%dy %th:%ti:%ts %ls %ri %rs://%ra%rz%rq [%sc %sd] %lin -> %lou in %lmsms";
+
+        /// <summary>
+        /// Gets or sets the default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.
+        /// </summary>
+        /// <definition>
+        /// public CultureInfo? DefaultCultureInfo { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public CultureInfo? DefaultCultureInfo { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server access messages to.
         /// </summary>
         /// <remarks>
-        /// This property defaults to Console.Out. By setting this property to null, no output will be written, completely ignoring the `Verbose` property.
-        /// </remarks>
+        /// This property defaults to Console.Out.
+        /// </remarks> 
         /// <definition>
         /// public TextWriter? AccessLogsStream { get; set; }
         /// </definition>
@@ -36,13 +64,13 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public TextWriter? AccessLogsStream { get; set; } = Console.Out;
+        public LogStream? AccessLogsStream { get; set; } = LogStream.ConsoleOutput;
 
         /// <summary>
         /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server error transcriptions to.
         /// </summary>
         /// <remarks>
-        /// This stream could be empty if ThrowExceptions is true.
+        /// This stream can be empty if ThrowExceptions is true.
         /// </remarks>
         /// <definition>
         /// public TextWriter? ErrorsLogsStream { get; set; }
@@ -53,7 +81,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public TextWriter? ErrorsLogsStream { get; set; }
+        public LogStream? ErrorsLogsStream { get; set; }
 
         /// <summary>
         /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using Sisk through a reverse proxy.
@@ -218,7 +246,7 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <definition>
     /// public enum VerboseMode
-    /// </definition>
+    /// </definition> 
     /// <type>
     /// Enum
     /// </type>

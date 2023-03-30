@@ -1,9 +1,9 @@
 ﻿using System.Collections.Specialized;
 
-namespace Sisk.Core.Routing.Handlers
+namespace Sisk.Core.Routing
 {
     /// <summary>
-    /// Provides a class that instantiates request handlers, capable of porting them to Agirax.
+    /// Provides a class that instantiates request handlers.
     /// </summary>
     /// <definition>
     /// public abstract class RequestHandlerFactory

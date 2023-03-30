@@ -44,17 +44,13 @@ namespace Sisk.Provider
             prov.ServerConfiguration.IncludeRequestIdHeader = config.Server.IncludeRequestIdHeader;
             prov.ServerConfiguration.ThrowExceptions = config.Server.ThrowExceptions;
 
-
             if (config.Server.AccessLogsStream?.ToLower() == "console")
             {
-                prov.ServerConfiguration.AccessLogsStream = Console.Out;
+                prov.ServerConfiguration.AccessLogsStream = LogStream.ConsoleOutput;
             }
             else if (config.Server.AccessLogsStream != null)
             {
-                prov.ServerConfiguration.AccessLogsStream = new StreamWriter(config.Server.AccessLogsStream, true, prov.ServerConfiguration.DefaultEncoding)
-                {
-                    AutoFlush = true
-                };
+                prov.ServerConfiguration.AccessLogsStream = new LogStream(config.Server.AccessLogsStream);
             }
             else
             {
@@ -63,14 +59,11 @@ namespace Sisk.Provider
 
             if (config.Server.ErrorsLogsStream?.ToLower() == "console")
             {
-                prov.ServerConfiguration.ErrorsLogsStream = Console.Out;
+                prov.ServerConfiguration.ErrorsLogsStream = LogStream.ConsoleOutput;
             }
             else if (config.Server.ErrorsLogsStream != null)
             {
-                prov.ServerConfiguration.ErrorsLogsStream = new StreamWriter(config.Server.ErrorsLogsStream, true, prov.ServerConfiguration.DefaultEncoding)
-                {
-                    AutoFlush = true
-                };
+                prov.ServerConfiguration.ErrorsLogsStream = new LogStream(config.Server.ErrorsLogsStream);
             }
             else
             {
@@ -119,6 +112,11 @@ namespace Sisk.Provider
             }
 
             prov.ServerConfiguration.ListeningHosts.Add(host);
+
+            if (prov.__cfg != null)
+            {
+                prov.__cfg(new ServiceProviderConfigurator(prov.ServerConfiguration, prov));
+            }
 
             if (prov.HttpServer == null)
             {

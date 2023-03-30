@@ -1,6 +1,4 @@
-﻿using Sisk.Core.Routing.Handlers;
-
-namespace Sisk.Core.Routing
+﻿namespace Sisk.Core.Routing
 {
     /// <summary>
     /// Represents an HTTP route to be matched by an <see cref="Router"/> object.
@@ -197,23 +195,24 @@ namespace Sisk.Core.Routing
     /// <namespace>
     /// Sisk.Core.Routing
     /// </namespace>
+    [Flags]
     public enum LogOutput
     {
         /// <summary>
         /// Determines that the context or the route can write log messages only to the access logs.
         /// </summary>
-        AccessLog,
+        AccessLog = 1,
         /// <summary>
         /// Determines that the context or the route can write error messages only to the error logs.
         /// </summary>
-        ErrorLog,
+        ErrorLog = 2,
         /// <summary>
         /// Determines that the context or the route can write log messages to both error and access logs.
         /// </summary>
-        Both,
+        Both = AccessLog | ErrorLog,
         /// <summary>
         /// Determines that the context or the route cannot write any log messages.
         /// </summary>
-        None
+        None = 0
     }
 }

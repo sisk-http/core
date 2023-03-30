@@ -33,11 +33,6 @@ namespace Sisk.Core.Http
         public LogOutput OptionsLogMode = LogOutput.Both;
 
         /// <summary>
-        /// Determines if the HTTP server should write URL query information to the access/error logs.
-        /// </summary>
-        public bool IncludeFullPathOnLog = false;
-
-        /// <summary>
         /// Determines if the HTTP server should send the X-Powered-By header in all responses.
         /// </summary>
         public bool SendSiskHeader = true;

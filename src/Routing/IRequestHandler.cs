@@ -1,6 +1,6 @@
 ﻿using Sisk.Core.Http;
 
-namespace Sisk.Core.Routing.Handlers
+namespace Sisk.Core.Routing
 {
     /// <summary>
     /// Represents an interface that is executed before a request.
@@ -78,7 +78,12 @@ namespace Sisk.Core.Routing.Handlers
     public enum RequestHandlerExecutionMode
     {
         /// <summary>
-        /// Indicates that the handler must be executed before the router calls the route callback.
+        /// Indicates that the handler must be executed before the router calls the route callback and before the request content is available.
+        /// </summary>
+        BeforeContents,
+
+        /// <summary>
+        /// Indicates that the handler must be executed before the router calls the route callback and after request contents is loaded.
         /// </summary>
         BeforeResponse,
 
