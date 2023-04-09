@@ -145,6 +145,25 @@
         /// </summary>
         /// <param name="method">The matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.</param>
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
+        /// <param name="callback">The function that is called after the route is matched with the request.</param>
+        /// <definition>
+        /// public Route(RouteMethod method, string path, RouterCallback callback)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public Route(RouteMethod method, string path, RouterCallback callback)
+        {
+            Method = method;
+            Path = path;
+            Callback = callback;
+        }
+
+        /// <summary>
+        /// Creates an new <see cref="Route"/> instance with given parameters.
+        /// </summary>
+        /// <param name="method">The matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.</param>
+        /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
         /// <param name="name">The route name. It allows it to be found by other routes and makes it easier to create links.</param>
         /// <param name="callback">The function that is called after the route is matched with the request.</param>
         /// <param name="beforeCallback">The RequestHandlers to run before the route's Callback.</param>

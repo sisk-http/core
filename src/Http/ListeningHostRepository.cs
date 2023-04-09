@@ -140,12 +140,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public bool Contains(ListeningHost item)
         {
-            foreach (ListeningHost h in this._hosts)
-            {
-                if (CompareListeningHost(item, h))
-                    return true;
-            }
-            return false;
+            return _hosts.Contains(item);
         }
 
         /// <summary>
@@ -201,16 +196,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public bool Remove(ListeningHost item)
         {
-            for (int i = 0; i < _hosts.Count; i++)
-            {
-                ListeningHost h = _hosts[i];
-                if (CompareListeningHost(h, item))
-                {
-                    _hosts.RemoveAt(i);
-                    return true;
-                }
-            }
-            return false;
+            return _hosts.Remove(item);
         }
 
         /// <summary>
@@ -257,11 +243,6 @@ namespace Sisk.Core.Http
                 }
             }
             return null;
-        }
-
-        private bool CompareListeningHost(ListeningHost a, ListeningHost b)
-        {
-            return a.Handle == b.Handle;
         }
     }
 }

@@ -137,7 +137,7 @@ namespace Sisk.Core.Entity
         }
 
         /// <summary>
-        /// Reads the content bytes as an ASCII string.
+        /// Reads the content bytes using the <see cref="DefaultContentEncoding"/> encoding.
         /// </summary>
         /// <returns></returns>
         /// <definition>

@@ -1,6 +1,5 @@
 ﻿using Sisk.Core.Entity;
 using Sisk.Core.Routing;
-using System.Runtime.Serialization;
 
 namespace Sisk.Core.Http
 {
@@ -22,19 +21,49 @@ namespace Sisk.Core.Http
         internal int[] _numericPorts = null!;
 
         /// <summary>
-        /// Gets an unique identifier to this listening host instance.
+        /// Determines if another object is equals to this class instance.
         /// </summary>
+        /// <param name="obj">The another object which will be used to compare.</param>
+        /// <returns></returns>
         /// <definition>
-        /// public long Handle { get; }
+        /// public override bool Equals(object? obj)
         /// </definition>
         /// <type>
-        /// Property
+        /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public long Handle { get; private set; }
-        private long _handle = 0;
+        public override bool Equals(object? obj)
+        {
+            ListeningHost? other = (obj as ListeningHost);
+            if (other == null) return false;
+            if (other._ports.Length != _ports.Length) return false;
+            for (int i = 0; i < _ports.Length; i++)
+            {
+                ListeningPort A = this._ports[i];
+                ListeningPort B = other._ports[i];
+                if (!A.Equals(B)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the hash code for this listening host.
+        /// </summary>
+        /// <returns></returns>
+        /// <definition>
+        /// public override int GetHashCode()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public override int GetHashCode()
+        {
+            int hashCode = 0;
+            foreach (var port in _ports)
+            {
+                hashCode ^= port.GetHashCode();
+            }
+            return hashCode;
+        }
 
         /// <summary>
         /// Gets whether this <see cref="ListeningHost"/> can be listened by it's host <see cref="HttpServer"/>.
@@ -134,10 +163,6 @@ namespace Sisk.Core.Http
         private ListeningHost()
         {
             Hostname = null!;
-            fixed (long* h = &_handle)
-            {
-                Handle = (long)h;
-            }
         }
 
         /// <summary>

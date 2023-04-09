@@ -28,6 +28,7 @@ namespace Sisk.Core.Http
         private HttpListener httpListener = new HttpListener();
         internal static string poweredByHeader = "";
         private static TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+        internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
 
         static HttpServer()
         {
@@ -62,6 +63,17 @@ namespace Sisk.Core.Http
         /// Sisk.Core.Http
         /// </namespace>
         public bool IsListening { get => _isListening && !_isDisposing; }
+
+        /// <summary>
+        /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
+        /// </summary>
+        /// <definition>
+        /// public HttpEventSourceCollection EventSources { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpEventSourceCollection EventSources { get => _eventCollection; }
 
         /// <summary>
         /// Event that is called when this <see cref="HttpServer"/> computes an request and it's response.
@@ -316,7 +328,7 @@ namespace Sisk.Core.Http
         }
 
 
-        private void ListenerCallback(IAsyncResult result)
+        private unsafe void ListenerCallback(IAsyncResult result)
         {
             if (_isDisposing || !_isListening)
                 return;
@@ -395,7 +407,7 @@ namespace Sisk.Core.Http
                 }
                 else
                 {
-                    request = new HttpRequest(baseRequest, baseResponse, this.ServerConfiguration, matchedListeningHost);
+                    request = new HttpRequest(baseRequest, baseResponse, this, matchedListeningHost, flag);
                     reqHeaders = new NameValueCollection(baseRequest.Headers);
                     if (ServerConfiguration.ResolveForwardedOriginAddress || ServerConfiguration.ResolveForwardedOriginHost)
                     {
@@ -462,7 +474,7 @@ namespace Sisk.Core.Http
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
                 {
                     executionResult.Status = HttpServerExecutionStatus.EventSourceClosed;
-                    baseResponse.StatusCode = 200;
+                    baseResponse.StatusCode = (int)response.Status;
                     return;
                 }
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_EMPTY)
@@ -597,7 +609,7 @@ namespace Sisk.Core.Http
                 }
 
                 bool canAccessLog = logMode.HasFlag(LogOutput.AccessLog) && hasAccessLogging;
-                bool canErrorLog = logMode.HasFlag(LogOutput.ErrorLog) && hasAccessLogging;
+                bool canErrorLog = logMode.HasFlag(LogOutput.ErrorLog) && hasErrorLogging;
 
                 if (executionResult.ServerException != null && canErrorLog)
                 {

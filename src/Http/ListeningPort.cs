@@ -1,4 +1,6 @@
-﻿namespace Sisk.Core.Http
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Sisk.Core.Http
 {
     /// <summary>
     /// Provides a structure to contain a listener port for an <see cref="ListeningHost"/> instance.
@@ -79,6 +81,39 @@
         {
             this.Port = port;
             this.Secure = secure;
+        }
+
+        /// <summary>
+        /// Determines if another object is equals to this class instance.
+        /// </summary>
+        /// <param name="obj">The another object which will be used to compare.</param>
+        /// <returns></returns>
+        /// <definition>
+        /// public override bool Equals(object? obj)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public override bool Equals(object? obj)
+        {
+            if (obj == null) return false;
+            ListeningPort p = (ListeningPort)obj;
+            return p.Secure == this.Secure && p.Port == this.Port;
+        }
+
+        /// <summary>
+        /// Gets the hash code for this listening port.
+        /// </summary>
+        /// <returns></returns>
+        /// <definition>
+        /// public override int GetHashCode()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public override int GetHashCode()
+        {
+            return (this.Secure.GetHashCode()) ^ (this.Port.GetHashCode());
         }
     }
 }

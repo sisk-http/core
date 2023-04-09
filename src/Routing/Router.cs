@@ -131,6 +131,23 @@ namespace Sisk.Core.Routing
         public Route[] GetDefinedRoutes() => _routes.ToArray();
 
         /// <summary>
+        /// Defines an route to an router.
+        /// </summary>
+        /// <param name="r">The router instance which the route is being set.</param>
+        /// <param name="route">The route to be defined in the router.</param>
+        /// <definition>
+        /// public static Router operator +(Router r, Route route)
+        /// </definition>
+        /// <type>
+        /// Operator
+        /// </type>
+        public static Router operator +(Router r, Route route)
+        {
+            r.SetRoute(route);
+            return r;
+        }
+
+        /// <summary>
         /// Gets an route object by their name that is defined in this Router.
         /// </summary>
         /// <param name="name">The route name.</param>
@@ -407,6 +424,7 @@ namespace Sisk.Core.Routing
             HttpContext? context = null;
             Route? matchedRoute = null;
             RouteMatchResult matchResult = RouteMatchResult.NotMatched;
+            bool throwException = ParentServer?.ServerConfiguration.ThrowExceptions ?? false;
 
             try
             {
@@ -565,18 +583,25 @@ namespace Sisk.Core.Routing
                     try
                     {
                         result = matchedRoute.Callback(request);
-                        context.RouterResponse = result;
                     }
                     catch (Exception ex)
                     {
-                        if (CallbackErrorHandler is not null)
+                        if (!throwException)
                         {
-                            result = CallbackErrorHandler(ex, request);
+                            if (CallbackErrorHandler is not null)
+                            {
+                                result = CallbackErrorHandler(ex, request);
+                            }
+                            else
+                            {
+                                return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, ex);
+                            }
                         }
-                        else
-                        {
-                            return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, ex);
-                        }
+                        else throw;
+                    }
+                    finally
+                    {
+                        context.RouterResponse = result;
                     }
                 }
 
@@ -624,20 +649,21 @@ namespace Sisk.Core.Routing
             }
             catch (Exception baseEx)
             {
-                bool throwException = ParentServer?.ServerConfiguration.ThrowExceptions ?? false;
-
-                if (CallbackErrorHandler != null && !throwException)
+                if (!throwException)
                 {
-                    HttpResponse res = CallbackErrorHandler(baseEx, request);
-                    return new RouterExecutionResult(res, matchedRoute, matchResult, baseEx);
-                }
-                else if (throwException)
-                {
-                    throw;
+                    if (CallbackErrorHandler != null)
+                    {
+                        HttpResponse res = CallbackErrorHandler(baseEx, request);
+                        return new RouterExecutionResult(res, matchedRoute, matchResult, baseEx);
+                    }
+                    else
+                    {
+                        return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, baseEx);
+                    }
                 }
                 else
                 {
-                    return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, baseEx);
+                    throw;
                 }
             }
         }

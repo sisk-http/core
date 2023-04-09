@@ -37,22 +37,25 @@ namespace Sisk.Core.Http
     /// </namespace>
     public sealed class HttpRequest
     {
+        internal HttpServer baseServer;
         internal ListeningHost hostContext;
         private HttpServerConfiguration contextServerConfiguration;
         private HttpListenerResponse listenerResponse;
         private HttpListenerRequest listenerRequest;
         private byte[]? contentBytes;
-        internal bool isServingEventSourceEvents;
+        internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
         private bool isContentAvailable = false;
 
         internal HttpRequest(
             HttpListenerRequest listenerRequest,
             HttpListenerResponse listenerResponse,
-            HttpServerConfiguration contextServerConfiguration,
-            ListeningHost host)
+            HttpServer server,
+            ListeningHost host,
+            HttpServerFlags flags)
         {
-            this.contextServerConfiguration = contextServerConfiguration;
+            this.baseServer = server;
+            this.contextServerConfiguration = baseServer.ServerConfiguration;
             this.listenerResponse = listenerResponse;
             this.listenerRequest = listenerRequest;
             this.hostContext = host;
@@ -729,24 +732,24 @@ namespace Sisk.Core.Http
         /// Gets an Event Source interface for this request. Calling this method will put this <see cref="HttpRequest"/> instance in it's
         /// event source listening state.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="identifier">Defines an label to the EventStream connection, useful for finding this connection's reference later.</param>
         /// <definition>
-        /// public HttpRequestEventSource GetEventSource()
+        /// public HttpRequestEventSource GetEventSource(string? identifier = null)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
         /// <namespace>
-        /// Sisk.Core.Http
+        /// Sisk.Core.Http 
         /// </namespace>
-        public HttpRequestEventSource GetEventSource()
+        public HttpRequestEventSource GetEventSource(string? identifier = null)
         {
-            if (isServingEventSourceEvents)
+            if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already listening to Event Source.");
+                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
             }
-            isServingEventSourceEvents = true;
-            activeEventSource = new HttpRequestEventSource(listenerResponse, listenerRequest, this);
+            isStreaming = true;
+            activeEventSource = new HttpRequestEventSource(identifier, listenerResponse, listenerRequest, this);
             return activeEventSource;
         }
 
