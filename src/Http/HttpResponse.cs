@@ -21,10 +21,18 @@ namespace Sisk.Core.Http
     public class HttpResponse
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;
-        internal const byte HTTPRESPONSE_EVENTSOURCE_CLOSE = 4;
+        internal const byte HTTPRESPONSE_STREAM_CLOSE = 4;
         internal const byte HTTPRESPONSE_ERROR = 8;
         internal const byte HTTPRESPONSE_CLOSE = 16;
         internal int CalculedLength = 0;
+
+#pragma warning disable 
+        ~HttpResponse()
+        {
+            this.Content = null;
+            this.Headers = null;
+        }
+#pragma warning restore
 
         /// <summary>
         /// Gets or sets an custom HTTP status code and description for this HTTP response. If this property ins't null, it will overwrite
@@ -67,7 +75,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public NameValueCollection Headers { get; } = new NameValueCollection();
+        public NameValueCollection Headers { get; private set; } = new NameValueCollection();
 
         /// <summary>
         /// Gets or sets the HTTP response body contents.

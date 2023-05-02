@@ -22,39 +22,49 @@ using Sisk.Core.Routing;
 
 namespace myProgram;
 
-class Program
+public class Program
 {
     static void Main(string[] args)
     {
-        Router router = new Router();
-        HttpServerConfiguration config = new HttpServerConfiguration();
-        config.ListeningHosts.Add(new ListeningHost("localhost", 5555, router));
-        HttpServer server = new HttpServer(config);
+        HttpServer http = HttpServer.Emit(
+            insecureHttpPort: 5555,
+            out HttpServerConfiguration serverConfig,
+            out ListeningHost listeningHost,
+            out Router mainRouter
+        );
 
-        router.SetRoute(RouteMethod.Get, "/", (req) =>
+        mainRouter += new Route(RouteMethod.Get, "/", request =>
         {
-            return req.CreateOkResponse("Hello, world!");
+            return new HttpResponse(200) { Content = new StringContent("Hello, world!") };
         });
 
-        server.Start();
-        Thread.Sleep(-1); // prevent hauting
+        http.Start();
+
+        Console.WriteLine($"HTTP server is listening on {http.ListeningPrefixes[0]}");
+
+        Thread.Sleep(-1);
     }
 }
 ```
 
 ## Features
 
+- 100% open source
 - Multi-platform and cross-operating system
-- Ultra fast response/second average
-- Support to operating system's native HTTP interface listener
+- Ultra fast asynchronous response/second average
+- Uses the operating system's native HTTP interface listener
 - Sustainable and maintainable
-- Database-agnostic
+- Code-pattern-agnostic
+- Easy setup
 - Same code implementation for *nix, Mac OS and Windows
-- Asynchronous request handling
 - Middlewares, before and/or after request handlers
 - Configurable error handling
-- Support to log access/error logs
+- Support to log advanced logging with rotating support
 - Easy Cross-Origin Resource Sharing setup
+- Server Side Events and Web Sockets support
+- Multiple listening hosts per service
+- Advanced routing system
+- Less than 170kb the entire package
 - Written in C#
 
 ## Documentation

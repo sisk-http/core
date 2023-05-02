@@ -1,9 +1,12 @@
 ﻿using Sisk.Core.Entity;
+using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -29,11 +32,44 @@ namespace Sisk.Core.Http
         internal static string poweredByHeader = "";
         private static TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
+        internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
+        internal List<string>? listeningPrefixes;
 
         static HttpServer()
         {
             Version assVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!;
             poweredByHeader = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
+        }
+
+        /// <summary>
+        /// Outputs an non-listening HTTP server with configuration, listening host, and router.
+        /// </summary>
+        /// <remarks>This method is not appropriate to running production servers.</remarks>
+        /// <param name="insecureHttpPort">The insecure port where the HTTP server will listen.</param>
+        /// <param name="configuration">The <see cref="HttpServerConfiguration"/> object issued from this method.</param>
+        /// <param name="host">The <see cref="ListeningHost"/> object issued from this method.</param>
+        /// <param name="router">The <see cref="Router"/> object issued from this method.</param>
+        /// <returns></returns>
+        /// <definition>
+        /// public static HttpServer Emit(in int insecureHttpPort, out HttpServerConfiguration configuration, out ListeningHost host, out Router router)
+        /// </definition>
+        /// <type>
+        /// Static method
+        /// </type>
+        public static HttpServer Emit(
+                in int insecureHttpPort,
+                out HttpServerConfiguration configuration,
+                out ListeningHost host,
+                out Router router
+            )
+        {
+            router = new Router();
+            host = new ListeningHost("localhost", new ListeningPort(insecureHttpPort, false), router);
+            configuration = new HttpServerConfiguration();
+            configuration.ListeningHosts.Add(host);
+
+            HttpServer server = new HttpServer(configuration);
+            return server;
         }
 
         /// <summary>
@@ -65,6 +101,20 @@ namespace Sisk.Core.Http
         public bool IsListening { get => _isListening && !_isDisposing; }
 
         /// <summary>
+        /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
+        /// </summary>
+        /// <definition>
+        /// public string ListeningPrefixes { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <namespace>
+        /// Sisk.Core.Http
+        /// </namespace>
+        public string[] ListeningPrefixes => listeningPrefixes?.ToArray() ?? Array.Empty<string>();
+
+        /// <summary>
         /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
         /// </summary>
         /// <definition>
@@ -74,6 +124,17 @@ namespace Sisk.Core.Http
         /// Property
         /// </type>
         public HttpEventSourceCollection EventSources { get => _eventCollection; }
+
+        /// <summary>
+        /// Gets an <see cref="HttpWebSocketConnectionCollection"/> with active Web Sockets connections in this HTTP server.
+        /// </summary>
+        /// <definition>
+        /// public HttpWebSocketConnectionCollection WebSockets { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpWebSocketConnectionCollection WebSockets { get => _wsCollection; }
 
         /// <summary>
         /// Event that is called when this <see cref="HttpServer"/> computes an request and it's response.
@@ -173,7 +234,7 @@ namespace Sisk.Core.Http
                 throw new InvalidOperationException("Cannot start the HTTP server with no listening hosts.");
             }
 
-            List<string> listeningPrefixes = new List<string>();
+            listeningPrefixes = new List<string>();
             foreach (ListeningHost listeningHost in this.ServerConfiguration.ListeningHosts)
             {
                 foreach (ListeningPort port in listeningHost.Ports)
@@ -407,7 +468,7 @@ namespace Sisk.Core.Http
                 }
                 else
                 {
-                    request = new HttpRequest(baseRequest, baseResponse, this, matchedListeningHost, flag);
+                    request = new HttpRequest(baseRequest, baseResponse, this, matchedListeningHost, context);
                     reqHeaders = new NameValueCollection(baseRequest.Headers);
                     if (ServerConfiguration.ResolveForwardedOriginAddress || ServerConfiguration.ResolveForwardedOriginHost)
                     {
@@ -471,9 +532,9 @@ namespace Sisk.Core.Http
                     executionResult.Status = HttpServerExecutionStatus.NoResponse;
                     return;
                 }
-                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
+                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_STREAM_CLOSE)
                 {
-                    executionResult.Status = HttpServerExecutionStatus.EventSourceClosed;
+                    executionResult.Status = HttpServerExecutionStatus.StreamClosed;
                     baseResponse.StatusCode = (int)response.Status;
                     return;
                 }
@@ -546,7 +607,11 @@ namespace Sisk.Core.Http
                         baseResponse.ContentEncoding = ServerConfiguration.DefaultEncoding;
                     }
 
-                    baseResponse.ContentLength64 = responseBytes.Length;
+                    if (!response.SendChunked)
+                    {
+                        baseResponse.ContentLength64 = responseBytes.Length;
+                    }
+
                     if (context.Request.HttpMethod != "HEAD")
                     {
                         baseResponse.OutputStream.Write(responseBytes);
@@ -564,6 +629,7 @@ namespace Sisk.Core.Http
 
                 sw.Stop();
                 baseResponse.Close();
+                baseRequest.InputStream.Close();
 
                 closeStream = false;
                 executionResult.Status = HttpServerExecutionStatus.Executed;
@@ -600,6 +666,7 @@ namespace Sisk.Core.Http
             {
                 if (closeStream)
                 {
+                    baseRequest.InputStream.Close();
                     TryCloseStream(baseResponse);
                 }
 
@@ -643,33 +710,6 @@ namespace Sisk.Core.Http
                         sw.ElapsedMilliseconds);
                     ServerConfiguration.AccessLogsStream?.WriteLine(line);
                 }
-
-                /*if (executionResult.ServerException != null && canErrorLog)
-                {
-                    _errorLogMutex.WaitOne();
-                    ServerConfiguration.ErrorsLogsStream?.WriteLine($"Exception thrown at {DateTime.Now:R}");
-                    ServerConfiguration.ErrorsLogsStream?.WriteLine(executionResult.ServerException);
-                    if (executionResult.ServerException.InnerException != null)
-                    {
-                        ServerConfiguration.ErrorsLogsStream?.WriteLine(executionResult.ServerException.InnerException);
-                    }
-                    _errorLogMutex.ReleaseMutex();
-                }
-
-                if (ServerConfiguration.AccessLogsStream != null && canAccessLog)
-                {
-                    _accessLogMutex.WaitOne();
-                    verbosePrefix = verbosePrefix.Replace("%%STATUS%%", executionResult.Status.ToString());
-                    if (!string.IsNullOrEmpty(verboseSuffix))
-                    {
-                        ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix} {verboseSuffix} after {sw.ElapsedMilliseconds}ms");
-                    }
-                    else
-                    {
-                        ServerConfiguration.AccessLogsStream.WriteLine($"{verbosePrefix}");
-                    }
-                    _accessLogMutex.ReleaseMutex();
-                }*/
             }
         }
 

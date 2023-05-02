@@ -32,7 +32,7 @@ namespace Sisk.Core.Routing
         public abstract Router BuildRouter();
 
         /// <summary>
-        /// Method that is called by the Agirax instantiator with the parameters defined in configuration before calling <see cref="BuildRouter()"/>.
+        /// Method that is called by the service instantiator with the parameters defined in configuration before calling <see cref="BuildRouter()"/>.
         /// </summary>
         /// <param name="setupParameters">Parameters that are defined in a configuration file.</param>
         /// <definition>
@@ -45,5 +45,16 @@ namespace Sisk.Core.Routing
         /// Sisk.Core.Routing
         /// </namespace>
         public abstract void Setup(NameValueCollection setupParameters);
+
+        /// <summary>
+        /// Method that is called immediately before initializing the service, after all configurations was parsed and set up.
+        /// </summary>
+        /// <definition>
+        /// public abstract void Bootstrap();
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type> 
+        public abstract void Bootstrap();
     }
 }

@@ -98,7 +98,7 @@ namespace Sisk.Provider
         /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
         /// </summary>
         /// <definition>
-        /// public TextWriter? ErrorLogs { get; }
+        /// public TextWriter? ErrorLogs { get; } 
         /// </definition>
         /// <type>
         /// Property

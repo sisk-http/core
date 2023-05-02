@@ -114,7 +114,7 @@
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.EventSourceClosed; }
+        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.StreamClosed; }
 
         /// <summary>
         /// Gets the request size in bytes.
@@ -173,7 +173,7 @@
         ContentServedOnIllegalMethod,
 
         /// <summary>
-        /// This enum is deprecated. Use <see cref="ContentServedOnIllegalMethod"/> instead.
+        /// This enum value is deprecated. Use <see cref="ContentServedOnIllegalMethod"/> instead.
         /// </summary>
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete]
@@ -185,9 +185,16 @@
         ContentTooLarge,
 
         /// <summary>
-        /// Represents that an Event Source Events connection has been closed on the HTTP server.
+        /// Represents that the connection stream was closed.
         /// </summary>
-        EventSourceClosed,
+        StreamClosed,
+
+        /// <summary>
+        /// This enum value is deprecated. Use <see cref="StreamClosed"/> instead.
+        /// </summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete]
+        EventSourceClosed = StreamClosed,
 
         /// <summary>
         /// Represents that the router did not deliver a response to the received request.

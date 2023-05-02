@@ -38,6 +38,11 @@ namespace Sisk.Core.Http
         public bool SendSiskHeader = true;
 
         /// <summary>
+        /// Determines the WebSocket buffer initial and max length.
+        /// </summary>
+        public int WebSocketBufferSize = 1024;
+
+        /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
         public HttpServerFlags()

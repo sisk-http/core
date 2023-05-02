@@ -125,6 +125,7 @@ namespace Sisk.Provider
 
             try
             {
+                fac.Bootstrap();
                 prov.HttpServer.Start();
             }
             catch (Exception ex)

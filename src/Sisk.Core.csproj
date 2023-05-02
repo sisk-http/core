@@ -5,7 +5,7 @@
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 
 		<OutputType>Library</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -29,9 +29,9 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		
 		
-		<AssemblyVersion>0.11.1</AssemblyVersion>
-		<FileVersion>0.11.1</FileVersion>
-		<Version>0.11.1</Version>
+		<AssemblyVersion>0.12.1</AssemblyVersion>
+		<FileVersion>0.12.1</FileVersion>
+		<Version>0.12.1</Version>
 		
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
@@ -48,11 +48,11 @@
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DebugType>portable</DebugType>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<DebugType>portable</DebugType>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>

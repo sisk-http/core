@@ -139,7 +139,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         /// <remarks>
         /// Leave it as "0" to set the maximum content length to unlimited.
-        /// </remarks>
+        /// </remarks> 
         public long MaximumContentLength { get; set; } = 0;
 
         /// <summary>

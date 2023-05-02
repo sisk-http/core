@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Sisk.Core.Http
+namespace Sisk.Core.Http.Streams
 {
     /// <summary>
     /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
@@ -9,7 +9,7 @@ namespace Sisk.Core.Http
     /// public class HttpRequestEventSource : IDisposable
     /// </definition>
     /// <type>
-    /// Class
+    /// Class 
     /// </type>
     /// <namespace>
     /// Sisk.Core.Http
@@ -19,6 +19,7 @@ namespace Sisk.Core.Http
         private ManualResetEvent terminatingMutex = new ManualResetEvent(false);
         private HttpListenerResponse res;
         private HttpListenerRequest req;
+        private HttpRequest reqObj;
         private HttpServer hostServer;
         private List<string> sendQueue = new List<string>();
         bool hasSentData = false;
@@ -35,6 +36,17 @@ namespace Sisk.Core.Http
         private bool isDisposed = false;
 
         /// <summary>
+        /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
+        /// </summary>
+        /// <definition>
+        /// public HttpRequest HttpRequest { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpRequest HttpRequest => reqObj;
+
+        /// <summary>
         /// Gets an integer indicating the total bytes sent by this instance to the client.
         /// </summary>
         /// <definition>
@@ -46,7 +58,7 @@ namespace Sisk.Core.Http
         public int SentContentLength { get => length; }
 
         /// <summary>
-        /// Gets or sets an label to this EventStream connection, useful for finding this connection's reference later.
+        /// Gets an unique identifier label to this EventStream connection, useful for finding this connection's reference later.
         /// </summary>
         /// <definition>
         /// public string? Identifier { get; }
@@ -77,12 +89,12 @@ namespace Sisk.Core.Http
         /// </definition>
         /// <type>
         /// Method
-        /// </type>
+        /// </type> 
         public override bool Equals(object? obj)
         {
             HttpRequestEventSource? other = obj as HttpRequestEventSource;
             if (other == null) return false;
-            return other.Identifier != null && other.Identifier == this.Identifier;
+            return other.Identifier != null && other.Identifier == Identifier;
         }
 
         /// <summary>
@@ -104,8 +116,9 @@ namespace Sisk.Core.Http
         {
             this.res = res ?? throw new ArgumentNullException(nameof(res));
             this.req = req ?? throw new ArgumentNullException(nameof(req));
-            this.Identifier = identifier;
-            this.hostServer = host.baseServer;
+            Identifier = identifier;
+            hostServer = host.baseServer;
+            reqObj = host;
 
             hostServer._eventCollection.RegisterEventSource(this);
 
@@ -153,7 +166,7 @@ namespace Sisk.Core.Http
             {
                 throw new InvalidOperationException("It's not possible to set headers after a message has been sent in this instance.");
             }
-            this.res.AddHeader(name, value);
+            res.AddHeader(name, value);
         }
 
         /// <summary>
@@ -242,7 +255,7 @@ namespace Sisk.Core.Http
             {
                 throw new InvalidOperationException("Cannot keep alive an instance that has it's connection disposed.");
             }
-            this.keepAlive = maximumIdleTolerance;
+            keepAlive = maximumIdleTolerance;
             new Task(keepAliveTask).Start();
             terminatingMutex.WaitOne();
         }
@@ -268,7 +281,7 @@ namespace Sisk.Core.Http
                 Dispose();
                 hostServer._eventCollection.UnregisterEventSource(this);
             }
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_EVENTSOURCE_CLOSE)
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_STREAM_CLOSE)
             {
                 CalculedLength = length
             };
@@ -319,7 +332,7 @@ namespace Sisk.Core.Http
         /// public void Dispose()
         /// </definition>
         /// <type>
-        /// Method
+        /// Method 
         /// </type>
         /// <namespace>
         /// Sisk.Core.Http

@@ -246,11 +246,7 @@ namespace Sisk.Core.Entity
                 throw new InvalidOperationException("No boundary was specified for this multipart form content.");
             }
 
-            byte[] bodyBytes = req.RawBody.Skip(2).ToArray();
-            byte[] boundaryBytes = Encoding.ASCII.GetBytes(boundary);
-            long contentLength = bodyBytes.Length;
-
-            int boundaryLength = boundaryBytes.Length;
+            byte[] boundaryBytes = Encoding.UTF8.GetBytes(boundary);
 
             /////////
             // https://stackoverflow.com/questions/9755090/split-a-byte-array-at-a-delimiter

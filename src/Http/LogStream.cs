@@ -17,7 +17,7 @@ namespace Sisk.Core.Http
     /// Class
     /// </type>
     /// <namespace>
-    /// Sisk.Core.Http
+    /// Sisk.Core.Http 
     /// </namespace>
     public class LogStream : IDisposable
     {
@@ -110,6 +110,18 @@ namespace Sisk.Core.Http
             FilePath = Path.GetFullPath(filename);
         }
 
+        /// <summary>
+        /// Reads the last few lines of the linked log file.
+        /// </summary>
+        /// <param name="lines">The amount of lines to be read from the file.</param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException">Thrown when used with a log file for a stream, textwriter, or other non-file structure.</exception>
+        /// <definition>
+        /// public string[] Peek(int lines)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
         public string[] Peek(int lines)
         {
             if (this.FilePath == null)

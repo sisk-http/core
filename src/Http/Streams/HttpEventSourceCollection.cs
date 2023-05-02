@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sisk.Core.Http
+namespace Sisk.Core.Http.Streams
 {
     /// <summary>
     /// Provides a managed object to manage <see cref="HttpRequestEventSource"/> connections.
@@ -147,6 +147,12 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <param name="sender">Represents the caller <see cref="HttpEventSourceCollection"/> object.</param>
     /// <param name="eventSource">Represents the registered <see cref="HttpRequestEventSource"/> event source connection.</param>
+    /// <definition>
+    /// public delegate void EventSourceRegistrationHandler(object sender, HttpRequestEventSource eventSource);
+    /// </definition>
+    /// <type>
+    /// Delegate
+    /// </type>
     public delegate void EventSourceRegistrationHandler(object sender, HttpRequestEventSource eventSource);
 
     /// <summary>
@@ -154,5 +160,11 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <param name="sender">Represents the caller <see cref="HttpEventSourceCollection"/> object.</param>
     /// <param name="eventSource">Represents the closed <see cref="HttpRequestEventSource"/> event source connection.</param>
+    /// <definition>
+    /// public delegate void EventSourceUnregistrationHandler(object sender, HttpRequestEventSource eventSource);
+    /// </definition>
+    /// <type>
+    /// Delegate
+    /// </type>
     public delegate void EventSourceUnregistrationHandler(object sender, HttpRequestEventSource eventSource);
 }

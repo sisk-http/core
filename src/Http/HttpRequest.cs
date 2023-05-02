@@ -1,6 +1,10 @@
 ﻿using Sisk.Core.Entity;
+using Sisk.Core.Http.Streams;
 using System.Collections.Specialized;
 using System.Net;
+using System.Net.WebSockets;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Web;
 
@@ -42,6 +46,7 @@ namespace Sisk.Core.Http
         private HttpServerConfiguration contextServerConfiguration;
         private HttpListenerResponse listenerResponse;
         private HttpListenerRequest listenerRequest;
+        private HttpListenerContext context;
         private byte[]? contentBytes;
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
@@ -52,7 +57,7 @@ namespace Sisk.Core.Http
             HttpListenerResponse listenerResponse,
             HttpServer server,
             ListeningHost host,
-            HttpServerFlags flags)
+            HttpListenerContext context)
         {
             this.baseServer = server;
             this.contextServerConfiguration = baseServer.ServerConfiguration;
@@ -61,7 +66,7 @@ namespace Sisk.Core.Http
             this.hostContext = host;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
-            this.GenerateRequestId(this.RequestedAt.Ticks);
+            this.RequestId = Guid.NewGuid();
 
             IPAddress requestRealAddress = new IPAddress(listenerRequest.LocalEndPoint.Address.GetAddressBytes());
             this.Origin = requestRealAddress;
@@ -110,23 +115,19 @@ namespace Sisk.Core.Http
                     this.Cookies[key] = WebUtility.UrlDecode(value);
                 }
             }
+
+            this.context = context;
         }
 
-        internal unsafe void GenerateRequestId(long seeder)
+#pragma warning disable
+        ~HttpRequest()
         {
-            long seed = DateTime.Now.Ticks;
-            byte* reqIdBytes = stackalloc byte[16];
-
-            for (int i = 0; i < 16; i++)
-            {
-                int j = i / 4;
-                long k = (seed >> j) + (i * 9);
-                reqIdBytes[i] = (byte)(k & 0xFF);
-            }
-
-            ReadOnlySpan<byte> reqSpan = new ReadOnlySpan<byte>(reqIdBytes, 16);
-            this.RequestId = new Guid(reqSpan);
+            this.contentBytes = null;
+            this.listenerRequest = null;
+            this.listenerResponse = null;
+            this.contextServerConfiguration = null;
         }
+#pragma warning restore
 
         internal void ImportContents(Stream listenerRequest)
         {
@@ -732,7 +733,7 @@ namespace Sisk.Core.Http
         /// Gets an Event Source interface for this request. Calling this method will put this <see cref="HttpRequest"/> instance in it's
         /// event source listening state.
         /// </summary>
-        /// <param name="identifier">Defines an label to the EventStream connection, useful for finding this connection's reference later.</param>
+        /// <param name="identifier">Optional. Defines an label to the EventStream connection, useful for finding this connection's reference later.</param>
         /// <definition>
         /// public HttpRequestEventSource GetEventSource(string? identifier = null)
         /// </definition>
@@ -751,6 +752,31 @@ namespace Sisk.Core.Http
             isStreaming = true;
             activeEventSource = new HttpRequestEventSource(identifier, listenerResponse, listenerRequest, this);
             return activeEventSource;
+        }
+
+        /// <summary>
+        /// Accepts and acquires a websocket for this request. Calling this method will put this <see cref="HttpRequest"/> instance in
+        /// streaming state.
+        /// </summary>
+        /// <param name="subprotocol">Optional. Determines the sub-protocol to plug the websocket in.</param>
+        /// <param name="identifier">Optional. Defines an label to the Web Socket connection, useful for finding this connection's reference later.</param>
+        /// <returns></returns>
+        /// <definition>
+        /// public HttpWebSocket GetWebSocket(string? subprotocol = null)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type> 
+        /// <exception cref="InvalidOperationException"></exception>
+        public HttpWebSocket GetWebSocket(string? subprotocol = null, string? identifier = null)
+        {
+            if (isStreaming)
+            {
+                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+            }
+            isStreaming = true;
+            var accept = context.AcceptWebSocketAsync(subprotocol).Result;
+            return new HttpWebSocket(accept, this, identifier);
         }
 
         internal long CalcRequestSize()
