@@ -43,6 +43,11 @@ namespace Sisk.Core.Http
         public int WebSocketBufferSize = 1024;
 
         /// <summary>
+        /// Determines if the HTTP server should convert request headers encoding to the content encoding.
+        /// </summary>
+        public bool NormalizeHeadersEncodings = true;
+
+        /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
         public HttpServerFlags()

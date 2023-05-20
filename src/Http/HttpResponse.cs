@@ -26,14 +26,6 @@ namespace Sisk.Core.Http
         internal const byte HTTPRESPONSE_CLOSE = 16;
         internal int CalculedLength = 0;
 
-#pragma warning disable 
-        ~HttpResponse()
-        {
-            this.Content = null;
-            this.Headers = null;
-        }
-#pragma warning restore
-
         /// <summary>
         /// Gets or sets an custom HTTP status code and description for this HTTP response. If this property ins't null, it will overwrite
         /// the <see cref="Status"/> property in this class.
@@ -155,7 +147,7 @@ namespace Sisk.Core.Http
         public string GetRawHttpResponse(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"HTTP/1.1 {(int)Status} {Regex.Replace(Status.ToString(), "(?<=[a-z])([A-Z])", " $1", RegexOptions.Compiled)}");
+            sb.AppendLine($"HTTP/1.1 {(int)Status}");
             foreach (string header in this.Headers)
             {
                 sb.Append(header + ": ");
@@ -296,7 +288,7 @@ namespace Sisk.Core.Http
             }
             if (sameSite != null)
             {
-                syntax.Add($"SameSite=${sameSite}");
+                syntax.Add($"SameSite={sameSite}");
             }
 
             Headers.Add("Set-Cookie", String.Join("; ", syntax));
@@ -312,14 +304,6 @@ namespace Sisk.Core.Http
                 }
             }
             return null;
-        }
-
-        internal long CalcHeadersSize()
-        {
-            long l = 0;
-            // RFC-5987 tells that headers should use UTF-8 characters.
-            l += Encoding.UTF8.GetByteCount(GetRawHttpResponse(false));
-            return l;
         }
     }
 }

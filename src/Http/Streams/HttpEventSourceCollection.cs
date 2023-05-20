@@ -46,19 +46,30 @@ namespace Sisk.Core.Http.Streams
         {
         }
 
-        internal void UnregisterEventSource([In] HttpRequestEventSource eventSource)
+        internal void UnregisterEventSource(HttpRequestEventSource eventSource)
         {
-            if (_eventSources.Remove(eventSource) && OnEventSourceUnregistration != null)
+            lock (_eventSources)
             {
-                OnEventSourceUnregistration(this, eventSource);
+                if (_eventSources.Remove(eventSource) && OnEventSourceUnregistration != null)
+                {
+                    OnEventSourceUnregistration(this, eventSource);
+                }
             }
         }
 
-        internal void RegisterEventSource([In, Out] HttpRequestEventSource src)
+        internal void RegisterEventSource(HttpRequestEventSource src)
         {
-            if (src.Identifier != null && !_eventSources.Contains(src))
+            if (src.Identifier != null)
             {
-                _eventSources.Add(src);
+                lock (_eventSources)
+                {
+                    HttpRequestEventSource[] toClose = Find(p => p == src.Identifier);
+                    foreach (HttpRequestEventSource ev in toClose)
+                    {
+                        ev.Close();
+                    }
+                    _eventSources.Add(src);
+                }
                 if (OnEventSourceRegistered != null)
                     OnEventSourceRegistered(this, src);
             }
@@ -88,8 +99,11 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public HttpRequestEventSource? GetByIdentifier(string identifier)
         {
-            HttpRequestEventSource? src = _eventSources.Where(es => es.Identifier == identifier).FirstOrDefault();
-            return src;
+            lock (_eventSources)
+            {
+                HttpRequestEventSource? src = _eventSources.Where(es => es.Identifier == identifier).FirstOrDefault();
+                return src;
+            }
         }
 
         /// <summary>
@@ -105,11 +119,14 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public HttpRequestEventSource[] Find(Func<string, bool> predicate)
         {
-            return _eventSources.Where(e =>
+            lock (_eventSources)
             {
-                if (!e.IsActive || e.Identifier == null) return false;
-                return predicate(e.Identifier);
-            }).ToArray();
+                return _eventSources.Where(e =>
+                {
+                    if (!e.IsActive || e.Identifier == null) return false;
+                    return predicate(e.Identifier);
+                }).ToArray();
+            }
         }
 
         /// <summary>
@@ -124,7 +141,10 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public HttpRequestEventSource[] All()
         {
-            return _eventSources.Where(e => e.IsActive).ToArray();
+            lock (_eventSources)
+            {
+                return _eventSources.Where(e => e.IsActive).ToArray();
+            }
         }
 
         /// <summary>
@@ -138,7 +158,10 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public void DropAll()
         {
-            foreach (HttpRequestEventSource es in _eventSources) es.Dispose();
+            lock (_eventSources)
+            {
+                foreach (HttpRequestEventSource es in _eventSources) es.Dispose();
+            }
         }
     }
 

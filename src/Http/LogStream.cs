@@ -232,6 +232,30 @@ namespace Sisk.Core.Http
         public void Close() => Dispose();
 
         /// <summary>
+        /// Writes an exception description in the log.
+        /// </summary>
+        /// <param name="exp">The exception which will be written.</param>
+        /// <definition>
+        /// public void WriteException(Exception exp)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void WriteException(Exception exp)
+        {
+            StringBuilder exceptionStr = new StringBuilder();
+            exceptionStr.AppendLine($"Exception thrown at {DateTime.Now:R}");
+            exceptionStr.AppendLine(exp.ToString());
+
+            if (exp.InnerException != null)
+            {
+                exceptionStr.AppendLine($"\n-------------\nInner exception:");
+                exceptionStr.AppendLine(exp.InnerException.ToString());
+            }
+            WriteLine(exceptionStr);
+        }
+
+        /// <summary>
         /// Writes an line-break at the end of the output.
         /// </summary>
         /// <definition>

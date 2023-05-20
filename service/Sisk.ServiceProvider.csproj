@@ -8,7 +8,6 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>Sisk.ServiceProvider</Title>
 		<PackageId>Sisk.ServiceProvider</PackageId>
-		<Version>0.12</Version>
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.ServiceProvider</Product>
@@ -19,8 +18,9 @@
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
-		<AssemblyVersion>0.12</AssemblyVersion>
-		<FileVersion>0.12</FileVersion>
+		<Version>0.13</Version>
+		<AssemblyVersion>0.13</AssemblyVersion>
+		<FileVersion>0.13</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>

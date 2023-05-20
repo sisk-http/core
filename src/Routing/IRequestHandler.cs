@@ -35,20 +35,6 @@ namespace Sisk.Core.Routing
         HttpResponse? Execute(HttpRequest request, HttpContext context);
 
         /// <summary>
-        /// Gets or sets the unique identifier of the instance of this interface.
-        /// </summary>
-        /// <definition>
-        /// string Identifier { get; init; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing.Handlers
-        /// </namespace>
-        string Identifier { get; init; }
-
-        /// <summary>
         /// Gets or sets when this RequestHandler should run.
         /// </summary>
         /// <definition>

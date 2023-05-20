@@ -1,4 +1,5 @@
 ﻿using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Core.Http.Streams
@@ -19,11 +20,27 @@ namespace Sisk.Core.Http.Streams
         internal HttpRequest request;
         bool isListening = true;
         internal bool isClosed = false;
+        internal TimeSpan closeTimeout = TimeSpan.Zero;
+        internal bool isWaitingNext = false;
 
+        internal WebSocketMessage? lastMessage = null;
+        internal CancellationTokenSource asyncListenerToken = null!;
         internal ManualResetEvent closeEvent = new ManualResetEvent(false);
+        internal ManualResetEvent waitNextEvent = new ManualResetEvent(false);
         internal Thread receiveThread;
 
         int bufferLength = 0;
+
+        /// <summary>
+        /// Gets or sets an object linked with this <see cref="WebSocket"/> session.
+        /// </summary>
+        /// <definition>
+        /// public object? State { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public object? State { get; set; }
 
         /// <summary>
         /// Gets the <see cref="Sisk.Core.Http.HttpRequest"/> object which created this Web Socket instance.
@@ -59,40 +76,6 @@ namespace Sisk.Core.Http.Streams
         public string? Identifier => identifier;
 
         /// <summary>
-        /// Determines if another object is equals to this class instance.
-        /// </summary>
-        /// <param name="obj">The another object which will be used to compare.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public override bool Equals(object? obj)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type> 
-        public override bool Equals(object? obj)
-        {
-            HttpWebSocket? other = obj as HttpWebSocket;
-            if (other == null) return false;
-            if (other.identifier == null) return false;
-            return other.identifier == identifier;
-        }
-
-        /// <summary>
-        /// Gets the hash code for this event source.
-        /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public override int GetHashCode()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        public override int GetHashCode()
-        {
-            return identifier?.GetHashCode() ?? 0;
-        }
-
-        /// <summary>
         /// Represents the event which is called when this websocket receives an message from
         /// remote origin.
         /// </summary>
@@ -116,9 +99,42 @@ namespace Sisk.Core.Http.Streams
                 req.baseServer._wsCollection.RegisterWebSocket(this);
             }
 
+            RecreateAsyncToken();
+
             receiveThread = new Thread(new ThreadStart(ReceiveTask));
             receiveThread.IsBackground = true;
             receiveThread.Start();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void RecreateAsyncToken()
+        {
+            asyncListenerToken = new CancellationTokenSource();
+            if (closeTimeout.TotalMilliseconds > 0)
+                asyncListenerToken.CancelAfter(closeTimeout);
+            asyncListenerToken.Token.ThrowIfCancellationRequested();
+        }
+
+        void TrimMessage(WebSocketReceiveResult result, WebSocketMessage message)
+        {
+            if (result.Count < message.Length)
+            {
+                byte[] trimmed = new byte[result.Count];
+                for (int i = 0; i < trimmed.Length; i++)
+                {
+                    trimmed[i] = message.MessageBytes[i];
+                }
+                message.__msgBytes = trimmed;
+            }
+            message.IsClose = result.MessageType == WebSocketMessageType.Close;
+            message.IsEnd = result.EndOfMessage;
+
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                isClosed = true;
+                isListening = false;
+                closeEvent.Set();
+            }
         }
 
         internal async void ReceiveTask()
@@ -128,30 +144,27 @@ namespace Sisk.Core.Http.Streams
                 WebSocketMessage message = new WebSocketMessage(this, bufferLength);
 
                 var arrSegment = new ArraySegment<byte>(message.__msgBytes);
-                var result = await ctx.WebSocket.ReceiveAsync(arrSegment, CancellationToken.None);
+                WebSocketReceiveResult result;
 
-                if (OnReceive != null)
+                try
                 {
-                    if (result.Count < message.Length)
-                    {
-                        byte[] trimmed = new byte[result.Count];
-                        for (int i = 0; i < trimmed.Length; i++)
-                        {
-                            trimmed[i] = message.MessageBytes[i];
-                        }
-                        message.__msgBytes = trimmed;
-                    }
-                    message.IsClose = result.MessageType == WebSocketMessageType.Close;
-                    message.IsEnd = result.EndOfMessage;
-
-                    OnReceive(this, message);
+                    result = await ctx.WebSocket.ReceiveAsync(arrSegment, asyncListenerToken.Token);
+                }
+                catch (Exception)
+                {
+                    continue;
                 }
 
-                if (result.MessageType == WebSocketMessageType.Close)
+                TrimMessage(result, message);
+                if (isWaitingNext)
                 {
-                    isClosed = true;
-                    isListening = false;
-                    closeEvent.Set();
+                    isWaitingNext = false;
+                    lastMessage = message;
+                    waitNextEvent.Set();
+                }
+                else
+                {
+                    if (OnReceive != null) OnReceive(this, message);
                 }
             }
         }
@@ -236,7 +249,7 @@ namespace Sisk.Core.Http.Streams
         {
             if (!isClosed)
             {
-                ctx.WebSocket.SendAsync(new byte[] { 0 }, WebSocketMessageType.Close, true, CancellationToken.None);
+                ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
                 isListening = false;
                 isClosed = true;
                 closeEvent.Set();
@@ -264,6 +277,23 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
+        /// Blocks the current call stack until the connection is terminated by the client or the server, limited to the maximum
+        /// timeout.
+        /// </summary>
+        /// <param name="timeout">Defines the timeout timer before the connection expires without any message.</param>
+        /// <definition>
+        /// public void WaitForClose(TimeSpan timeout)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void WaitForClose(TimeSpan timeout)
+        {
+            this.closeTimeout = timeout;
+            closeEvent.WaitOne();
+        }
+
+        /// <summary>
         /// Blocks the current call stack until the connection is terminated by either the client or the server.
         /// </summary>
         /// <definition>
@@ -275,6 +305,26 @@ namespace Sisk.Core.Http.Streams
         public void WaitForClose()
         {
             closeEvent.WaitOne();
+        }
+
+        /// <summary>
+        /// Blocks the current thread and waits the next incoming message from this web socket instance.
+        /// </summary>
+        /// <remarks>
+        /// Null is returned if a connection error is thrown.
+        /// </remarks>
+        /// <definition>
+        /// public WebSocketMessage? WaitNext()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public WebSocketMessage? WaitNext()
+        {
+            waitNextEvent.Reset();
+            isWaitingNext = true;
+            waitNextEvent.WaitOne();
+            return lastMessage;
         }
     }
 

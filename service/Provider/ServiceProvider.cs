@@ -1,4 +1,5 @@
-﻿using Sisk.Core.Http;
+﻿using Sisk.Core.Entity;
+using Sisk.Core.Http;
 using Sisk.Core.Routing;
 using System.Globalization;
 using System.Reflection.Metadata;
@@ -344,11 +345,13 @@ namespace Sisk.Provider
     /// </type>
     public class ServiceProviderConfigurator
     {
+        private HttpServer _server;
         private HttpServerConfiguration _config;
         private ServiceProvider _provider;
 
-        internal ServiceProviderConfigurator(HttpServerConfiguration config, ServiceProvider provider)
+        internal ServiceProviderConfigurator(HttpServer server, HttpServerConfiguration config, ServiceProvider provider)
         {
+            _server = server ?? throw new ArgumentNullException(nameof(server));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
@@ -407,9 +410,39 @@ namespace Sisk.Provider
         /// <type>
         /// Method
         /// </type>
-        public void UseOverrides(Action<HttpServerConfiguration> overrideCallback)
+        public void UseConfiguration(Action<HttpServerConfiguration> overrideCallback)
         {
             overrideCallback(_config);
+        }
+
+        /// <summary>
+        /// Calls a callback that has the HTTP server instance as an argument.
+        /// </summary>
+        /// <param name="serverCallback">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
+        /// <definition>
+        /// public void UseHttpServer(Action serverCallback)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void UseHttpServer(Action<HttpServer> serverCallback)
+        {
+            serverCallback(_server);
+        }
+
+        /// <summary>
+        /// Calls a callback that has <see cref="CrossOriginResourceSharingHeaders"/> instance from the main listening host as an argument.
+        /// </summary>
+        /// <param name="corsCallback">An action where the first argument is the main <see cref="CrossOriginResourceSharingHeaders"/> object.</param>
+        /// <definition>
+        /// public void UseCors(Action corsCallback)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void UseCors(Action<CrossOriginResourceSharingHeaders> corsCallback)
+        {
+            corsCallback(_config.ListeningHosts[0].CrossOriginResourceSharingPolicy);
         }
     }
 }

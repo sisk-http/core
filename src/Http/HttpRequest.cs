@@ -51,6 +51,7 @@ namespace Sisk.Core.Http
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
         private bool isContentAvailable = false;
+        private NameValueCollection headers = new NameValueCollection();
 
         internal HttpRequest(
             HttpListenerRequest listenerRequest,
@@ -116,7 +117,32 @@ namespace Sisk.Core.Http
                 }
             }
 
+            // normalize headers encoding
+            if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
+            {
+                Encoding entryCodepage = Encoding.GetEncoding("ISO-8859-1");
+                foreach (string headerName in listenerRequest.Headers)
+                {
+                    string headerValue = listenerRequest.Headers[headerName]!;
+                    headers.Add(
+                        headerName,
+                        mbConvertCodepage(headerValue, entryCodepage, listenerRequest.ContentEncoding)
+                    );
+                }
+            }
+            else
+            {
+                headers = listenerRequest.Headers;
+            }
+
             this.context = context;
+        }
+
+        internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
+        {
+            byte[] tempBytes;
+            tempBytes = inEnc.GetBytes(input);
+            return outEnc.GetString(tempBytes);
         }
 
 #pragma warning disable
@@ -209,7 +235,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public NameValueCollection Headers
         {
-            get => listenerRequest.Headers;
+            get => headers;
         }
 
         /// <summary>

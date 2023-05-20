@@ -1,5 +1,6 @@
 ﻿using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Mime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -30,7 +32,6 @@ namespace Sisk.Core.Http
         private bool _isDisposing = false;
         private HttpListener httpListener = new HttpListener();
         internal static string poweredByHeader = "";
-        private static TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
@@ -54,7 +55,7 @@ namespace Sisk.Core.Http
         /// public static HttpServer Emit(in int insecureHttpPort, out HttpServerConfiguration configuration, out ListeningHost host, out Router router)
         /// </definition>
         /// <type>
-        /// Static method
+        /// Static method 
         /// </type>
         public static HttpServer Emit(
                 in int insecureHttpPort,
@@ -64,7 +65,24 @@ namespace Sisk.Core.Http
             )
         {
             router = new Router();
-            host = new ListeningHost("localhost", new ListeningPort(insecureHttpPort, false), router);
+            if (insecureHttpPort == 0)
+            {
+                host = new ListeningHost();
+                host.Router = router;
+                host.Ports = new ListeningPort[]
+                {
+                    ListeningPort.GetRandomPort()
+                };
+            }
+            else
+            {
+                host = new ListeningHost();
+                host.Router = router;
+                host.Ports = new ListeningPort[]
+                {
+                    new ListeningPort(false, "localhost", insecureHttpPort)
+                };
+            }
             configuration = new HttpServerConfiguration();
             configuration.ListeningHosts.Add(host);
 
@@ -239,17 +257,7 @@ namespace Sisk.Core.Http
             {
                 foreach (ListeningPort port in listeningHost.Ports)
                 {
-                    string prefix;
-
-                    if (port.Secure)
-                    {
-                        prefix = $"https://{listeningHost.Hostname}:{port.Port}/";
-                    }
-                    else
-                    {
-                        prefix = $"http://{listeningHost.Hostname}:{port.Port}/";
-                    }
-
+                    string prefix = port.ToString();
                     if (!listeningPrefixes.Contains(prefix)) listeningPrefixes.Add(prefix);
                 }
             }
@@ -281,7 +289,8 @@ namespace Sisk.Core.Http
             httpListener.Stop();
         }
 
-        private static string HumanReadableSize(float? size)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        internal static string HumanReadableSize(float? size)
         {
             if (size == null) return "";
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
@@ -316,80 +325,8 @@ namespace Sisk.Core.Http
             if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
         }
 
-        internal static string FormatAccessLog(
-            [In] string format,
-            [In] HttpServerExecutionResult res,
-            [In] DateTime d,
-            [In] Uri? bReqUri,
-            [In] IPAddress bReqIpAddr,
-            [In] NameValueCollection? reqHeaders,
-            [In] int bResStatusCode,
-            [In] string bResStatusDescr,
-            [In] float? incomingSize,
-            [In] float? outcomingSize,
-            [In] long execTime)
-        {
-            void replaceEntity(ref string format, string piece, Func<string?> result)
-            {
-                if (format.Contains(piece))
-                {
-                    string? repl = result();
-                    format = format.Replace(piece, repl);
-                }
-            }
-
-            void replaceHeaders(ref string format)
-            {
-                int pos = 0;
-                while ((pos = format.IndexOf("%{")) > 0)
-                {
-                    int end = format.IndexOf('}');
-                    string headerName = format.Substring(pos + 2, end - pos - 2);
-                    string? headerValue = reqHeaders?[headerName];
-                    format = format.Replace($"%{{{headerName}}}", headerValue);
-                }
-            }
-
-            Dictionary<string, Func<string?>> staticReplacements = new Dictionary<string, Func<string?>>()
-            {
-                { "%dd", () => $"{d.Day:D2}" },
-                { "%dmmm", () => $"{d:MMMM}" },
-                { "%dmm", () => $"{d:MMM}" },
-                { "%dm", () => $"{d.Month:D2}" },
-                { "%dy", () => $"{d.Year:D4}" },
-                { "%th", () => $"{d:hh}" },
-                { "%tH", () => $"{d:HH}" },
-                { "%ti", () => $"{d.Minute:D2}" },
-                { "%ts", () => $"{d.Second:D2}" },
-                { "%tm", () => $"{d.Millisecond:D3}" },// 
-                { "%tz", () => $"{currentTimezoneDiff.TotalHours:00}00" },
-                { "%ri", () => bReqIpAddr.ToString() },
-                { "%rs", () => bReqUri?.Scheme },
-                { "%ra", () => bReqUri?.Authority },
-                { "%rh", () => bReqUri?.Host },
-                { "%rp", () => bReqUri?.Port.ToString() },
-                { "%rz", () => bReqUri?.AbsolutePath ?? "/" },
-                { "%rq", () => bReqUri?.Query },
-                { "%sc", () => bResStatusCode.ToString() },
-                { "%sd", () => bResStatusDescr },
-                { "%lin", () => HumanReadableSize(incomingSize) },
-                { "%lou", () => HumanReadableSize(outcomingSize) },
-                { "%lms", () => execTime.ToString() },
-                { "%ls", () => res.Status.ToString() }
-            };
-
-            foreach (var k in staticReplacements)
-            {
-                replaceEntity(ref format, k.Key, k.Value);
-            }
-
-            replaceHeaders(ref format);
-
-            return format;
-        }
-
-
-        private unsafe void ListenerCallback(IAsyncResult result)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private void ListenerCallback(IAsyncResult result)
         {
             if (_isDisposing || !_isListening)
                 return;
@@ -469,7 +406,7 @@ namespace Sisk.Core.Http
                 else
                 {
                     request = new HttpRequest(baseRequest, baseResponse, this, matchedListeningHost, context);
-                    reqHeaders = new NameValueCollection(baseRequest.Headers);
+                    reqHeaders = baseRequest.Headers;
                     if (ServerConfiguration.ResolveForwardedOriginAddress || ServerConfiguration.ResolveForwardedOriginHost)
                     {
                         otherParty = request.Origin;
@@ -515,10 +452,10 @@ namespace Sisk.Core.Http
                     return;
                 }
 
-                // get response
-                matchedListeningHost.Router.ParentServer = this;
-                matchedListeningHost.Router.ParentListenerHost = matchedListeningHost;
+                // bind
+                matchedListeningHost.Router.BindServer(this);
 
+                // get response
                 var routerResult = matchedListeningHost.Router.Execute(request, baseRequest);
                 response = routerResult.Response;
                 logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
@@ -585,9 +522,9 @@ namespace Sisk.Core.Http
                 baseResponse.SendChunked = response.SendChunked;
 
                 NameValueCollection resHeaders = new NameValueCollection
-                    {
-                        response.Headers
-                    };
+                {
+                    response.Headers
+                };
 
                 foreach (string incameHeader in resHeaders)
                 {
@@ -618,8 +555,6 @@ namespace Sisk.Core.Http
                         outcomingSize += responseBytes.Length;
                     }
                 }
-
-                outcomingSize += response.CalcHeadersSize();
 
                 string httpStatusVerbose = $"{(int)response.Status} {response.Status}";
 
@@ -672,6 +607,9 @@ namespace Sisk.Core.Http
 
                 if (OnConnectionClose != null)
                 {
+                    // the "Request" variable was pointing to an null value before
+                    // this line
+                    executionResult.Request = request;
                     OnConnectionClose(this, executionResult);
                 }
 
@@ -697,7 +635,7 @@ namespace Sisk.Core.Http
                 }
                 if (canAccessLog)
                 {
-                    string line = FormatAccessLog(ServerConfiguration.AccessLogsFormat,
+                    var formatter = new LoggingFormatter(
                         executionResult,
                         DateTime.Now,
                         connectingUri,
@@ -708,6 +646,10 @@ namespace Sisk.Core.Http
                         incomingSize,
                         outcomingSize,
                         sw.ElapsedMilliseconds);
+
+                    string line = ServerConfiguration.AccessLogsFormat;
+                    formatter.Format(ref line);
+
                     ServerConfiguration.AccessLogsStream?.WriteLine(line);
                 }
             }

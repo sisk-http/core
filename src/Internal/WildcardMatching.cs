@@ -7,18 +7,59 @@ using System.Threading.Tasks;
 
 namespace Sisk.Core.Internal
 {
-    internal class WildcardMatching
+    internal static class WildcardMatching
     {
         public record PathMatchResult(bool IsMatched, NameValueCollection Query);
 
-        public PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
+        public static string StripRouteParameters(string routePath)
+        {
+            bool state = false;
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in routePath)
+            {
+                if (c == '<' && !state)
+                {
+                    state = true;
+                    sb.Append("arg");
+                }
+                else if (c == '<' && state)
+                {
+                    throw new InvalidOperationException("A route parameter was initialized but not terminated.");
+                }
+                else if (c == '>' && !state)
+                {
+                    throw new InvalidOperationException("A route parameter was terminated but no parameter was initialized.");
+                }
+                else if (c == '>' && state)
+                {
+                    state = false;
+                }
+                else if (!state)
+                {
+                    sb.Append(c);
+                }
+            }
+            if (state)
+            {
+                throw new InvalidOperationException("A route parameter was initialized but not terminated.");
+            }
+            else
+            {
+                return sb.ToString();
+            }
+        }
+
+        public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
         {
             NameValueCollection query = new NameValueCollection();
             pathPattern = pathPattern.TrimEnd('/');
             requestPath = requestPath.TrimEnd('/');
 
-            string[] pathPatternParts = pathPattern.Split('/');
-            string[] requestPathParts = requestPath.Split('/');
+            /*
+             * normalize by rfc3986
+             */
+            string[] pathPatternParts = pathPattern.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            string[] requestPathParts = requestPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             if (pathPatternParts.Length != requestPathParts.Length)
             {
@@ -47,7 +88,7 @@ namespace Sisk.Core.Internal
             return new PathMatchResult(true, query);
         }
 
-        public bool IsDnsMatch(string wildcardPattern, string subject)
+        public static bool IsDnsMatch(string wildcardPattern, string subject)
         {
             StringComparison comparer = StringComparison.OrdinalIgnoreCase;
             wildcardPattern = wildcardPattern.Trim();
@@ -91,7 +132,7 @@ namespace Sisk.Core.Internal
             }
         }
 
-        private bool isWildcardMatchRgx(string pattern, string subject, StringComparison comparer)
+        private static bool isWildcardMatchRgx(string pattern, string subject, StringComparison comparer)
         {
             string[] parts = pattern.Split('*');
             if (parts.Length <= 1)

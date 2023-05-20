@@ -12,12 +12,12 @@ namespace Sisk.Core.Http.Streams
     /// Provides a managed object to manage <see cref="HttpWebSocket"/> connections.
     /// </summary>
     /// <definition>
-    /// public sealed class HttpWebSocketConnectionCollection
+    /// public class HttpWebSocketConnectionCollection
     /// </definition>
     /// <type>
     /// Class
     /// </type>
-    public sealed class HttpWebSocketConnectionCollection
+    public class HttpWebSocketConnectionCollection
     {
         internal List<HttpWebSocket> _ws = new List<HttpWebSocket>();
 
@@ -45,21 +45,33 @@ namespace Sisk.Core.Http.Streams
 
         internal HttpWebSocketConnectionCollection() { }
 
-        internal void RegisterWebSocket([In, Out] HttpWebSocket src)
+        internal void RegisterWebSocket(HttpWebSocket src)
         {
-            if (src.identifier != null && !_ws.Contains(src))
+            if (src.identifier != null)
             {
-                _ws.Add(src);
+                lock (_ws)
+                {
+                    // close another websockets with same identifier
+                    HttpWebSocket[] wsId = Find(s => s == src.identifier);
+                    foreach (HttpWebSocket ws in wsId)
+                    {
+                        ws.Close();
+                    }
+                    _ws.Add(src);
+                }
                 if (OnWebSocketRegister != null)
                     OnWebSocketRegister(this, src);
             }
         }
 
-        internal void UnregisterWebSocket([In] HttpWebSocket ws)
+        internal void UnregisterWebSocket(HttpWebSocket ws)
         {
-            if (_ws.Remove(ws) && OnWebSocketUnregister != null)
+            lock (_ws)
             {
-                OnWebSocketUnregister(this, ws);
+                if (_ws.Remove(ws) && OnWebSocketUnregister != null)
+                {
+                    OnWebSocketUnregister(this, ws);
+                }
             }
         }
 
@@ -76,8 +88,11 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public HttpWebSocket? GetByIdentifier(string identifier)
         {
-            HttpWebSocket? src = _ws.Where(es => !es.isClosed && es.Identifier == identifier).FirstOrDefault();
-            return src;
+            lock (_ws)
+            {
+                HttpWebSocket? src = _ws.Where(es => !es.isClosed && es.Identifier == identifier).FirstOrDefault();
+                return src;
+            }
         }
 
         /// <summary>
@@ -93,11 +108,10 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public HttpWebSocket[] Find(Func<string, bool> predicate)
         {
-            return _ws.Where(e =>
+            lock (_ws)
             {
-                if (e.isClosed || e.Identifier == null) return false;
-                return predicate(e.Identifier);
-            }).ToArray();
+                return _ws.Where(e => e.Identifier != null && predicate(e.Identifier)).ToArray();
+            }
         }
 
         /// <summary>
@@ -112,7 +126,10 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public HttpWebSocket[] All()
         {
-            return _ws.Where(e => !e.isClosed).ToArray();
+            lock (_ws)
+            {
+                return _ws.ToArray();
+            }
         }
 
         /// <summary>
@@ -126,7 +143,10 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public void DropAll()
         {
-            foreach (HttpWebSocket es in _ws) es.Close();
+            lock (_ws)
+            {
+                foreach (HttpWebSocket es in _ws) es.Close();
+            }
         }
     }
 

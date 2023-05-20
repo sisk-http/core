@@ -108,20 +108,6 @@ namespace Sisk.Core.Http
         public string? Label { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets the hostname (without the port) that this host will listen on the local machine.
-        /// </summary>
-        /// <definition>
-        /// public string Hostname { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public string Hostname { get; set; }
-
-        /// <summary>
         /// Gets or sets the ports that this host will listen on.
         /// </summary>
         /// <definition>
@@ -160,127 +146,17 @@ namespace Sisk.Core.Http
         /// </namespace>
         public Router? Router { get; set; }
 
-        private ListeningHost()
-        {
-            Hostname = null!;
-        }
-
         /// <summary>
-        /// Creates an new <see cref="ListeningHost"/> value with given parameters.
+        /// Creates an new empty <see cref="ListeningHost"/> instance.
         /// </summary>
-        /// <param name="hostname">The hostname (without the port) that this host will listen on the local machine.</param>
-        /// <param name="port">The port this host will listen on.</param>
-        /// <param name="r">The router which will handle this listener requests.</param>
-        /// <exception cref="ArgumentNullException"></exception>
         /// <definition>
-        /// public ListeningHost(ListeningHostProtocol protocol, string hostname, int port, Router r)
+        /// public ListeningHost()
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public ListeningHost(string hostname, int port, Router r) : this()
+        public ListeningHost()
         {
-            Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
-            Ports = new ListeningPort[] { new ListeningPort(port) };
-            Router = r;
-        }
-
-        /// <summary>
-        /// Creates an new <see cref="ListeningHost"/> value with given parameters.
-        /// </summary>
-        /// <param name="hostname">The hostname (without the port) that this host will listen on the local machine.</param>
-        /// <param name="port">The port this host will listen on.</param>
-        /// <param name="r">The router which will handle this listener requests.</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <definition>
-        /// public ListeningHost(string hostname, ListeningPort port, Router r)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public ListeningHost(string hostname, ListeningPort port, Router r) : this()
-        {
-            Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
-            Ports = new ListeningPort[] { port };
-            Router = r;
-        }
-
-        /// <summary>
-        /// Creates an new <see cref="ListeningHost"/> value with given parameters.
-        /// </summary>
-        /// <param name="hostname">The hostname (without the port) that this host will listen on the local machine.</param>
-        /// <param name="ports">The ports which this host will listen on.</param>
-        /// <param name="r">The router which will handle this listener requests.</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <definition>
-        /// public ListeningHost(ListeningHostProtocol protocol, string hostname, int[] ports, Router r)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public ListeningHost(string hostname, int[] ports, Router r) : this()
-        {
-            Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
-            Router = r;
-
-            this.Ports = new ListeningPort[ports.Length];
-            for (int i = 0; i < ports.Length; i++)
-            {
-                this.Ports[i] = new ListeningPort(ports[i]);
-            }
-        }
-
-        /// <summary>
-        /// Creates an new <see cref="ListeningHost"/> value with given parameters.
-        /// </summary>
-        /// <param name="hostname">The hostname (without the port) that this host will listen on the local machine.</param>
-        /// <param name="ports">The ports which this host will listen on.</param>
-        /// <param name="r">The router which will handle this listener requests.</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <definition>
-        /// public ListeningHost(ListeningHostProtocol protocol, string hostname, ListeningPort[] ports, Router r)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public ListeningHost(string hostname, ListeningPort[] ports, Router r) : this()
-        {
-            Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
-            Router = r;
-            Ports = ports;
-        }
-
-        /// <summary>
-        /// Creates the instance of a routerless listener host without any <see cref="Sisk.Core.Routing.Router"/>. This instance will not be listened until it has a router.
-        /// </summary>
-        /// <param name="hostname">The hostname (without the port) that this host will listen on the local machine.</param>
-        /// <param name="ports">The ports which this host will listen on.</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <definition>
-        /// public ListeningHost(string hostname, ListeningPort[] ports)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public ListeningHost(string hostname, ListeningPort[] ports) : this()
-        {
-            Hostname = hostname ?? throw new ArgumentNullException(nameof(hostname));
-            Ports = ports;
         }
 
         /// <summary>
@@ -294,14 +170,9 @@ namespace Sisk.Core.Http
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public ListeningHost(string uri, Router r) : this()
+        public ListeningHost(string uri, Router r)
         {
-            Uri uriInstance = new Uri(uri);
-            this.Hostname = uriInstance.Host;
-            this.Ports = new ListeningPort[] { new ListeningPort(uriInstance.Port, uriInstance.Scheme == "https") };
+            this.Ports = new ListeningPort[] { new ListeningPort(uri) };
             this.Router = r;
         }
     }

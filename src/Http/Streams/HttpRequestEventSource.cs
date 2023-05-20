@@ -79,39 +79,6 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public bool IsActive { get; private set; }
 
-        /// <summary>
-        /// Determines if another object is equals to this class instance.
-        /// </summary>
-        /// <param name="obj">The another object which will be used to compare.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public override bool Equals(object? obj)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type> 
-        public override bool Equals(object? obj)
-        {
-            HttpRequestEventSource? other = obj as HttpRequestEventSource;
-            if (other == null) return false;
-            return other.Identifier != null && other.Identifier == Identifier;
-        }
-
-        /// <summary>
-        /// Gets the hash code for this event source.
-        /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public override int GetHashCode()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        public override int GetHashCode()
-        {
-            return Identifier?.GetHashCode() ?? 0;
-        }
-
         internal HttpRequestEventSource(string? identifier, HttpListenerResponse res, HttpListenerRequest req, HttpRequest host)
         {
             this.res = res ?? throw new ArgumentNullException(nameof(res));

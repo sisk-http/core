@@ -89,9 +89,10 @@ namespace Sisk.Provider
             fac.Setup(parameters);
             var router = fac.BuildRouter();
 
-            ListeningHost host = new ListeningHost(config.ListeningHost.Hostname, config.ListeningHost.Ports);
+            ListeningHost host = new ListeningHost();
             host.Router = router;
             host.Label = config.ListeningHost.Label;
+            host.Ports = config.ListeningHost.Ports.Select(s => new ListeningPort(s)).ToArray();
 
             if (config.ListeningHost.CrossOriginResourceSharingPolicy?.MaxAge != null)
                 host.CrossOriginResourceSharingPolicy.MaxAge = TimeSpan.FromSeconds((double)config.ListeningHost.CrossOriginResourceSharingPolicy.MaxAge);
@@ -113,19 +114,20 @@ namespace Sisk.Provider
 
             prov.ServerConfiguration.ListeningHosts.Add(host);
 
-            if (prov.__cfg != null)
-            {
-                prov.__cfg(new ServiceProviderConfigurator(prov.ServerConfiguration, prov));
-            }
-
             if (prov.HttpServer == null)
             {
                 prov.HttpServer = new HttpServer(prov.ServerConfiguration);
             }
 
+            if (prov.__cfg != null)
+            {
+                prov.__cfg(new ServiceProviderConfigurator(prov.HttpServer, prov.ServerConfiguration, prov));
+            }
+
+            fac.Bootstrap();
+
             try
             {
-                fac.Bootstrap();
                 prov.HttpServer.Start();
             }
             catch (Exception ex)
@@ -136,11 +138,9 @@ namespace Sisk.Provider
 
             if (prov.Verbose)
             {
-                foreach (ListeningPort p in config.ListeningHost.Ports)
+                foreach (ListeningPort p in host.Ports)
                 {
-                    string portStr = "";
-                    if (p.Port != 443 && p.Port != 80) portStr = ":" + p.Port;
-                    Console.WriteLine($"{config.ListeningHost.Label ?? "Sisk"} service is listening on {(p.Secure ? "https" : "http")}://{config.ListeningHost.Hostname}{portStr}/");
+                    Console.WriteLine($"{config.ListeningHost.Label ?? "Sisk"} service is listening on {p}");
                 }
             }
         }
@@ -180,9 +180,8 @@ namespace Sisk.Provider
     [JsonSerializable(typeof(ConfigStructureFile__ListeningHost))]
     internal class ConfigStructureFile__ListeningHost
     {
-        public string Hostname { get; set; } = "";
         public string? Label { get; set; }
-        public ListeningPort[]? Ports { get; set; }
+        public string[]? Ports { get; set; }
 
         public ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy? CrossOriginResourceSharingPolicy { get; set; }
 

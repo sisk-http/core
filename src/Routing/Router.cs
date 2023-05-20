@@ -1,10 +1,13 @@
 ﻿using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Web;
+using System.Xml.Linq;
 
 namespace Sisk.Core.Routing
 {
@@ -22,12 +25,18 @@ namespace Sisk.Core.Routing
     /// </namespace>
     public class Router
     {
-        internal Regex routePathComparator = new Regex(@"<[^>]+>", RegexOptions.Compiled);
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
-        private Internal.WildcardMatching _pathMatcher = new Internal.WildcardMatching();
         private List<Route> _routes = new List<Route>();
-        internal HttpServer? ParentServer { get; set; }
-        internal ListeningHost ParentListenerHost { get; set; } = null!;
+        internal HttpServer? ParentServer { get; private set; }
+        private bool throwException = false;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void BindServer(HttpServer server)
+        {
+            if (object.ReferenceEquals(server, this.ParentServer)) return;
+            this.ParentServer = server;
+            this.throwException = server.ServerConfiguration.ThrowExceptions;
+        }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
@@ -130,6 +139,7 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public Route[] GetDefinedRoutes() => _routes.ToArray();
 
+        #region "Route setters"
         /// <summary>
         /// Defines an route to an router.
         /// </summary>
@@ -186,12 +196,17 @@ namespace Sisk.Core.Routing
         /// Method
         /// </type>
         /// <namespace>
-        /// Sisk.Core.Routing
+        /// Sisk.Core.Routing 
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback)
         {
-            if (IsRouteDefined(method, path)) throw new ArgumentException("An route with the same or similar path has already been added.");
-            _routes.Add(new Route(method, path, null, callback, null));
+            Route newRoute = new Route(method, path, null, callback, null);
+            Route? collisonRoute;
+            if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
+            {
+                throw new ArgumentException($"A possible route collision could happen between route {newRoute} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            }
+            _routes.Add(newRoute);
         }
 
         /// <summary>
@@ -212,8 +227,13 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name)
         {
-            if (IsRouteDefined(method, path)) throw new ArgumentException("An route with the same or similar path has already been added.");
-            _routes.Add(new Route(method, path, name, callback, null));
+            Route newRoute = new Route(method, path, name, callback, null);
+            Route? collisonRoute;
+            if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
+            {
+                throw new ArgumentException($"A possible route collision could happen between route {newRoute} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            }
+            _routes.Add(newRoute);
         }
 
         /// <summary>
@@ -235,8 +255,13 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name, IRequestHandler[] middlewares)
         {
-            if (IsRouteDefined(method, path)) throw new ArgumentException("An route with the same or similar path has already been added.");
-            _routes.Add(new Route(method, path, name, callback, middlewares));
+            Route newRoute = new Route(method, path, name, callback, middlewares);
+            Route? collisonRoute;
+            if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
+            {
+                throw new ArgumentException($"A possible route collision could happen between route {newRoute} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            }
+            _routes.Add(newRoute);
         }
 
         /// <summary>
@@ -254,9 +279,10 @@ namespace Sisk.Core.Routing
         /// </namespace>
         public void SetRoute(Route r)
         {
-            if (!r.UseRegex && IsRouteDefined(r.Method, r.Path))
+            Route? collisonRoute;
+            if (!r.UseRegex && (collisonRoute = GetCollisionRoute(r.Method, r.Path)) != null)
             {
-                throw new ArgumentException("An route with the same or similar path has already been added.");
+                throw new ArgumentException($"A possible route collision could happen between route {r} and route {collisonRoute}. Please review the methods and paths of these routes.");
             }
             _routes.Add(r);
         }
@@ -279,48 +305,7 @@ namespace Sisk.Core.Routing
         {
             Type attrClassType = attrClassInstance.GetType();
             MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            foreach (var method in methods)
-            {
-                RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
-                IEnumerable<RequestHandlerAttribute> handlersInstances = method.GetCustomAttributes<RequestHandlerAttribute>();
-
-                if (atrInstance != null)
-                {
-                    List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
-                    if (handlersInstances.Count() > 0)
-                    {
-                        foreach (RequestHandlerAttribute atr in handlersInstances)
-                        {
-                            IRequestHandler rhandler = (IRequestHandler)Activator.CreateInstance(atr.RequestHandlerType, atr.ConstructorArguments)!;
-                            methodHandlers.Add(rhandler);
-                        }
-                    }
-
-                    try
-                    {
-                        RouterCallback r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), attrClassInstance, method);
-                        Route route = new Route()
-                        {
-                            Method = atrInstance.Method,
-                            Path = atrInstance.Path,
-                            Callback = r,
-                            Name = atrInstance.Name,
-                            RequestHandlers = methodHandlers.ToArray(),
-                            LogMode = atrInstance.LogMode,
-                            UseCors = atrInstance.UseCors
-                        };
-                        if (IsRouteDefined(route.Method, route.Path))
-                        {
-                            throw new ArgumentException($"An route with the same or similar path has already been added. Callback name: {attrClassType.FullName}.{method.Name}");
-                        }
-                        SetRoute(route);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception($"Couldn't set method {method.Name} as an route. See inner exception.", ex);
-                    }
-                }
-            }
+            SetInternal(methods, attrClassInstance);
         }
 
         /// <summary>
@@ -340,6 +325,11 @@ namespace Sisk.Core.Routing
         public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
         {
             MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            SetInternal(methods, null);
+        }
+
+        private void SetInternal(MethodInfo[] methods, object? instance)
+        {
             foreach (var method in methods)
             {
                 RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
@@ -359,7 +349,17 @@ namespace Sisk.Core.Routing
 
                     try
                     {
-                        RouterCallback r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                        RouterCallback r;
+
+                        if (instance == null)
+                        {
+                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                        }
+                        else
+                        {
+                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), instance, method);
+                        }
+
                         Route route = new Route()
                         {
                             Method = atrInstance.Method,
@@ -370,10 +370,13 @@ namespace Sisk.Core.Routing
                             LogMode = atrInstance.LogMode,
                             UseCors = atrInstance.UseCors
                         };
-                        if (IsRouteDefined(route.Method, route.Path))
+
+                        Route? collisonRoute;
+                        if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
                         {
-                            throw new ArgumentException($"An route with the same or similar path has already been added. Callback name: {attrClassType.FullName}.{method.Name}");
+                            throw new ArgumentException($"A possible route collision could happen between the route {route} at {method.Name} with route {collisonRoute}. Please review the methods and paths of these routes.");
                         }
+
                         SetRoute(route);
                     }
                     catch (Exception ex)
@@ -383,6 +386,7 @@ namespace Sisk.Core.Routing
                 }
             }
         }
+        #endregion
 
         private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
         {
@@ -401,7 +405,7 @@ namespace Sisk.Core.Routing
                 (Regex.IsMatch(requestPath, routePath, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), new System.Collections.Specialized.NameValueCollection());
         }
 
-        private bool IsRouteDefined(RouteMethod method, string path)
+        private Route? GetCollisionRoute(RouteMethod method, string path)
         {
             if (!path.StartsWith('/'))
             {
@@ -409,263 +413,254 @@ namespace Sisk.Core.Routing
             }
             foreach (Route r in this._routes)
             {
-                string sanitizedPath1 = routePathComparator.Replace(r.Path, "$arg").TrimEnd('/');
-                string sanitizedPath2 = routePathComparator.Replace(path, "$arg").TrimEnd('/');
-                if (r.Method == method && string.Compare(sanitizedPath1, sanitizedPath2, MatchRoutesIgnoreCase) == 0)
+                bool methodMatch = method != RouteMethod.Any && method == r.Method;
+                bool pathMatch = WildcardMatching.IsPathMatch(r.Path, path, MatchRoutesIgnoreCase).IsMatched;
+
+                if (methodMatch && pathMatch)
                 {
-                    return true;
+                    return r;
                 }
             }
-            return false;
+            return null;
         }
 
-        internal RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest)
+        internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, IRequestHandler[]? bypass)
         {
-            HttpContext? context = null;
-            Route? matchedRoute = null;
-            RouteMatchResult matchResult = RouteMatchResult.NotMatched;
-            bool throwException = ParentServer?.ServerConfiguration.ThrowExceptions ?? false;
+            HttpResponse? result = null;
+            if (bypass != null)
+            {
+                bool isBypassed = false;
+                foreach (IRequestHandler bypassed in bypass)
+                {
+                    if (object.ReferenceEquals(bypassed, handler))
+                    {
+                        isBypassed = true;
+                        break;
+                    }
+                }
+                if (isBypassed) return null;
+            }
 
             try
             {
-                foreach (Route route in _routes)
-                {
-                    // test path
-                    Internal.WildcardMatching.PathMatchResult pathTest;
-                    if (route.UseRegex)
-                    {
-                        pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
-                    }
-                    else
-                    {
-                        pathTest = _pathMatcher.IsPathMatch(route.Path, request.Path, MatchRoutesIgnoreCase);
-                    }
-
-                    if (!pathTest.IsMatched)
-                    {
-                        continue;
-                    }
-
-                    matchResult = RouteMatchResult.PathMatched;
-                    bool isMethodMatched = false;
-
-                    // test method
-                    if (route.Method == RouteMethod.Any)
-                    {
-                        isMethodMatched = true;
-                    }
-                    else if (request.Method == HttpMethod.Options)
-                    {
-                        matchResult = RouteMatchResult.OptionsMatched;
-                        break;
-                    }
-                    else if (ParentServer!.ServerConfiguration.Flags.TreatHeadAsGetMethod && (request.Method == HttpMethod.Head && route.Method == RouteMethod.Get))
-                    {
-                        isMethodMatched = true;
-                    }
-                    else if (IsMethodMatching(request.Method.Method, route.Method))
-                    {
-                        isMethodMatched = true;
-                    }
-
-                    if (isMethodMatched)
-                    {
-                        foreach (string routeParam in pathTest.Query)
-                        {
-                            request.Query.Add(routeParam, HttpUtility.UrlDecode(pathTest.Query[routeParam]));
-                        }
-                        matchResult = RouteMatchResult.FullyMatched;
-                        matchedRoute = route;
-                        break;
-                    }
-                }
-
-                if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
-                {
-                    return new RouterExecutionResult(NotFoundErrorHandler(), null, matchResult, null);
-                }
-                else if (matchResult == RouteMatchResult.OptionsMatched)
-                {
-                    HttpResponse corsResponse = new HttpResponse();
-                    corsResponse.Status = System.Net.HttpStatusCode.OK;
-
-                    return new RouterExecutionResult(corsResponse, null, matchResult, null);
-                }
-                else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
-                {
-                    return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute, matchResult, null);
-                }
-                else if (matchResult == RouteMatchResult.FullyMatched)
-                {
-                    HttpResponse? result = null;
-                    context = new HttpContext(new Dictionary<string, object?>(), this.ParentServer, matchedRoute);
-                    request.Context = context;
-
-                    // (BEFORE-CONTENTS) global handlers
-                    if (this.GlobalRequestHandlers is not null)
-                    {
-                        foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
-                        {
-                            bool isBypassed = false;
-                            foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
-                            {
-                                if (bypassed.Identifier == handler.Identifier)
-                                {
-                                    isBypassed = true;
-                                }
-                            }
-                            if (isBypassed)
-                                continue;
-                            HttpResponse? handlerResponse = handler.Execute(request, context);
-                            if (handlerResponse is not null)
-                            {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                            }
-                        }
-                    }
-
-                    // (BEFORE-CONTENTS) specific handlers
-                    if (matchedRoute!.RequestHandlers is not null)
-                    {
-                        foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
-                        {
-                            HttpResponse? handlerResponse = handler.Execute(request, context);
-                            if (handlerResponse is not null)
-                            {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                            }
-                        }
-                    }
-
-                    request.ImportContents(baseRequest.InputStream);
-
-                    // (BEFORE) global handlers
-                    if (this.GlobalRequestHandlers is not null)
-                    {
-                        foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
-                        {
-                            bool isBypassed = false;
-                            foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
-                            {
-                                if (bypassed.Identifier == handler.Identifier)
-                                {
-                                    isBypassed = true;
-                                }
-                            }
-                            if (isBypassed)
-                                continue;
-                            HttpResponse? handlerResponse = handler.Execute(request, context);
-                            if (handlerResponse is not null)
-                            {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                            }
-                        }
-                    }
-
-                    // specific before handlers for route
-                    if (matchedRoute!.RequestHandlers is not null)
-                    {
-                        foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
-                        {
-                            HttpResponse? handlerResponse = handler.Execute(request, context);
-                            if (handlerResponse is not null)
-                            {
-                                return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                            }
-                        }
-                    }
-
-                    if (matchedRoute.Callback is null)
-                    {
-                        throw new ArgumentNullException(nameof(matchedRoute.Callback));
-                    }
-
-                    try
-                    {
-                        result = matchedRoute.Callback(request);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!throwException)
-                        {
-                            if (CallbackErrorHandler is not null)
-                            {
-                                result = CallbackErrorHandler(ex, request);
-                            }
-                            else
-                            {
-                                return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, ex);
-                            }
-                        }
-                        else throw;
-                    }
-                    finally
-                    {
-                        context.RouterResponse = result;
-                    }
-                }
-
-                // after GLOBAL request handlers
-                if (this.GlobalRequestHandlers is not null && context != null)
-                {
-                    foreach (IRequestHandler handler in this.GlobalRequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
-                    {
-                        bool isBypassed = false;
-                        foreach (IRequestHandler bypassed in matchedRoute!.BypassGlobalRequestHandlers ?? new IRequestHandler[] { })
-                        {
-                            if (bypassed.Identifier == handler.Identifier)
-                            {
-                                isBypassed = true;
-                            }
-                        }
-
-                        if (isBypassed)
-                            continue;
-
-                        HttpResponse? handlerResponse = handler.Execute(request, context);
-
-                        if (handlerResponse is not null)
-                        {
-                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                        }
-                    }
-                }
-
-                // after SPECIFIC request handlers
-                if (matchedRoute!.RequestHandlers is not null && context != null)
-                {
-                    foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
-                    {
-                        HttpResponse? handlerResponse = handler.Execute(request, context);
-
-                        if (handlerResponse is not null)
-                        {
-                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                        }
-                    }
-                }
-
-                return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult, null);
+                result = handler.Execute(request, context);
             }
-            catch (Exception baseEx)
+            catch (Exception ex)
             {
                 if (!throwException)
                 {
-                    if (CallbackErrorHandler != null)
+                    if (CallbackErrorHandler is not null)
                     {
-                        HttpResponse res = CallbackErrorHandler(baseEx, request);
-                        return new RouterExecutionResult(res, matchedRoute, matchResult, baseEx);
+                        result = CallbackErrorHandler(ex, request);
                     }
-                    else
-                    {
-                        return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, baseEx);
-                    }
+                }
+                else throw;
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        internal RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest)
+        {
+            Route? matchedRoute = null;
+            RouteMatchResult matchResult = RouteMatchResult.NotMatched;
+            HttpContext? context = new HttpContext(new Dictionary<string, object?>(), this.ParentServer, matchedRoute);
+            request.Context = context;
+            bool hasGlobalHandlers = this.GlobalRequestHandlers?.Length > 0;
+
+            foreach (Route route in _routes)
+            {
+                // test path
+                Internal.WildcardMatching.PathMatchResult pathTest;
+                if (route.UseRegex)
+                {
+                    pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
                 }
                 else
                 {
-                    throw;
+                    pathTest = WildcardMatching.IsPathMatch(route.Path, request.Path, MatchRoutesIgnoreCase);
+                }
+
+                if (!pathTest.IsMatched)
+                {
+                    continue;
+                }
+
+                matchResult = RouteMatchResult.PathMatched;
+                bool isMethodMatched = false;
+
+                // test method
+                if (route.Method == RouteMethod.Any)
+                {
+                    isMethodMatched = true;
+                }
+                else if (request.Method == HttpMethod.Options)
+                {
+                    matchResult = RouteMatchResult.OptionsMatched;
+                    break;
+                }
+                else if (ParentServer!.ServerConfiguration.Flags.TreatHeadAsGetMethod && (request.Method == HttpMethod.Head && route.Method == RouteMethod.Get))
+                {
+                    isMethodMatched = true;
+                }
+                else if (IsMethodMatching(request.Method.Method, route.Method))
+                {
+                    isMethodMatched = true;
+                }
+
+                if (isMethodMatched)
+                {
+                    foreach (string routeParam in pathTest.Query)
+                    {
+                        request.Query.Add(routeParam, HttpUtility.UrlDecode(pathTest.Query[routeParam]));
+                    }
+                    matchResult = RouteMatchResult.FullyMatched;
+                    matchedRoute = route;
+                    break;
                 }
             }
+
+            if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
+            {
+                return new RouterExecutionResult(NotFoundErrorHandler(), null, matchResult, null);
+            }
+            else if (matchResult == RouteMatchResult.OptionsMatched)
+            {
+                HttpResponse corsResponse = new HttpResponse();
+                corsResponse.Status = System.Net.HttpStatusCode.OK;
+
+                return new RouterExecutionResult(corsResponse, null, matchResult, null);
+            }
+            else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
+            {
+                return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute, matchResult, null);
+            }
+            else if (matchResult == RouteMatchResult.FullyMatched && matchedRoute != null)
+            {
+                context.MatchedRoute = matchedRoute;
+                HttpResponse? result = null;
+
+                #region Before-contents global handlers
+                if (hasGlobalHandlers)
+                {
+                    foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
+                    {
+                        var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                        if (handlerResponse is not null)
+                        {
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                        }
+                    }
+                }
+                #endregion
+
+                #region Before-contents route-specific handlers
+                if (matchedRoute!.RequestHandlers?.Length > 0)
+                {
+                    foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
+                    {
+                        var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                        if (handlerResponse is not null)
+                        {
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                        }
+                    }
+                }
+                #endregion
+
+                request.ImportContents(baseRequest.InputStream);
+
+                #region Before-response global handlers
+                if (hasGlobalHandlers)
+                {
+                    foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                    {
+                        var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                        if (handlerResponse is not null)
+                        {
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                        }
+                    }
+                }
+                #endregion
+
+                #region Before-response route-specific handlers
+                if (matchedRoute!.RequestHandlers?.Length > 0)
+                {
+                    foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                    {
+                        var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                        if (handlerResponse is not null)
+                        {
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                        }
+                    }
+                }
+                #endregion
+
+                #region Route callback
+
+                if (matchedRoute.Callback is null)
+                {
+                    throw new ArgumentNullException("No route callback was defined to the route " + matchedRoute.ToString());
+                }
+
+                try
+                {
+                    result = matchedRoute.Callback(request);
+                }
+                catch (Exception ex)
+                {
+                    if (!throwException)
+                    {
+                        if (CallbackErrorHandler is not null)
+                        {
+                            result = CallbackErrorHandler(ex, request);
+                        }
+                        else
+                        {
+                            return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, ex);
+                        }
+                    }
+                    else throw;
+                }
+                finally
+                {
+                    context.RouterResponse = result;
+                }
+                #endregion
+
+                #region After-response global handlers
+                if (hasGlobalHandlers)
+                {
+                    foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
+                    {
+                        var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                        if (handlerResponse is not null)
+                        {
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                        }
+                    }
+                }
+                #endregion
+
+                #region After-response route-specific handlers
+                if (matchedRoute!.RequestHandlers?.Length > 0)
+                {
+                    foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
+                    {
+                        var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                        if (handlerResponse is not null)
+                        {
+                            return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
+                        }
+                    }
+                }
+                #endregion
+            }
+
+            return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult, null);
         }
     }
 

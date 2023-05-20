@@ -23,7 +23,7 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
+        /// <namespace> 
         /// Sisk.Core.Routing
         /// </namespace>
         public LogOutput LogMode { get; set; } = LogOutput.Both;
@@ -93,9 +93,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public string? Name { get; set; }
 
         /// <summary>
@@ -199,6 +196,27 @@
         /// </namespace>
         public Route()
         {
+        }
+
+        /// <summary>
+        /// Gets an string notation for this <see cref="Route"/> object.
+        /// </summary>
+        /// <definition>
+        /// public override string ToString()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(Name))
+            {
+                return $"[Method={Method}, Path={Path}]";
+            }
+            else
+            {
+                return $"[Method={Method}, Name={Name}]";
+            }
         }
     }
 

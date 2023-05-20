@@ -71,7 +71,7 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public Route? MatchedRoute { get; private set; }
+        public Route? MatchedRoute { get; internal set; }
 
         internal HttpContext(Dictionary<string, object?> requestBag, HttpServer? httpServer, Route? matchedRoute)
         {

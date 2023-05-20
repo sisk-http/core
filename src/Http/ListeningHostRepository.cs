@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sisk.Core.Internal;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +24,6 @@ namespace Sisk.Core.Http
     public class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
     {
         private List<ListeningHost> _hosts = new List<ListeningHost>();
-        private Internal.WildcardMatching dnsMatcher = new Internal.WildcardMatching();
 
         /// <summary>
         /// Creates a new instance of an empty <see cref="ListeningHostRepository"/>.
@@ -237,9 +237,12 @@ namespace Sisk.Core.Http
         {
             foreach (ListeningHost h in this._hosts)
             {
-                if (dnsMatcher.IsDnsMatch(h.Hostname, dnsSafeHost) && h._numericPorts.Contains(port))
+                foreach (ListeningPort p in h.Ports)
                 {
-                    return h;
+                    if (p.Port == port && WildcardMatching.IsDnsMatch(p.Hostname, dnsSafeHost))
+                    {
+                        return h;
+                    }
                 }
             }
             return null;
