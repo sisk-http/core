@@ -179,7 +179,7 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        public unsafe void Send(string message)
+        public void Send(string message)
         {
             byte[] messageBytes = Encoding.UTF8.GetBytes(message);
             ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte>(messageBytes);
@@ -196,7 +196,7 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        public unsafe void Send(byte[] buffer)
+        public void Send(byte[] buffer)
         {
             ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte>(buffer);
             SendInternal(span, WebSocketMessageType.Binary);
@@ -214,7 +214,7 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        public unsafe void Send(byte[] buffer, int start, int length)
+        public void Send(byte[] buffer, int start, int length)
         {
             ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte>(buffer, start, length);
             SendInternal(span, WebSocketMessageType.Binary);
@@ -230,7 +230,7 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        public unsafe void Send(ReadOnlyMemory<byte> buffer)
+        public void Send(ReadOnlyMemory<byte> buffer)
         {
             SendInternal(buffer, WebSocketMessageType.Binary);
         }

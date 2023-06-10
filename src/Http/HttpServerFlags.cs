@@ -48,6 +48,11 @@ namespace Sisk.Core.Http
         public bool NormalizeHeadersEncodings = true;
 
         /// <summary>
+        /// Determines if the HTTP server should automatically rewrite paths to end with /. Does not works with Regex routes.
+        /// </summary>
+        public bool ForceTrailingSlash = false;
+
+        /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
         public HttpServerFlags()

@@ -15,21 +15,21 @@
     public class CrossOriginResourceSharingHeaders
     {
         /// <summary>
-        /// Gets an instance of CrossOriginResourceSharingHeaders that does not allow CORS by default.
+        /// Gets an instance of an empty CrossOriginResourceSharingHeaders.
         /// </summary>
         /// <definition>
-        /// public static CrossOriginResourceSharingHeaders Empty 
+        /// public static CrossOriginResourceSharingHeaders Empty { get; }
         /// </definition>
         /// <type>
-        /// Field
+        /// Property
         /// </type>
         /// <namespace>
         /// Sisk.Core.Entity
         /// </namespace>
-        public static CrossOriginResourceSharingHeaders Empty = new CrossOriginResourceSharingHeaders();
+        public static CrossOriginResourceSharingHeaders Empty { get => new(); }
 
         /// <summary>
-        /// From MDN: The Access-Control-Allow-Credentials header indicates whether or not the response to the request can be exposed when the credentials flag is true. When used as part of a
+        /// Gets or sets the Access-Control-Allow-Credentials header indicates whether or not the response to the request can be exposed when the credentials flag is true. When used as part of a
         /// response to a preflight request, this indicates whether or not the actual request can be made using credentials.
         /// </summary>
         /// <definition>
@@ -44,7 +44,7 @@
         public bool? AllowCredentials { get; set; }
 
         /// <summary>
-        /// From MDN: The Access-Control-Expose-Headers header adds the specified headers to the allowlist that JavaScript in browsers is allowed to access.
+        /// Gets or sets the Access-Control-Expose-Headers header adds the specified headers to the allowlist that JavaScript in browsers is allowed to access.
         /// </summary>
         /// <definition>
         /// public string[] ExposeHeaders { get; set; }
@@ -73,7 +73,21 @@
         public string? AllowOrigin { get; set; }
 
         /// <summary>
-        /// From MDN: The Access-Control-Allow-Methods header specifies the method or methods allowed when accessing the resource. 
+        /// Gets or sets domains which will define the source header according to one of the domains present below.
+        /// </summary>
+        /// <remarks>
+        /// This property makes the server compare the origin of the request and associate the domain that corresponds to it.
+        /// </remarks>
+        /// <definition>
+        /// public string[] AllowOrigins { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public string[]? AllowOrigins { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Access-Control-Allow-Methods header specifies the method or methods allowed when accessing the resource. 
         /// </summary>
         /// <definition>
         /// public string[] AllowMethods { get; set; }
@@ -87,7 +101,7 @@
         public string[] AllowMethods { get; set; }
 
         /// <summary>
-        /// From MDN: The Access-Control-Allow-Headers header is used in response to a preflight request to indicate which HTTP headers can be used when making the actual request. 
+        /// Gets or sets the Access-Control-Allow-Headers header is used in response to a preflight request to indicate which HTTP headers can be used when making the actual request. 
         /// </summary>
         /// <definition>
         /// public string[] AllowHeaders { get; set; }
@@ -101,7 +115,7 @@
         public string[] AllowHeaders { get; set; }
 
         /// <summary>
-        /// From MDN: The Access-Control-Max-Age header indicates how long the results of a preflight request can be cached.
+        /// Gets or sets the Access-Control-Max-Age header indicates how long the results of a preflight request can be cached.
         /// </summary>
         /// <definition>
         /// public TimeSpan MaxAge { get; set; }
@@ -138,7 +152,7 @@
             AllowMethods = allowMethods;
             AllowHeaders = allowHeaders;
             MaxAge = maxAge;
-            ExposeHeaders = new string[] { };
+            ExposeHeaders = Array.Empty<string>();
         }
 
         /// <summary>
@@ -155,15 +169,15 @@
         /// </namespace>
         public CrossOriginResourceSharingHeaders()
         {
-            ExposeHeaders = new string[0];
+            ExposeHeaders = Array.Empty<string>();
             AllowOrigin = null;
-            AllowMethods = new string[0];
-            AllowHeaders = new string[0];
+            AllowMethods = Array.Empty<string>();
+            AllowHeaders = Array.Empty<string>();
             MaxAge = TimeSpan.Zero;
         }
 
         /// <summary>
-        /// Create an instance of Cross-Origin Resource Sharing that allows any origin, any method, and any header in the request.
+        /// Create an instance of Cross-Origin Resource Sharing that allows any origin, any method and any header in the request.
         /// </summary>
         /// <definition>
         /// public static CrossOriginResourceSharingHeaders CreatePublicContext()
@@ -171,20 +185,13 @@
         /// <type>
         /// Static method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
-        /// <static>True</static>
-        public static CrossOriginResourceSharingHeaders CreatePublicContext()
+        public static CrossOriginResourceSharingHeaders CreatePublicContext() => new()
         {
-            return new CrossOriginResourceSharingHeaders()
-            {
-                AllowHeaders = new string[] { "*" },
-                AllowOrigin = "*",
-                AllowMethods = new string[] { "*" },
-                AllowCredentials = true,
-                MaxAge = TimeSpan.FromSeconds(3600)
-            };
-        }
+            AllowHeaders = new string[] { "*" },
+            AllowOrigin = "*",
+            AllowMethods = new string[] { "*" },
+            AllowCredentials = true,
+            MaxAge = TimeSpan.FromSeconds(3600)
+        };
     }
 }

@@ -19,7 +19,7 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <definition>
     /// public class HttpServer : IDisposable
-    /// </definition>
+    /// </definition> 
     /// <type>
     /// Class
     /// </type>
@@ -315,11 +315,26 @@ namespace Sisk.Core.Http
             }
         }
 
-        internal static void SetCorsHeaders(CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+        internal static void SetCorsHeaders(HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
         {
             if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
             if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
             if (cors.AllowOrigin != null) baseResponse.Headers.Set("Access-Control-Allow-Origin", cors.AllowOrigin);
+            if (cors.AllowOrigins?.Length > 0)
+            {
+                string? origin = baseRequest.Headers["Origin"];
+                if (origin != null)
+                {
+                    foreach (var definedOrigin in cors.AllowOrigins)
+                    {
+                        if (string.Compare(definedOrigin, origin, true) == 0)
+                        {
+                            baseResponse.Headers.Set("Access-Control-Allow-Origin", origin);
+                            break;
+                        }
+                    }
+                }
+            }
             if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
             if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
             if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
@@ -436,7 +451,6 @@ namespace Sisk.Core.Http
                     return;
                 }
 
-                // imports the request contents
                 incomingSize += request.CalcRequestSize();
 
                 // check for illegal body content requests
@@ -455,14 +469,15 @@ namespace Sisk.Core.Http
                 // bind
                 matchedListeningHost.Router.BindServer(this);
 
+                // aditional before-router flags
+                if (flag.SendSiskHeader)
+                    baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
+
                 // get response
                 var routerResult = matchedListeningHost.Router.Execute(request, baseRequest);
                 response = routerResult.Response;
                 logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
                 useCors = routerResult.Route?.UseCors ?? true;
-
-                if (flag.SendSiskHeader)
-                    baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
 
                 if (response is null)
                 {
@@ -497,7 +512,7 @@ namespace Sisk.Core.Http
 
                 if (useCors && flag.SendCorsHeaders)
                 {
-                    SetCorsHeaders(matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
+                    SetCorsHeaders(baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
                 }
                 if (routerResult.Result == RouteMatchResult.OptionsMatched)
                 {
@@ -556,7 +571,7 @@ namespace Sisk.Core.Http
                     }
                 }
 
-                string httpStatusVerbose = $"{(int)response.Status} {response.Status}";
+                string httpStatusVerbose = $"{baseResponse.StatusCode} {baseResponse.StatusDescription}";
 
                 executionResult.RequestSize = incomingSize;
                 executionResult.ResponseSize = outcomingSize;

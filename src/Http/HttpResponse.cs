@@ -27,6 +27,41 @@ namespace Sisk.Core.Http
         internal int CalculedLength = 0;
 
         /// <summary>
+        /// Creates an new empty <see cref="HttpResponse"/> with no status code or contents. This will cause to the HTTP server to close the
+        /// connection between the server and the client and don't deliver any response.
+        /// </summary>
+        /// <definition>
+        /// public static HttpResponse CreateEmptyResponse()
+        /// </definition>
+        /// <type>
+        /// Static method
+        /// </type>
+        public static HttpResponse CreateEmptyResponse()
+        {
+            return new HttpResponse(HTTPRESPONSE_EMPTY);
+        }
+
+        /// <summary>
+        /// Creates an new redirect <see cref="HttpResponse"/> with given location header.
+        /// </summary>
+        /// <param name="location">The absolute or relative URL path which the client must be redirected to.</param>
+        /// <definition>
+        /// public static HttpResponse CreateRedirectResponse(string location)
+        /// </definition>
+        /// <type>
+        /// Static method
+        /// </type>
+        public static HttpResponse CreateRedirectResponse(string location)
+        {
+            HttpResponse res = new HttpResponse();
+            res.Status = System.Net.HttpStatusCode.MovedPermanently;
+            res.Headers.Add("Location", location);
+
+            return res;
+        }
+
+
+        /// <summary>
         /// Gets or sets an custom HTTP status code and description for this HTTP response. If this property ins't null, it will overwrite
         /// the <see cref="Status"/> property in this class.
         /// </summary>
@@ -194,28 +229,54 @@ namespace Sisk.Core.Http
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public HttpResponse(HttpStatusCode status)
-        {
-            this.Status = status;
-            this.Content = null;
-        }
+        public HttpResponse(HttpStatusCode status) : this(status, null) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code.
         /// </summary>
         /// <definition>
-        /// public HttpResponse(int status)
+        /// public HttpResponse(int status) 
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public HttpResponse(int status)
+        public HttpResponse(int status) : this((HttpStatusCode)status, null) { }
+
+        /// <summary>
+        /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP content.
+        /// </summary>
+        /// <definition>
+        /// public HttpResponse(int status, HttpContent? content)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public HttpResponse(int status, HttpContent? content) : this((HttpStatusCode)status, content) { }
+
+        /// <summary>
+        /// Creates an new <see cref="HttpResponse"/> instance with given HTTP content, with default status code as 200 OK.
+        /// </summary>
+        /// <definition>
+        /// public HttpResponse(HttpContent? content)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public HttpResponse(HttpContent? content) : this(HttpStatusCode.OK, content) { }
+
+        /// <summary>
+        /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP contents.
+        /// </summary>
+        /// <definition>
+        /// public HttpResponse(HttpStatusCode status, HttpContent content)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public HttpResponse(HttpStatusCode status, HttpContent? content)
         {
-            this.Status = (HttpStatusCode)status;
-            this.Content = null;
+            this.Status = status;
+            this.Content = content;
         }
 
         /// <summary>

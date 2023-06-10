@@ -216,7 +216,7 @@ namespace Sisk.Core.Entity
             Headers = headers;
             Filename = filename;
             Name = name;
-            ContentBytes = body ?? new byte[] { };
+            ContentBytes = body ?? Array.Empty<byte>();
             ContentLength = body?.Length ?? 0;
         }
 
@@ -352,7 +352,7 @@ namespace Sisk.Core.Entity
                 }
 
                 // parse field name
-                string[] val = headers["Content-Disposition"]?.Split(';') ?? new string[] { };
+                string[] val = headers["Content-Disposition"]?.Split(';') ?? Array.Empty<string>();
                 string? fieldName = null;
                 string? fieldFilename = null;
 

@@ -2,9 +2,6 @@
 using Sisk.Core.Http.Streams;
 using System.Collections.Specialized;
 using System.Net;
-using System.Net.WebSockets;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Web;
 
@@ -402,7 +399,7 @@ namespace Sisk.Core.Http
         /// </namespace>
         public byte[] RawBody
         {
-            get => contentBytes ?? new byte[] { };
+            get => contentBytes ?? Array.Empty<byte>();
         }
 
         /// <summary>
@@ -620,139 +617,6 @@ namespace Sisk.Core.Http
         public HttpResponse Close()
         {
             return new HttpResponse(HttpResponse.HTTPRESPONSE_CLOSE);
-        }
-
-        /// <summary>
-        /// Create an HTTP response with code 200 OK without any body.
-        /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse CreateHeadResponse()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("This method is now obsolete. Use CreateEmptyResponse() instead.")]
-        public HttpResponse CreateHeadResponse()
-        {
-            return CreateEmptyResponse();
-        }
-
-        /// <summary>
-        /// Create an HTTP response with code 204 No Content without any body.
-        /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse CreateEmptyResponse()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public HttpResponse CreateEmptyResponse()
-        {
-            HttpResponse res = new HttpResponse();
-            res.Status = System.Net.HttpStatusCode.NoContent;
-            return res;
-        }
-
-        /// <summary>
-        /// Creates an HttpResponse object with given status code and body content.
-        /// </summary>
-        /// <param name="statusCode">The Http response status code.</param>
-        /// <param name="content">The body content.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse CreateResponse(HttpStatusCode statusCode, string? content)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public HttpResponse CreateResponse(HttpStatusCode statusCode, string? content)
-        {
-            HttpResponse res = new HttpResponse();
-            res.Status = statusCode;
-            if (content != null)
-                res.Content = new StringContent(content, listenerRequest.ContentEncoding, "text/plain");
-            return res;
-        }
-
-        /// <summary>
-        /// Creates an HttpResponse object with given status code.
-        /// </summary>
-        /// <param name="statusCode">The Http response status code.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse CreateResponse(HttpStatusCode statusCode)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public HttpResponse CreateResponse(HttpStatusCode statusCode)
-        {
-            HttpResponse res = new HttpResponse();
-            res.Status = statusCode;
-            return res;
-        }
-
-        /// <summary>
-        /// Creates an HttpResponse object with status code 200 OK and given content.
-        /// </summary>
-        /// <param name="content">The string content.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse CreateOkResponse(string? content)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public HttpResponse CreateOkResponse(string? content)
-        {
-            HttpResponse res = new HttpResponse();
-            res.Status = System.Net.HttpStatusCode.OK;
-            if (content != null)
-                res.Content = new StringContent(content, listenerRequest.ContentEncoding, "text/plain");
-
-            return res;
-        }
-
-        /// <summary>
-        /// Creates an HTTP 301 response code for the given location.
-        /// </summary>
-        /// <param name="location">The header value for the new location.</param>
-        /// <param name="permanent">Determines if the response is HTTP 301 or HTTP 302.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse CreateRedirectResponse(string location, bool permanent)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public HttpResponse CreateRedirectResponse(string location, bool permanent)
-        {
-            HttpResponse res = new HttpResponse();
-            res.Status = permanent ? System.Net.HttpStatusCode.MovedPermanently : System.Net.HttpStatusCode.Moved;
-            res.Headers.Add("Location", location);
-
-            return res;
         }
 
         /// <summary>

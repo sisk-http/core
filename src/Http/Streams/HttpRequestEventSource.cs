@@ -94,7 +94,7 @@ namespace Sisk.Core.Http.Streams
             res.AddHeader("Cache-Control", "no-store, no-cache");
             res.AddHeader("Content-Type", "text/event-stream");
             res.AddHeader("X-Powered-By", HttpServer.poweredByHeader);
-            HttpServer.SetCorsHeaders(host.hostContext.CrossOriginResourceSharingPolicy, res);
+            HttpServer.SetCorsHeaders(req, host.hostContext.CrossOriginResourceSharingPolicy, res);
         }
 
         private void keepAliveTask()
@@ -108,7 +108,7 @@ namespace Sisk.Core.Http.Streams
                 }
                 else
                 {
-                    Thread.Sleep(3000);
+                    Thread.Sleep(1000);
                 }
             }
         }

@@ -98,6 +98,8 @@ namespace Sisk.Provider
                 host.CrossOriginResourceSharingPolicy.MaxAge = TimeSpan.FromSeconds((double)config.ListeningHost.CrossOriginResourceSharingPolicy.MaxAge);
             if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowOrigin != null)
                 host.CrossOriginResourceSharingPolicy.AllowOrigin = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowOrigin;
+            if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowOrigins != null)
+                host.CrossOriginResourceSharingPolicy.AllowOrigins = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowOrigins;
             if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowMethods != null)
                 host.CrossOriginResourceSharingPolicy.AllowMethods = config.ListeningHost.CrossOriginResourceSharingPolicy.AllowMethods;
             if (config.ListeningHost.CrossOriginResourceSharingPolicy?.AllowCredentials != null)
@@ -172,6 +174,7 @@ namespace Sisk.Provider
         public bool? AllowCredentials { get; set; } = null;
         public string[]? ExposeHeaders { get; set; }
         public string? AllowOrigin { get; set; }
+        public string[]? AllowOrigins { get; set; }
         public string[]? AllowMethods { get; set; }
         public string[]? AllowHeaders { get; set; }
         public int? MaxAge { get; set; } = null;

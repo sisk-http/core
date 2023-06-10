@@ -15,7 +15,7 @@ namespace Sisk.Core.Http
     /// <namespace>
     /// Sisk.Core.Http
     /// </namespace>
-    public unsafe class ListeningHost
+    public class ListeningHost
     {
         private ListeningPort[] _ports = null!;
         internal int[] _numericPorts = null!;

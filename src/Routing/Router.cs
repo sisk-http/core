@@ -466,6 +466,7 @@ namespace Sisk.Core.Routing
             Route? matchedRoute = null;
             RouteMatchResult matchResult = RouteMatchResult.NotMatched;
             HttpContext? context = new HttpContext(new Dictionary<string, object?>(), this.ParentServer, matchedRoute);
+            HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
             request.Context = context;
             bool hasGlobalHandlers = this.GlobalRequestHandlers?.Length > 0;
 
@@ -500,7 +501,7 @@ namespace Sisk.Core.Routing
                     matchResult = RouteMatchResult.OptionsMatched;
                     break;
                 }
-                else if (ParentServer!.ServerConfiguration.Flags.TreatHeadAsGetMethod && (request.Method == HttpMethod.Head && route.Method == RouteMethod.Get))
+                else if (flag.TreatHeadAsGetMethod && (request.Method == HttpMethod.Head && route.Method == RouteMethod.Get))
                 {
                     isMethodMatched = true;
                 }
@@ -540,6 +541,14 @@ namespace Sisk.Core.Routing
             {
                 context.MatchedRoute = matchedRoute;
                 HttpResponse? result = null;
+
+                if (flag.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith('/'))
+                {
+                    HttpResponse res = new HttpResponse();
+                    res.Status = HttpStatusCode.MovedPermanently;
+                    res.Headers.Add("Location", request.Path + "/" + (request.QueryString ?? ""));
+                    return new RouterExecutionResult(res, matchedRoute, matchResult, null);
+                }
 
                 #region Before-contents global handlers
                 if (hasGlobalHandlers)

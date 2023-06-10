@@ -11,7 +11,7 @@ namespace Sisk.Core.Routing
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
+    /// <namespace> 
     /// Sisk.Core.Routing.Handlers
     /// </namespace>
     public abstract class RequestHandlerFactory
