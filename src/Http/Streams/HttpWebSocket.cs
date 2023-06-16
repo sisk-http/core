@@ -255,7 +255,7 @@ namespace Sisk.Core.Http.Streams
                 closeEvent.Set();
             }
             request.baseServer._wsCollection.UnregisterWebSocket(this);
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_STREAM_CLOSE);
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
         }
 
         private void SendInternal(ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType)

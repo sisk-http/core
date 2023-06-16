@@ -114,7 +114,7 @@
         /// <namespace>
         /// Sisk.Core.Http
         /// </namespace>
-        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.StreamClosed; }
+        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.ConnectionClosed; }
 
         /// <summary>
         /// Gets the request size in bytes.
@@ -162,7 +162,7 @@
     public enum HttpServerExecutionStatus
     {
         /// <summary>
-        /// Represents that the request was executed by a router and its response was delivered.
+        /// Represents that the request was closed by the HTTP server and executed by a router and its response was succesfully delivered.
         /// </summary>
         Executed,
 
@@ -173,28 +173,14 @@
         ContentServedOnIllegalMethod,
 
         /// <summary>
-        /// This enum value is deprecated. Use <see cref="ContentServedOnIllegalMethod"/> instead.
-        /// </summary>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete]
-        ContentServedOnNotSupportedMethod = ContentServedOnIllegalMethod,
-
-        /// <summary>
         /// Represents that the content of the request is too large than what was configured on the server.
         /// </summary>
         ContentTooLarge,
 
         /// <summary>
-        /// Represents that the connection stream was closed.
+        /// Represents that the connection stream was closed by the client.
         /// </summary>
-        StreamClosed,
-
-        /// <summary>
-        /// This enum value is deprecated. Use <see cref="StreamClosed"/> instead.
-        /// </summary>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete]
-        EventSourceClosed = StreamClosed,
+        ConnectionClosed,
 
         /// <summary>
         /// Represents that the router did not deliver a response to the received request.
@@ -229,11 +215,6 @@
         /// <summary>
         /// Indicates that the server cannot or will not process the request due to something that is perceived to be a client error.
         /// </summary>
-        MalformedRequest,
-
-        /// <summary>
-        /// Indicates that the server closed the connection with the client.
-        /// </summary>
-        ClosedStream
+        MalformedRequest
     }
 }

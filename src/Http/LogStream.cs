@@ -252,6 +252,8 @@ namespace Sisk.Core.Http
                 exceptionStr.AppendLine($"\n-------------\nInner exception:");
                 exceptionStr.AppendLine(exp.InnerException.ToString());
             }
+
+            exceptionStr.AppendLine();
             WriteLine(exceptionStr);
         }
 

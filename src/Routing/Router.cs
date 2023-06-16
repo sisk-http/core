@@ -621,6 +621,10 @@ namespace Sisk.Core.Routing
                 }
                 catch (Exception ex)
                 {
+                    if (ex.HResult == -2147467259)
+                    {
+                        return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_CLIENT_CLOSE), matchedRoute, matchResult, ex);
+                    }
                     if (!throwException)
                     {
                         if (CallbackErrorHandler is not null)

@@ -7,9 +7,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
-using System.Net.Mime;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Sisk.Core.Http
@@ -303,20 +301,24 @@ namespace Sisk.Core.Http
             return string.Format("{0:0.##}{1}", size, sizes[order]);
         }
 
-        private void TryCloseStream(HttpListenerResponse response)
+        private void ResumeStatements(params Action[] statements)
         {
-            try
+            foreach (Action s in statements)
             {
-                response.Close();
-            }
-            catch (Exception)
-            {
-                ;
+                try
+                {
+                    s();
+                }
+                catch (Exception)
+                {
+                    ;
+                }
             }
         }
 
-        internal static void SetCorsHeaders(HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+        internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
         {
+            if (!serverFlags.SendCorsHeaders) return;
             if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
             if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
             if (cors.AllowOrigin != null) baseResponse.Headers.Set("Access-Control-Allow-Origin", cors.AllowOrigin);
@@ -479,44 +481,49 @@ namespace Sisk.Core.Http
                 logMode = routerResult.Route?.LogMode ?? LogOutput.Both;
                 useCors = routerResult.Route?.UseCors ?? true;
 
+                if (useCors)
+                {
+                    SetCorsHeaders(flag, baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
+                }
+                if (routerResult.Result == RouteMatchResult.OptionsMatched)
+                {
+                    logMode = flag.OptionsLogMode;
+                }
+
                 if (response is null)
                 {
                     executionResult.Status = HttpServerExecutionStatus.NoResponse;
-                    return;
+                    goto finishSending;
                 }
-                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_STREAM_CLOSE)
+                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
                 {
-                    executionResult.Status = HttpServerExecutionStatus.StreamClosed;
+                    executionResult.Status = HttpServerExecutionStatus.Executed;
                     baseResponse.StatusCode = (int)response.Status;
-                    return;
+                    goto finishSending;
+                }
+                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
+                {
+                    executionResult.Status = HttpServerExecutionStatus.Executed;
+                    goto finishSending;
                 }
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_EMPTY)
                 {
+                    baseResponse.StatusCode = 204;
                     executionResult.Status = HttpServerExecutionStatus.NoResponse;
-                    return;
+                    goto finishSending;
                 }
                 else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_ERROR)
                 {
                     executionResult.Status = HttpServerExecutionStatus.UncaughtExceptionThrown;
                     executionResult.ServerException = routerResult.Exception;
                     baseResponse.StatusCode = 500;
-
-                    return;
+                    goto finishSending;
                 }
-                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_CLOSE)
+                else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_CLIENT_CLOSE)
                 {
-                    executionResult.Status = HttpServerExecutionStatus.ClosedStream;
+                    executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
                     baseResponse.Close();
-                    return;
-                }
-
-                if (useCors && flag.SendCorsHeaders)
-                {
-                    SetCorsHeaders(baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
-                }
-                if (routerResult.Result == RouteMatchResult.OptionsMatched)
-                {
-                    logMode = flag.OptionsLogMode;
+                    goto finishSending;
                 }
 
                 byte[] responseBytes = response!.Content?.ReadAsByteArrayAsync().Result ?? new byte[] { };
@@ -560,9 +567,7 @@ namespace Sisk.Core.Http
                     }
 
                     if (!response.SendChunked)
-                    {
                         baseResponse.ContentLength64 = responseBytes.Length;
-                    }
 
                     if (context.Request.HttpMethod != "HEAD")
                     {
@@ -570,6 +575,8 @@ namespace Sisk.Core.Http
                         outcomingSize += responseBytes.Length;
                     }
                 }
+
+            finishSending:
 
                 string httpStatusVerbose = $"{baseResponse.StatusCode} {baseResponse.StatusDescription}";
 
@@ -591,7 +598,15 @@ namespace Sisk.Core.Http
             }
             catch (HttpListenerException netException)
             {
-                executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
+                Console.WriteLine("err");
+                if (netException.HResult == -2147467259)
+                {
+                    executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
+                }
+                else
+                {
+                    executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
+                }
                 executionResult.ServerException = netException;
             }
             catch (HttpRequestException requestException)
@@ -616,14 +631,14 @@ namespace Sisk.Core.Http
             {
                 if (closeStream)
                 {
-                    baseRequest.InputStream.Close();
-                    TryCloseStream(baseResponse);
+                    ResumeStatements(
+                        () => { baseRequest.InputStream.Close(); },
+                        () => { baseResponse.Close(); }
+                    );
                 }
 
                 if (OnConnectionClose != null)
                 {
-                    // the "Request" variable was pointing to an null value before
-                    // this line
                     executionResult.Request = request;
                     OnConnectionClose(this, executionResult);
                 }
@@ -633,20 +648,7 @@ namespace Sisk.Core.Http
 
                 if (executionResult.ServerException != null && canErrorLog)
                 {
-                    StringBuilder exceptionStr = new StringBuilder();
-                    exceptionStr.AppendLine($"Exception thrown at {DateTime.Now:R}");
-                    exceptionStr.AppendLine($"-------------\nRequest:");
-                    exceptionStr.AppendLine(request.GetRawHttpRequest(false));
-                    exceptionStr.AppendLine($"\n-------------\nError contents:");
-                    exceptionStr.AppendLine(executionResult.ServerException.ToString());
-
-                    if (executionResult.ServerException.InnerException != null)
-                    {
-                        exceptionStr.AppendLine($"\n-------------\nInner exception:");
-                        exceptionStr.AppendLine(executionResult.ServerException.InnerException.ToString());
-                    }
-
-                    ServerConfiguration.ErrorsLogsStream?.WriteLine(exceptionStr.ToString());
+                    ServerConfiguration.ErrorsLogsStream?.WriteException(executionResult.ServerException);
                 }
                 if (canAccessLog)
                 {

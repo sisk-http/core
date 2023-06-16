@@ -616,7 +616,26 @@ namespace Sisk.Core.Http
         /// </namespace>
         public HttpResponse Close()
         {
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_CLOSE);
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+        }
+
+        /// <summary>
+        /// Gets an HTTP response stream for this HTTP request.
+        /// </summary>
+        /// <definition>
+        /// public HttpResponseStream GetResponseStream()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpResponseStream GetResponseStream()
+        {
+            if (isStreaming)
+            {
+                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+            }
+            isStreaming = true;
+            return new HttpResponseStream(listenerResponse, listenerRequest, this);
         }
 
         /// <summary>
@@ -630,9 +649,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http 
-        /// </namespace>
         public HttpRequestEventSource GetEventSource(string? identifier = null)
         {
             if (isStreaming)

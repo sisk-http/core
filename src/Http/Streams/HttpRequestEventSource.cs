@@ -94,7 +94,8 @@ namespace Sisk.Core.Http.Streams
             res.AddHeader("Cache-Control", "no-store, no-cache");
             res.AddHeader("Content-Type", "text/event-stream");
             res.AddHeader("X-Powered-By", HttpServer.poweredByHeader);
-            HttpServer.SetCorsHeaders(req, host.hostContext.CrossOriginResourceSharingPolicy, res);
+
+            HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, req, host.hostContext.CrossOriginResourceSharingPolicy, res);
         }
 
         private void keepAliveTask()
@@ -248,7 +249,7 @@ namespace Sisk.Core.Http.Streams
                 Dispose();
                 hostServer._eventCollection.UnregisterEventSource(this);
             }
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_STREAM_CLOSE)
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
                 CalculedLength = length
             };

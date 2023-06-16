@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,7 +15,7 @@ namespace Sisk.Core.Http
     /// public struct HttpStatusInformation
     /// </definition>
     /// <type>
-    /// Structure
+    /// Struct
     /// </type>
     /// <namespace>
     /// Sisk.Core.Http
@@ -64,14 +65,16 @@ namespace Sisk.Core.Http
             ValidateDescription(description);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateStatusCode(int st)
         {
-            if (Math.Ceiling(Math.Log10(st)) != 3) throw new ArgumentException("The HTTP status code must be three-digits long.");
+            if (st < 100 || st > 999) throw new ProtocolViolationException("The HTTP status code must be three-digits long.");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateDescription(string s)
         {
-            if (s.Length > 8192) throw new ArgumentException("The HTTP reason phrase must be equal or smaller than 8192 bytes.");
+            if (s.Length > 8192) throw new ProtocolViolationException("The HTTP reason phrase must be equal or smaller than 8192 characters.");
         }
     }
 }
