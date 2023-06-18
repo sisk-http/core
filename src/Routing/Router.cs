@@ -305,7 +305,7 @@ namespace Sisk.Core.Routing
         {
             Type attrClassType = attrClassInstance.GetType();
             MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            SetInternal(methods, attrClassInstance);
+            SetInternal(methods, attrClassType, attrClassInstance);
         }
 
         /// <summary>
@@ -325,63 +325,74 @@ namespace Sisk.Core.Routing
         public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
         {
             MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-            SetInternal(methods, null);
+            SetInternal(methods, attrClassType, null);
         }
 
-        private void SetInternal(MethodInfo[] methods, object? instance)
+        private void SetInternal(MethodInfo[] methods, Type callerType, object? instance)
         {
+            RoutePrefixAttribute? rPrefix = callerType.GetCustomAttribute<RoutePrefixAttribute>();
+            string? prefix = rPrefix?.Prefix;
+
             foreach (var method in methods)
             {
-                RouteAttribute? atrInstance = method.GetCustomAttribute<RouteAttribute>();
-                IEnumerable<RequestHandlerAttribute> handlersInstances = method.GetCustomAttributes<RequestHandlerAttribute>();
-
-                if (atrInstance != null)
+                IEnumerable<RouteAttribute> routesAttributes = method.GetCustomAttributes<RouteAttribute>();
+                foreach (var atrInstance in routesAttributes)
                 {
-                    List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
-                    if (handlersInstances.Count() > 0)
+                    IEnumerable<RequestHandlerAttribute> handlersInstances = method.GetCustomAttributes<RequestHandlerAttribute>();
+                    if (atrInstance != null)
                     {
-                        foreach (RequestHandlerAttribute atr in handlersInstances)
+                        List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
+                        if (handlersInstances.Count() > 0)
                         {
-                            IRequestHandler rhandler = (IRequestHandler)Activator.CreateInstance(atr.RequestHandlerType, atr.ConstructorArguments)!;
-                            methodHandlers.Add(rhandler);
-                        }
-                    }
-
-                    try
-                    {
-                        RouterCallback r;
-
-                        if (instance == null)
-                        {
-                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
-                        }
-                        else
-                        {
-                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), instance, method);
+                            foreach (RequestHandlerAttribute atr in handlersInstances)
+                            {
+                                IRequestHandler rhandler = (IRequestHandler)Activator.CreateInstance(atr.RequestHandlerType, atr.ConstructorArguments)!;
+                                methodHandlers.Add(rhandler);
+                            }
                         }
 
-                        Route route = new Route()
+                        try
                         {
-                            Method = atrInstance.Method,
-                            Path = atrInstance.Path,
-                            Callback = r,
-                            Name = atrInstance.Name,
-                            RequestHandlers = methodHandlers.ToArray(),
-                            LogMode = atrInstance.LogMode,
-                            UseCors = atrInstance.UseCors
-                        };
+                            RouterCallback r;
 
-                        Route? collisonRoute;
-                        if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
-                        {
-                            throw new ArgumentException($"A possible route collision could happen between the route {route} at {method.Name} with route {collisonRoute}. Please review the methods and paths of these routes.");
+                            if (instance == null)
+                            {
+                                r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                            }
+                            else
+                            {
+                                r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), instance, method);
+                            }
+
+                            string path = atrInstance.Path;
+                            if (prefix != null)
+                            {
+                                path = HttpStringInternals.CombineRoutePaths(prefix, path);
+                            }
+
+                            Route route = new Route()
+                            {
+                                Method = atrInstance.Method,
+                                Path = path,
+                                Callback = r,
+                                Name = atrInstance.Name,
+                                RequestHandlers = methodHandlers.ToArray(),
+                                LogMode = atrInstance.LogMode,
+                                UseCors = atrInstance.UseCors
+                            };
+
+                            Route? collisonRoute;
+                            if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
+                            {
+                                throw new ArgumentException($"A possible route collision could happen between the route {route} at {method.Name} with route {collisonRoute}. Please review the methods and paths of these routes.");
+                            }
+
+                            SetRoute(route);
                         }
-
-                        SetRoute(route);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception($"Couldn't set method {method.Name} as an route. See inner exception.", ex);
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Couldn't set method {method.Name} as an route. See inner exception.", ex);
+                        }
                     }
                 }
             }
@@ -399,9 +410,9 @@ namespace Sisk.Core.Routing
             return method.HasFlag(ogRqParsed);
         }
 
-        private Internal.WildcardMatching.PathMatchResult TestRouteMatchUsingRegex(string routePath, string requestPath)
+        private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex(string routePath, string requestPath)
         {
-            return new Internal.WildcardMatching.PathMatchResult
+            return new Internal.HttpStringInternals.PathMatchResult
                 (Regex.IsMatch(requestPath, routePath, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), new System.Collections.Specialized.NameValueCollection());
         }
 
@@ -414,7 +425,7 @@ namespace Sisk.Core.Routing
             foreach (Route r in this._routes)
             {
                 bool methodMatch = method != RouteMethod.Any && method == r.Method;
-                bool pathMatch = WildcardMatching.IsPathMatch(r.Path, path, MatchRoutesIgnoreCase).IsMatched;
+                bool pathMatch = HttpStringInternals.IsPathMatch(r.Path, path, MatchRoutesIgnoreCase).IsMatched;
 
                 if (methodMatch && pathMatch)
                 {
@@ -473,14 +484,14 @@ namespace Sisk.Core.Routing
             foreach (Route route in _routes)
             {
                 // test path
-                Internal.WildcardMatching.PathMatchResult pathTest;
+                Internal.HttpStringInternals.PathMatchResult pathTest;
                 if (route.UseRegex)
                 {
                     pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
                 }
                 else
                 {
-                    pathTest = WildcardMatching.IsPathMatch(route.Path, request.Path, MatchRoutesIgnoreCase);
+                    pathTest = HttpStringInternals.IsPathMatch(route.Path, request.Path, MatchRoutesIgnoreCase);
                 }
 
                 if (!pathTest.IsMatched)

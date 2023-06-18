@@ -239,7 +239,7 @@ namespace Sisk.Core.Http
             {
                 foreach (ListeningPort p in h.Ports)
                 {
-                    if (p.Port == port && WildcardMatching.IsDnsMatch(p.Hostname, dnsSafeHost))
+                    if (p.Port == port && HttpStringInternals.IsDnsMatch(p.Hostname, dnsSafeHost))
                     {
                         return h;
                     }

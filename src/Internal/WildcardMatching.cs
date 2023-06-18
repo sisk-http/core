@@ -2,14 +2,21 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Sisk.Core.Internal
 {
-    internal static class WildcardMatching
+    internal static class HttpStringInternals
     {
         public record PathMatchResult(bool IsMatched, NameValueCollection Query);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string CombineRoutePaths(string a, string b)
+        {
+            return $"/{a.Trim('/')}/{b.Trim('/')}";
+        }
 
         public static string StripRouteParameters(string routePath)
         {

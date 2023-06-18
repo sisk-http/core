@@ -4,16 +4,13 @@
     /// Represents an class that, when applied to a method, will be recognized by a router as a route.
     /// </summary>
     /// <definition>
-    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     /// public class RouteAttribute : Attribute
     /// </definition>
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class RouteAttribute : Attribute
     {
         /// <summary>
@@ -105,5 +102,135 @@
             this.Method = method;
             this.Path = path;
         }
+    }
+
+    /// <summary>
+    /// Represents a mapping to an HTTP GET route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    /// public class RouteGetAttribute : RouteAttribute
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class RouteGetAttribute : RouteAttribute
+    {
+        /// <summary>
+        /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="path">The GET route path.</param>
+        /// <definition>
+        /// public RouteGetAttribute(string path)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RouteGetAttribute(string path) : base(RouteMethod.Get, path) { }
+    }
+
+    /// <summary>
+    /// Represents a mapping to an HTTP POST route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    /// public class RoutePostAttribute : RouteAttribute
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class RoutePostAttribute : RouteAttribute
+    {
+        /// <summary>
+        /// Creates an new <see cref="RoutePostAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="path">The POST route path.</param>
+        /// <definition>
+        /// public RoutePostAttribute(string path)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RoutePostAttribute(string path) : base(RouteMethod.Post, path) { }
+    }
+
+    /// <summary>
+    /// Represents a mapping to an HTTP PUT route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    /// public class RoutePutAttribute : RouteAttribute
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class RoutePutAttribute : RouteAttribute
+    {
+        /// <summary>
+        /// Creates an new <see cref="RoutePutAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="path">The PUT route path.</param>
+        /// <definition>
+        /// public RoutePutAttribute(string path)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RoutePutAttribute(string path) : base(RouteMethod.Put, path) { }
+    }
+
+    /// <summary>
+    /// Represents a mapping to an HTTP PATCH route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    /// public class RoutePatchAttribute : RouteAttribute
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class RoutePatchAttribute : RouteAttribute
+    {
+        /// <summary>
+        /// Creates an new <see cref="RoutePatchAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="path">The PATCH route path.</param>
+        /// <definition>
+        /// public RoutePatchAttribute(string path)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RoutePatchAttribute(string path) : base(RouteMethod.Patch, path) { }
+    }
+
+    /// <summary>
+    /// Represents a mapping to an HTTP DELETE route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    /// public class RouteDeleteAttribute : RouteAttribute
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class RouteDeleteAttribute : RouteAttribute
+    {
+        /// <summary>
+        /// Creates an new <see cref="RouteDeleteAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="path">The DELETE route path.</param>
+        /// <definition>
+        /// public RouteDeleteAttribute(string path)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RouteDeleteAttribute(string path) : base(RouteMethod.Delete, path) { }
     }
 }

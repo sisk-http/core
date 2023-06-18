@@ -1,5 +1,6 @@
 ﻿using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -49,6 +50,7 @@ namespace Sisk.Core.Http
         private HttpRequestEventSource? activeEventSource;
         private bool isContentAvailable = false;
         private NameValueCollection headers = new NameValueCollection();
+        private int currentFrame = 0;
 
         internal HttpRequest(
             HttpListenerRequest listenerRequest,
@@ -600,6 +602,27 @@ namespace Sisk.Core.Http
         /// Sisk.Core.Http
         /// </namespace>
         public string? GetHeader(string headerName) => Headers[headerName];
+
+        /// <summary>
+        /// Calls another handler for this request, preserving the current call-stack frame, and then returns the response from
+        /// it. This method manages to prevent possible stack overflows.
+        /// </summary>
+        /// <param name="otherCallback">Defines the <see cref="RouterCallback"/> method which will handle this request.</param>
+        /// <definition>
+        /// public HttpResponse SendTo(RouterCallback otherCallback)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpResponse SendTo(RouterCallback otherCallback)
+        {
+            Interlocked.Increment(ref currentFrame);
+            if (currentFrame > 64)
+            {
+                throw new OverflowException("Too many internal route redirections.");
+            }
+            return otherCallback(this);
+        }
 
         /// <summary>
         /// Closes this HTTP request and their connection with the remote client without sending any response.
