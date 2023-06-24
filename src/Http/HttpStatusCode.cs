@@ -17,9 +17,6 @@ namespace Sisk.Core.Http
     /// <type>
     /// Struct
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public struct HttpStatusInformation
     {
         private int __statusCode = 100;

@@ -13,9 +13,6 @@ namespace Sisk.Core.Routing
     /// <type>
     /// Delegate
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
     public delegate HttpResponse RouterCallback(HttpRequest request);
 
     /// <summary>
@@ -28,9 +25,6 @@ namespace Sisk.Core.Routing
     /// <type>
     /// Delegate
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
     public delegate HttpResponse NoMatchedRouteErrorCallback();
 
     /// <summary>
@@ -38,13 +32,10 @@ namespace Sisk.Core.Routing
     /// </summary>
     /// <returns></returns>
     /// <definition>
-    /// public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpRequest request);
+    /// public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpContext context);
     /// </definition>
     /// <type>
     /// Delegate
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing 
-    /// </namespace>
-    public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpRequest request);
+    public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpContext context);
 }

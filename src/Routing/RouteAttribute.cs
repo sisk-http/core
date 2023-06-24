@@ -22,9 +22,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public RouteMethod Method { get; set; } = RouteMethod.Any;
 
         /// <summary>
@@ -36,9 +33,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public string Path { get; set; } = null!;
 
         /// <summary>
@@ -50,9 +44,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public string? Name { get; set; }
 
         /// <summary>
@@ -64,9 +55,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public bool UseCors { get; set; } = true;
 
         /// <summary>
@@ -78,9 +66,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public LogOutput LogMode { get; set; } = LogOutput.Both;
 
         /// <summary>
@@ -94,9 +79,6 @@
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public RouteAttribute(RouteMethod method, string path)
         {
             this.Method = method;

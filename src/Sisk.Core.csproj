@@ -10,7 +10,7 @@
 		<OutputType>Library</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 
 		<!-- You should enable this when generating docs -->
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>

@@ -13,9 +13,7 @@ namespace Sisk.Core.Routing
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
+
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class RequestHandlerAttribute : Attribute
     {
@@ -28,9 +26,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
+
         [DynamicallyAccessedMembers(
               DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicFields
@@ -51,9 +47,6 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public object?[] ConstructorArguments { get; set; }
 
         /// <summary>
@@ -66,9 +59,6 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public RequestHandlerAttribute([DynamicallyAccessedMembers(
               DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicFields

@@ -17,9 +17,6 @@ namespace Sisk.Core.Http
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public class HttpRequestException : Exception
     {
         internal HttpRequestException(string message) : base(message) { }
@@ -34,9 +31,6 @@ namespace Sisk.Core.Http
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public sealed class HttpRequest
     {
         internal HttpServer baseServer;
@@ -173,9 +167,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public Guid RequestId { get; private set; }
 
         /// <summary>
@@ -187,9 +178,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool IsSecure { get => listenerRequest.IsSecureConnection; }
 
         /// <summary>
@@ -201,9 +189,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool IsContentAvailable { get => isContentAvailable; }
 
         /// <summary>
@@ -215,9 +200,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool HasContents { get => this.ContentLength > 0; }
 
         /// <summary>
@@ -229,9 +211,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public NameValueCollection Headers
         {
             get => headers;
@@ -246,9 +225,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public NameValueCollection Cookies { get; private set; } = new NameValueCollection();
 
         /// <summary>
@@ -260,9 +236,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string Host
         {
             get => listenerRequest.Url!.Host;
@@ -277,9 +250,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string Authority
         {
             get => listenerRequest.Url!.Authority;
@@ -294,9 +264,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string Path
         {
             get => listenerRequest.Url?.AbsolutePath ?? "/";
@@ -311,9 +278,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string FullPath
         {
             get => listenerRequest.RawUrl ?? "/";
@@ -328,9 +292,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string FullUrl
         {
             get => listenerRequest.Url!.ToString();
@@ -345,9 +306,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public Encoding RequestEncoding
         {
             get => listenerRequest.ContentEncoding;
@@ -362,9 +320,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpMethod Method
         {
             get => new HttpMethod(listenerRequest.HttpMethod);
@@ -379,9 +334,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string Body
         {
             get => listenerRequest.ContentEncoding.GetString(RawBody);
@@ -396,9 +348,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public byte[] RawBody
         {
             get => contentBytes ?? Array.Empty<byte>();
@@ -413,9 +362,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public long ContentLength
         {
             get => listenerRequest.ContentLength64;
@@ -430,9 +376,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public NameValueCollection Query { get; internal set; }
 
         /// <summary>
@@ -444,9 +387,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string? QueryString { get => listenerRequest.Url?.Query; }
 
         /// <summary>
@@ -458,9 +398,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public IPAddress Origin
         {
             get; internal set;
@@ -475,9 +412,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public DateTime RequestedAt { get; private init; }
 
         /// <summary>
@@ -489,9 +423,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpContext? Context { get; internal set; }
 
         /// <summary>
@@ -505,9 +436,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public MultipartObject[] GetMultipartFormContent()
         {
             return MultipartObject.ParseMultipartObjects(this);
@@ -523,9 +451,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public NameValueCollection GetFormContent()
         {
             return HttpUtility.ParseQueryString(Body);
@@ -541,9 +466,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string GetRawHttpRequest(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
@@ -582,9 +504,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string? GetQueryValue(string queryKeyName) => Query[queryKeyName];
 
         /// <summary>
@@ -598,9 +517,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string? GetHeader(string headerName) => Headers[headerName];
 
         /// <summary>
@@ -634,9 +550,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpResponse Close()
         {
             return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);

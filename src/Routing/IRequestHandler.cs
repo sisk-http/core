@@ -11,9 +11,6 @@ namespace Sisk.Core.Routing
     /// <type>
     /// Interface
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing.Handlers
-    /// </namespace>
     public interface IRequestHandler
     {
         /// <summary>
@@ -29,9 +26,6 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing.Handlers
-        /// </namespace>
         HttpResponse? Execute(HttpRequest request, HttpContext context);
 
         /// <summary>
@@ -43,9 +37,6 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing.Handlers
-        /// </namespace>
         RequestHandlerExecutionMode ExecutionMode { get; init; }
     }
 
@@ -58,9 +49,6 @@ namespace Sisk.Core.Routing
     /// <type>
     /// Enum
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing.Handlers
-    /// </namespace>
     public enum RequestHandlerExecutionMode
     {
         /// <summary>

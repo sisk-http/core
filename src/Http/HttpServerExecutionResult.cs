@@ -11,9 +11,6 @@
     /// <type>
     /// Delegate
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public delegate void ServerExecutionEventHandler(object sender, HttpServerExecutionResult e);
 
     /// <summary>
@@ -27,9 +24,6 @@
     /// <type>
     /// Delegate
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public delegate void ReceiveRequestEventHandler(object sender, HttpRequest request);
 
     /// <summary>
@@ -41,9 +35,6 @@
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public class HttpServerExecutionResult
     {
         /// <summary>
@@ -55,9 +46,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpRequest Request { get; internal set; } = null!;
 
         /// <summary>
@@ -69,9 +57,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpResponse? Response { get; internal set; }
 
         /// <summary>
@@ -83,9 +68,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpServerExecutionStatus Status { get; internal set; }
 
         /// <summary>
@@ -97,9 +79,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public Exception? ServerException { get; internal set; }
 
         /// <summary>
@@ -111,9 +90,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.ConnectionClosed; }
 
         /// <summary>
@@ -125,9 +101,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public long RequestSize { get; internal set; }
 
         /// <summary>
@@ -139,9 +112,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public long ResponseSize { get; internal set; }
 
         internal HttpServerExecutionResult() { }
@@ -156,9 +126,6 @@
     /// <type>
     /// Enum
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public enum HttpServerExecutionStatus
     {
         /// <summary>

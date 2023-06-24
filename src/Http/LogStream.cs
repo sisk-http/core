@@ -16,9 +16,6 @@ namespace Sisk.Core.Http
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http 
-    /// </namespace>
     public class LogStream : IDisposable
     {
         private Queue<object?> logQueue = new Queue<object?>();

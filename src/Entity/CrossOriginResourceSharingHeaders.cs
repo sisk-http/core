@@ -9,9 +9,6 @@
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Entity
-    /// </namespace>
     public class CrossOriginResourceSharingHeaders
     {
         /// <summary>
@@ -23,9 +20,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public static CrossOriginResourceSharingHeaders Empty { get => new(); }
 
         /// <summary>
@@ -38,9 +32,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public bool? AllowCredentials { get; set; }
 
         /// <summary>
@@ -52,9 +43,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string[] ExposeHeaders { get; set; }
 
         /// <summary>
@@ -67,9 +55,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string? AllowOrigin { get; set; }
 
         /// <summary>
@@ -84,7 +69,7 @@
         /// <type>
         /// Property
         /// </type>
-        public string[]? AllowOrigins { get; set; }
+        public string[] AllowOrigins { get; set; }
 
         /// <summary>
         /// Gets or sets the Access-Control-Allow-Methods header specifies the method or methods allowed when accessing the resource. 
@@ -95,9 +80,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string[] AllowMethods { get; set; }
 
         /// <summary>
@@ -109,9 +91,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string[] AllowHeaders { get; set; }
 
         /// <summary>
@@ -123,37 +102,7 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public TimeSpan MaxAge { get; set; }
-
-        /// <summary>
-        /// Create a new <see cref="CrossOriginResourceSharingHeaders"/> class instance with given parameters.
-        /// </summary>
-        /// <param name="allowOrigin">The origin hostname allowed by the browser.</param>
-        /// <param name="allowMethods">The allowed HTTP request methods.</param>
-        /// <param name="allowHeaders">The allowed HTTP request headers.</param>
-        /// <param name="maxAge">Defines the max-age cache expirity time.</param>
-        /// <definition>
-        /// public CrossOriginResourceSharingHeaders(string[] allowOrigins, string[] allowMethods, string[] allowHeaders, TimeSpan maxAge)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("This constructor is obsolete. Please, create an new class instance without any parameter instead.")]
-        public CrossOriginResourceSharingHeaders(string allowOrigin, string[] allowMethods, string[] allowHeaders, TimeSpan maxAge)
-        {
-            AllowOrigin = allowOrigin;
-            AllowMethods = allowMethods;
-            AllowHeaders = allowHeaders;
-            MaxAge = maxAge;
-            ExposeHeaders = Array.Empty<string>();
-        }
 
         /// <summary>
         /// Creates an empty <see cref="CrossOriginResourceSharingHeaders"/> instance with no predefined CORS headers.
@@ -164,13 +113,11 @@
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public CrossOriginResourceSharingHeaders()
         {
             ExposeHeaders = Array.Empty<string>();
             AllowOrigin = null;
+            AllowOrigins = Array.Empty<string>();
             AllowMethods = Array.Empty<string>();
             AllowHeaders = Array.Empty<string>();
             MaxAge = TimeSpan.Zero;

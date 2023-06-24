@@ -11,13 +11,10 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <definition>
     /// public sealed class HttpResponse : CookieHelper
-    /// </definition>
+    /// </definition> 
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public sealed class HttpResponse : CookieHelper
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;
@@ -60,7 +57,6 @@ namespace Sisk.Core.Http
             return res;
         }
 
-
         /// <summary>
         /// Gets or sets an custom HTTP status code and description for this HTTP response. If this property ins't null, it will overwrite
         /// the <see cref="Status"/> property in this class.
@@ -71,9 +67,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpStatusInformation? CustomStatus { get; set; } = null;
 
         /// <summary>
@@ -85,9 +78,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
         /// <summary>
@@ -99,9 +89,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public NameValueCollection Headers { get; private set; } = new NameValueCollection();
 
         /// <summary>
@@ -113,30 +100,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpContent? Content { get; set; }
-
-        /// <summary>
-        /// Gets or sets the default encoding when creating new HttpResponse instances.
-        /// </summary>
-        /// <definition>
-        /// public static Encoding DefaultEncoding { get; set; }
-        /// </definition>
-        /// <type>
-        /// Static Property
-        /// </type>
-        /// <remarks>
-        /// This property is no longer useful and ins't used anywhere. Please, avoid using it.
-        /// </remarks>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        /// <static>True</static>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("This property is deprecated and ins't used anywhere. Please, avoid using it.")]
-        public static Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
         /// Gets or sets whether the HTTP response can be sent chunked.
@@ -147,9 +111,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool SendChunked { get; set; } = false;
 
         internal byte internalStatus = 0;
@@ -176,9 +137,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string GetRawHttpResponse(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
@@ -208,9 +166,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpResponse()
         {
             this.Status = HttpStatusCode.OK;
@@ -226,9 +181,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpResponse(HttpStatusCode status) : this(status, null) { }
 
         /// <summary>

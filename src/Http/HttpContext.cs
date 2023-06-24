@@ -12,11 +12,19 @@ namespace Sisk.Core.Http
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public class HttpContext
     {
+        /// <summary>
+        /// Gets the <see cref="ListeningHost"/> instance of this HTTP context.
+        /// </summary>
+        /// <definition>
+        /// public ListeningHost ListeningHost { get; }
+        /// </definition>
+        /// <type> 
+        /// Property
+        /// </type>
+        public ListeningHost ListeningHost { get; private set; }
+
         /// <summary>
         /// Gets or sets a managed object that is accessed and modified by request handlers.
         /// </summary>
@@ -26,10 +34,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
-        public Dictionary<string, object?> RequestBag { get; set; }
+        public Dictionary<string, object?> RequestBag { get; set; } = new Dictionary<string, object?>();
 
         /// <summary>
         /// Gets the context Http Server instance.
@@ -40,9 +45,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpServer? HttpServer { get; private set; }
 
         /// <summary>
@@ -54,10 +56,18 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpResponse? RouterResponse { get; internal set; } = null!;
+
+        /// <summary>
+        /// Gets the HTTP request which is contained in this HTTP context.
+        /// </summary>
+        /// <definition>
+        /// public HttpRequest Request { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpRequest Request { get; private set; }
 
         /// <summary>
         /// Gets the matched Http Route object from the Router.
@@ -68,16 +78,14 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public Route? MatchedRoute { get; internal set; }
 
-        internal HttpContext(Dictionary<string, object?> requestBag, HttpServer? httpServer, Route? matchedRoute)
+        internal HttpContext(HttpServer? httpServer, HttpRequest request, Route? matchedRoute, ListeningHost host)
         {
-            RequestBag = requestBag;
+            Request = request;
             HttpServer = httpServer;
             MatchedRoute = matchedRoute;
+            ListeningHost = host;
         }
     }
 }

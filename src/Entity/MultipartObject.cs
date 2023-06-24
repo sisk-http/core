@@ -13,9 +13,6 @@ namespace Sisk.Core.Entity
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Entity
-    /// </namespace>
     public class MultipartObject
     {
         /// <summary>
@@ -27,9 +24,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Static property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public static Encoding DefaultContentEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
@@ -41,9 +35,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Static property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public static Encoding DefaultHeadersEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
@@ -55,9 +46,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public NameValueCollection Headers { get; private set; }
 
         /// <summary>
@@ -69,9 +57,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string? Filename { get; private set; }
 
         /// <summary>
@@ -83,9 +68,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string Name { get; private set; }
 
         /// <summary>
@@ -97,9 +79,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public byte[] ContentBytes { get; private set; }
 
         /// <summary>
@@ -111,9 +90,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public int ContentLength { get; private set; }
 
         /// <summary>
@@ -126,9 +102,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string? ReadContentAsString(Encoding encoder)
         {
             if (ContentLength == 0)
@@ -146,9 +119,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public string? ReadContentAsString()
         {
             return ReadContentAsString(DefaultContentEncoding);
@@ -164,9 +134,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         public MultipartObjectCommonFormat GetCommonFileFormat()
         {
             IEnumerable<byte> len8 = ContentBytes.Take(8);
@@ -393,9 +360,6 @@ namespace Sisk.Core.Entity
     /// <type>
     /// Enum
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Entity
-    /// </namespace>
     public enum MultipartObjectCommonFormat
     {
         /// <summary>
@@ -407,9 +371,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         Unknown = 0,
 
         /// <summary>
@@ -421,9 +382,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         JPEG = 100,
 
         /// <summary>
@@ -435,9 +393,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         GIF = 101,
 
         /// <summary>
@@ -449,9 +404,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         PNG = 102,
 
         /// <summary>
@@ -463,9 +415,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         TIFF = 103,
 
         /// <summary>
@@ -477,9 +426,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         BMP = 104,
 
         /// <summary>
@@ -491,9 +437,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         WEBP = 105,
 
         /// <summary>
@@ -505,9 +448,6 @@ namespace Sisk.Core.Entity
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Entity
-        /// </namespace>
         PDF = 200
     }
 }

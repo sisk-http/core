@@ -9,9 +9,6 @@
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
     public class Route
     {
         /// <summary>
@@ -23,9 +20,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace> 
-        /// Sisk.Core.Routing
-        /// </namespace>
         public LogOutput LogMode { get; set; } = LogOutput.Both;
 
         /// <summary>
@@ -37,9 +31,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public bool UseRegex { get; set; } = false;
 
         /// <summary>
@@ -51,9 +42,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public bool UseCors { get; set; } = true;
 
         /// <summary>
@@ -65,9 +53,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public RouteMethod Method { get; set; }
 
         /// <summary>
@@ -79,9 +64,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public string Path { get; set; } = "";
 
         /// <summary>
@@ -104,9 +86,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public RouterCallback? Callback { get; set; }
 
         /// <summary>
@@ -118,9 +97,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public IRequestHandler[]? RequestHandlers { get; set; }
 
         /// <summary>
@@ -132,9 +108,6 @@
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public IRequestHandler[]? BypassGlobalRequestHandlers { get; set; }
 
         /// <summary>
@@ -170,9 +143,6 @@
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public Route(RouteMethod method, string path, string? name, RouterCallback callback, IRequestHandler[]? beforeCallback)
         {
             Method = method;
@@ -191,9 +161,6 @@
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         public Route()
         {
         }
@@ -229,9 +196,7 @@
     /// <type>
     /// Enum
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
+
     [Flags]
     public enum LogOutput
     {

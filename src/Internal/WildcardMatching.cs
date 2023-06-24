@@ -15,7 +15,23 @@ namespace Sisk.Core.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string CombineRoutePaths(string a, string b)
         {
-            return $"/{a.Trim('/')}/{b.Trim('/')}";
+            StringBuilder sb = new StringBuilder();
+            // check if one is absolute
+            if (a.StartsWith("https://") || a.StartsWith("http://"))
+            {
+                sb.Append(a.TrimEnd('/'));
+                sb.Append('/');
+                sb.Append(b.Trim('/'));
+            }
+            else
+            {
+                sb.Append('/');
+                sb.Append(a.Trim('/'));
+                sb.Append('/');
+                sb.Append(b.Trim('/'));
+            }
+
+            return sb.ToString();
         }
 
         public static string StripRouteParameters(string routePath)

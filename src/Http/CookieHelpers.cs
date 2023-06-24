@@ -26,9 +26,6 @@ public abstract class CookieHelper
     /// <type>
     /// Method
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public void SetCookie(string name, string value)
     {
         SetCookieHeader("Set-Cookie", $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
@@ -52,9 +49,6 @@ public abstract class CookieHelper
     /// <type>
     /// Method
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
     {
         List<string> syntax = new List<string>();

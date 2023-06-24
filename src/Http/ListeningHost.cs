@@ -12,9 +12,6 @@ namespace Sisk.Core.Http
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public class ListeningHost
     {
         private ListeningPort[] _ports = null!;
@@ -74,9 +71,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool CanListen { get => Router is not null; }
 
         /// <summary>
@@ -88,9 +82,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public Entity.CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get; set; } = CrossOriginResourceSharingHeaders.Empty;
 
         /// <summary>
@@ -102,9 +93,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public string? Label { get; set; } = null;
 
         /// <summary>
@@ -116,9 +104,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public ListeningPort[] Ports
         {
             get
@@ -141,9 +126,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public Router? Router { get; set; }
 
         /// <summary>

@@ -22,6 +22,7 @@ namespace Sisk.Core.Internal
         NameValueCollection? reqHeaders;
         int bResStatusCode;
         string? bResStatusDescr;
+        string bReqMethod;
         float? incomingSize;
         float? outcomingSize;
         long execTime;
@@ -35,7 +36,8 @@ namespace Sisk.Core.Internal
             string? bResStatusDescr,
             float? incomingSize,
             float? outcomingSize,
-            long execTime)
+            long execTime,
+            string bReqMethod)
         {
             this.res = res;
             this.d = d;
@@ -47,6 +49,7 @@ namespace Sisk.Core.Internal
             this.incomingSize = incomingSize;
             this.outcomingSize = outcomingSize;
             this.execTime = execTime;
+            this.bReqMethod = bReqMethod;
         }
 
         private static string? dd(LoggingFormatter lc) => $"{lc.d.Day:D2}";
@@ -61,6 +64,7 @@ namespace Sisk.Core.Internal
         private static string? tm(LoggingFormatter lc) => $"{lc.d.Millisecond:D3}";
         private static string? tz(LoggingFormatter lc) => $"{lc.currentTimezoneDiff.TotalHours:00}00";
         private static string? ri(LoggingFormatter lc) => lc.bReqIpAddr?.ToString();
+        private static string? rm(LoggingFormatter lc) => lc.bReqMethod.ToUpper();
         private static string? rs(LoggingFormatter lc) => lc.bReqUri?.Scheme;
         private static string? ra(LoggingFormatter lc) => lc.bReqUri?.Authority;
         private static string? rh(LoggingFormatter lc) => lc.bReqUri?.Host;

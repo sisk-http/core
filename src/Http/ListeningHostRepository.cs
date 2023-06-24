@@ -18,9 +18,6 @@ namespace Sisk.Core.Http
     /// <type>
     /// Class
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
     {
         private List<ListeningHost> _hosts = new List<ListeningHost>();
@@ -34,9 +31,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public ListeningHostRepository()
         {
         }
@@ -52,9 +46,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Constructor
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public ListeningHostRepository(IEnumerable<ListeningHost> hosts)
         {
             _hosts.AddRange(hosts);
@@ -69,9 +60,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public int Count => _hosts.Count;
 
         /// <summary>
@@ -83,9 +71,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool IsReadOnly => false;
 
         /// <summary>
@@ -98,9 +83,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public void Add(ListeningHost item)
         {
             if (this.Contains(item)) throw new ArgumentOutOfRangeException("This ListeningHost has already been defined in this collection with identical definitions.");
@@ -116,9 +98,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public void Clear()
         {
             _hosts.Clear();
@@ -135,9 +114,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool Contains(ListeningHost item)
         {
             return _hosts.Contains(item);
@@ -154,9 +130,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public void CopyTo(ListeningHost[] array, int arrayIndex)
         {
             _hosts.CopyTo(array, arrayIndex);
@@ -172,9 +145,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public IEnumerator<ListeningHost> GetEnumerator()
         {
             return _hosts.GetEnumerator();
@@ -191,9 +161,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool Remove(ListeningHost item)
         {
             return _hosts.Remove(item);
@@ -209,9 +176,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
@@ -228,9 +192,6 @@ namespace Sisk.Core.Http
         /// <type>
         /// Indexer
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public ListeningHost this[int index] { get => _hosts[index]; }
 
         internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)

@@ -11,9 +11,6 @@ namespace Sisk.Core.Http.Streams
     /// <type>
     /// Class 
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Http
-    /// </namespace>
     public class HttpRequestEventSource : IDisposable
     {
         private ManualResetEvent terminatingMutex = new ManualResetEvent(false);
@@ -125,9 +122,6 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public void AppendHeader(string name, string value)
         {
             if (hasSentData)
@@ -147,9 +141,6 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool Send(string data)
         {
             if (!IsActive)
@@ -172,9 +163,6 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public bool Send(object? data)
         {
             if (!IsActive)
@@ -237,9 +225,6 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public HttpResponse Close()
         {
             if (!isClosed)
@@ -302,9 +287,6 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method 
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Http
-        /// </namespace>
         public void Dispose()
         {
             if (isDisposed) return;

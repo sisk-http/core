@@ -10,9 +10,7 @@
     /// <type>
     /// Enum
     /// </type>
-    /// <namespace>
-    /// Sisk.Core.Routing
-    /// </namespace>
+
     [Flags]
     public enum RouteMethod : int
     {
@@ -25,9 +23,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Get = 2 << 0,
 
         /// <summary>
@@ -39,9 +34,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Post = 2 << 1,
 
         /// <summary>
@@ -53,9 +45,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Put = 2 << 2,
 
         /// <summary>
@@ -67,9 +56,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Patch = 2 << 3,
 
         /// <summary>
@@ -81,9 +67,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Delete = 2 << 4,
 
         /// <summary>
@@ -95,9 +78,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Copy = 2 << 5,
 
         /// <summary>
@@ -109,9 +89,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Head = 2 << 6,
 
         /// <summary>
@@ -123,9 +100,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Options = 2 << 7,
 
         /// <summary>
@@ -137,9 +111,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Link = 2 << 8,
 
         /// <summary>
@@ -151,9 +122,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Unlink = 2 << 9,
 
         /// <summary>
@@ -165,9 +133,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         View = 2 << 10,
 
         /// <summary>
@@ -179,9 +144,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Trace = 2 << 11,
 
 
@@ -194,9 +156,6 @@
         /// <type>
         /// Enum Value
         /// </type>
-        /// <namespace>
-        /// Sisk.Core.Routing
-        /// </namespace>
         Any = 0
     }
 }
