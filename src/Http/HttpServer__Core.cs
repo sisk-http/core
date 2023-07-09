@@ -233,7 +233,6 @@ public partial class HttpServer
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
                 baseResponse.StatusCode = (int)response.Status;
-                baseResponse.Abort();
                 goto finishSending;
             }
 
@@ -302,13 +301,13 @@ public partial class HttpServer
             executionResult.ResponseSize = outcomingSize;
             executionResult.Response = response;
 
+            executionResult.Status = HttpServerExecutionStatus.Executed;
+
             sw.Stop();
             baseResponse.Close();
             baseRequest.InputStream.Close();
 
             closeStream = false;
-            executionResult.Status = HttpServerExecutionStatus.Executed;
-
             #endregion
         }
         catch (ObjectDisposedException objException)
@@ -345,6 +344,8 @@ public partial class HttpServer
         {
             if (closeStream)
             {
+                // Close() would throw an exception if the sent payload length is greater than
+                // content length, so it will force close the connection on the Abort() method
                 try
                 {
                     baseResponse.Close();

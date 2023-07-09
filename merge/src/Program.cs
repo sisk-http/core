@@ -1,8 +1,8 @@
 ﻿using System;
-using System.IO;
-using System.Text;
-using System.Linq;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace src;
@@ -29,6 +29,7 @@ internal class Program
         {
             "bin",
             "obj",
+            "merge",
             "Properties"
         };
 
@@ -79,7 +80,7 @@ internal class Program
             sf = sf.Substring(lastUsingPos);
             if (namespaceFinder.IsMatch(sf))
             {
-                sf = namespaceFinder.Replace(sf, result => result.Groups[0].Value + " {");
+                sf = namespaceFinder.Replace(sf, result => result.Value.Replace(";", "{"));
                 sf += "}";
             }
 

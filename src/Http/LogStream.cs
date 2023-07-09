@@ -196,24 +196,21 @@ namespace Sisk.Core.Http
                     logQueue.Clear();
                 }
 
+                StringBuilder exitBuffer = new StringBuilder();
                 foreach (object? line in copy)
                 {
-                    if (FilePath != null)
-                    {
-                        File.AppendAllText(FilePath!, line?.ToString(), Encoding);
-                    }
-                    else if (TextWriter != null)
-                    {
-                        TextWriter?.Write(line);
-                        TextWriter?.Flush();
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("There is no valid output for log writing.");
-                    }
+                    exitBuffer.Append(line?.ToString());
                 }
 
-                //Console.WriteLine("{0,20}{1,20}", "", "queue --");
+                if (FilePath != null)
+                {
+                    File.AppendAllText(FilePath!, exitBuffer.ToString(), Encoding);
+                }
+                else if (TextWriter != null)
+                {
+                    TextWriter?.Write(exitBuffer.ToString());
+                    TextWriter?.Flush();
+                }
             }
         }
 
