@@ -22,6 +22,7 @@ namespace Sisk.Core.Http.Streams
         internal bool isClosed = false;
         internal TimeSpan closeTimeout = TimeSpan.Zero;
         internal bool isWaitingNext = false;
+        internal bool wasServerClosed = false;
 
         internal WebSocketMessage? lastMessage = null;
         internal CancellationTokenSource asyncListenerToken = null!;
@@ -29,7 +30,20 @@ namespace Sisk.Core.Http.Streams
         internal ManualResetEvent waitNextEvent = new ManualResetEvent(false);
         internal Thread receiveThread;
 
+        int attempt = 0;
         int bufferLength = 0;
+
+        /// <summary>
+        /// Gets or sets the maximum number of attempts to send a failed message before the server closes the connection. Set it to -1 to
+        /// don't close the connection on failed attempts.
+        /// </summary>
+        /// <definition>
+        /// public int MaxAttempts { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public int MaxAttempts { get; set; } = 3;
 
         /// <summary>
         /// Gets or sets an object linked with this <see cref="WebSocket"/> session.
@@ -152,6 +166,12 @@ namespace Sisk.Core.Http.Streams
                 }
                 catch (Exception)
                 {
+                    if (ctx.WebSocket.State != WebSocketState.Open
+                     || ctx.WebSocket.State != WebSocketState.Connecting)
+                    {
+                        Close();
+                        break;
+                    }
                     continue;
                 }
 
@@ -249,30 +269,49 @@ namespace Sisk.Core.Http.Streams
         {
             if (!isClosed)
             {
-                ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
+                if (ctx.WebSocket.State != WebSocketState.Closed && ctx.WebSocket.State != WebSocketState.Aborted)
+                {
+                    wasServerClosed = true;
+                    ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
+                }
+
                 isListening = false;
                 isClosed = true;
                 closeEvent.Set();
             }
             request.baseServer._wsCollection.UnregisterWebSocket(this);
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+            return new HttpResponse(wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE);
         }
 
         private void SendInternal(ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType)
         {
             if (isClosed) { return; }
 
-            int totalLength = buffer.Length;
-            int chunks = Math.Max(totalLength / bufferLength, 1);
-
-            for (int i = 0; i < chunks; i++)
+            try
             {
-                int ca = i * bufferLength;
-                int cb = Math.Min(ca + bufferLength, buffer.Length);
+                int totalLength = buffer.Length;
+                int chunks = Math.Max(totalLength / bufferLength, 1);
 
-                ReadOnlyMemory<byte> chunk = buffer[ca..cb];
+                for (int i = 0; i < chunks; i++)
+                {
+                    int ca = i * bufferLength;
+                    int cb = Math.Min(ca + bufferLength, buffer.Length);
 
-                ctx.WebSocket.SendAsync(chunk, msgType, i + 1 == chunks, CancellationToken.None);
+                    ReadOnlyMemory<byte> chunk = buffer[ca..cb];
+
+                    ctx.WebSocket.SendAsync(chunk, msgType, i + 1 == chunks, CancellationToken.None);
+                }
+
+                attempt = 0;
+            }
+            catch (Exception)
+            {
+                attempt++;
+                if (MaxAttempts >= 0 && attempt >= MaxAttempts)
+                {
+                    Close();
+                    return;
+                }
             }
         }
 

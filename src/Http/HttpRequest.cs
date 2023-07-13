@@ -621,6 +621,20 @@ namespace Sisk.Core.Http
             return new HttpWebSocket(accept, this, identifier);
         }
 
+        /// <summary>
+        /// Gets an string representation of this <see cref="HttpRequest"/> object.
+        /// </summary>
+        /// <definition>
+        /// public override String ToString()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type> 
+        public override String ToString()
+        {
+            return $"{Method} {FullPath}";
+        }
+
         internal long CalcRequestSize()
         {
             long l = 0;

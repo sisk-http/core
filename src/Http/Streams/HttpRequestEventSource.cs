@@ -18,11 +18,12 @@ namespace Sisk.Core.Http.Streams
         private HttpListenerRequest req;
         private HttpRequest reqObj;
         private HttpServer hostServer;
-        private List<string> sendQueue = new List<string>();
-        bool hasSentData = false;
+        internal List<string> sendQueue = new List<string>();
+        internal bool hasSentData = false;
         int length = 0;
         TimeSpan keepAlive = TimeSpan.Zero;
         DateTime lastSuccessfullMessage = DateTime.Now;
+        HttpEventSourceBouncePolicy bouncePolicy;
 
         // 
         // isClosed determines if this instance has some connection or not
@@ -31,6 +32,17 @@ namespace Sisk.Core.Http.Streams
 
         private bool isClosed = false;
         private bool isDisposed = false;
+
+        /// <summary>
+        /// Gets the <see cref="HttpEventSourceBouncePolicy"/> for this HTTP event source connection.
+        /// </summary>
+        /// <definition>
+        /// public HttpEventSourceBouncePolicy BoucePolicy { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpEventSourceBouncePolicy BoucePolicy { get => bouncePolicy; }
 
         /// <summary>
         /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
@@ -83,6 +95,7 @@ namespace Sisk.Core.Http.Streams
             Identifier = identifier;
             hostServer = host.baseServer;
             reqObj = host;
+            bouncePolicy = new HttpEventSourceBouncePolicy(this);
 
             hostServer._eventCollection.RegisterEventSource(this);
 
@@ -109,6 +122,21 @@ namespace Sisk.Core.Http.Streams
                     Thread.Sleep(1000);
                 }
             }
+        }
+
+        /// <summary>
+        /// Configures the bouce policy for this instance of HTTP Event Source.
+        /// </summary>
+        /// <param name="act">The method that runs on the bounce policy for this HTTP Event Source.</param>
+        /// <definition>
+        /// public void WithBounce(Action'HttpEventSourceBouncePolicy act)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void WithBounce(Action<HttpEventSourceBouncePolicy> act)
+        {
+            act(bouncePolicy);
         }
 
         /// <summary>
@@ -205,7 +233,7 @@ namespace Sisk.Core.Http.Streams
         /// <type>
         /// Method
         /// </type>
-        public void KeepAlive(TimeSpan maximumIdleTolerance)
+        public void WaitForFail(TimeSpan maximumIdleTolerance)
         {
             if (!IsActive)
             {
@@ -254,7 +282,7 @@ namespace Sisk.Core.Http.Streams
             sendQueue.Clear();
         }
 
-        private void Flush()
+        internal void Flush()
         {
             for (int i = 0; i < sendQueue.Count; i++)
             {

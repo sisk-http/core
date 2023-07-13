@@ -133,6 +133,23 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
+        /// Counts all actives <see cref="HttpWebSocket"/> instances.
+        /// </summary>
+        /// <definition>
+        /// public int Count()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public int Count()
+        {
+            lock (_ws)
+            {
+                return _ws.Count;
+            }
+        }
+
+        /// <summary>
         /// Closes all registered and active <see cref="HttpWebSocket"/> in this collections.
         /// </summary>
         /// <definition>
