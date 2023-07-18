@@ -15,23 +15,35 @@ namespace Sisk.Core.Http.Streams
     /// </type>
     public sealed class HttpWebSocket
     {
-        internal string? identifier = null;
-        internal HttpListenerWebSocketContext ctx;
-        internal HttpRequest request;
         bool isListening = true;
-        internal bool isClosed = false;
-        internal TimeSpan closeTimeout = TimeSpan.Zero;
-        internal bool isWaitingNext = false;
-        internal bool wasServerClosed = false;
+        HttpStreamPingPolicy pingPolicy;
 
         internal WebSocketMessage? lastMessage = null;
         internal CancellationTokenSource asyncListenerToken = null!;
         internal ManualResetEvent closeEvent = new ManualResetEvent(false);
         internal ManualResetEvent waitNextEvent = new ManualResetEvent(false);
         internal Thread receiveThread;
+        internal HttpListenerWebSocketContext ctx;
+        internal HttpRequest request;
+        internal TimeSpan closeTimeout = TimeSpan.Zero;
+        internal bool isClosed = false;
+        internal bool isWaitingNext = false;
+        internal bool wasServerClosed = false;
+        internal string? identifier = null;
 
         int attempt = 0;
         int bufferLength = 0;
+
+        /// <summary>
+        /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP web socket connection.
+        /// </summary>
+        /// <definition>
+        /// public HttpStreamPingPolicy PingPolicy { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpStreamPingPolicy PingPolicy => pingPolicy;
 
         /// <summary>
         /// Gets or sets the maximum number of attempts to send a failed message before the server closes the connection. Set it to -1 to
@@ -90,7 +102,7 @@ namespace Sisk.Core.Http.Streams
         public string? Identifier => identifier;
 
         /// <summary>
-        /// Represents the event which is called when this websocket receives an message from
+        /// Represents the event which is called when this web socket receives an message from
         /// remote origin.
         /// </summary>
         /// <definition>
@@ -104,9 +116,10 @@ namespace Sisk.Core.Http.Streams
         internal HttpWebSocket(HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier)
         {
             this.ctx = ctx;
-            request = req;
-            bufferLength = request.baseServer.ServerConfiguration.Flags.WebSocketBufferSize;
+            this.request = req;
+            this.bufferLength = request.baseServer.ServerConfiguration.Flags.WebSocketBufferSize;
             this.identifier = identifier;
+            this.pingPolicy = new HttpStreamPingPolicy(this);
 
             if (identifier != null)
             {
@@ -187,6 +200,21 @@ namespace Sisk.Core.Http.Streams
                     if (OnReceive != null) OnReceive(this, message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Configures the ping policy for this instance of HTTP Web Socket.
+        /// </summary>
+        /// <param name="act">The method that runs on the ping policy for this HTTP Web Socket.</param>
+        /// <definition>
+        /// public void WithPing(Action'HttpStreamPingPolicy act)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void WithPing(Action<HttpStreamPingPolicy> act)
+        {
+            act(pingPolicy);
         }
 
         /// <summary>

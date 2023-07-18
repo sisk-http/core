@@ -12,9 +12,6 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 
-		<!-- You should enable this when generating docs -->
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-
 		<PackageId>Sisk.HttpServer</PackageId>
 		<Title>Sisk.HttpServer</Title>
 		<Authors>CypherPotato</Authors>
@@ -26,11 +23,11 @@
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>http-server,http,web framework</PackageTags>
+		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 
-		<AssemblyVersion>0.14</AssemblyVersion>
-		<FileVersion>0.14</FileVersion>
-		<Version>0.14</Version>
+		<AssemblyVersion>0.14.0.1</AssemblyVersion>
+		<FileVersion>0.14.0.1</FileVersion>
+		<Version>0.14.0.1</Version>
 
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
@@ -44,6 +41,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DebugType>embedded</DebugType>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

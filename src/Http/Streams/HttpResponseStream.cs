@@ -58,7 +58,7 @@ public sealed class HttpResponseStream : CookieHelper
     public Stream ResponseStream { get; private set; }
 
     /// <summary>
-    /// Adds the specific HTTP header into this response stream.
+    /// Sets the specific HTTP header into this response stream.
     /// </summary>
     /// <remarks>
     /// Headers are sent immediately, along with the HTTP response code, after starting to send content or closing this stream.
@@ -66,12 +66,12 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="headerName">The HTTP header name.</param>
     /// <param name="value">The HTTP header value.</param>
     /// <definition>
-    /// public void AppendHeader(string headerName, string value)
+    /// public void SetHeader(string headerName, string value)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void AppendHeader(string headerName, string value)
+    public void SetHeader(string headerName, string value)
     {
         if (hasSentData) throw new InvalidOperationException("Cannot send headers after writing content to the output stream.");
         if (string.Compare(headerName, "Content-Length", true) == 0)
@@ -188,6 +188,6 @@ public sealed class HttpResponseStream : CookieHelper
 
     internal override void SetCookieHeader(string name, string value)
     {
-        AppendHeader(name, value);
+        SetHeader(name, value);
     }
 }

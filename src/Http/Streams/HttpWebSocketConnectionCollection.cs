@@ -133,21 +133,15 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
-        /// Counts all actives <see cref="HttpWebSocket"/> instances.
+        /// Gets an number indicating the amount of active web socket connections.
         /// </summary>
         /// <definition>
-        /// public int Count()
+        /// public int ActiveConnections { get; }
         /// </definition>
         /// <type>
-        /// Method
+        /// Property
         /// </type>
-        public int Count()
-        {
-            lock (_ws)
-            {
-                return _ws.Count;
-            }
-        }
+        public int ActiveConnections { get => _ws.Count; }
 
         /// <summary>
         /// Closes all registered and active <see cref="HttpWebSocket"/> in this collections.

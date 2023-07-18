@@ -13,17 +13,18 @@ namespace Sisk.Core.Http.Streams
     /// </type>
     public class HttpRequestEventSource : IDisposable
     {
-        private ManualResetEvent terminatingMutex = new ManualResetEvent(false);
-        private HttpListenerResponse res;
-        private HttpListenerRequest req;
-        private HttpRequest reqObj;
-        private HttpServer hostServer;
-        internal List<string> sendQueue = new List<string>();
-        internal bool hasSentData = false;
-        int length = 0;
+        ManualResetEvent terminatingMutex = new ManualResetEvent(false);
+        HttpStreamPingPolicy pingPolicy;
+        HttpListenerResponse res;
+        HttpListenerRequest req;
+        HttpRequest reqObj;
+        HttpServer hostServer;
         TimeSpan keepAlive = TimeSpan.Zero;
         DateTime lastSuccessfullMessage = DateTime.Now;
-        HttpEventSourceBouncePolicy bouncePolicy;
+        int length = 0;
+
+        internal List<string> sendQueue = new List<string>();
+        internal bool hasSentData = false;
 
         // 
         // isClosed determines if this instance has some connection or not
@@ -34,15 +35,15 @@ namespace Sisk.Core.Http.Streams
         private bool isDisposed = false;
 
         /// <summary>
-        /// Gets the <see cref="HttpEventSourceBouncePolicy"/> for this HTTP event source connection.
+        /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP event source connection.
         /// </summary>
         /// <definition>
-        /// public HttpEventSourceBouncePolicy BoucePolicy { get; }
+        /// public HttpStreamPingPolicy PingPolicy { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public HttpEventSourceBouncePolicy BoucePolicy { get => bouncePolicy; }
+        public HttpStreamPingPolicy PingPolicy { get => pingPolicy; }
 
         /// <summary>
         /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
@@ -95,7 +96,7 @@ namespace Sisk.Core.Http.Streams
             Identifier = identifier;
             hostServer = host.baseServer;
             reqObj = host;
-            bouncePolicy = new HttpEventSourceBouncePolicy(this);
+            pingPolicy = new HttpStreamPingPolicy(this);
 
             hostServer._eventCollection.RegisterEventSource(this);
 
@@ -125,18 +126,18 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
-        /// Configures the bouce policy for this instance of HTTP Event Source.
+        /// Configures the ping policy for this instance of HTTP Event Source.
         /// </summary>
-        /// <param name="act">The method that runs on the bounce policy for this HTTP Event Source.</param>
+        /// <param name="act">The method that runs on the ping policy for this HTTP Event Source.</param>
         /// <definition>
-        /// public void WithBounce(Action'HttpEventSourceBouncePolicy act)
+        /// public void WithPing(Action'HttpStreamPingPolicy act)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public void WithBounce(Action<HttpEventSourceBouncePolicy> act)
+        public void WithPing(Action<HttpStreamPingPolicy> act)
         {
-            act(bouncePolicy);
+            act(pingPolicy);
         }
 
         /// <summary>

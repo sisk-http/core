@@ -155,7 +155,7 @@ namespace Sisk.Core.Http.Streams
         /// </definition>
         /// <type>
         /// Method
-        /// </type>
+        /// </type> 
         public void DropAll()
         {
             lock (_eventSources)

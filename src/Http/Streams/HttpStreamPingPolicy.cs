@@ -10,14 +10,15 @@ namespace Sisk.Core.Http.Streams;
 /// Provides an automatic ping sender for HTTP Event Source connections.
 /// </summary>
 /// <definition>
-/// public class HttpEventSourceBouncePolicy
+/// public class HttpStreamPingPolicy
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public sealed class HttpEventSourceBouncePolicy
+public sealed class HttpStreamPingPolicy
 {
-    private HttpRequestEventSource _parent;
+    private HttpWebSocket? __ws_parent;
+    private HttpRequestEventSource? __sse_parent;
     private Timer? _timer;
 
     /// <summary>
@@ -42,9 +43,13 @@ public sealed class HttpEventSourceBouncePolicy
     /// </type>
     public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(1);
 
-    internal HttpEventSourceBouncePolicy(HttpRequestEventSource parent)
+    internal HttpStreamPingPolicy(HttpRequestEventSource parent)
     {
-        this._parent = parent;
+        this.__sse_parent = parent;
+    }
+    internal HttpStreamPingPolicy(HttpWebSocket parent)
+    {
+        this.__ws_parent = parent;
     }
 
     /// <summary>
@@ -63,14 +68,25 @@ public sealed class HttpEventSourceBouncePolicy
 
     private void OnCallback(object? state)
     {
-        if (!_parent.IsActive)
+        if (__sse_parent != null)
         {
-            _timer!.Dispose();
-            return;
+            if (!__sse_parent.IsActive)
+            {
+                _timer!.Dispose();
+                return;
+            }
+            __sse_parent.hasSentData = true;
+            __sse_parent.sendQueue.Add($"event:ping\ndata: {DataMessage}\n\n");
+            __sse_parent.Flush();
         }
-        Console.WriteLine($"online: {_parent.Identifier}");
-        _parent.hasSentData = true;
-        _parent.sendQueue.Add($"event:ping\ndata: {DataMessage}\n\n");
-        _parent.Flush();
+        else if (__ws_parent != null)
+        {
+            if (__ws_parent.IsClosed)
+            {
+                _timer!.Dispose();
+                return;
+            }
+            __ws_parent.Send(DataMessage);
+        }
     }
 }
