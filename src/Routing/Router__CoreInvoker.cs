@@ -61,7 +61,7 @@ public partial class Router
 
         return result;
     }
-
+     
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
     {
@@ -221,7 +221,15 @@ public partial class Router
             try
             {
                 context.MatchedRoute = matchedRoute;
-                result = matchedRoute.Callback(request);
+                object actionResult = matchedRoute.Callback(request);
+                if (actionResult is HttpResponse)
+                {
+                    result = (HttpResponse)actionResult;
+                }
+                else
+                {
+                    result = this.ResolveAction(actionResult);
+                }
             }
             catch (Exception ex)
             {

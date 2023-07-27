@@ -237,18 +237,9 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteException(Exception exp)
         {
-            StringBuilder exceptionStr = new StringBuilder();
-            exceptionStr.AppendLine($"Exception thrown at {DateTime.Now:R}");
-            exceptionStr.AppendLine(exp.ToString());
-
-            if (exp.InnerException != null)
-            {
-                exceptionStr.AppendLine($"\n-------------\nInner exception:");
-                exceptionStr.AppendLine(exp.InnerException.ToString());
-            }
-
-            exceptionStr.AppendLine();
-            WriteLine(exceptionStr);
+            StringBuilder sexc = new StringBuilder();
+            WriteExceptionInternal(sexc, exp, 0);
+            WriteLine(sexc.ToString());
         }
 
         /// <summary>
@@ -362,6 +353,25 @@ namespace Sisk.Core.Http
             logQueue.Clear();
             TextWriter?.Flush();
             TextWriter?.Close();
+        }
+
+        void WriteExceptionInternal(StringBuilder exceptionStr, Exception exp, int depth = 0)
+        {
+            if (depth == 0)
+                exceptionStr.AppendLine($"Exception thrown at {DateTime.Now:R}");
+            exceptionStr.AppendLine(exp.ToString());
+
+            if (exp.InnerException != null)
+            {
+                if (depth <= 10)
+                {
+                    WriteExceptionInternal(exceptionStr, exp.InnerException, depth + 1);
+                }
+                else
+                {
+                    exceptionStr.AppendLine(" + ... other trimmed inner exceptions");
+                }
+            }
         }
     }
 }

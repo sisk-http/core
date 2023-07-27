@@ -1,4 +1,5 @@
 ﻿using Sisk.Core.Routing;
+using System.Collections.Specialized;
 using System.Dynamic;
 
 namespace Sisk.Core.Http
@@ -15,6 +16,18 @@ namespace Sisk.Core.Http
     public class HttpContext
     {
         /// <summary>
+        /// Gets or sets an <see cref="NameValueCollection"/> indicating HTTP headers which
+        /// will overwrite headers set by CORS, router response or request handlers.
+        /// </summary>
+        /// <definition>
+        /// public NameValueCollection OverrideHeaders { get; set; }
+        /// </definition>
+        /// <type> 
+        /// Property
+        /// </type>
+        public NameValueCollection OverrideHeaders { get; set; } = new NameValueCollection();
+        
+        /// <summary>
         /// Gets the <see cref="ListeningHost"/> instance of this HTTP context.
         /// </summary>
         /// <definition>
@@ -29,7 +42,7 @@ namespace Sisk.Core.Http
         /// Gets or sets a managed object that is accessed and modified by request handlers.
         /// </summary>
         /// <definition>
-        /// public Dictionary&lt;string, object?&gt; RequestBag { get; set; }
+        /// public Dictionary{{string, object?}} RequestBag { get; set; }
         /// </definition>
         /// <type>
         /// Property

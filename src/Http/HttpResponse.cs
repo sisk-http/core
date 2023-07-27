@@ -1,4 +1,5 @@
-﻿using System.Collections.Specialized;
+﻿using Sisk.Core.Entity;
+using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;

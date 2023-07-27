@@ -8,12 +8,12 @@ namespace Sisk.Core.Routing
     /// <param name="request">The received request on the router.</param>
     /// <returns></returns>
     /// <definition>
-    /// public delegate HttpResponse RouterCallback(HttpRequest request);
+    /// public delegate object RouterCallback(HttpRequest request);
     /// </definition>
-    /// <type>
+    /// <type> 
     /// Delegate
     /// </type>
-    public delegate HttpResponse RouterCallback(HttpRequest request);
+    public delegate object RouterCallback(HttpRequest request);
 
     /// <summary>
     /// Represents the function that is called after no route is matched with the request.

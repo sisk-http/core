@@ -257,10 +257,9 @@ public partial class HttpServer
 
             #region Step 4 - Response computing
 
-            NameValueCollection resHeaders = new NameValueCollection
-            {
-                response.Headers
-            };
+            NameValueCollection resHeaders = new NameValueCollection();
+            resHeaders.Add(response.Headers);
+            if (srContext?.OverrideHeaders.Count > 0) resHeaders.Add(srContext.OverrideHeaders);
 
             foreach (string incameHeader in resHeaders)
             {

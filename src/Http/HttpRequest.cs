@@ -62,7 +62,7 @@ namespace Sisk.Core.Http
             this.Query = listenerRequest.QueryString;
             this.RequestId = Guid.NewGuid();
 
-            IPAddress requestRealAddress = new IPAddress(listenerRequest.LocalEndPoint.Address.GetAddressBytes());
+            IPAddress requestRealAddress = listenerRequest.LocalEndPoint.Address;
             this.Origin = requestRealAddress;
 
             if (contextServerConfiguration.ResolveForwardedOriginAddress)
@@ -494,6 +494,44 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Stores a managed object in HTTP context bag through it's type.
+        /// </summary>
+        /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
+        /// <param name="contextObject">The object which will be stored.</param>
+        /// <returns>Returns the stored object.</returns>
+        /// <definition>
+        /// public T SetContextBag{{T}}(T contextObject)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public T SetContextBag<T>(T contextObject)
+        {
+            if (this.Context == null) throw new InvalidOperationException("The request context wasn't linked to the object instance yet.");
+            ArgumentNullException.ThrowIfNull(contextObject);
+            Type contextType = typeof(T);
+            this.Context.RequestBag.Add(contextType.FullName!, contextObject);
+            return contextObject;
+        }
+
+        /// <summary>
+        /// Gets an managed object from the HTTP context bag through it's type.
+        /// </summary>
+        /// <typeparam name="T">The type of object which is stored in the HTTP context bag.</typeparam>
+        /// <definition>
+        /// public T GetContextBag{{T}}(T contextObject)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public T GetContextBag<T>()
+        {
+            if (this.Context == null) throw new InvalidOperationException("The request context wasn't linked to the object instance yet.");
+            Type contextType = typeof(T);
+            return (T)this.Context.RequestBag[contextType.FullName!]!;
+        }
+
+        /// <summary>
         /// Gets a query value using an case-insensitive search.
         /// </summary>
         /// <param name="queryKeyName">The query value name.</param>
@@ -530,7 +568,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        public HttpResponse SendTo(RouterCallback otherCallback)
+        public object? SendTo(RouterCallback otherCallback)
         {
             Interlocked.Increment(ref currentFrame);
             if (currentFrame > 64)

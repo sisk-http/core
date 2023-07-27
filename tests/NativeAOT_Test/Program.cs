@@ -1,4 +1,5 @@
-﻿using Sisk.Provider;
+﻿using Microsoft.Toolkit.HighPerformance;
+using Sisk.Provider;
 
 namespace NativeAOT_Test;
 
@@ -14,6 +15,9 @@ internal class Program
             {
                 config.AccessLogsStream = null;
             });
+
+            Box<int> a = 10;
+
             handler.UseLocale(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
         });
     }

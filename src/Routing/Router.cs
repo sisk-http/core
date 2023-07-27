@@ -23,11 +23,12 @@ namespace Sisk.Core.Routing
     public partial class Router
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
-        private List<Route> _routes = new List<Route>();
         internal HttpServer? ParentServer { get; private set; }
+        private HashSet<Route> _routes = new HashSet<Route>();
         private bool throwException = false;
+        private Dictionary<Type, Func<object, HttpResponse>> actionHandlers;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal void BindServer(HttpServer server)
         {
             if (object.ReferenceEquals(server, this.ParentServer)) return;
@@ -74,7 +75,10 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Constructor
         /// </type>
-        public Router() { }
+        public Router()
+        {
+            actionHandlers = new Dictionary<Type, Func<object, HttpResponse>>();
+        }
 
         /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
@@ -133,6 +137,56 @@ namespace Sisk.Core.Routing
         /// Method
         /// </type>
         public Route[] GetDefinedRoutes() => _routes.ToArray();
+
+        /// <summary>
+        /// Register an type handling association to converting it to an <see cref="HttpResponse"/> object.
+        /// </summary>
+        /// <param name="actionHandler">The function that receives an object of the T and returns an <see cref="HttpResponse"/> response from the informed object.</param>
+        /// <definition>
+        /// public void RegisterActionAssociation{{T}}(T type, Action{{T, HttpResponse}} actionHandler) where T : Type
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void RegisterValueHandler<T>(Func<object, HttpResponse> actionHandler)
+        {
+            Type type = typeof(T);
+            if (type == typeof(HttpResponse))
+            {
+                throw new ArgumentException("Cannot register HttpResponse as an valid type to the action handler.");
+            }
+            if (actionHandlers.ContainsKey(type))
+            {
+                throw new ArgumentException("The specified type is already defined in this router instance.");
+            }
+            actionHandlers.Add(type, actionHandler);
+        }
+
+        HttpResponse ResolveAction(object routeResult)
+        {
+            Type actionType = routeResult.GetType();
+            if (routeResult == null)
+            {
+                throw new ArgumentNullException("Action result values cannot be null values.");
+            }
+            Type? matchedType = null;
+            foreach (Type tkey in actionHandlers.Keys)
+            {
+                if (actionType.IsAssignableTo(tkey))
+                {
+                    matchedType = tkey;
+                    break;
+                }
+            }
+            if (matchedType == null)
+            {
+                throw new InvalidOperationException($"Action of type \"{actionType.FullName}\" doens't have an action handler registered on the router that issued it.");
+            }
+
+            var actionHandler = actionHandlers[matchedType];
+
+            return actionHandler(routeResult);
+        }
     }
 
     internal enum RouteMatchResult

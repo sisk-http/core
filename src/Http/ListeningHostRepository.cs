@@ -41,7 +41,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="hosts">The collection which stores the <see cref="ListeningHost"/> which will be copied to this repository.</param>
         /// <definition>
-        /// public ListeningHostRepository(IEnumerable&lt;ListeningHost&gt; hosts)
+        /// public ListeningHostRepository(IEnumerable{{ListeningHost}} hosts)
         /// </definition>
         /// <type>
         /// Constructor

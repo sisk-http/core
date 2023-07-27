@@ -9,6 +9,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\service\Sisk.ServiceProvider.csproj" />
 		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>

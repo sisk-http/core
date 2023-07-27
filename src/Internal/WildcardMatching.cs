@@ -72,6 +72,7 @@ namespace Sisk.Core.Internal
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
         {
             NameValueCollection query = new NameValueCollection();

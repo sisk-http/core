@@ -34,7 +34,7 @@ static class Callbacks
         byte[] messageBytes = Encoding.UTF8.GetBytes(message);
 
         responseStream.SendChunked = true;
-        responseStream.AppendHeader("Content-Type", "text/plain");
+        responseStream.SetHeader("Content-Type", "text/plain");
         responseStream.SetStatus(new HttpStatusInformation(200, "TUDO CERTO POR AQUI"));
         responseStream.Write(messageBytes);
 
@@ -68,8 +68,8 @@ static class Callbacks
 
         res.SendChunked = true;
         res.SetStatus(206);
-        res.AppendHeader("Content-Type", "video/mp4");
-        res.AppendHeader("Content-Range", contentRange);
+        res.SetHeader("Content-Type", "video/mp4");
+        res.SetHeader("Content-Range", contentRange);
 
         Span<byte> outputBytes = new Span<byte>(new byte[chunkSize]);
         fs.Position = rangeStart;
@@ -88,8 +88,8 @@ static class Callbacks
         HttpResponseStream responseStream = request.GetResponseStream();
         Stream fs = File.OpenRead("D:\\big-file.zip");
 
-        responseStream.AppendHeader("Content-Disposition", "attachment; filename=\"big-file.zip\"");
-        responseStream.AppendHeader("Content-Length", fs.Length.ToString());
+        responseStream.SetHeader("Content-Disposition", "attachment; filename=\"big-file.zip\"");
+        responseStream.SetHeader("Content-Length", fs.Length.ToString());
         fs.CopyTo(responseStream.ResponseStream);
 
         return responseStream.Close();

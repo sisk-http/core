@@ -24,7 +24,7 @@ public partial class Router
         return r;
     }
 
-    /// <summary>
+    /// <summary> 
     /// Gets an route object by their name that is defined in this Router.
     /// </summary>
     /// <param name="name">The route name.</param>
@@ -176,8 +176,18 @@ public partial class Router
 
     private void SetInternal(MethodInfo[] methods, Type callerType, object? instance)
     {
-        RoutePrefixAttribute? rPrefix = callerType.GetCustomAttribute<RoutePrefixAttribute>();
-        string? prefix = rPrefix?.Prefix;
+        RouterModule? rmodule = instance as RouterModule;
+        string? prefix;
+
+        if (rmodule?.Prefix == null)
+        {
+            RoutePrefixAttribute? rPrefix = callerType.GetCustomAttribute<RoutePrefixAttribute>();
+            prefix = rPrefix?.Prefix;
+        }
+        else
+        {
+            prefix = rmodule.Prefix;
+        }
 
         foreach (var method in methods)
         {
@@ -188,12 +198,24 @@ public partial class Router
                 if (atrInstance != null)
                 {
                     List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
+                    if (method.ReturnType.IsValueType)
+                    {
+                        throw new InvalidOperationException($"Couldn't set method {method.DeclaringType?.FullName}.{method.Name} as an route. " +
+                            "The return of a RouterCallback must be a reference type. To return a value type, use \"Object\" or box it with RouteResult<>.");
+                    }
                     if (handlersInstances.Count() > 0)
                     {
                         foreach (RequestHandlerAttribute atr in handlersInstances)
                         {
                             IRequestHandler rhandler = (IRequestHandler)Activator.CreateInstance(atr.RequestHandlerType, atr.ConstructorArguments)!;
                             methodHandlers.Add(rhandler);
+                        }
+                    }
+                    if (rmodule?.RequestHandlers.Count() > 0)
+                    {
+                        foreach (IRequestHandler handler in rmodule.RequestHandlers)
+                        {
+                            methodHandlers.Add(handler);
                         }
                     }
 
@@ -233,11 +255,12 @@ public partial class Router
                             throw new ArgumentException($"A possible route collision could happen between the route {route} at {method.Name} with route {collisonRoute}. Please review the methods and paths of these routes.");
                         }
 
+                        rmodule?.OnRouteCreating(route);
                         SetRoute(route);
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception($"Couldn't set method {method.Name} as an route. See inner exception.", ex);
+                        throw new Exception($"Couldn't set method {method.DeclaringType?.FullName}.{method.Name} as an route. See inner exception.", ex);
                     }
                 }
             }
