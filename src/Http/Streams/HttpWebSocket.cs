@@ -126,14 +126,11 @@ namespace Sisk.Core.Http.Streams
                 req.baseServer._wsCollection.RegisterWebSocket(this);
             }
 
-            RecreateAsyncToken();
-
             receiveThread = new Thread(new ThreadStart(ReceiveTask));
             receiveThread.IsBackground = true;
             receiveThread.Start();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void RecreateAsyncToken()
         {
             asyncListenerToken = new CancellationTokenSource();
@@ -168,6 +165,7 @@ namespace Sisk.Core.Http.Streams
         {
             while (isListening)
             {
+                RecreateAsyncToken();
                 WebSocketMessage message = new WebSocketMessage(this, bufferLength);
 
                 var arrSegment = new ArraySegment<byte>(message.__msgBytes);
@@ -186,6 +184,12 @@ namespace Sisk.Core.Http.Streams
                         break;
                     }
                     continue;
+                }
+
+                if (result.Count == 0 || result.CloseStatus != null)
+                {
+                    Close();
+                    break;
                 }
 
                 TrimMessage(result, message);
@@ -207,7 +211,7 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         /// <param name="act">The method that runs on the ping policy for this HTTP Web Socket.</param>
         /// <definition>
-        /// public void WithPing(Action'HttpStreamPingPolicy act)
+        /// public void WithPing(Action{{HttpStreamPingPolicy}} act)
         /// </definition>
         /// <type>
         /// Method
@@ -299,21 +303,34 @@ namespace Sisk.Core.Http.Streams
             {
                 if (ctx.WebSocket.State != WebSocketState.Closed && ctx.WebSocket.State != WebSocketState.Aborted)
                 {
-                    wasServerClosed = true;
-                    ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
+                    // CloseAsync can throw an exception if any party closes the connection
+                    // early before completing close handshake
+                    // when this happens, the connection is already closed by some party and then release
+                    // the resources of this websocket
+                    try
+                    {
+                        ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
+                    }
+                    catch (Exception) { ; }
+                    finally
+                    {
+                        wasServerClosed = true;
+                    }
                 }
-
+                request.baseServer._wsCollection.UnregisterWebSocket(this);
                 isListening = false;
                 isClosed = true;
                 closeEvent.Set();
-            }
-            request.baseServer._wsCollection.UnregisterWebSocket(this);
+            }      
             return new HttpResponse(wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE);
         }
 
         private void SendInternal(ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType)
         {
             if (isClosed) { return; }
+
+            if (closeTimeout.TotalMilliseconds > 0)
+                asyncListenerToken?.CancelAfter(closeTimeout);
 
             try
             {
