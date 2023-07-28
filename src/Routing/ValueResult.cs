@@ -15,6 +15,8 @@ namespace Sisk.Core.Routing;
 /// <since>0.15</since>
 public class ValueResult<T>
 {
+    // <nodocs />
+    // <inheritdocs />
     protected ValueResult()
     {
     }

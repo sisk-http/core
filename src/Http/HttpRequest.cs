@@ -326,6 +326,18 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Gets the HTTP request content stream.
+        /// </summary>
+        /// <definition>
+        /// public Stream InputStream { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <since>0.15</since>
+        public Stream InputStream { get => listenerRequest.InputStream; }
+
+        /// <summary>
         /// Gets the HTTP request body as string, decoded by the request content encoding.
         /// </summary>
         /// <definition>
@@ -563,12 +575,12 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="otherCallback">Defines the <see cref="RouterCallback"/> method which will handle this request.</param>
         /// <definition>
-        /// public HttpResponse SendTo(RouterCallback otherCallback)
+        /// public object SendTo(RouterCallback otherCallback)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public object? SendTo(RouterCallback otherCallback)
+        public object SendTo(RouterCallback otherCallback)
         {
             Interlocked.Increment(ref currentFrame);
             if (currentFrame > 64)

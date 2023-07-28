@@ -12,14 +12,14 @@ namespace NativeAOT_Test;
 static class Callbacks
 {
     [Route(RouteMethod.Get, "/")]
-    public static HttpResponse Index(HttpRequest request)
+    public static object Index(HttpRequest request)
     {
         // return PostIndex(request);
         return request.SendTo(PostIndex);
     }
 
     [Route(RouteMethod.Post, "/")]
-    public static HttpResponse PostIndex(HttpRequest request)
+    public static object PostIndex(HttpRequest request)
     {
         // return Index(request);
         return request.SendTo(Index);
