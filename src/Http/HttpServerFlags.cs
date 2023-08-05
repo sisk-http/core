@@ -45,6 +45,8 @@ namespace Sisk.Core.Http
         /// </type>
         public string HeaderNameRequestId = "X-Request-Id";
 
+        public string SessionIdCookie = "sisk-session-id";
+
         /// <summary>
         /// Determines if the HTTP server automatically should send CORS headers if set.
         /// </summary>

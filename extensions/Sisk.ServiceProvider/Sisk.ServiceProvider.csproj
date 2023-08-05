@@ -29,22 +29,22 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Include="..\.github\Icon.png">
+	  <None Include="..\..\.github\Icon.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
-	  <None Include="..\.nuget\README.md">
+	  <None Include="..\..\.nuget\README.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
-	  <None Include="..\LICENSE.txt">
+	  <None Include="..\..\LICENSE.txt">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\src\Sisk.Core.csproj" />
+	  <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
 </Project>

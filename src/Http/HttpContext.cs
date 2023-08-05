@@ -1,4 +1,5 @@
 ﻿using Sisk.Core.Routing;
+using Sisk.Core.Sessions;
 using System.Collections.Specialized;
 using System.Dynamic;
 
@@ -15,6 +16,8 @@ namespace Sisk.Core.Http
     /// </type>
     public class HttpContext
     {
+        public UserSession? Session { get; internal set; }
+
         /// <summary>
         /// Gets or sets an <see cref="NameValueCollection"/> indicating HTTP headers which
         /// will overwrite headers set by CORS, router response or request handlers.
@@ -26,7 +29,7 @@ namespace Sisk.Core.Http
         /// Property
         /// </type>
         public NameValueCollection OverrideHeaders { get; set; } = new NameValueCollection();
-        
+
         /// <summary>
         /// Gets the <see cref="ListeningHost"/> instance of this HTTP context.
         /// </summary>
@@ -53,12 +56,12 @@ namespace Sisk.Core.Http
         /// Gets the context Http Server instance.
         /// </summary>
         /// <definition>
-        /// public HttpServer? HttpServer { get; }
+        /// public HttpServer HttpServer { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public HttpServer? HttpServer { get; private set; }
+        public HttpServer HttpServer { get; private set; }
 
         /// <summary>
         /// Gets or sets the HTTP response for this context. This property is only not null when a post-executing <see cref="IRequestHandler"/> was executed for this router context.
@@ -93,7 +96,7 @@ namespace Sisk.Core.Http
         /// </type>
         public Route? MatchedRoute { get; internal set; }
 
-        internal HttpContext(HttpServer? httpServer, HttpRequest request, Route? matchedRoute, ListeningHost host)
+        internal HttpContext(HttpServer httpServer, HttpRequest request, Route? matchedRoute, ListeningHost host)
         {
             Request = request;
             HttpServer = httpServer;

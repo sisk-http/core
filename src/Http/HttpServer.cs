@@ -234,6 +234,12 @@ namespace Sisk.Core.Http
             foreach (string prefix in listeningPrefixes)
                 httpListener.Prefixes.Add(prefix);
 
+            if (ServerConfiguration.SessionConfiguration.Enabled)
+            {
+                ServerConfiguration.SessionConfiguration.SessionController.Initialize();
+                ServerConfiguration.SessionConfiguration.SessionController.RunSessionGC();
+            }
+
             _isListening = true;
             httpListener.Start();
             httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);

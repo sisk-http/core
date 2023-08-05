@@ -2,6 +2,8 @@
 
 Proposed to version 0.15.
 
+Status: requires more testing.
+
 Allows the user to read the input content stream inline.
 
 It's a way to read the request input from the input stream. It can use this to send responses through GetResponseStream() as well.

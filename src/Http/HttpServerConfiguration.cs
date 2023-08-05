@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using Sisk.Core.Sessions;
+using System.Globalization;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,6 +17,8 @@ namespace Sisk.Core.Http
     /// </type>
     public class HttpServerConfiguration : IDisposable
     {
+        public SessionConfiguration SessionConfiguration { get; set; } = new SessionConfiguration();
+
         /// <summary>
         /// Gets or sets advanced flags and configuration settings for the HTTP server.
         /// </summary>

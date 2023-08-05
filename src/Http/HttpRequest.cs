@@ -430,12 +430,12 @@ namespace Sisk.Core.Http
         /// Gets the HttpContext for this request.
         /// </summary>
         /// <definition>
-        /// public HttpContext? Context { get; }
+        /// public HttpContext Context { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public HttpContext? Context { get; internal set; }
+        public HttpContext Context { get; internal set; } = null!;
 
         /// <summary>
         /// Gets the multipart form content for this request.

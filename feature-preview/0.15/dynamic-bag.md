@@ -2,6 +2,8 @@
 
 Proposed to version 0.15.
 
+Status: require more testing.
+
 This proposal lets you store objects in the `HttpContext.Bag` without the need to pack/unpack or define a key for them. The motivation is to remove the need for converting the object and having to look for objects with the same name as the one that was stored.
 
 The `HttpRequest.GetContextBag<>() ` and `HttpRequest.SetContextBag<>()` methods allow you to get and store objects in the `HttpContext.Bag` by type name, eliminating type conversion.

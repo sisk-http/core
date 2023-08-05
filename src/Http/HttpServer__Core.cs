@@ -10,12 +10,12 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Sisk.Core.Http;
 
 public partial class HttpServer
 {
-
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal static string HumanReadableSize(float? size)
     {
@@ -256,6 +256,15 @@ public partial class HttpServer
             #endregion
 
             #region Step 4 - Response computing
+
+            // before sending headers, see if the session cookie must be set or not
+            if (ServerConfiguration.SessionConfiguration.Enabled && srContext?.Session != null)
+            {
+                var sessionController = ServerConfiguration.SessionConfiguration.SessionController;
+                sessionController.StoreSession(srContext.Session);
+                if (request.Cookies[flag.SessionIdCookie] == null)
+                    response.SetCookie(flag.SessionIdCookie, srContext.Session.Id.ToString(), null, null, null, "/", null, null, null);
+            }
 
             NameValueCollection resHeaders = new NameValueCollection();
             resHeaders.Add(response.Headers);

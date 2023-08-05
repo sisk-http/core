@@ -1,5 +1,6 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Internal;
+using Sisk.Core.Sessions;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -61,10 +62,12 @@ public partial class Router
 
         return result;
     }
-     
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
     {
+        if (this.ParentServer == null) throw new InvalidOperationException("No HTTP server instance is binded to this Router.");
+
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
@@ -153,6 +156,26 @@ public partial class Router
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 
+            // create/restore the user session
+            UserSession? session = null;
+            if (ParentServer!.ServerConfiguration.SessionConfiguration.Enabled)
+            {
+                var sessionController = ParentServer!.ServerConfiguration.SessionConfiguration.SessionController;
+                var reqSessionId = request.Cookies[flag.SessionIdCookie];
+                if (Guid.TryParse(reqSessionId, out Guid sessionId))
+                {
+                    if (!sessionController.TryGetSession(sessionId, out session))
+                    {
+                        session = new UserSession() { Id = sessionId };
+                    }
+                }
+                else
+                {
+                    session = new UserSession();
+                }
+                context.Session = session;
+            }
+
             #region Before-contents global handlers
             if (hasGlobalHandlers)
             {
@@ -222,9 +245,9 @@ public partial class Router
             {
                 context.MatchedRoute = matchedRoute;
                 object actionResult = matchedRoute.Callback(request);
-                if (actionResult is HttpResponse)
+                if (actionResult is HttpResponse httpres)
                 {
-                    result = (HttpResponse)actionResult;
+                    result = httpres;
                 }
                 else
                 {
@@ -278,7 +301,7 @@ public partial class Router
                     }
                 }
             }
-            #endregion
+            #endregion         
         }
 
         return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult, null);

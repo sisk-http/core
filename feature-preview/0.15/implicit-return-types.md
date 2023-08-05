@@ -2,6 +2,8 @@
 
 Proposed to version 0.15.
 
+Status: included in production release 0.15.
+
 Implicitly typed returns allow callbacks to return any object other than HttpResponse. The motivation is to make it possible to transform in a single place for standardized types of responses, such as API responses, and so that it is possible to handle implicit returns and convert them to HttpResponse objects.
 
 Inspired by ASP.NET and other simpler frameworks, which allows registering type associations for each value received. Unregistered types will throw an exception. Also, for value-types objects, it will be necessary to box the value in an object by reference (see document below).
