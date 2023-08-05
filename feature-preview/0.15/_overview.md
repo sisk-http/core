@@ -11,10 +11,20 @@
 
 ## Other changelog
 
-- https://github.com/sisk-http/core/commit/30de03cdb9df577039d267d14e94016f71cac656
+- [7d6330d](https://github.com/sisk-http/core/commit/7d6330dba06489563a8d40044bbb1f031039581e)
+    - Added the Sisk.BasicAuth package source code at /extensions.
+    - Migrated the Sisk.ServiceProvider package source to /extensions.
+    - Added the HttpContext.Session property.
+    - Added the HttpServerConfiguration.SessionConfiguration property.
+    - Added the HttpServerFlags.SessionIdCookie field.
+    - Added the sessions source code into repository.
+    - The HttpContext.HttpServer property ins't nullable anymore.
+    - The HttpRequest.Context property inst't nullable anymore.
+
+- [30de03c](https://github.com/sisk-http/core/commit/30de03cdb9df577039d267d14e94016f71cac656)
     - Added the HttpRequest.InputStream property.
 
-- https://github.com/sisk-http/core/commit/a445ad3651f910b3fbc6b8cb98ee08290d2410e4
+- [a445ad](https://github.com/sisk-http/core/commit/a445ad3651f910b3fbc6b8cb98ee08290d2410e4)
     - Added the HttpContext.OverrideHeaders property.
     - Added the HttpRequest.SetContextBag and GetContextBag methods.
     - Added the Router.RegisterValueHandler method.
@@ -25,7 +35,7 @@
     - Rewrite the return type of RouterCallback delegate from HttpResponse to object.
     - Simplified the way HttpRequest obtains the origin IP of the request.
 
-- https://github.com/sisk-http/core/commit/bbb0e84046eeb8684393230dfc4a4baacb062fba, https://github.com/sisk-http/core/commit/6f77f3db71fcdbe435d61db6fe7914f7ecb2ec06, https://github.com/sisk-http/core/commit/d643d718f256e6d1a3df276ac28dced09a5ec627
+- [bbb0e84](https://github.com/sisk-http/core/commit/bbb0e84046eeb8684393230dfc4a4baacb062fba), [6f77f3d](https://github.com/sisk-http/core/commit/6f77f3db71fcdbe435d61db6fe7914f7ecb2ec06), [d643d71](https://github.com/sisk-http/core/commit/d643d718f256e6d1a3df276ac28dced09a5ec627)
     - Added an string representation to HttpRequest.ToString().
     - Created the HttpStreamPingPolicy class.
     - Renamed HttpRequestEventSource.KeepAlive -> WaitForFail.
