@@ -7,17 +7,57 @@ using System.Threading.Tasks;
 
 namespace Sisk.Core.Sessions;
 
+/// <summary>
+/// Represents a controller based on JSON files for storing sessions.
+/// </summary>
+/// <definition>
+/// public class FileSystemSessionController : ISessionController
+/// </definition>
+/// <type>
+/// Class
+/// </type>
 public class FileSystemSessionController : ISessionController
 {
+    /// <summary>
+    /// Gets or sets the absolute path to the directory where the sessions will be stored. This folder will be created if it does not exist.
+    /// </summary>
+    /// <definition>
+    /// public string DirectoryPath { get; set; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
     public string DirectoryPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the session lifespan before being deleted.
+    /// </summary>
+    /// <definition>
+    /// public TimeSpan SessionExpirity { get; set; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
     public TimeSpan SessionExpirity { get; set; } = TimeSpan.FromDays(7);
 
+    /// <summary>
+    /// Creates an new <see cref="FileSystemSessionController"/> instance with given directory path.
+    /// </summary>
+    /// <param name="directoryPath">Indicates the absolute path to the directory where the sessions will be stored. This folder will be created if it does not exist.</param>
+    /// <definition>
+    /// public FileSystemSessionController(string directoryPath)
+    /// </definition>
+    /// <type>
+    /// Constructor
+    /// </type>
     public FileSystemSessionController(string directoryPath)
     {
         DirectoryPath = directoryPath;
     }
 
-    public Boolean TryGetSession(Guid sessionId, out UserSession? session)
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public Boolean TryGetSession(Guid sessionId, out Session? session)
     {
         string sessionFile = Path.Combine(DirectoryPath, sessionId.ToString() + ".json");
         if (File.Exists(sessionFile))
@@ -25,7 +65,7 @@ public class FileSystemSessionController : ISessionController
             try
             {
                 byte[] fileContents = File.ReadAllBytes(sessionFile);
-                session = JsonSerializer.Deserialize<UserSession>(fileContents);
+                session = JsonSerializer.Deserialize<Session>(fileContents);
                 if (session == null)
                 {
                     return false;
@@ -45,12 +85,14 @@ public class FileSystemSessionController : ISessionController
         }
     }
 
-    public Boolean StoreSession(UserSession session)
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public Boolean StoreSession(Session session)
     {
         string sessionFile = Path.Combine(DirectoryPath, session.Id.ToString() + ".json");
         try
         {
-            string json = JsonSerializer.Serialize<UserSession>(session);
+            string json = JsonSerializer.Serialize<Session>(session);
             File.WriteAllText(sessionFile, json);
             return true;
         }
@@ -60,6 +102,8 @@ public class FileSystemSessionController : ISessionController
         }
     }
 
+    /// <inheritdoc/>
+    /// <nodocs/>
     public void RunSessionGC()
     {
         var shiftingExpirity = DateTime.Now.Subtract(SessionExpirity);
@@ -74,8 +118,30 @@ public class FileSystemSessionController : ISessionController
         }
     }
 
+    /// <inheritdoc/>
+    /// <nodocs/>
     public void Initialize()
     {
         Directory.CreateDirectory(DirectoryPath);
+    }
+
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public Boolean DestroySession(Session session)
+    {
+        string sessionFile = Path.Combine(DirectoryPath, session.Id.ToString() + ".json");
+        if (File.Exists(sessionFile))
+        {
+            try
+            {
+                File.Delete(sessionFile);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        return false;
     }
 }

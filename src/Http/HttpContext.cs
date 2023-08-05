@@ -16,7 +16,16 @@ namespace Sisk.Core.Http
     /// </type>
     public class HttpContext
     {
-        public UserSession? Session { get; internal set; }
+        /// <summary>
+        /// Gets the persistent session that is embedded in this HTTP context. This property returns null if the server is not configured to use sessions.
+        /// </summary>
+        /// <definition>
+        /// public Session? Session { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public Session? Session { get; internal set; }
 
         /// <summary>
         /// Gets or sets an <see cref="NameValueCollection"/> indicating HTTP headers which

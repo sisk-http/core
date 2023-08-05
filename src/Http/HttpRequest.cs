@@ -1,6 +1,7 @@
 ﻿using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using Sisk.Core.Sessions;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -436,6 +437,20 @@ namespace Sisk.Core.Http
         /// Property
         /// </type>
         public HttpContext Context { get; internal set; } = null!;
+
+        /// <summary>
+        /// Gets the persistent session that is embedded in this request. This property returns null if the server is not configured to use sessions.
+        /// </summary>
+        /// <remarks>
+        /// This property is a shortcut for Context.Session.
+        /// </remarks>
+        /// <definition>
+        /// public Session? Session { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public Session? Session { get => Context.Session; }
 
         /// <summary>
         /// Gets the multipart form content for this request.

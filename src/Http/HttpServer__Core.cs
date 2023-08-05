@@ -258,12 +258,23 @@ public partial class HttpServer
             #region Step 4 - Response computing
 
             // before sending headers, see if the session cookie must be set or not
-            if (ServerConfiguration.SessionConfiguration.Enabled && srContext?.Session != null)
+            if (ServerConfiguration.SessionConfiguration.Enabled)
             {
                 var sessionController = ServerConfiguration.SessionConfiguration.SessionController;
-                sessionController.StoreSession(srContext.Session);
-                if (request.Cookies[flag.SessionIdCookie] == null)
-                    response.SetCookie(flag.SessionIdCookie, srContext.Session.Id.ToString(), null, null, null, "/", null, null, null);
+                if (srContext?.Session?.willDestroy == true)
+                {
+                    sessionController.DestroySession(srContext.Session);
+                    if (request.Cookies[flag.SessionIdCookie] != null)
+                    {
+                        response.SetCookie(flag.SessionIdCookie, "0", DateTime.MinValue, null, null, "/", null, null, null);
+                    }
+                }
+                else if (srContext?.Session?.Bag.Count > 0)
+                {
+                    sessionController.StoreSession(srContext.Session);
+                    if (request.Cookies[flag.SessionIdCookie] == null)
+                        response.SetCookie(flag.SessionIdCookie, srContext.Session.Id.ToString(), null, null, null, "/", null, null, null);
+                }
             }
 
             NameValueCollection resHeaders = new NameValueCollection();

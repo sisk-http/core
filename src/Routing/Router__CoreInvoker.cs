@@ -157,7 +157,7 @@ public partial class Router
             }
 
             // create/restore the user session
-            UserSession? session = null;
+            Session? session = null;
             if (ParentServer!.ServerConfiguration.SessionConfiguration.Enabled)
             {
                 var sessionController = ParentServer!.ServerConfiguration.SessionConfiguration.SessionController;
@@ -166,12 +166,12 @@ public partial class Router
                 {
                     if (!sessionController.TryGetSession(sessionId, out session))
                     {
-                        session = new UserSession() { Id = sessionId };
+                        session = new Session() { Id = sessionId };
                     }
                 }
                 else
                 {
-                    session = new UserSession();
+                    session = new Session();
                 }
                 context.Session = session;
             }

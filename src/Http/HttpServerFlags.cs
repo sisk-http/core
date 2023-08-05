@@ -45,6 +45,20 @@ namespace Sisk.Core.Http
         /// </type>
         public string HeaderNameRequestId = "X-Request-Id";
 
+        /// <summary>
+        /// Defines the name of the cookie that is sent by the HTTP server for the Session ID.
+        /// </summary>
+        /// <docs>
+        ///     <p>
+        ///         Default value: <code>sisk-session-id</code>
+        ///     </p>
+        /// </docs>
+        /// <definition>
+        /// public string SessionIdCookie;
+        /// </definition>
+        /// <type>
+        /// Field
+        /// </type>
         public string SessionIdCookie = "sisk-session-id";
 
         /// <summary>

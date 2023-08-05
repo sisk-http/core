@@ -1,6 +1,7 @@
 ﻿using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
+using Sisk.Core.Sessions;
 using System.Globalization;
 using System.Reflection.Metadata;
 
@@ -357,6 +358,21 @@ namespace Sisk.Provider
         }
 
         /// <summary>
+        /// Calls a callback over the <see cref="SessionConfiguration"/> in the HTTP configuration.
+        /// </summary>
+        /// <param name="config">An action where the first argument is an <see cref="SessionConfiguration"/>.</param>
+        /// <definition>
+        /// public void UseSessions(Action{{SessionConfiguration}} config)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void UseSessions(Action<SessionConfiguration> config)
+        {
+            config(_config.SessionConfiguration);
+        }
+
+        /// <summary>
         /// Determines if the HTTP server should handle the application hauting for blocking the main loop or not.
         /// </summary>
         /// <definition>
@@ -405,7 +421,7 @@ namespace Sisk.Provider
         /// </summary>
         /// <param name="overrideCallback">An action where the first argument is an <see cref="HttpServerConfiguration"/>.</param>
         /// <definition>
-        /// public void UseOverrides(Action overrideCallback)
+        /// public void UseOverrides(Action{{HttpServerConfiguration}} overrideCallback)
         /// </definition>
         /// <type>
         /// Method
@@ -420,7 +436,7 @@ namespace Sisk.Provider
         /// </summary>
         /// <param name="serverCallback">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
         /// <definition>
-        /// public void UseHttpServer(Action serverCallback)
+        /// public void UseHttpServer(Action{{HttpServer}} serverCallback)
         /// </definition>
         /// <type>
         /// Method
@@ -435,7 +451,7 @@ namespace Sisk.Provider
         /// </summary>
         /// <param name="corsCallback">An action where the first argument is the main <see cref="CrossOriginResourceSharingHeaders"/> object.</param>
         /// <definition>
-        /// public void UseCors(Action corsCallback)
+        /// public void UseCors(Action{{CrossOriginResourceSharingHeaders}} corsCallback)
         /// </definition>
         /// <type>
         /// Method
