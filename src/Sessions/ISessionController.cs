@@ -18,6 +18,17 @@ namespace Sisk.Core.Sessions;
 public interface ISessionController
 {
     /// <summary>
+    /// Gets or sets the session lifespan before being deleted.
+    /// </summary>
+    /// <definition>
+    /// public TimeSpan SessionExpirity { get; set; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
+    public TimeSpan SessionExpirity { get; set; }
+
+    /// <summary>
     /// Tries to retrieve a session from its ID.
     /// </summary>
     /// <param name="sessionId">The session ID.</param>

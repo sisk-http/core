@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
-namespace Sisk.Provider
+namespace Sisk.ServiceProvider
 {
     internal class ConfigParser
     {

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
@@ -20,6 +21,7 @@ namespace Sisk.Core.Sessions;
 public sealed class Session
 {
     internal bool willDestroy = false;
+    internal DateTime memAccessAt = DateTime.Now;
 
     /// <summary>
     /// Gets or sets the session ID.
@@ -41,7 +43,7 @@ public sealed class Session
     /// <type>
     /// Property
     /// </type>
-    public Hashtable Bag { get; set; } = new Hashtable();
+    public Dictionary<string, object?> Bag { get; set; } = new();
 
     /// <summary>
     /// Creates a new session with a random ID.
@@ -86,5 +88,91 @@ public sealed class Session
         {
             Bag[index] = value;
         }
+    }
+
+    /// <summary>
+    /// Gets an managed object from the session bag through it's type.
+    /// </summary>
+    /// <typeparam name="T">The type of object which is stored in the session bag.</typeparam>
+    /// <definition>
+    /// public T? Get{{T}}()
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public T? Get<T>()
+    {
+        Type contextType = typeof(T);
+        string key = contextType.FullName ?? "";
+        if (Bag.ContainsKey(key))
+        {
+            var val = Bag[key];
+            if (val is JsonElement json)
+            {
+                return json.Deserialize<T>();
+            }
+            else
+            {
+                return (T?)Bag[key];
+            }
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// Stores a managed object in the session bag through it's type.
+    /// </summary>
+    /// <typeparam name="T">The type of object that will be stored in the session bag.</typeparam>
+    /// <param name="value">The object which will be stored.</param>
+    /// <returns>Returns the stored object.</returns>
+    /// <definition>
+    /// public void Set{{T}}(T value)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void Set<T>(T value)
+    {
+        Type contextType = typeof(T);
+        string key = contextType.FullName ?? "";
+        Bag[key] = value;
+    }
+
+    /// <summary>
+    /// Removes a managed object in the session bag through it's type.
+    /// </summary>
+    /// <typeparam name="T">The type of object that will be removed from the session bag.</typeparam>
+    /// <definition>
+    /// public void Remove{{T}}()
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void Remove<T>()
+    {
+        Type contextType = typeof(T);
+        string key = contextType.FullName ?? "";
+        Bag.Remove(key);
+    }
+
+    /// <inheritdoc />
+    /// <nodocs/>
+    public override Boolean Equals(Object? obj)
+    {
+        if (obj is Session s)
+        {
+            return s.Id == this.Id;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    /// <nodocs/>
+    public override Int32 GetHashCode()
+    {
+        return Id.GetHashCode();
     }
 }

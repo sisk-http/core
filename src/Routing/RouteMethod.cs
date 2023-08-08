@@ -146,16 +146,15 @@
         /// </type>
         Trace = 2 << 11,
 
-
         /// <summary>
         /// Represents any HTTP method.
         /// </summary>
         /// <definition>
-        /// Any = 0
+        /// Any = Get | Post | Put | Patch | Delete | Copy | Head | Options | Link | Unlink | View | Trace
         /// </definition>
         /// <type>
         /// Enum Value
         /// </type>
-        Any = 0
+        Any = Get | Post | Put | Patch | Delete | Copy | Head | Options | Link | Unlink | View | Trace
     }
 }

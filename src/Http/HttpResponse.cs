@@ -1,4 +1,5 @@
 ﻿using Sisk.Core.Entity;
+using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -56,6 +57,23 @@ namespace Sisk.Core.Http
             res.Headers.Add("Location", location);
 
             return res;
+        }
+
+        /// <summary>
+        /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a callback. The provided method must have a valid RouteAttribute attribute.
+        /// </summary>
+        /// <param name="callback">The receiving callback contains a RouteAttribute attribute and its method is GET or ANY.</param>
+        /// <definition>
+        /// public static HttpResponse CreateRedirectResponse(RouterCallback callback)
+        /// </definition>
+        /// <type>
+        /// Static method
+        /// </type>
+        public static HttpResponse CreateRedirectResponse(RouterCallback callback)
+        {
+            var definition = RouteDefinition.GetFromCallback(callback);
+            if (!definition.Method.HasFlag(RouteMethod.Get)) throw new InvalidOperationException("The specified method does not handle GET requests.");
+            return CreateRedirectResponse(definition.Path);
         }
 
         /// <summary>
@@ -156,6 +174,36 @@ namespace Sisk.Core.Http
             }
 
             return sb.ToString();
+        }
+
+        public HttpResponse WithContent(string content)
+        {
+            this.Content = new StringContent(content);
+            return this;
+        }
+
+        public HttpResponse WithContent(ByteArrayContent content)
+        {
+            this.Content = content;
+            return this;
+        }
+
+        public HttpResponse WithHeader(string headerKey, string headerValue)
+        {
+            this.Headers.Set(headerKey, headerValue);
+            return this;
+        }
+
+        public HttpResponse WithStatus(int status)
+        {
+            this.Status = (HttpStatusCode)status;
+            return this;
+        }
+
+        public HttpResponse WithStatus(HttpStatusCode status)
+        {
+            this.Status = status;
+            return this;
         }
 
         /// <summary>

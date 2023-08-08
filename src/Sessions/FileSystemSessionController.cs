@@ -29,15 +29,8 @@ public class FileSystemSessionController : ISessionController
     /// </type>
     public string DirectoryPath { get; set; }
 
-    /// <summary>
-    /// Gets or sets the session lifespan before being deleted.
-    /// </summary>
-    /// <definition>
-    /// public TimeSpan SessionExpirity { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
+    /// <inheritdoc/>
+    /// <nodocs/>
     public TimeSpan SessionExpirity { get; set; } = TimeSpan.FromDays(7);
 
     /// <summary>

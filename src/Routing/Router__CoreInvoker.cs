@@ -12,6 +12,7 @@ public partial class Router
 {
     private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
     {
+        if (method == RouteMethod.Any) return true;
         Enum.TryParse(typeof(RouteMethod), ogRqMethod, true, out object? ogRqParsedObj);
         if (ogRqParsedObj is null)
         {
@@ -98,11 +99,7 @@ public partial class Router
             bool isMethodMatched = false;
 
             // test method
-            if (route.Method == RouteMethod.Any)
-            {
-                isMethodMatched = true;
-            }
-            else if (request.Method == HttpMethod.Options)
+            if (request.Method == HttpMethod.Options)
             {
                 matchResult = RouteMatchResult.OptionsMatched;
                 break;

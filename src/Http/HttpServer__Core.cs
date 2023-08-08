@@ -260,7 +260,8 @@ public partial class HttpServer
             // before sending headers, see if the session cookie must be set or not
             if (ServerConfiguration.SessionConfiguration.Enabled)
             {
-                var sessionController = ServerConfiguration.SessionConfiguration.SessionController;
+                var sessionConfig = ServerConfiguration.SessionConfiguration;
+                var sessionController = sessionConfig.SessionController;
                 if (srContext?.Session?.willDestroy == true)
                 {
                     sessionController.DestroySession(srContext.Session);
@@ -273,7 +274,11 @@ public partial class HttpServer
                 {
                     sessionController.StoreSession(srContext.Session);
                     if (request.Cookies[flag.SessionIdCookie] == null)
-                        response.SetCookie(flag.SessionIdCookie, srContext.Session.Id.ToString(), null, null, null, "/", null, null, null);
+                    {
+                        bool? httpOnly = sessionConfig.HttpOnly ? true : null;
+                        DateTime? expires = sessionConfig.DisposeOnBrowserClose ? null : DateTime.Now.Add(sessionConfig.SessionController.SessionExpirity);
+                        response.SetCookie(flag.SessionIdCookie, srContext.Session.Id.ToString(), expires, null, null, "/", null, httpOnly, null);
+                    }
                 }
             }
 

@@ -39,5 +39,27 @@ public sealed class SessionConfiguration
     /// </type>
     public bool Enabled { get; set; } = false;
 
+    /// <summary>
+    /// Gets or sets whether the session cookie should be used only in an HTTP context.
+    /// </summary>
+    /// <definition>
+    /// public bool HttpOnly { get; set; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
+    public bool HttpOnly { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets whether the session cookie should be disposed by the browser when it closes.
+    /// </summary>
+    /// <definition>
+    /// public bool DisposeOnBrowserClose { get; set; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
+    public bool DisposeOnBrowserClose { get; set; } = false;
+
     internal SessionConfiguration() { }
 }

@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.Caching;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,25 +19,20 @@ namespace Sisk.Core.Sessions;
 /// </type>
 public class MemorySessionController : ISessionController
 {
-    private MemoryCache cache = new MemoryCache("sessioncontroller");
+    private List<Session> _sessions = new List<Session>();
 
-    /// <summary>
-    /// Gets or sets the session lifespan has before it is deleted.
-    /// </summary>
-    /// <definition>
-    /// public TimeSpan SessionExpirity { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
+    /// <inheritdoc/>
+    /// <nodocs/>
     public TimeSpan SessionExpirity { get; set; } = TimeSpan.FromDays(7);
 
     /// <inheritdoc/>
     /// <nodocs/>
     public Boolean DestroySession(Session session)
     {
-        cache.Remove(session.Id.ToString());
-        return true;
+        lock (_sessions)
+        {
+            return _sessions.Remove(session);
+        }
     }
 
     /// <inheritdoc/>
@@ -50,17 +46,25 @@ public class MemorySessionController : ISessionController
     /// <nodocs/>
     public void RunSessionGC()
     {
-        ; // cache does this automatically
+        lock (_sessions)
+        {
+            var expirity = DateTime.Now.Subtract(SessionExpirity);
+            foreach (Session s in _sessions.ToArray())
+            {
+                if (expirity > s.memAccessAt)
+                {
+                    _sessions.Remove(s);
+                }
+            }
+        }
     }
 
     /// <inheritdoc/>
     /// <nodocs/>
     public Boolean StoreSession(Session session)
     {
-        cache.Set(session.Id.ToString(), session, new CacheItemPolicy()
-        {
-            AbsoluteExpiration = DateTime.Now.Add(SessionExpirity)
-        });
+        lock (_sessions)
+            _sessions.Add(session);
         return true;
     }
 
@@ -68,16 +72,20 @@ public class MemorySessionController : ISessionController
     /// <nodocs/>
     public Boolean TryGetSession(Guid sessionId, out Session? session)
     {
-        var result = cache.Get(sessionId.ToString());
-        if (result == null)
+        Session? find = null;
+        lock (_sessions)
+            find = _sessions.FirstOrDefault(s => s.Id == sessionId);
+
+        if (find != null)
         {
-            session = null;
-            return false;
+            find.memAccessAt = DateTime.Now;
+            session = find;
+            return true;
         }
         else
         {
-            session = (Session)result;
-            return true;
+            session = null;
+            return false;
         }
     }
 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO.Compression;
 using System.Threading;
 
-namespace Sisk.Provider
+namespace Sisk.ServiceProvider
 {
     /// <summary>
     /// Provides a managed utility for rotating log files by their file size.

@@ -24,7 +24,7 @@ namespace Sisk.Core.Routing
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
         internal HttpServer? ParentServer { get; private set; }
-        private HashSet<Route> _routes = new HashSet<Route>();
+        internal HashSet<Route> _routes = new HashSet<Route>();
         private bool throwException = false;
         private Dictionary<Type, Func<object, HttpResponse>> actionHandlers;
 
