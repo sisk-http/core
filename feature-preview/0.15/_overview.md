@@ -9,7 +9,19 @@
 | Input streams | Allows the user to read the input content stream inline. | Testing |
 | Sessions | Sessions are a way to track and identify a user throughout the application and take control of session storage on the server. | Testing |
 
-## Other changelog
+## Sisk 0.15 changelog
+
+- [a81ca09](https://github.com/sisk-http/core/commit/a81ca09866cdb44c98d0c34336d91f80de8fb2c0)
+    - Added properties for SessionConfiguration: HttpOnly and DisposeOnBrowserClose. Names can change in future changes.
+    - Added Fluent Interface style methods for HttpResponse: WithContent, WithHeader, WithStatus, not yet documented.
+    - Added the Session.Get() and Session.Set() methods, which has functionality similar to HttpRequest.Get/SetContextBag().
+    - Cookies set by the HTTP server are now sent with the expiration parameter, which is defined in ISessionController.SessionExpirity.
+    - RouteMethod.Any nows flags all the previous defined Route methods.
+    - ISessionController now requires SessionExpirity to be defined.
+    - Extended the CreateRedirectResponse method to be able to extract the route from a RouteCallback with the RouteAttribute attribute.
+    - Fixed inconsistencies in the Sisk.ServiceProvider package namespace. Now the default namespace is Sisk.ServiceProvider.
+    - Fixed a bug where requests with non-common HTTP methods were not accepted in routes even when used in RouteMethod.Any.
+    - Dropped System.Runtime.Caching dependency.
 
 - [7d6330d](https://github.com/sisk-http/core/commit/7d6330dba06489563a8d40044bbb1f031039581e)
     - Added the Sisk.BasicAuth package source code at /extensions.
@@ -22,7 +34,7 @@
     - The HttpRequest.Context property inst't nullable anymore.
 
 - [30de03c](https://github.com/sisk-http/core/commit/30de03cdb9df577039d267d14e94016f71cac656)
-    - Added the HttpRequest.InputStream property.
+    - Added the HttpRequest.InputStream property. [Spec.](https://github.com/sisk-http/core/blob/main/feature-preview/0.15/input-stream.md)
 
 - [a445ad](https://github.com/sisk-http/core/commit/a445ad3651f910b3fbc6b8cb98ee08290d2410e4)
     - Added the HttpContext.OverrideHeaders property.
