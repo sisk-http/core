@@ -8,6 +8,7 @@
 | Dynamic bag | This proposal lets you store objects in the `HttpContext.Bag` without the need to pack/unpack or define a key for them. | Testing | 
 | Input streams | Allows the user to read the input content stream inline. | Testing |
 | Sessions | Sessions are a way to track and identify a user throughout the application and take control of session storage on the server. | Testing |
+| Fluent responses | Allows the user to take advantage of the Fluent Interface for HttpResponse objects and create simpler responses. | Testing |
 
 ## Sisk 0.15 changelog
 
