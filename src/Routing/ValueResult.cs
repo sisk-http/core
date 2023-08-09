@@ -17,7 +17,7 @@ public class ValueResult<T>
 {
     // <nodocs />
     // <inheritdocs />
-    protected ValueResult()
+    private ValueResult()
     {
     }
 

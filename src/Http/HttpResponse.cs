@@ -176,30 +176,86 @@ namespace Sisk.Core.Http
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Sets an UTF-8 string in this <see cref="HttpResponse"/> content.
+        /// </summary>
+        /// <param name="content">The UTF-8 string containing the response body.</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithContent(string content)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public HttpResponse WithContent(string content)
         {
             this.Content = new StringContent(content);
             return this;
         }
 
+        /// <summary>
+        /// Sets an content in this <see cref="HttpResponse"/> object.
+        /// </summary>
+        /// <param name="content">The HTTP content which implements <see cref="ByteArrayContent"/>.</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithContent(ByteArrayContent content)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public HttpResponse WithContent(ByteArrayContent content)
         {
             this.Content = content;
             return this;
         }
 
+        /// <summary>
+        /// Sets an HTTP header in this <see cref="HttpResponse"/> object.
+        /// </summary>
+        /// <param name="headerKey">The name of the header.</param>
+        /// <param name="headerValue">The header value.</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithHeader(string headerKey, string headerValue)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public HttpResponse WithHeader(string headerKey, string headerValue)
         {
             this.Headers.Set(headerKey, headerValue);
             return this;
         }
 
+        /// <summary>
+        /// Sets the HTTP response status code.
+        /// </summary>
+        /// <param name="status">The HTTP status code.</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithStatus(int status)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public HttpResponse WithStatus(int status)
         {
             this.Status = (HttpStatusCode)status;
             return this;
         }
 
+        /// <summary>
+        /// Sets the HTTP response status code.
+        /// </summary>
+        /// <param name="status">The HTTP status code.</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithStatus(HttpStatusCode status)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
         public HttpResponse WithStatus(HttpStatusCode status)
         {
             this.Status = status;
