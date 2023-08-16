@@ -5,66 +5,9 @@ using Sisk.Core.Sessions;
 using System.Globalization;
 using System.Reflection.Metadata;
 
-[assembly: MetadataUpdateHandler(typeof(Sisk.ServiceProvider.ServiceReloadManager))]
 
 namespace Sisk.ServiceProvider
 {
-    /// <summary>
-    /// Provides an access to manage assembly hot reloads.
-    /// </summary>
-    /// <definition>
-    /// public static class ServiceReloadManager
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
-    public static class ServiceReloadManager
-    {
-        private static List<ServiceProvider> _services = new List<ServiceProvider>();
-
-        /// <summary>
-        /// Registers a <see cref="ServiceProvider"/> to be recompiled every time the assembly is reloaded.
-        /// </summary>
-        /// <param name="reloadAwareService">The service provider which will be registered.</param>
-        /// <definition>
-        /// public static void RegisterServiceProvider(ServiceProvider reloadAwareService)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        public static void RegisterServiceProvider(ServiceProvider reloadAwareService)
-        {
-            _services.Add(reloadAwareService);
-        }
-
-        /// <summary>
-        /// Clears all registrations from the assembly.
-        /// </summary>
-        /// <definition>
-        /// public static void Clear()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        public static void Clear()
-        {
-            _services.Clear();
-        }
-
-        static void ClearCache(Type[]? types)
-        {
-            ;
-        }
-
-        static void UpdateApplication(Type[]? types)
-        {
-            foreach (ServiceProvider pr in _services)
-            {
-                pr.Rebuild();
-            }
-        }
-    }
-
     /// <summary>
     /// Provides a class that organizes and facilitates the porting management of a service or application that uses Sisk.
     /// </summary>
