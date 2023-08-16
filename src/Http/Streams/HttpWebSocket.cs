@@ -1,5 +1,13 @@
-﻿using System.Net.WebSockets;
-using System.Runtime.CompilerServices;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpWebSocket.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Net.WebSockets;
 using System.Text;
 
 namespace Sisk.Core.Http.Streams
@@ -311,7 +319,7 @@ namespace Sisk.Core.Http.Streams
                     {
                         ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
                     }
-                    catch (Exception) { ; }
+                    catch (Exception) {; }
                     finally
                     {
                         wasServerClosed = true;
@@ -321,7 +329,7 @@ namespace Sisk.Core.Http.Streams
                 isListening = false;
                 isClosed = true;
                 closeEvent.Set();
-            }      
+            }
             return new HttpResponse(wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE);
         }
 

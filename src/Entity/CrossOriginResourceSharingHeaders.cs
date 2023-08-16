@@ -1,4 +1,13 @@
-﻿namespace Sisk.Core.Entity
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   CrossOriginResourceSharingHeaders.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Core.Entity
 {
     /// <summary>
     /// Provides a class to provide Cross Origin response headers for when communicating with a browser.

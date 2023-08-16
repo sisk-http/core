@@ -1,4 +1,13 @@
-﻿using Sisk.Core.Http;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   Router__CoreInvoker.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using Sisk.Core.Sessions;
 using System.Net;

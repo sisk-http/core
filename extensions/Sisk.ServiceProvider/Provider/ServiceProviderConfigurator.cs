@@ -1,12 +1,16 @@
-﻿using Sisk.Core.Entity;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ServiceProviderConfigurator.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using Sisk.Core.Sessions;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.ServiceProvider;
 

@@ -1,7 +1,14 @@
-﻿using Sisk.Core.Sessions;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpServerConfiguration.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Sessions;
 using System.Globalization;
-using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Sisk.Core.Http

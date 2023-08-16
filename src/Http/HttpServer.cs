@@ -1,14 +1,15 @@
-﻿using Sisk.Core.Entity;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpServer.cs
+// Repository:  https://github.com/sisk-http/core
+
 using Sisk.Core.Http.Streams;
-using Sisk.Core.Internal;
 using Sisk.Core.Routing;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
 using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Core.Http
 {

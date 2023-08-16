@@ -1,10 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   WildcardMatching.cs
+// Repository:  https://github.com/sisk-http/core
+
 using System.Collections.Specialized;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Internal
 {

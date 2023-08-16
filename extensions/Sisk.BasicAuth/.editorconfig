@@ -1,0 +1,2 @@
+[*.cs]
+file_header_template = The Sisk Framework source code\nCopyright (c) 2023 PROJECT PRINCIPIUM\n\nThe code below is licensed under the MIT license as\nof the date of its publication, available at\n\nFile name:   {fileName}\nRepository:  https://github.com/sisk-http/core

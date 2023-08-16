@@ -1,4 +1,13 @@
-﻿namespace Sisk.Core.Routing
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   RouteMethod.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Core.Routing
 {
     /// <summary>
     /// Represents an HTTP method to be matched in an <see cref="Route"/>.

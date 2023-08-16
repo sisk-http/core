@@ -1,13 +1,14 @@
-﻿using Sisk.Core.Http;
-using Sisk.Core.Internal;
-using System.Buffers.Text;
-using System.Diagnostics.CodeAnalysis;
-using System.Net;
-using System.Reflection;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   Router.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Http;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using System.Web;
-using System.Xml.Linq;
 
 namespace Sisk.Core.Routing
 {

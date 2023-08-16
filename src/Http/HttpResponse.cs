@@ -1,10 +1,16 @@
-﻿using Sisk.Core.Entity;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpResponse.cs
+// Repository:  https://github.com/sisk-http/core
+
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Web;
 
 namespace Sisk.Core.Http
 {

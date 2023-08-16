@@ -1,4 +1,13 @@
-﻿using Sisk.Core.Internal;
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   Router__CoreSetters.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 

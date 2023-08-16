@@ -1,4 +1,13 @@
-﻿namespace Sisk.Core.Http
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpServerExecutionResult.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Core.Http
 {
     /// <summary>
     /// Represents the function that is called when a server receives and computes a request.

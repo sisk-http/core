@@ -1,11 +1,7 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NativeAOT_Test;
 
