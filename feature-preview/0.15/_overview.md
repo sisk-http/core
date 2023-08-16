@@ -13,9 +13,17 @@
 
 ## Sisk 0.15 changelog
 
+- [dbb85d0](https://github.com/sisk-http/core/commit/dbb85d0c3b2b537fecd544ded3a7978fdd868789)
+    - Improved regex routes functionality, with improved performance and regex groups to queries.
+    - Add UseRegex property to RouteAttribute (and all implemented) attributes.
+
+- [54ea452](https://github.com/sisk-http/core/commit/54ea452bbf571a7ababd7d252f4e00b13a7e1d97)
+    - Fixed where the summary documentation weren't being included in the output package.
+    - Removed support for hot reload. Removed the ServiceReloadManager class.
+
 - [a81ca09](https://github.com/sisk-http/core/commit/a81ca09866cdb44c98d0c34336d91f80de8fb2c0)
     - Added properties for SessionConfiguration: HttpOnly and DisposeOnBrowserClose. Names can change in future changes.
-    - Added Fluent Interface style methods for HttpResponse: WithContent, WithHeader, WithStatus, not yet documented.
+    - Added Fluent Interface style methods for HttpResponse: WithContent, WithHeader, WithStatus. Documented in [a9c8873](https://github.com/sisk-http/core/commit/a9c8873519b7c4dcf4a9ad9bcb878f897fee2611).
     - Added the Session.Get() and Session.Set() methods, which has functionality similar to HttpRequest.Get/SetContextBag().
     - Cookies set by the HTTP server are now sent with the expiration parameter, which is defined in ISessionController.SessionExpirity.
     - RouteMethod.Any nows flags all the previous defined Route methods.
