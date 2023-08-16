@@ -10,6 +10,7 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using Sisk.Core.Sessions;
+using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -31,10 +32,28 @@ public partial class Router
         return method.HasFlag(ogRqParsed);
     }
 
-    private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex(string routePath, string requestPath)
+    private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex(Route route, string requestPath)
     {
-        return new Internal.HttpStringInternals.PathMatchResult
-            (Regex.IsMatch(requestPath, routePath, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), new System.Collections.Specialized.NameValueCollection());
+        if (route.routeRegex == null)
+        {
+            route.routeRegex = new Regex(route.Path);
+        }
+
+        var test = route.routeRegex.Match(requestPath);
+        if (test.Success)
+        {
+            NameValueCollection query = new NameValueCollection();
+            foreach (Group group in test.Groups)
+            {
+                if (group.Index.ToString() == group.Name) continue;
+                query.Add(group.Name, group.Value);
+            }
+            return new HttpStringInternals.PathMatchResult(true, query);
+        }
+        else
+        {
+            return new HttpStringInternals.PathMatchResult(false, new NameValueCollection());
+        }
     }
 
     internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, IRequestHandler[]? bypass)
@@ -92,7 +111,7 @@ public partial class Router
             Internal.HttpStringInternals.PathMatchResult pathTest;
             if (route.UseRegex)
             {
-                pathTest = TestRouteMatchUsingRegex(route.Path, request.Path);
+                pathTest = TestRouteMatchUsingRegex(route, request.Path);
             }
             else
             {

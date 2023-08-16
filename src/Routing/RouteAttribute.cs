@@ -78,6 +78,17 @@ namespace Sisk.Core.Routing
         public LogOutput LogMode { get; set; } = LogOutput.Both;
 
         /// <summary>
+        /// Get or sets if this route should use regex to be interpreted instead of predefined templates.
+        /// </summary>
+        /// <definition>
+        /// public bool UseRegex { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public bool UseRegex { get; set; } = false;
+
+        /// <summary>
         /// Creates an new <see cref="RouteAttribute"/> instance with given route method and path pattern.
         /// </summary>
         /// <param name="method">The route entry point method.</param>

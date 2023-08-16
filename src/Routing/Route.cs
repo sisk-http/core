@@ -7,6 +7,8 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Text.RegularExpressions;
+
 namespace Sisk.Core.Routing
 {
     /// <summary>
@@ -20,6 +22,9 @@ namespace Sisk.Core.Routing
     /// </type>
     public class Route
     {
+        internal Regex? routeRegex;
+        private string path;
+
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
         /// </summary>
@@ -40,7 +45,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        public bool UseRegex { get; set; } = false;
+        public bool UseRegex { get; set; }
 
         /// <summary>
         /// Gets or sets whether this route should send Cross-Origin Resource Sharing headers in the response.
@@ -73,7 +78,21 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        public string Path { get; set; } = "";
+        public string Path
+        {
+            get
+            {
+                return path;
+            }
+            set
+            {
+                if (UseRegex && routeRegex != null)
+                {
+                    routeRegex = null;
+                }
+                path = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the route name. It allows it to be found by other routes and makes it easier to create links.

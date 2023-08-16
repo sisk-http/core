@@ -255,7 +255,8 @@ public partial class Router
                             Name = atrInstance.Name,
                             RequestHandlers = methodHandlers.ToArray(),
                             LogMode = atrInstance.LogMode,
-                            UseCors = atrInstance.UseCors
+                            UseCors = atrInstance.UseCors,
+                            UseRegex = atrInstance.UseRegex
                         };
 
                         Route? collisonRoute;

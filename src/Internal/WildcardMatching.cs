@@ -39,44 +39,6 @@ namespace Sisk.Core.Internal
             return sb.ToString();
         }
 
-        public static string StripRouteParameters(string routePath)
-        {
-            bool state = false;
-            StringBuilder sb = new StringBuilder();
-            foreach (char c in routePath)
-            {
-                if (c == '<' && !state)
-                {
-                    state = true;
-                    sb.Append("arg");
-                }
-                else if (c == '<' && state)
-                {
-                    throw new InvalidOperationException("A route parameter was initialized but not terminated.");
-                }
-                else if (c == '>' && !state)
-                {
-                    throw new InvalidOperationException("A route parameter was terminated but no parameter was initialized.");
-                }
-                else if (c == '>' && state)
-                {
-                    state = false;
-                }
-                else if (!state)
-                {
-                    sb.Append(c);
-                }
-            }
-            if (state)
-            {
-                throw new InvalidOperationException("A route parameter was initialized but not terminated.");
-            }
-            else
-            {
-                return sb.ToString();
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
         {
