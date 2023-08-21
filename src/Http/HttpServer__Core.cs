@@ -255,6 +255,8 @@ public partial class HttpServer
                 responseStatus = baseResponse.StatusCode;
                 responseDescription = baseResponse.StatusDescription;
             }
+
+            baseResponse.KeepAlive = ServerConfiguration.KeepAlive;
             baseResponse.SendChunked = response.SendChunked;
 
             #endregion

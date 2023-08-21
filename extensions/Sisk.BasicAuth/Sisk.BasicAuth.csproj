@@ -6,24 +6,24 @@
 		<Nullable>enable</Nullable>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		
+
 		<Title>Sisk.BasicAuth</Title>
 		<PackageId>Sisk.BasicAuth</PackageId>
-		
+
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.BasicAuth</Product>
-		<Description>This package includes an helper for embeding basic authentication in your applications made with Sisk.</Description>
-		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
-		<PackageIcon>Icon.png</PackageIcon>
+		<Description>This package includes an helper for embeding basic authentication in your
+			applications made with Sisk.</Description>
+		<PackageProjectUrl>https://github.com/CypherPotato/simple-css-compiler</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
-		<PackageTags>http-server,http,web framework</PackageTags>
+		<RepositoryUrl>https://github.com/CypherPotato/simple-css-compiler</RepositoryUrl>
+		<PackageTags>css,scss,sass</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<Version>0.15</Version>
-		<AssemblyVersion>0.15</AssemblyVersion>
-		<FileVersion>0.15</FileVersion>
+		<Version>1.0.0-beta</Version>
+		<AssemblyVersion>1.0.0</AssemblyVersion>
+		<FileVersion>1.0.0</FileVersion>
 
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -46,7 +46,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
 </Project>

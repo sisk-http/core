@@ -177,6 +177,18 @@ namespace Sisk.Core.Http
         public bool ThrowExceptions { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets whether the client should mantain an persistent connection
+        /// with the HTTP server.
+        /// </summary>
+        /// <definition>
+        /// public bool KeepAlive { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public bool KeepAlive { get; set; } = true;
+
+        /// <summary>
         /// Creates an new <see cref="HttpServerConfiguration"/> instance with no parameters.
         /// </summary>
         /// <definition>

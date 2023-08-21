@@ -2,7 +2,7 @@
 
 Proposed to version 0.15.
 
-Status: requires more testing.
+Status: approved.
 
 Allows the user to take advantage of the Fluent Interface for HttpResponse objects and create simpler responses.
 

@@ -36,7 +36,7 @@ public partial class Router
     {
         if (route.routeRegex == null)
         {
-            route.routeRegex = new Regex(route.Path);
+            route.routeRegex = new Regex(route.Path, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
         }
 
         var test = route.routeRegex.Match(requestPath);

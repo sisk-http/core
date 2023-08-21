@@ -235,6 +235,24 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Sets an array of HTTP header in this <see cref="HttpResponse"/> object.
+        /// </summary>
+        /// <param name="headers">An collection of headers, described by their value (header names) and keys (header values).</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithHeader(NameValueCollection headers)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpResponse WithHeader(NameValueCollection headers)
+        {
+            foreach (string key in headers.Keys)
+                this.Headers.Set(key, headers[key]);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the HTTP response status code.
         /// </summary>
         /// <param name="status">The HTTP status code.</param>

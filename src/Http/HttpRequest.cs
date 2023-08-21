@@ -160,6 +160,11 @@ namespace Sisk.Core.Http
 
         internal void ImportContents(Stream listenerRequest)
         {
+            if (isContentAvailable)
+            {
+                this.contentBytes = Array.Empty<byte>();
+                return;
+            } // avoid reading the input stream twice
             using (var memoryStream = new MemoryStream())
             {
                 listenerRequest.CopyTo(memoryStream);
@@ -334,18 +339,7 @@ namespace Sisk.Core.Http
         {
             get => new HttpMethod(listenerRequest.HttpMethod);
         }
-
-        /// <summary>
-        /// Gets the HTTP request content stream.
-        /// </summary>
-        /// <definition>
-        /// public Stream InputStream { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        /// <since>0.15</since>
-        public Stream InputStream { get => listenerRequest.InputStream; }
+    
 
         /// <summary>
         /// Gets the HTTP request body as string, decoded by the request content encoding.
@@ -627,6 +621,27 @@ namespace Sisk.Core.Http
         public HttpResponse Close()
         {
             return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+        }
+
+        /// <summary>
+        /// Gets the HTTP request content stream. This property is only available while the
+        /// content has not been imported by the HTTP server and will invalidate the body content 
+        /// cached in this object.
+        /// </summary>
+        /// <definition>
+        /// public Stream GetInputStream()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        /// <since>0.15</since> 
+        public Stream GetInputStream()
+        {
+            if (isContentAvailable)
+            {
+                throw new InvalidOperationException("The InputStream property is only accessible by BeforeContents requests handlers.");
+            }
+            return listenerRequest.InputStream;
         }
 
         /// <summary>

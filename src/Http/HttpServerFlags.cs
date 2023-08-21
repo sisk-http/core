@@ -183,6 +183,23 @@ namespace Sisk.Core.Http
         public bool ForceTrailingSlash = false;
 
         /// <summary>
+        /// Determines the maximum amount of time an connection can keep alive without sending or receiving any
+        /// data.
+        /// </summary>
+        /// <docs>
+        ///     <p>
+        ///         Default value: <code>TimeSpan.FromSeconds(120)</code>
+        ///     </p>
+        /// </docs>
+        /// <definition>
+        /// public TimeSpan IdleConnectionTimeout;
+        /// </definition>
+        /// <type>
+        /// Field
+        /// </type>
+        public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds(120);
+
+        /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
         /// <definition>

@@ -10,6 +10,7 @@
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
 using System.Net;
+using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http
 {
@@ -242,6 +243,8 @@ namespace Sisk.Core.Http
             }
 
             _isListening = true;
+            httpListener.IgnoreWriteExceptions = true;
+            httpListener.TimeoutManager.IdleConnection = ServerConfiguration.Flags.IdleConnectionTimeout;
             httpListener.Start();
             httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
         }
