@@ -13,6 +13,13 @@
 
 ## Sisk 0.15 changelog
 
+- [a2cb87c](https://github.com/sisk-http/core/commit/a2cb87ccc6eadd7b14daf1053adf110dbf365343)
+    - Worked on input-streams feature. See spec.
+    - (no-changelog) Added the HttpResponse.WithHeaders(NameValueCollection) way to include multiple headers in the http response object.
+    - Added the HttpServerFlags.IdleConnectionTimeout which determines the time to keep an keep-alive connection alive.
+    - Added the HttpServerConfiguration.KeepAlive property. This is self explanatory.
+    - Fixed an bug where regex routers weren't matching ignore-case when MatchRoutesIgnoreCase was enabled.
+
 - [dbb85d0](https://github.com/sisk-http/core/commit/dbb85d0c3b2b537fecd544ded3a7978fdd868789)
     - Improved regex routes functionality, with improved performance and regex groups to queries.
     - Add UseRegex property to RouteAttribute (and all implemented) attributes.
