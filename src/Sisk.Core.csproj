@@ -26,9 +26,9 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 
-		<AssemblyVersion>0.15</AssemblyVersion>
-		<FileVersion>0.15</FileVersion>
-		<Version>0.15.0.42-beta</Version>
+		<AssemblyVersion>0.15.0.46</AssemblyVersion>
+		<FileVersion>0.15.0.46</FileVersion>
+		<Version>0.15.0.46-beta+a2cb87ccc6eadd7b14daf1053adf110dbf365343</Version>
 
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
@@ -49,7 +49,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Include="..\.nuget\README.html" Link="README.html" />
+		<None Include="..\.nuget\README.html" Link="README.html" />
 	</ItemGroup>
 
 	<ItemGroup>
