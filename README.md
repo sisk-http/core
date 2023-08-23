@@ -12,7 +12,33 @@
 
 ------
 
-**Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. Its core idea is to create a service that runs on the internet and follows the pattern you define. Moreover, Sisk is a framework that adapts to how you want it to work, not the other way around.
+**Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
+
+### Documentation
+
+You can get started with Sisk [here](https://sisk.project-principium.dev/read?q=/contents/docs/getting-started.md) or build the documentation repository [here](https://github.com/sisk-http/docs).
+
+For information about release notes, changelogs and API breaking changes, see [docs/Changelog.md](https://github.com/sisk-http/docs/blob/master/Changelog.md).
+
+### Installing
+
+You can install the latest release from [Nuget packages](https://www.nuget.org/packages/Sisk.HttpServer/):
+
+```
+PM> NuGet\Install-Package Sisk.HttpServer
+```
+
+### Packages
+
+In this repository, you have the source code of:
+
+  - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
+  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): the Service Providers utility package for porting your Sisk app between environments.
+  - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
+
+## Getting started
+
+The Sisk core idea is to create a service that runs on the internet and follows the pattern you define. Moreover, Sisk is a framework that adapts to how you want it to work, not the other way around.
 
 Due to its explicit nature, its behavior is predictable. The main differentiator from ASP.NET is that Sisk can be up and running in very few lines of code, avoiding unnecessary configurations, and requiring the minimum setup to get your server working. Additionally, it does not demand any additional .NET SDK packages to develop, as the base package of .NET 6 is sufficient to start your development with Sisk.
 
@@ -74,16 +100,3 @@ ASP.NET is an great and well-established web framework, and many features presen
 Moreover, its development model allows you to choose how you want your development to be. You handle requests in a simple, efficient, explicit, and fast manner. Knowledge and understanding of HTTP are required if you want to do everything manually, and even then, Sisk can greatly simplify things with all the functions it provides in its core package.
 
 Getting started with Sisk is easy. Those who already have experience with web development typically learn Sisk in one or two days. Our documentation is… let's say… very well-documented. You can find everything you need here. Additionally, our source code is open, so you have access to it.
-
-## Documentation
-
-You can get started [here](https://sisk.project-principium.dev/read?q=/contents/docs/getting-started.md) or access the documentation repository [here](https://github.com/sisk-http/docs).
-
-
-## Installation
-
-You can install the latest release from Nuget packages:
-
-```
-PM> NuGet\Install-Package Sisk.HttpServer
-```
