@@ -9,7 +9,6 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
-using Sisk.Core.Sessions;
 using System.Globalization;
 
 namespace Sisk.ServiceProvider;
@@ -34,22 +33,6 @@ public class ServiceProviderConfigurator
         _server = server ?? throw new ArgumentNullException(nameof(server));
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-    }
-
-    /// <summary>
-    /// Calls a callback over the <see cref="SessionConfiguration"/> in the HTTP configuration.
-    /// </summary>
-    /// <param name="config">An action where the first argument is an <see cref="SessionConfiguration"/>.</param>
-    /// <definition>
-    /// public void UseSessions(Action{{SessionConfiguration}} config)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
-    public void UseSessions(Action<SessionConfiguration> config)
-    {
-        _config.SessionConfiguration.Enabled = true;
-        config(_config.SessionConfiguration);
     }
 
     /// <summary>

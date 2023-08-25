@@ -7,7 +7,6 @@
 // File name:   HttpServerConfiguration.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Sessions;
 using System.Globalization;
 using System.Text;
 
@@ -24,17 +23,6 @@ namespace Sisk.Core.Http
     /// </type>
     public class HttpServerConfiguration : IDisposable
     {
-        /// <summary>
-        /// Get specific settings for sessions.
-        /// </summary>
-        /// <definition>
-        /// public SessionConfiguration SessionConfiguration { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        public SessionConfiguration SessionConfiguration { get; private set; } = new SessionConfiguration();
-
         /// <summary>
         /// Gets or sets advanced flags and configuration settings for the HTTP server.
         /// </summary>

@@ -153,7 +153,7 @@ namespace Sisk.Core.Routing
         public Route(RouteMethod method, string path, RouterCallback callback)
         {
             Method = method;
-            Path = path;
+            this.path = path;
             Callback = callback;
         }
 
@@ -174,7 +174,7 @@ namespace Sisk.Core.Routing
         public Route(RouteMethod method, string path, string? name, RouterCallback callback, IRequestHandler[]? beforeCallback)
         {
             Method = method;
-            Path = path;
+            this.path = path;
             Name = name;
             Callback = callback;
             RequestHandlers = beforeCallback;
@@ -191,6 +191,7 @@ namespace Sisk.Core.Routing
         /// </type>
         public Route()
         {
+            this.path = "/";
         }
 
         /// <summary>

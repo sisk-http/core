@@ -10,7 +10,6 @@
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
 using System.Net;
-using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http
 {
@@ -235,12 +234,6 @@ namespace Sisk.Core.Http
             httpListener.Prefixes.Clear();
             foreach (string prefix in listeningPrefixes)
                 httpListener.Prefixes.Add(prefix);
-
-            if (ServerConfiguration.SessionConfiguration.Enabled)
-            {
-                ServerConfiguration.SessionConfiguration.SessionController.Initialize();
-                ServerConfiguration.SessionConfiguration.SessionController.RunSessionGC();
-            }
 
             _isListening = true;
             httpListener.IgnoreWriteExceptions = true;

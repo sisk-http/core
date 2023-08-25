@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
-using Sisk.Core.Sessions;
 using System.Collections.Specialized;
 
 namespace Sisk.Core.Http
@@ -24,17 +23,6 @@ namespace Sisk.Core.Http
     /// </type>
     public class HttpContext
     {
-        /// <summary>
-        /// Gets the persistent session that is embedded in this HTTP context. This property returns null if the server is not configured to use sessions.
-        /// </summary>
-        /// <definition>
-        /// public Session? Session { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        public Session? Session { get; internal set; }
-
         /// <summary>
         /// Gets or sets an <see cref="NameValueCollection"/> indicating HTTP headers which
         /// will overwrite headers set by CORS, router response or request handlers.

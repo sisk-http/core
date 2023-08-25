@@ -9,7 +9,6 @@
 
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
-using Sisk.Core.Sessions;
 using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -181,27 +180,7 @@ public partial class Router
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 
-            // create/restore the user session
-            Session? session = null;
-            if (ParentServer!.ServerConfiguration.SessionConfiguration.Enabled)
-            {
-                var sessionController = ParentServer!.ServerConfiguration.SessionConfiguration.SessionController;
-                var reqSessionId = request.Cookies[flag.SessionIdCookie];
-                if (Guid.TryParse(reqSessionId, out Guid sessionId))
-                {
-                    if (!sessionController.TryGetSession(sessionId, out session))
-                    {
-                        session = new Session() { Id = sessionId };
-                    }
-                }
-                else
-                {
-                    session = new Session();
-                }
-                context.Session = session;
-            }
-
-            #region Before-contents global handlers
+            #region Before-contents global handlers 
             if (hasGlobalHandlers)
             {
                 foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
