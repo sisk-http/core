@@ -8,14 +8,18 @@
 | Fluent responses | Allows the user to take advantage of the Fluent Interface for HttpResponse objects and create simpler responses. | Approved |
 | Dynamic bag | This proposal lets you store objects in the `HttpContext.Bag` without the need to pack/unpack or define a key for them. | Approved |
 | Input streams | Allows the user to read the input content stream inline. | Approved |
+| Improved route regex | Routes that use regex have improved functionality, with improved performance and the ability to access regex components through groups. | Approved |
 | Sessions | Sessions are a way to track and identify a user throughout the application and take control of session storage on the server. | Refused |
-| Improved route regex | Routes that use regex have improved functionality, with improved performance and the ability to access regex components through groups. | Testing |
 
 ## Sisk 0.15 changelog
 
+- [403a10c](https://github.com/sisk-http/core/commit/403a10cff06999947ed71df755bd2a39cb1ceb9a), [70d3ade](https://github.com/sisk-http/core/commit/70d3ade139f942e7105740da0fa62888536813ba)
+    - Removed sessions feature. Read sessions.md for details.
+    - (core) Fixed a bug where README.html was being moved to the target project directory.
+
 - [a2cb87c](https://github.com/sisk-http/core/commit/a2cb87ccc6eadd7b14daf1053adf110dbf365343)
     - Worked on input-streams feature. See spec.
-    - (no-changelog) Added the HttpResponse.WithHeaders(NameValueCollection) way to include multiple headers in the http response object.
+    - Added the HttpResponse.WithHeaders(NameValueCollection) way to include multiple headers in the http response object.
     - Added the HttpServerFlags.IdleConnectionTimeout which determines the time to keep an keep-alive connection alive.
     - Added the HttpServerConfiguration.KeepAlive property. This is self explanatory.
     - Fixed an bug where regex routers weren't matching ignore-case when MatchRoutesIgnoreCase was enabled.

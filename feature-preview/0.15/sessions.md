@@ -2,7 +2,13 @@
 
 Proposed to version 0.15.
 
-Status: require more testing.
+Status: refused.
+
+### Refused
+
+This proposal was rejected because sessions are more complicated than it seems and the complexity of implementation is beyond the scope of the project, in bringing a very general solution to very canonical and non-specific problems.
+
+-----
 
 Sessions are a way to track and identify a user throughout the application and take control of session storage on the server. This allows storing data intended for a session created on the HTTP client in the Sisk application.
 

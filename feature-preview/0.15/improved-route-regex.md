@@ -2,6 +2,8 @@
 
 Proposed to version 0.15.
 
+Status: approved.
+
 Routes that use regex have improved functionality, with improved performance and the ability to access regex components through groups.
 Also, regex are cached into routes. The compilation is made when the route is accessed for the first time, and then there is no need
 to parse the regex again. Changing the Path, which is the Pattern of the route that uses Regex, after being compiled, will invalidate
