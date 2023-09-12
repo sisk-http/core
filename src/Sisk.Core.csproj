@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<IncludeSymbols>true</IncludeSymbols>
@@ -38,6 +38,8 @@
 		<PackRelease>True</PackRelease>
 		<RootNamespace>Sisk.Core</RootNamespace>
 		<Configurations>Debug;Release</Configurations>
+
+		<PathMap>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)=.</PathMap>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -51,7 +53,7 @@
 	<ItemGroup>
 		<None Include="..\.nuget\README.html" Link="README.html" />
 	</ItemGroup>
- 
+
 	<ItemGroup>
 		<None Include="..\.github\Icon.png">
 			<Pack>True</Pack>
@@ -69,7 +71,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EditorConfigFiles Remove=".\.editorconfig" />
+		<EditorConfigFiles Remove=".\.editorconfig" />
 	</ItemGroup>
-
 </Project>
