@@ -202,15 +202,15 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Sets an content in this <see cref="HttpResponse"/> object.
         /// </summary>
-        /// <param name="content">The HTTP content which implements <see cref="ByteArrayContent"/>.</param>
+        /// <param name="content">The HTTP content which implements <see cref="HttpContent"/>.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
         /// <definition>
-        /// public HttpResponse WithContent(ByteArrayContent content)
+        /// public HttpResponse WithContent(HttpContent content)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public HttpResponse WithContent(ByteArrayContent content)
+        public HttpResponse WithContent(HttpContent content)
         {
             this.Content = content;
             return this;
