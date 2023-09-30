@@ -92,7 +92,7 @@ public partial class Router
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    internal RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
+    internal unsafe RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
     {
         if (this.ParentServer == null) throw new InvalidOperationException("No HTTP server instance is binded to this Router.");
 
@@ -249,6 +249,32 @@ public partial class Router
             {
                 context.MatchedRoute = matchedRoute;
                 object actionResult = matchedRoute.Callback(request);
+
+                if (actionResult is Task asyncResult)
+                {
+                    asyncResult.Wait();
+
+                    var valueTask = Unsafe.As<Task<object>>(asyncResult);
+                    actionResult = valueTask.Result;
+
+                    try
+                    {
+                        actionResult.GetType();
+                    }
+                    catch (NullReferenceException)
+                    {
+                        // At this time, the actionResult is not null, but the pointer
+                        // to it is protected and cannot be accessed. This is because Task<>
+                        // returned an object by value and not by reference.
+                        //
+                        // The only solution in this case is to use reflection to get
+                        // the original object back and discard the Task<>'s conversion pointer.
+
+                        actionResult = asyncResult.GetType().GetProperty("Result")!.GetValue(asyncResult)!;
+                        valueTask = null;
+                    }
+                }
+
                 if (actionResult is HttpResponse httpres)
                 {
                     result = httpres;
