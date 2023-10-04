@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Core.Http.Streams
@@ -333,6 +334,7 @@ namespace Sisk.Core.Http.Streams
             return new HttpResponse(wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE);
         }
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         private void SendInternal(ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType)
         {
             if (isClosed) { return; }
@@ -352,7 +354,8 @@ namespace Sisk.Core.Http.Streams
 
                     ReadOnlyMemory<byte> chunk = buffer[ca..cb];
 
-                    ctx.WebSocket.SendAsync(chunk, msgType, i + 1 == chunks, CancellationToken.None);
+                    ctx.WebSocket.SendAsync(chunk, msgType, i + 1 == chunks, CancellationToken.None)
+                        .AsTask().Wait();
                 }
 
                 attempt = 0;
