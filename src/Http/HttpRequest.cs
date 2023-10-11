@@ -560,6 +560,44 @@ namespace Sisk.Core.Http
         public string? GetQueryValue(string queryKeyName) => Query[queryKeyName];
 
         /// <summary>
+        /// Gets the value stored from the <see cref="Query"/> and converts it to the given type.
+        /// </summary>
+        /// <typeparam name="T">The parseable type which will be converted to.</typeparam>
+        /// <param name="queryKeyName">The name of the URL parameter. The search is ignore-case.</param>
+        /// <param name="defaultValue">The default value that will be returned if the item is not found in the query.</param>
+        /// <definition>
+        /// // in .NET 6
+        /// public T? GetQueryValue{{T}}(string queryKeyName, T? defaultValue = default) where T : struct
+        /// 
+        /// // in .NET 7+
+        /// public T? GetQueryValue{{T}}(string queryKeyName, T? defaultValue = default) where T : IParsable{{T}}
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+#if NET6_0
+        public T? GetQueryValue<T>(string queryKeyName, T? defaultValue = default) where T : struct
+#elif NET7_0_OR_GREATER
+        public T? GetQueryValue<T>(string queryKeyName, T? defaultValue = default) where T : IParsable<T>
+#endif
+        {
+            string? value = Query[queryKeyName];
+            if (value == null) return defaultValue;
+            try
+            {
+#if NET6_0
+                return (T?)Internal.Parseable.ParseInternal<T>(value);
+#elif NET7_0_OR_GREATER
+                return T.Parse(value, null);
+#endif
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidCastException($"Cannot cast the query item {queryKeyName} value into an {typeof(T).FullName}.");
+            }
+        }
+
+        /// <summary>
         /// Gets a header value using a case-insensitive search.
         /// </summary>
         /// <param name="headerName">The header name.</param>

@@ -16,6 +16,7 @@ namespace Sisk.Core.Routing;
 public partial class Router
 {
     #region "Route setters"
+
     /// <summary>
     /// Defines an route to an router.
     /// </summary>
@@ -54,6 +55,49 @@ public partial class Router
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// Scans for all types that implements <typeparamref name="T"/> and associates an instance of each type to the router. Note that, <typeparamref name="T"/> must be an <see cref="RouterModule"/> type and an accessible constructor
+    /// for each type must be present.
+    /// </summary>
+    /// <typeparam name="T">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <param name="assembly">The assembly where the scanning types are.</param>
+    /// <definition>
+    /// public void AutoScanModules{{T}}(Assembly assembly) where T : RouterModule
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void AutoScanModules<T>(Assembly assembly) where T : RouterModule
+    {
+        Type tType = typeof(T);
+        var types = assembly.GetTypes();
+        foreach (Type type in types)
+        {
+            if (type.IsAssignableTo(tType))
+            {
+                object? instance = Activator.CreateInstance(type);
+                if (instance != null)
+                    SetObject(instance);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Scans for all types that implements <typeparamref name="T"/> and associates an instance of each type to the router. Note that, <typeparamref name="T"/> must be an <see cref="RouterModule"/> type and an accessible constructor
+    /// for each type must be present.
+    /// </summary>
+    /// <typeparam name="T">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <definition>
+    /// public void AutoScanModules{{T}}(Assembly assembly) where T : RouterModule
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void AutoScanModules<T>() where T : RouterModule
+    {
+        AutoScanModules<T>(typeof(T).Assembly);
     }
 
     /// <summary>

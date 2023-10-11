@@ -11,6 +11,7 @@ using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Net;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -19,6 +20,8 @@ namespace Sisk.Core.Routing;
 
 public partial class Router
 {
+    private PropertyInfo? asyncResultAcesser;
+
     private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
     {
         if (method == RouteMethod.Any) return true;
@@ -250,29 +253,11 @@ public partial class Router
                 context.MatchedRoute = matchedRoute;
                 object actionResult = matchedRoute.Callback(request);
 
-                if (actionResult is Task asyncResult)
+                if (matchedRoute.isReturnTypeTask)
                 {
-                    asyncResult.Wait();
-
-                    var valueTask = Unsafe.As<Task<object>>(asyncResult);
-                    actionResult = valueTask.Result;
-
-                    try
-                    {
-                        actionResult.GetType();
-                    }
-                    catch (NullReferenceException)
-                    {
-                        // At this time, the actionResult is not null, but the pointer
-                        // to it is protected and cannot be accessed. This is because Task<>
-                        // returned an object by value and not by reference.
-                        //
-                        // The only solution in this case is to use reflection to get
-                        // the original object back and discard the Task<>'s conversion pointer.
-
-                        actionResult = asyncResult.GetType().GetProperty("Result")!.GetValue(asyncResult)!;
-                        valueTask = null;
-                    }
+                    dynamic objTask = actionResult;
+                    objTask.Wait();
+                    actionResult = objTask.Result;
                 }
 
                 if (actionResult is HttpResponse httpres)
