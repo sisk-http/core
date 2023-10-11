@@ -286,7 +286,7 @@ public partial class Router
                         }
 
                         string path = atrInstance.Path;
-                        if (prefix != null)
+                        if (prefix != null && !atrInstance.UseRegex)
                         {
                             path = HttpStringInternals.CombineRoutePaths(prefix, path);
                         }

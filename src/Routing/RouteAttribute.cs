@@ -7,6 +7,8 @@
 // File name:   RouteAttribute.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Sisk.Core.Routing
 {
     /// <summary>
@@ -107,6 +109,41 @@ namespace Sisk.Core.Routing
     }
 
     /// <summary>
+    /// Represents a mapping to an route, which it's path is defined by an regular expression. This attribute
+    /// is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    /// public class RegexRouteAttribute : RouteAttribute
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class RegexRouteAttribute : RouteAttribute
+    {
+        /// <summary>
+        /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="method">The route entry point method.</param>
+        /// <param name="pattern">The Regex pattern which will match the route.</param>
+        /// <definition>
+        /// public RegexRouteAttribute(RouteMethod method, string pattern)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+#if NET6_0
+        public RegexRouteAttribute(RouteMethod method, string pattern) : base(method, pattern)
+#elif NET7_0_OR_GREATER
+        public RegexRouteAttribute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) : base(method, pattern)
+#endif
+        {
+            base.UseRegex = true;
+        }
+    }
+
+    /// <summary>
     /// Represents a mapping to an HTTP GET route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     /// <definition>
@@ -130,6 +167,17 @@ namespace Sisk.Core.Routing
         /// Constructor
         /// </type>
         public RouteGetAttribute(string path) : base(RouteMethod.Get, path) { }
+
+        /// <summary>
+        /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with an root path (/).
+        /// </summary>
+        /// <definition>
+        /// public RouteGetAttribute()
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RouteGetAttribute() : base(RouteMethod.Get, "/") { }
     }
 
     /// <summary>
@@ -156,6 +204,17 @@ namespace Sisk.Core.Routing
         /// Constructor
         /// </type>
         public RoutePostAttribute(string path) : base(RouteMethod.Post, path) { }
+
+        /// <summary>
+        /// Creates an new <see cref="RoutePostAttribute"/> attribute instance with an root path (/).
+        /// </summary>
+        /// <definition>
+        /// public RoutePostAttribute()
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RoutePostAttribute() : base(RouteMethod.Post, "/") { }
     }
 
     /// <summary>
@@ -182,6 +241,17 @@ namespace Sisk.Core.Routing
         /// Constructor
         /// </type>
         public RoutePutAttribute(string path) : base(RouteMethod.Put, path) { }
+
+        /// <summary>
+        /// Creates an new <see cref="RoutePutAttribute"/> attribute instance with an root path (/).
+        /// </summary>
+        /// <definition>
+        /// public RoutePutAttribute()
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RoutePutAttribute() : base(RouteMethod.Put, "/") { }
     }
 
     /// <summary>
@@ -208,6 +278,17 @@ namespace Sisk.Core.Routing
         /// Constructor
         /// </type>
         public RoutePatchAttribute(string path) : base(RouteMethod.Patch, path) { }
+
+        /// <summary>
+        /// Creates an new <see cref="RoutePatchAttribute"/> attribute instance with an root path (/).
+        /// </summary>
+        /// <definition>
+        /// public RoutePatchAttribute()
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RoutePatchAttribute() : base(RouteMethod.Patch, "/") { }
     }
 
     /// <summary>
@@ -234,5 +315,16 @@ namespace Sisk.Core.Routing
         /// Constructor
         /// </type>
         public RouteDeleteAttribute(string path) : base(RouteMethod.Delete, path) { }
+
+        /// <summary>
+        /// Creates an new <see cref="RouteDeleteAttribute"/> attribute instance with an root path (/).
+        /// </summary>
+        /// <definition>
+        /// public RouteDeleteAttribute()
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public RouteDeleteAttribute() : base(RouteMethod.Delete, "/") { }
     }
 }

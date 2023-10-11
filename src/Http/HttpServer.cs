@@ -54,11 +54,11 @@ namespace Sisk.Core.Http
         /// Static method 
         /// </type>
         public static HttpServer Emit(
-                        in int insecureHttpPort,
-                        out HttpServerConfiguration configuration,
-                        out ListeningHost host,
-                        out Router router
-                    )
+            in int insecureHttpPort,
+            out HttpServerConfiguration configuration,
+            out ListeningHost host,
+            out Router router
+        )
         {
             router = new Router();
             if (insecureHttpPort == 0)

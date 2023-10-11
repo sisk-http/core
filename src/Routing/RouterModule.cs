@@ -59,7 +59,7 @@ public abstract class RouterModule
     {
         RequestHandlers.Add(handler);
     }
-    
+
     /// <summary>
     /// This method is called before a route is defined in the router and after it
     /// is created in this class, so its attributes and parameters can be modified. This method must

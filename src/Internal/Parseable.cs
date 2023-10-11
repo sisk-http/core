@@ -7,12 +7,7 @@
 // File name:   Parseable.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Internal;
 
@@ -23,9 +18,9 @@ internal class Parseable
         Type type = typeof(T);
 
         if (type == typeof(Byte)) return Byte.Parse(value);
-        if(type == typeof(Char)) return Char.Parse(value);
-        if(type == typeof(DateOnly)) return DateOnly.Parse(value);
-        if(type == typeof(DateTime)) return DateTime.Parse(value);
+        if (type == typeof(Char)) return Char.Parse(value);
+        if (type == typeof(DateOnly)) return DateOnly.Parse(value);
+        if (type == typeof(DateTime)) return DateTime.Parse(value);
         if (type == typeof(DateTimeOffset)) return DateTimeOffset.Parse(value);
         if (type == typeof(Decimal)) return Decimal.Parse(value);
         if (type == typeof(Double)) return Double.Parse(value);
