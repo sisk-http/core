@@ -22,8 +22,22 @@ namespace Sisk.Core.Routing
     /// </type>
     public class Route
     {
+        internal RouterCallback? _callback { get; set; }
+        internal bool isReturnTypeTask;
         internal Regex? routeRegex;
         private string path;
+
+        /// <summary>
+        /// Gets an boolean indicating if this <see cref="Route"/> callback return is an asynchronous <see cref="Task"/>.
+        /// </summary>
+        /// <definition>
+        /// public bool IsAsync { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        /// <since>0.16</since>
+        public bool IsAsync { get => isReturnTypeTask; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
@@ -114,7 +128,28 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        public RouterCallback? Callback { get; set; }
+        public RouterCallback? Callback
+        {
+            get => _callback;
+            set
+            {
+                _callback = value;
+                if (value != null)
+                {
+                    var memberInfo = value.Method;
+                    var retType = memberInfo.ReturnType;
+
+                    if (retType.IsAssignableTo(typeof(Task)))
+                    {
+                        isReturnTypeTask = true;
+                        if (retType.GenericTypeArguments.Length == 0)
+                        {
+                            throw new InvalidOperationException($"Async route {this} action must return an object in addition to Task.");
+                        }
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the RequestHandlers to run before the route's Callback.

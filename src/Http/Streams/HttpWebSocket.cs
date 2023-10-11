@@ -359,7 +359,7 @@ namespace Sisk.Core.Http.Streams
                 }
 
                 attempt = 0;
-            }
+            } 
             catch (Exception)
             {
                 attempt++;
