@@ -20,8 +20,6 @@ namespace Sisk.Core.Routing;
 
 public partial class Router
 {
-    private PropertyInfo? asyncResultAcesser;
-
     private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
     {
         if (method == RouteMethod.Any) return true;
