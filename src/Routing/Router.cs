@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing
@@ -38,22 +39,18 @@ namespace Sisk.Core.Routing
         }
 
         /// <summary>
-        /// Concats the two routes paths into one.
+        /// Combines the specified URL paths into one.
         /// </summary>
-        /// <param name="path1">The first path to concat;</param>
-        /// <param name="path2">The second path to concat.</param>
+        /// <param name="paths">The string array which contains parts that will be combined.</param>
         /// <definition>
-        /// public static string CombinePaths(string path1, string path2)
+        /// public static string CombinePaths(params string[] paths)
         /// </definition>
         /// <type>
         /// Static method
         /// </type>
-        public static string CombinePaths(string path1, string path2)
+        public static string CombinePaths(params string[] paths)
         {
-            if (path1 == null) throw new ArgumentNullException(nameof(path1));
-            if (path2 == null) throw new ArgumentNullException(nameof(path2));
-
-            return Internal.HttpStringInternals.CombineRoutePaths(path1, path2);
+            return PathUtility.CombinePaths(paths);
         }
 
         /// <summary>

@@ -8,9 +8,12 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using Sisk.SharedLib;
+using System;
 using System.Collections.Specialized;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Xml.Serialization;
 
 namespace Sisk.Core.Routing
 {
@@ -102,14 +105,20 @@ namespace Sisk.Core.Routing
                 }
                 else
                 {
-                    try
+#if NET6_0
+                    mappingValue = Parseable.ParseInternal(value, propertyValue)!;
+#elif NET7_0_OR_GREATER
+                    if (propertyValue.IsAssignableTo(typeof(IParsable<>)))
                     {
-                        mappingValue = Convert.ChangeType(value, property.PropertyType);
+                        mappingValue = propertyValue
+                            .GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string), typeof(System.IFormatProvider) })
+                            !.Invoke(propertyValue, new[] { value, null })!;
                     }
-                    catch
+                    else
                     {
-                        throw new InvalidCastException($"Cannot cast the property {property.Name} value into {propertyValue.FullName}.");
+                        mappingValue = Parseable.ParseInternal(value, propertyValue)!;
                     }
+#endif
                 }
 
                 property.SetValue(parametersObject, mappingValue);

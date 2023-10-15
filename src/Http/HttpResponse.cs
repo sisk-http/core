@@ -287,6 +287,30 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Sets a cookie and sends it in the response to be set by the client.
+        /// </summary>
+        /// <param name="name">The cookie name.</param>
+        /// <param name="value">The cookie value.</param>
+        /// <param name="expires">The cookie expirity date.</param>
+        /// <param name="maxAge">The cookie max duration after being set.</param>
+        /// <param name="domain">The domain where the cookie will be valid.</param>
+        /// <param name="path">The path where the cookie will be valid.</param>
+        /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
+        /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
+        /// <param name="sameSite">The cookie SameSite parameter.</param>
+        /// <definition>
+        /// public HttpResponse WithCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpResponse WithCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+        {
+            this.SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
+            return this;
+        }
+
+        /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with HTTP OK status code and no content.
         /// </summary>
         /// <definition>

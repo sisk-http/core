@@ -9,14 +9,17 @@
 
 using System.Numerics;
 
-namespace Sisk.Core.Internal;
+namespace Sisk.SharedLib;
 
-internal class Parseable
+public class Parseable
 {
     public static object? ParseInternal<T>(string value) where T : struct
     {
-        Type type = typeof(T);
+        return ParseInternal(value, typeof(T));
+    }
 
+    public static object? ParseInternal(string value, Type type)
+    {
         if (type == typeof(Byte)) return Byte.Parse(value);
         if (type == typeof(Char)) return Char.Parse(value);
         if (type == typeof(DateOnly)) return DateOnly.Parse(value);
@@ -39,6 +42,8 @@ internal class Parseable
         if (type == typeof(UInt32)) return UInt32.Parse(value);
         if (type == typeof(UInt64)) return UInt64.Parse(value);
         if (type == typeof(UIntPtr)) return UIntPtr.Parse(value);
+        if (type == typeof(Boolean)) return Boolean.Parse(value);
+
 
         throw new InvalidCastException($"Cannot cast string to {type.FullName}.");
     }

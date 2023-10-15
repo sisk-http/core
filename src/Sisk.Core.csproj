@@ -73,4 +73,8 @@
 	<ItemGroup>
 		<EditorConfigFiles Remove=".\.editorconfig" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\shared\Sisk.SharedLib.csproj" />
+	</ItemGroup>
 </Project>

@@ -72,7 +72,12 @@ public abstract class CookieHelper
         }
         if (domain != null)
         {
-            syntax.Add($"Domain={domain}");
+            string d = domain;
+            if (d.StartsWith("https://")) d = d.Substring("https://".Length);
+            if (d.StartsWith("http://")) d = d.Substring("http://".Length);
+            d = d.TrimEnd('/');
+
+            syntax.Add($"Domain={d}");
         }
         if (path != null)
         {
