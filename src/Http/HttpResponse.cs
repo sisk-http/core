@@ -26,7 +26,8 @@ namespace Sisk.Core.Http
     public sealed class HttpResponse : CookieHelper
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;
-        internal const byte HTTPRESPONSE_SERVER_CLOSE = 4;
+        internal const byte HTTPRESPONSE_SERVER_REFUSE = 4;
+        internal const byte HTTPRESPONSE_SERVER_CLOSE = 6;
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
         internal const byte HTTPRESPONSE_ERROR = 8;
         internal int CalculedLength = 0;
