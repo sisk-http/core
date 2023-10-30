@@ -239,6 +239,12 @@ public partial class HttpServer
                 baseResponse.StatusCode = (int)response.Status;
                 goto finishSending;
             }
+            else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)
+            {
+                executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
+                baseResponse.Abort();
+                goto finishSending;
+            }
 
             byte[] responseBytes = response!.Content?.ReadAsByteArrayAsync().Result ?? new byte[] { };
 
@@ -306,7 +312,8 @@ public partial class HttpServer
             executionResult.ResponseSize = outcomingSize;
             executionResult.Response = response;
 
-            executionResult.Status = HttpServerExecutionStatus.Executed;
+            if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
+                executionResult.Status = HttpServerExecutionStatus.Executed;
 
             sw.Stop();
             baseResponse.Close();

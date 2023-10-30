@@ -605,7 +605,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse Close()
         {
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);
         }
 
         /// <summary>
