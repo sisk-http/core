@@ -643,7 +643,17 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse Close()
         {
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="statusCode"></param>
+        public void Send(HttpStatusCode statusCode)
+        {
+            byte[] data = Encoding.UTF8.GetBytes($"HTTP/1.1 {(int)statusCode} {statusCode}\n\n");
+            listenerResponse.OutputStream.Write(data);
         }
 
         /// <summary>

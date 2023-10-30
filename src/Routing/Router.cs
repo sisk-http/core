@@ -167,6 +167,7 @@ namespace Sisk.Core.Routing
             {
                 throw new ArgumentNullException("Action result values cannot be null values.");
             }
+
             Type? matchedType = null;
             foreach (Type tkey in actionHandlers.Keys)
             {

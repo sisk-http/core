@@ -1,0 +1,198 @@
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpServerHostContextBuilder.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Entity;
+using Sisk.Core.Routing;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Sisk.Core.Http;
+
+/// <summary>
+/// Represents a context constructor for <see cref="HttpServerHostContext"/>.
+/// </summary>
+/// <definition>
+/// public sealed class HttpServerHostContextBuilder
+/// </definition>
+/// <type>
+/// Class
+/// </type>
+public sealed class HttpServerHostContextBuilder
+{
+    private HttpServerHostContext _context;
+
+    internal HttpServerHostContextBuilder()
+    {
+        Router router = new Router();
+        HttpServerConfiguration configuration = new HttpServerConfiguration();
+        ListeningHost listeningHost = new ListeningHost();
+        ListeningPort listeningPort = ListeningPort.GetRandomPort();
+
+        listeningHost.Ports = new ListeningPort[] { listeningPort };
+        listeningHost.Router = router;
+        configuration.ListeningHosts.Add(listeningHost);
+
+        HttpServer server = new HttpServer(configuration);
+
+        _context = new HttpServerHostContext(server);
+    }
+
+    /// <summary>
+    /// Builds an <see cref="HttpServerHostContext"/> with the specified parameters.
+    /// </summary>
+    /// <definition>
+    /// public HttpServerHostContext Build()
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public HttpServerHostContext Build()
+    {
+        return _context;
+    }
+
+    /// <summary>
+    /// Sets the main <see cref="ListeningPort"/> of this host builder.
+    /// </summary>
+    /// <param name="port">The port the server will listen on.</param>
+    /// <definition>
+    /// public void UseListeningPort(int port)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseListeningPort(int port)
+    {
+        _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(port);
+    }
+
+    /// <summary>
+    /// Sets the main <see cref="ListeningPort"/> of this host builder.
+    /// </summary>
+    /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
+    /// <definition>
+    /// public void UseListeningPort(string uri)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseListeningPort(string uri)
+    {
+        _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(uri);
+    }
+
+    /// <summary>
+    /// Sets the main <see cref="ListeningPort"/> of this host builder.
+    /// </summary>
+    /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the Http server will listen to.</param>
+    /// <definition>
+    /// public void UseListeningPort(ListeningPort listeningPort)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseListeningPort(ListeningPort listeningPort)
+    {
+        _context.ServerConfiguration.ListeningHosts[0].Ports[0] = listeningPort;
+    }
+
+    /// <summary>
+    /// Overrides the <see cref="HttpServerConfiguration.DefaultCultureInfo"/> property in the HTTP server configuration.
+    /// </summary>
+    /// <param name="locale">The default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.</param>
+    /// <definition>
+    /// public void UseLocale(CultureInfo locale)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseLocale(CultureInfo locale)
+    {
+        _context.ServerConfiguration.DefaultCultureInfo = locale;
+    }
+
+    /// <summary>
+    /// Overrides the HTTP server flags with the provided flags.
+    /// </summary>
+    /// <param name="flags">The flags that will be set on the HTTP server.</param>
+    /// <definition>
+    /// public void UseFlags(HttpServerFlags flags)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseFlags(HttpServerFlags flags)
+    {
+        _context.ServerConfiguration.Flags = flags;
+    }
+
+    /// <summary>
+    /// Calls an action that has the HTTP server configuration as an argument.
+    /// </summary>
+    /// <param name="handler">An action where the first argument is an <see cref="HttpServerConfiguration"/>.</param>
+    /// <definition>
+    /// public void UseOverrides(Action{{HttpServerConfiguration}} handler)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseConfiguration(Action<HttpServerConfiguration> handler)
+    {
+        handler(_context.ServerConfiguration);
+    }
+
+    /// <summary>
+    /// Calls an action that has the HTTP server instance as an argument.
+    /// </summary>
+    /// <param name="handler">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
+    /// <definition>
+    /// public void UseHttpServer(Action{{HttpServer}} handler)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseHttpServer(Action<HttpServer> handler)
+    {
+        handler(_context.HttpServer);
+    }
+
+    /// <summary>
+    /// Calls an action that has an <see cref="CrossOriginResourceSharingHeaders"/> instance from the main listening host as an argument.
+    /// </summary>
+    /// <param name="handler">An action where the first argument is the main <see cref="CrossOriginResourceSharingHeaders"/> object.</param>
+    /// <definition>
+    /// public void UseCors(Action{{CrossOriginResourceSharingHeaders}} handler)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseCors(Action<CrossOriginResourceSharingHeaders> handler)
+    {
+        handler(_context.CrossOriginResourceSharingPolicy);
+    }
+
+    /// <summary>
+    /// Calls an action that has an <see cref="Router"/> instance from the host HTTP server.
+    /// </summary>
+    /// <param name="handler">An action where the first argument is the main <see cref="Router"/> object.</param>
+    /// <definition>
+    /// public void UseRouter(Action{{Router}} handler)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseRouter(Action<Router> handler)
+    {
+        handler(_context.Router);
+    }
+}

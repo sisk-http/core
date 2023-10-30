@@ -192,10 +192,11 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public HttpResponse Close()
     {
-        return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+        return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE); 
     }
 
-    internal override void SetCookieHeader(string name, string value)
+    /// <inheritdoc/>
+    protected override void SetCookieHeader(string name, string value)
     {
         SetHeader(name, value);
     }

@@ -18,15 +18,16 @@ namespace Sisk.Core.Http
     /// Represents an HTTP Response.
     /// </summary>
     /// <definition>
-    /// public sealed class HttpResponse : CookieHelper
+    /// public class HttpResponse : CookieHelper
     /// </definition> 
     /// <type>
     /// Class
     /// </type>
-    public sealed class HttpResponse : CookieHelper
+    public class HttpResponse : CookieHelper
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;
-        internal const byte HTTPRESPONSE_SERVER_CLOSE = 4;
+        internal const byte HTTPRESPONSE_SERVER_REFUSE = 4;
+        internal const byte HTTPRESPONSE_SERVER_CLOSE = 6;
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
         internal const byte HTTPRESPONSE_ERROR = 8;
         internal int CalculedLength = 0;
@@ -396,7 +397,8 @@ namespace Sisk.Core.Http
             return null;
         }
 
-        internal override void SetCookieHeader(String name, String value)
+        /// <inheritdoc/>
+        protected override void SetCookieHeader(String name, String value)
         {
             this.Headers.Set(name, value);
         }

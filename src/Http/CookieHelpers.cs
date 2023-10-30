@@ -22,7 +22,12 @@ namespace Sisk.Core.Http;
 /// </type>
 public abstract class CookieHelper
 {
-    internal abstract void SetCookieHeader(string name, string value);
+    /// <summary>
+    /// Abstract method that calls the "Set-Cookie" header with the value of the created cookie.
+    /// </summary>
+    /// <param name="name">The cookie header name. Usually Set-Cookie.</param>
+    /// <param name="value">The cookie value.</param>
+    protected abstract void SetCookieHeader(string name, string value);
 
     /// <summary>
     /// Sets a cookie and sends it in the response to be set by the client.

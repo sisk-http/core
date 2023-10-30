@@ -39,6 +39,38 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Builds an <see cref="HttpServerHostContext"/> context invoking the handler on it.
+        /// </summary>
+        /// <param name="handler">The action which will configure the host context.</param>
+        /// <definition>
+        /// public static HttpServerHostContext CreateBuilder(Action{{HttpServerHostContextBuilder}} handler)
+        /// </definition>
+        /// <type>
+        /// Static method 
+        /// </type>
+        public static HttpServerHostContext CreateBuilder(Action<HttpServerHostContextBuilder> handler)
+        {
+            var builder = new HttpServerHostContextBuilder();
+            handler(builder);
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds an empty <see cref="HttpServerHostContext"/> context.
+        /// </summary>
+        /// <definition>
+        /// public static HttpServerHostContext CreateBuilder()
+        /// </definition>
+        /// <type>
+        /// Static method 
+        /// </type>
+        public static HttpServerHostContext CreateBuilder()
+        {
+            var builder = new HttpServerHostContextBuilder();
+            return builder.Build();
+        }
+
+        /// <summary>
         /// Outputs an non-listening HTTP server with configuration, listening host, and router.
         /// </summary>
         /// <remarks>This method is not appropriate to running production servers.</remarks>

@@ -231,12 +231,17 @@ public partial class HttpServer
                     throw routerResult.Exception;
                 goto finishSending;
             }
-            else if (
-                   response?.internalStatus == HttpResponse.HTTPRESPONSE_CLIENT_CLOSE
-                || response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
+            else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ||
+                     response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
                 baseResponse.StatusCode = (int)response.Status;
+                goto finishSending;
+            }
+            else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)
+            {
+                executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
+                baseResponse.Abort();
                 goto finishSending;
             }
 
@@ -263,8 +268,11 @@ public partial class HttpServer
 
             #region Step 4 - Response computing
 
-            NameValueCollection resHeaders = new NameValueCollection();
-            resHeaders.Add(response.Headers);
+            NameValueCollection resHeaders = new NameValueCollection
+            {
+                response.Headers
+            };
+
             if (srContext?.OverrideHeaders.Count > 0) resHeaders.Add(srContext.OverrideHeaders);
 
             foreach (string incameHeader in resHeaders)
@@ -306,7 +314,8 @@ public partial class HttpServer
             executionResult.ResponseSize = outcomingSize;
             executionResult.Response = response;
 
-            executionResult.Status = HttpServerExecutionStatus.Executed;
+            if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
+                executionResult.Status = HttpServerExecutionStatus.Executed;
 
             sw.Stop();
             baseResponse.Close();
