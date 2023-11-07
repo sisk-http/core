@@ -4,19 +4,10 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   Utility.cs
+// File name:   PathUtility.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
-using System.Web;
 
 namespace Sisk.Core.Internal;
 

@@ -199,6 +199,12 @@ namespace Sisk.Core.Http
 
         internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)
         {
+            // theres no need to run dns matching if theres only one
+            // listening host in this repository
+            if (_hosts.Count == 1)
+            {
+                return _hosts[0];
+            }
             foreach (ListeningHost h in this._hosts)
             {
                 foreach (ListeningPort p in h.Ports)

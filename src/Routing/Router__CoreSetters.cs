@@ -77,9 +77,22 @@ public partial class Router
         {
             if (type.IsAssignableTo(tType))
             {
-                object? instance = Activator.CreateInstance(type);
-                if (instance != null)
-                    SetObject(instance);
+                /*
+                    When scanning and finding an abstract class, the method checks whether
+                    it directly implements RouterModule or whether there is no base-type first.
+
+                    Abstract classes should not be included on the router.
+                 */
+                if (tType.IsAbstract && (type.BaseType == null || type.BaseType == typeof(RouterModule)))
+                {
+                    continue;
+                }
+                else
+                {
+                    object? instance = Activator.CreateInstance(type);
+                    if (instance != null)
+                        SetObject(instance);
+                }
             }
         }
     }
@@ -90,13 +103,17 @@ public partial class Router
     /// </summary>
     /// <typeparam name="T">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <definition>
-    /// public void AutoScanModules{{T}}(Assembly assembly) where T : RouterModule
+    /// public void AutoScanModules{{T}}() where T : RouterModule
     /// </definition>
     /// <type>
     /// Method
     /// </type>
     public void AutoScanModules<T>() where T : RouterModule
     {
+        if (typeof(T) == typeof(RouterModule))
+        {
+            throw new InvalidOperationException("When T is RouterModule and an input assembly is not specified, no routes will be added to the router.");
+        }
         AutoScanModules<T>(typeof(T).Assembly);
     }
 

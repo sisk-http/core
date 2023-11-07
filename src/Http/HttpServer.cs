@@ -7,8 +7,10 @@
 // File name:   HttpServer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 namespace Sisk.Core.Http
@@ -31,6 +33,7 @@ namespace Sisk.Core.Http
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
+        internal HttpServerHandlerRepository handler = new HttpServerHandlerRepository();
 
         static HttpServer()
         {
@@ -223,6 +226,21 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Associate an <see cref="HttpServerHandler"/> in this HttpServer to handle functions such as requests, routers and contexts.
+        /// </summary>
+        /// <typeparam name="T">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
+        /// <definition>
+        /// public void RegisterHandler{{[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T}}() where T : HttpServerHandler, new()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void RegisterHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() where T : HttpServerHandler, new()
+        {
+            handler.RegisterHandler(new T());
+        }
+
+        /// <summary>
         /// Restarts this HTTP server, sending all processing responses and starting them again, reading the listening ports again.
         /// </summary>
         /// <definition>
@@ -270,6 +288,10 @@ namespace Sisk.Core.Http
             _isListening = true;
             httpListener.IgnoreWriteExceptions = true;
             httpListener.TimeoutManager.IdleConnection = ServerConfiguration.Flags.IdleConnectionTimeout;
+
+            handler.SetupHttpServer(this);
+            BindRouters();
+
             httpListener.Start();
             httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
         }

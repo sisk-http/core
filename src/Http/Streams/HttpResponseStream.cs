@@ -192,7 +192,7 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public HttpResponse Close()
     {
-        return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE); 
+        return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
     }
 
     /// <inheritdoc/>

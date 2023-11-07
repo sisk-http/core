@@ -49,7 +49,7 @@ public abstract class AsyncRequestHandler : IRequestHandler
     public abstract Task<HttpResponse?> ExecuteAsync(HttpRequest request, HttpContext context);
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <nodoc/>
     public HttpResponse? Execute(HttpRequest request, HttpContext context)
     {
         return this.ExecuteAsync(request, context).GetAwaiter().GetResult();

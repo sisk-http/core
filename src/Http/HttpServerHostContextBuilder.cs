@@ -8,13 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Http;
 
@@ -194,5 +190,35 @@ public sealed class HttpServerHostContextBuilder
     public void UseRouter(Action<Router> handler)
     {
         handler(_context.Router);
+    }
+
+    /// <summary>
+    /// This method is an shortcut for calling <see cref="Router.AutoScanModules{T}()"/>.
+    /// </summary>
+    /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <definition>
+    /// public void UseAutoScan{{TModule}}() where TModule : RouterModule
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseAutoScan<TModule>() where TModule : RouterModule
+    {
+        _context.Router.AutoScanModules<TModule>();
+    }
+
+    /// <summary>
+    /// This method is an shortcut for calling <see cref="HttpServer.RegisterHandler{T}"/>.
+    /// </summary>
+    /// <typeparam name="THandler">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
+    /// <definition>
+    /// public void UseHandler{{THandler}}() where THandler : HttpServerHandler, new()
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseHandler<THandler>() where THandler : HttpServerHandler, new()
+    {
+        _context.HttpServer.RegisterHandler<THandler>();
     }
 }

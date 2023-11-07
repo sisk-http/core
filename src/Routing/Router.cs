@@ -36,6 +36,7 @@ namespace Sisk.Core.Routing
             if (object.ReferenceEquals(server, this.ParentServer)) return;
             this.ParentServer = server;
             this.throwException = server.ServerConfiguration.ThrowExceptions;
+            server.handler.SetupRouter(this);
         }
 
         /// <summary>

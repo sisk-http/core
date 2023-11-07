@@ -4,16 +4,11 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   HttpServerBuilder.cs
+// File name:   HttpServerHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Http;
 
@@ -65,12 +60,16 @@ public class HttpServerHostContext
     /// Gets the host router.
     /// </summary>
     /// <definition>
-    /// public Router Router { get; }
+    /// public Router Router { get; set; }
     /// </definition>
     /// <type>
     /// Property
     /// </type>
-    public Router Router { get => ServerConfiguration.ListeningHosts[0].Router!; }
+    public Router Router
+    {
+        get => ServerConfiguration.ListeningHosts[0].Router!;
+        set => ServerConfiguration.ListeningHosts[0].Router = value;
+    }
 
     /// <summary>
     /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.

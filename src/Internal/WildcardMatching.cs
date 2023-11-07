@@ -9,7 +9,6 @@
 
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Core.Internal
 {

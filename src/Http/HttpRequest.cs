@@ -509,24 +509,36 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Creates and stores a managed object in HTTP context bag through it's type.
+        /// </summary>
+        /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
+        /// <returns>Returns the stored object.</returns>
+        /// <definition>
+        /// public T SetContextBag{{T}}() where T : notnull, new()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public T SetContextBag<T>() where T : notnull, new()
+        {
+            return this.Context.RequestBag.Set<T>();
+        }
+
+        /// <summary>
         /// Stores a managed object in HTTP context bag through it's type.
         /// </summary>
         /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
         /// <param name="contextObject">The object which will be stored.</param>
         /// <returns>Returns the stored object.</returns>
         /// <definition>
-        /// public T SetContextBag{{T}}(T contextObject)
+        /// public T SetContextBag{{T}}(T contextObject) where T : notnull
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public T SetContextBag<T>(T contextObject)
+        public T SetContextBag<T>(T contextObject) where T : notnull
         {
-            if (this.Context == null) throw new InvalidOperationException("The request context wasn't linked to the object instance yet.");
-            ArgumentNullException.ThrowIfNull(contextObject);
-            Type contextType = typeof(T);
-            this.Context.RequestBag.Add(contextType.FullName!, contextObject);
-            return contextObject;
+            return this.Context.RequestBag.Set<T>(contextObject);
         }
 
         /// <summary>
@@ -534,16 +546,14 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <typeparam name="T">The type of object which is stored in the HTTP context bag.</typeparam>
         /// <definition>
-        /// public T GetContextBag{{T}}(T contextObject)
+        /// public T GetContextBag{{T}}(T contextObject) where T : notnull
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public T GetContextBag<T>()
+        public T GetContextBag<T>() where T : notnull
         {
-            if (this.Context == null) throw new InvalidOperationException("The request context wasn't linked to the object instance yet.");
-            Type contextType = typeof(T);
-            return (T)this.Context.RequestBag[contextType.FullName!]!;
+            return this.Context.RequestBag.Get<T>();
         }
 
         /// <summary>

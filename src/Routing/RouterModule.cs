@@ -14,12 +14,12 @@ namespace Sisk.Core.Routing;
 /// request handlers and prefixes.
 /// </summary>
 /// <definition>
-/// public abstract class RouterModule
+/// public class RouterModule
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public abstract class RouterModule
+public class RouterModule
 {
     /// <summary>
     /// Gets or sets the request handlers this class has implemented.
@@ -70,7 +70,7 @@ public abstract class RouterModule
     /// public virtual void OnRouteCreating(Route configuringRoute)
     /// </definition>
     /// <type>
-    /// Virtual method
+    /// Virtual Method
     /// </type>
     public virtual void OnRouteCreating(Route configuringRoute)
     {

@@ -180,6 +180,8 @@ public partial class Router
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 
+            ParentServer?.handler.ContextBagCreated(context.RequestBag);
+
             #region Before-contents global handlers 
             if (hasGlobalHandlers)
             {

@@ -20,18 +20,34 @@ namespace Sisk.Core.Http;
 
 public partial class HttpServer
 {
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    const long UnitKb = 1024;
+    const long UnitMb = UnitKb * 1024;
+    const long UnitGb = UnitMb * 1024;
+    const long UnitTb = UnitGb * 1024;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static string HumanReadableSize(float? size)
     {
-        if (size == null) return "";
-        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
-        int order = 0;
-        while (size >= 1024 && order < sizes.Length - 1)
+        if (size < UnitKb)
         {
-            order++;
-            size = size / 1024;
+            return $"{size:n2} bytes";
         }
-        return string.Format("{0:0.##}{1}", size, sizes[order]);
+        else if (size > UnitKb && size <= UnitMb)
+        {
+            return $"{size / UnitKb:n2} kb";
+        }
+        else if (size > UnitMb && size <= UnitGb)
+        {
+            return $"{size / UnitMb:n2} mb";
+        }
+        else if (size > UnitGb && size <= UnitTb)
+        {
+            return $"{size / UnitGb:n2} gb";
+        }
+        else// if (size > UnitTb)
+        {
+            return $"{size / UnitTb:n2} tb";
+        }
     }
 
     internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
@@ -58,6 +74,14 @@ public partial class HttpServer
         if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
         if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
         if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
+    }
+
+    private void BindRouters()
+    {
+        foreach (var lh in ServerConfiguration.ListeningHosts)
+        {
+            lh.Router?.BindServer(this);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -148,6 +172,7 @@ public partial class HttpServer
             {
                 request = new HttpRequest(baseRequest, baseResponse, this, matchedListeningHost, context);
                 reqHeaders = baseRequest.Headers;
+                executionResult.Request = request;
                 if (ServerConfiguration.ResolveForwardedOriginAddress || ServerConfiguration.ResolveForwardedOriginHost)
                 {
                     otherParty = request.Origin;
@@ -166,12 +191,9 @@ public partial class HttpServer
             #region Step 2 - Request validation
 
             if (ServerConfiguration.IncludeRequestIdHeader)
-            {
                 baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
-            }
-
-            if (OnConnectionOpen != null)
-                OnConnectionOpen(this, request);
+            if (flag.SendSiskHeader)
+                baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
 
             long requestMaxSize = ServerConfiguration.MaximumContentLength;
             if (requestMaxSize > 0 && baseRequest.ContentLength64 > requestMaxSize)
@@ -196,12 +218,13 @@ public partial class HttpServer
                 return;
             }
 
-            // bind
+            // bind again if not binded
             matchedListeningHost.Router.BindServer(this);
 
-            // aditional before-router flags
-            if (flag.SendSiskHeader)
-                baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
+            if (OnConnectionOpen != null)
+                OnConnectionOpen(this, request);
+
+            handler.HttpRequestOpen(request);
 
             #endregion
 
@@ -372,12 +395,17 @@ public partial class HttpServer
 
             if (OnConnectionClose != null)
             {
-                executionResult.Request = request;
                 OnConnectionClose(this, executionResult);
             }
 
+            handler.HttpRequestClose(executionResult);
+
+            if (executionResult.ServerException != null)
+                handler.Exception(executionResult.ServerException);
+
             LogOutput logMode;
 
+            #region Logging
             if (routerResult?.Result == RouteMatchResult.OptionsMatched)
             {
                 logMode = flag.OptionsLogMode;
@@ -414,6 +442,10 @@ public partial class HttpServer
 
                 ServerConfiguration.AccessLogsStream?.WriteLine(line);
             }
+            #endregion
+
+            // finalizers
+            
         }
     }
 }
