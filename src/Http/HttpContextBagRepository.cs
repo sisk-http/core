@@ -190,7 +190,7 @@ public class HttpContextBagRepository : IDictionary<string, object?>
     /// <nodoc />
     public Boolean Contains(KeyValuePair<String, Object?> item)
     {
-        return _values.Contains(item);
+        return _values.ContainsKey(item.Key) && _values.ContainsValue(item.Value);
     }
 
     /// <inheritdoc />

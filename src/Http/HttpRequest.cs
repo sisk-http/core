@@ -157,21 +157,6 @@ namespace Sisk.Core.Http
         }
 #pragma warning restore
 
-        internal void ImportContents(Stream listenerRequest)
-        {
-            if (isContentAvailable)
-            {
-                this.contentBytes = Array.Empty<byte>();
-                return;
-            } // avoid reading the input stream twice
-            using (var memoryStream = new MemoryStream())
-            {
-                listenerRequest.CopyTo(memoryStream);
-                this.contentBytes = memoryStream.ToArray();
-                isContentAvailable = true;
-            }
-        }
-
         /// <summary>
         /// Gets a unique random ID for this request.
         /// </summary>
@@ -450,7 +435,7 @@ namespace Sisk.Core.Http
         /// </definition>
         /// <type>
         /// Method
-        /// </type>
+        /// </type> 
         public MultipartObject[] GetMultipartFormContent()
         {
             return MultipartObject.ParseMultipartObjects(this);
@@ -678,7 +663,7 @@ namespace Sisk.Core.Http
         /// Method
         /// </type>
         /// <since>0.15</since> 
-        public Stream GetInputStream()
+        public Stream GetRequestStream()
         {
             if (isContentAvailable)
             {
@@ -704,6 +689,33 @@ namespace Sisk.Core.Http
             }
             isStreaming = true;
             return new HttpResponseStream(listenerResponse, listenerRequest, this);
+        }
+
+        /// <summary>
+        /// Reads the entire request input stream and stores it into <see cref="RawBody"/>. This method is
+        /// invoked automatically when the <see cref="HttpServerFlags.AutoReadRequestStream"/> is
+        /// enabled.
+        /// </summary>
+        /// <definition>
+        /// public void ReadRequestStreamContents()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void ReadRequestStreamContents()
+        {
+            if (isContentAvailable)
+            {
+                if (this.contentBytes == null)
+                    this.contentBytes = Array.Empty<byte>();
+                return;
+            }
+            using (var memoryStream = new MemoryStream())
+            {
+                listenerRequest.InputStream.CopyTo(memoryStream);
+                this.contentBytes = memoryStream.ToArray();
+                isContentAvailable = true;
+            }
         }
 
         /// <summary>

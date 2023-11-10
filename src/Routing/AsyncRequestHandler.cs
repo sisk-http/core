@@ -48,6 +48,20 @@ public abstract class AsyncRequestHandler : IRequestHandler
     /// </type>
     public abstract Task<HttpResponse?> ExecuteAsync(HttpRequest request, HttpContext context);
 
+    /// <summary>
+    /// Returns an null <see cref="HttpResponse"/> reference, which points to the next request handler or route action.
+    /// </summary>
+    /// <definition>
+    /// public HttpResponse? Next()
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    public HttpResponse? Next()
+    {
+        return null;
+    }
+
     /// <inheritdoc/>
     /// <nodoc/>
     public HttpResponse? Execute(HttpRequest request, HttpContext context)

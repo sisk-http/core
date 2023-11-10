@@ -10,6 +10,7 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -91,6 +92,8 @@ public partial class Router
         return result;
     }
 
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
+        Justification = "Task<> is already included with dynamic dependency.")]
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal unsafe RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
     {
@@ -210,7 +213,8 @@ public partial class Router
             }
             #endregion
 
-            request.ImportContents(baseRequest.InputStream);
+            if (flag.AutoReadRequestStream)
+                request.ReadRequestStreamContents();
 
             #region Before-response global handlers
             if (hasGlobalHandlers)
