@@ -228,7 +228,7 @@ public partial class HttpServer
 
             #endregion
 
-            #region Step 3 - Routing and callback
+            #region Step 3 - Routing and action
 
             // get response
             routerResult = matchedListeningHost.Router.Execute(request, baseRequest, matchedListeningHost, ref srContext);

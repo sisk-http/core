@@ -9,8 +9,11 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Handlers;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 
 namespace Sisk.Core.Http;
 
@@ -196,15 +199,35 @@ public sealed class HttpServerHostContextBuilder
     /// This method is an shortcut for calling <see cref="Router.AutoScanModules{T}()"/>.
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     /// <definition>
     /// public void UseAutoScan{{TModule}}() where TModule : RouterModule
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void UseAutoScan<TModule>() where TModule : RouterModule
+    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    public void UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule, new()
     {
-        _context.Router.AutoScanModules<TModule>();
+        _context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly, activateInstances);
+    }
+
+    /// <summary>
+    /// This method is an shortcut for calling <see cref="Router.AutoScanModules{T}()"/>.
+    /// </summary>
+    /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <param name="t">The assembly where the scanning types are.</param>
+    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
+    /// <definition>
+    /// public void UseAutoScan{{TModule}}() where TModule : RouterModule
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    public void UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule, new()
+    {
+        _context.Router.AutoScanModules<TModule>(t, activateInstances);
     }
 
     /// <summary>
@@ -212,12 +235,12 @@ public sealed class HttpServerHostContextBuilder
     /// </summary>
     /// <typeparam name="THandler">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
     /// <definition>
-    /// public void UseHandler{{THandler}}() where THandler : HttpServerHandler, new()
+    /// public void UseHandler{{[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] THandler}}() where THandler : HttpServerHandler, new()
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void UseHandler<THandler>() where THandler : HttpServerHandler, new()
+    public void UseHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] THandler>() where THandler : HttpServerHandler, new()
     {
         _context.HttpServer.RegisterHandler<THandler>();
     }

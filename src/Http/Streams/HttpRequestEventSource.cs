@@ -7,6 +7,7 @@
 // File name:   HttpRequestEventSource.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Net;
 
 namespace Sisk.Core.Http.Streams
@@ -164,7 +165,7 @@ namespace Sisk.Core.Http.Streams
         {
             if (hasSentData)
             {
-                throw new InvalidOperationException("It's not possible to set headers after a message has been sent in this instance.");
+                throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
             }
             res.AddHeader(name, value);
         }
@@ -227,7 +228,7 @@ namespace Sisk.Core.Http.Streams
         {
             if (!IsActive)
             {
-                throw new InvalidOperationException("Cannot keep alive an instance that has it's connection disposed.");
+                throw new InvalidOperationException(SR.HttpRequestEventSource_KeepAliveDisposed);
             }
             terminatingMutex.WaitOne();
         }
@@ -247,7 +248,7 @@ namespace Sisk.Core.Http.Streams
         {
             if (!IsActive)
             {
-                throw new InvalidOperationException("Cannot keep alive an instance that has it's connection disposed.");
+                throw new InvalidOperationException(SR.HttpRequestEventSource_KeepAliveDisposed);
             }
             keepAlive = maximumIdleTolerance;
             new Task(keepAliveTask).Start();

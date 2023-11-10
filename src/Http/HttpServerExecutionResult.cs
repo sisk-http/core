@@ -179,7 +179,7 @@ namespace Sisk.Core.Http
         ExceptionThrown,
 
         /// <summary>
-        /// Indicates that the router encontered an uncaught exception while calling it's callback function.
+        /// Indicates that the router encontered an uncaught exception while calling it's action function.
         /// </summary>
         UncaughtExceptionThrown,
 

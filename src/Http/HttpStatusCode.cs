@@ -7,6 +7,7 @@
 // File name:   HttpStatusCode.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -109,13 +110,13 @@ namespace Sisk.Core.Http
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ValidateStatusCode(int st)
         {
-            if (st < 100 || st > 999) throw new ProtocolViolationException("The HTTP status code must be three-digits long.");
+            if (st < 100 || st > 999) throw new ProtocolViolationException(SR.HttpStatusCode_IllegalStatusCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ValidateDescription(string s)
         {
-            if (s.Length > 8192) throw new ProtocolViolationException("The HTTP reason phrase must be equal or smaller than 8192 characters.");
+            if (s.Length > 8192) throw new ProtocolViolationException(SR.HttpStatusCode_IllegalStatusReason);
         }
 
         /// <summary>

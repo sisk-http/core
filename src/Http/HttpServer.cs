@@ -9,6 +9,7 @@
 
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -268,7 +269,7 @@ namespace Sisk.Core.Http
         {
             if (this.ServerConfiguration.ListeningHosts is null)
             {
-                throw new InvalidOperationException("Cannot start the HTTP server with no listening hosts.");
+                throw new InvalidOperationException(SR.Httpserver_NoListeningHost);
             }
 
             listeningPrefixes = new List<string>();

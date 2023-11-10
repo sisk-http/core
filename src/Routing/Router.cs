@@ -91,7 +91,7 @@ namespace Sisk.Core.Routing
         public IRequestHandler[]? GlobalRequestHandlers { get; set; }
 
         /// <summary>
-        /// Gets or sets the Router callback exception handler.
+        /// Gets or sets the Router action exception handler.
         /// </summary>
         /// <definition>
         /// public ExceptionErrorCallback? CallbackErrorHandler { get; set; }
@@ -152,11 +152,11 @@ namespace Sisk.Core.Routing
             Type type = typeof(T);
             if (type == typeof(HttpResponse))
             {
-                throw new ArgumentException("Cannot register HttpResponse as an valid type to the action handler.");
+                throw new ArgumentException(SR.Router_Handler_HttpResponseRegister);
             }
             if (actionHandlers.ContainsKey(type))
             {
-                throw new ArgumentException("The specified type is already defined in this router instance.");
+                throw new ArgumentException(SR.Router_Handler_Duplicate);
             }
             actionHandlers.Add(type, actionHandler);
         }
@@ -166,7 +166,7 @@ namespace Sisk.Core.Routing
             Type actionType = routeResult.GetType();
             if (routeResult == null)
             {
-                throw new ArgumentNullException("Action result values cannot be null values.");
+                throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
             }
 
             Type? matchedType = null;
@@ -180,7 +180,7 @@ namespace Sisk.Core.Routing
             }
             if (matchedType == null)
             {
-                throw new InvalidOperationException($"Action of type \"{actionType.FullName}\" doens't have an action handler registered on the router that issued it.");
+                throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, actionType.FullName));
             }
 
             var actionHandler = actionHandlers[matchedType];

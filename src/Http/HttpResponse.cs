@@ -7,6 +7,7 @@
 // File name:   HttpResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
@@ -67,19 +68,19 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a callback. The provided method must have a valid RouteAttribute attribute.
+        /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a action. The provided method must have a valid RouteAttribute attribute.
         /// </summary>
-        /// <param name="callback">The receiving callback contains a RouteAttribute attribute and its method is GET or ANY.</param>
+        /// <param name="action">The receiving action contains a RouteAttribute attribute and its method is GET or ANY.</param>
         /// <definition>
-        /// public static HttpResponse CreateRedirectResponse(RouterCallback callback)
+        /// public static HttpResponse CreateRedirectResponse(RouterCallback action)
         /// </definition>
         /// <type>
         /// Static method
         /// </type>
-        public static HttpResponse CreateRedirectResponse(RouterCallback callback)
+        public static HttpResponse CreateRedirectResponse(RouteAction action)
         {
-            var definition = RouteDefinition.GetFromCallback(callback);
-            if (!definition.Method.HasFlag(RouteMethod.Get)) throw new InvalidOperationException("The specified method does not handle GET requests.");
+            var definition = RouteDefinition.GetFromCallback(action);
+            if (!definition.Method.HasFlag(RouteMethod.Get)) throw new InvalidOperationException(SR.HttpResponse_Redirect_NotMatchGet);
             return CreateRedirectResponse(definition.Path);
         }
 

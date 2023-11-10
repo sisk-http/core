@@ -97,7 +97,7 @@ public partial class Router
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal unsafe RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
     {
-        if (this.ParentServer == null) throw new InvalidOperationException("No HTTP server instance is binded to this Router.");
+        if (this.ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
 
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
@@ -244,21 +244,21 @@ public partial class Router
             }
             #endregion
 
-            #region Route callback
+            #region Route action
 
-            if (matchedRoute.Callback is null)
+            if (matchedRoute.Action is null)
             {
-                throw new ArgumentNullException("No route callback was defined to the route " + matchedRoute.ToString());
+                throw new ArgumentNullException(string.Format(SR.Router_NoRouteActionDefined, matchedRoute));
             }
 
             try
             {
                 context.MatchedRoute = matchedRoute;
-                object actionResult = matchedRoute.Callback(request);
+                object actionResult = matchedRoute.Action(request);
 
                 if (matchedRoute.isReturnTypeTask)
                 {
-                    dynamic objTask = actionResult;
+                    Task<object> objTask = Unsafe.As<Task<object>>(actionResult);
                     objTask.Wait();
                     actionResult = objTask.Result;
                 }

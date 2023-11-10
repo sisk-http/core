@@ -7,6 +7,7 @@
 // File name:   HttpResponseStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Net;
 
 namespace Sisk.Core.Http.Streams;
@@ -49,8 +50,6 @@ public sealed class HttpResponseStream : CookieHelper
         }
         set
         {
-            if (value == true && listenerResponse.ContentLength64 > 0)
-                throw new InvalidOperationException("Using transfer-encoding as chunked will omit the Content-Length header.");
             listenerResponse.SendChunked = value;
         }
     }
@@ -82,11 +81,12 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public void SetHeader(string headerName, string value)
     {
-        if (hasSentData) throw new InvalidOperationException("Cannot send headers after writing content to the output stream.");
+        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
         if (string.Compare(headerName, "Content-Length", true) == 0)
         {
             if (SendChunked)
-                throw new InvalidOperationException("Using transfer-encoding as chunked will omit the Content-Length header.");
+                return;
+
             listenerResponse.ContentLength64 = long.Parse(value);
         }
         else if (string.Compare(headerName, "Content-Type", true) == 0)
@@ -111,7 +111,7 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public void SetStatus(int httpStatusCode)
     {
-        if (hasSentData) throw new InvalidOperationException("Cannot set status after writing content to the output stream.");
+        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
         listenerResponse.StatusCode = httpStatusCode;
     }
 
@@ -127,7 +127,7 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public void SetStatus(HttpStatusCode statusCode)
     {
-        if (hasSentData) throw new InvalidOperationException("Cannot set status after writing content to the output stream.");
+        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
         listenerResponse.StatusCode = (int)statusCode;
     }
 
@@ -143,7 +143,7 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public void SetStatus(HttpStatusInformation statusCode)
     {
-        if (hasSentData) throw new InvalidOperationException("Cannot set status after writing content to the output stream.");
+        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
         listenerResponse.StatusCode = statusCode.StatusCode;
         listenerResponse.StatusDescription = statusCode.Description;
     }

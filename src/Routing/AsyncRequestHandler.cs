@@ -35,7 +35,7 @@ public abstract class AsyncRequestHandler : IRequestHandler
 
     /// <summary>
     /// This method is called by the <see cref="Router"/> before executing a request when the <see cref="Route"/> instantiates an object that implements this interface. If it returns
-    /// a <see cref="HttpResponse"/> object, the route callback is not called and all execution of the route is stopped. If it returns "null", the execution is continued.
+    /// a <see cref="HttpResponse"/> object, the route action is not called and all execution of the route is stopped. If it returns "null", the execution is continued.
     /// </summary>
     /// <param name="request">The entry HTTP request.</param>
     /// <param name="context">The HTTP request context. It may contain information from other <see cref="IRequestHandler"/>.</param>

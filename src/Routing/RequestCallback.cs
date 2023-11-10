@@ -22,7 +22,7 @@ namespace Sisk.Core.Routing
     /// <type> 
     /// Delegate
     /// </type>
-    public delegate object RouterCallback(HttpRequest request);
+    public delegate object RouteAction(HttpRequest request);
 
     /// <summary>
     /// Represents the function that is called after no route is matched with the request.
@@ -37,7 +37,7 @@ namespace Sisk.Core.Routing
     public delegate HttpResponse NoMatchedRouteErrorCallback();
 
     /// <summary>
-    /// Represents the function that is called after the route callback threw an exception.
+    /// Represents the function that is called after the route action threw an exception.
     /// </summary>
     /// <returns></returns>
     /// <definition>

@@ -88,7 +88,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void Add(ListeningHost item)
         {
-            if (this.Contains(item)) throw new ArgumentOutOfRangeException("This ListeningHost has already been defined in this collection with identical definitions.");
+            if (this.Contains(item)) throw new ArgumentOutOfRangeException(SR.ListeningHostRepository_Duplicate);
             _hosts.Add(item);
         }
 

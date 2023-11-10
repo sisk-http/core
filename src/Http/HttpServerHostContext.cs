@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
@@ -113,7 +114,7 @@ public class HttpServerHostContext
     {
         HttpServer.Start();
         if (verbose)
-            Console.WriteLine("The HTTP server is listening at {0}", HttpServer.ListeningPrefixes[0]);
+            Console.WriteLine(SR.Httpserver_StartMessage, HttpServer.ListeningPrefixes[0]);
         if (preventHault)
             Thread.Sleep(-1);
     }

@@ -9,6 +9,7 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
@@ -87,7 +88,7 @@ namespace Sisk.Core.Http
                     bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
                     if (!ok || forwardedAddress == null)
                     {
-                        throw new HttpRequestException("The forwarded IP address is invalid.");
+                        throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
                     }
                     else
                     {
@@ -105,14 +106,14 @@ namespace Sisk.Core.Http
                     int eqPos = cookieExpression.IndexOf("=");
                     if (eqPos < 0)
                     {
-                        throw new HttpRequestException("The cookie header is invalid or is it has an malformed syntax.");
+                        throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
                     }
                     string key = cookieExpression.Substring(0, eqPos).Trim();
                     string value = cookieExpression.Substring(eqPos + 1).Trim();
 
                     if (string.IsNullOrEmpty(key))
                     {
-                        throw new HttpRequestException("The cookie header is invalid or is it has an malformed syntax.");
+                        throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
                     }
 
                     this.Cookies[key] = WebUtility.UrlDecode(value);
@@ -588,7 +589,7 @@ namespace Sisk.Core.Http
             }
             catch (InvalidCastException)
             {
-                throw new InvalidCastException($"Cannot cast the query item {queryKeyName} value into an {typeof(T).FullName}.");
+                throw new InvalidCastException(string.Format(SR.HttpRequest_GetQueryValue_CastException, queryKeyName, typeof(T).FullName));
             }
         }
 
@@ -609,19 +610,19 @@ namespace Sisk.Core.Http
         /// Calls another handler for this request, preserving the current call-stack frame, and then returns the response from
         /// it. This method manages to prevent possible stack overflows.
         /// </summary>
-        /// <param name="otherCallback">Defines the <see cref="RouterCallback"/> method which will handle this request.</param>
+        /// <param name="otherCallback">Defines the <see cref="RouteAction"/> method which will handle this request.</param>
         /// <definition>
         /// public object SendTo(RouterCallback otherCallback)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public object SendTo(RouterCallback otherCallback)
+        public object SendTo(RouteAction otherCallback)
         {
             Interlocked.Increment(ref currentFrame);
             if (currentFrame > 64)
             {
-                throw new OverflowException("Too many internal route redirections.");
+                throw new OverflowException(SR.HttpRequest_SendTo_MaxRedirects);
             }
             return otherCallback(this);
         }
@@ -667,7 +668,7 @@ namespace Sisk.Core.Http
         {
             if (isContentAvailable)
             {
-                throw new InvalidOperationException("The InputStream property is only accessible by BeforeContents requests handlers.");
+                throw new InvalidOperationException(SR.HttpRequest_InputStreamAlreadyLoaded);
             }
             return listenerRequest.InputStream;
         }
@@ -685,7 +686,7 @@ namespace Sisk.Core.Http
         {
             if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+                throw new InvalidOperationException(SR.HttpRequest_AlreadyInStreamingState);
             }
             isStreaming = true;
             return new HttpResponseStream(listenerResponse, listenerRequest, this);
@@ -733,7 +734,7 @@ namespace Sisk.Core.Http
         {
             if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+                throw new InvalidOperationException(SR.HttpRequest_AlreadyInStreamingState);
             }
             isStreaming = true;
             activeEventSource = new HttpRequestEventSource(identifier, listenerResponse, listenerRequest, this);
@@ -758,7 +759,7 @@ namespace Sisk.Core.Http
         {
             if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+                throw new InvalidOperationException(SR.HttpRequest_AlreadyInStreamingState);
             }
             isStreaming = true;
             var accept = context.AcceptWebSocketAsync(subprotocol).Result;

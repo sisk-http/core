@@ -7,6 +7,7 @@
 // File name:   RouteDefinition.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Reflection;
 
 namespace Sisk.Core.Routing;
@@ -22,13 +23,12 @@ internal class RouteDefinition
         Path = path ?? throw new ArgumentNullException(nameof(path));
     }
 
-    public static RouteDefinition GetFromCallback(RouterCallback callback)
+    public static RouteDefinition GetFromCallback(RouteAction action)
     {
-        RouteAttribute? callbackType = callback.GetMethodInfo().GetCustomAttribute<RouteAttribute>(true);
+        RouteAttribute? callbackType = action.GetMethodInfo().GetCustomAttribute<RouteAttribute>(true);
         if (callbackType == null)
         {
-            throw new InvalidOperationException("No route definition was found for the given callback. It may be possible that the " +
-                "informed method does not implement the RouteAttribute attribute.");
+            throw new InvalidOperationException(SR.Router_RouteDefinitionNotFound);
         }
         else
         {

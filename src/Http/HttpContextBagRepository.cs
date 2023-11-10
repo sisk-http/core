@@ -7,6 +7,7 @@
 // File name:   HttpContextBagRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
@@ -161,7 +162,7 @@ public class HttpContextBagRepository : IDictionary<string, object?>
         }
         else
         {
-            throw new ArgumentException("The specified type " + contextType.FullName + " was not defined in this context bag repository.");
+            throw new ArgumentException(string.Format(SR.HttpContextBagRepository_UndefinedDynamicProperty, contextType.FullName));
         }
     }
 

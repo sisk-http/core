@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Text;
 
@@ -201,7 +202,7 @@ namespace Sisk.Core.Entity
             string? contentType = req.Headers["Content-Type"];
             if (contentType is null)
             {
-                throw new InvalidOperationException("Content-Type header cannot be null when retriving a multipart form content");
+                throw new InvalidOperationException(SR.MultipartObject_ContentTypeMissing);
             }
 
             string[] contentTypePieces = contentType.Split(';');
@@ -219,7 +220,7 @@ namespace Sisk.Core.Entity
 
             if (boundary is null)
             {
-                throw new InvalidOperationException("No boundary was specified for this multipart form content.");
+                throw new InvalidOperationException(SR.MultipartObject_BoundaryMissing);
             }
 
             byte[] boundaryBytes = Encoding.UTF8.GetBytes(boundary);
@@ -349,7 +350,7 @@ namespace Sisk.Core.Entity
 
                 if (fieldName == null)
                 {
-                    throw new InvalidOperationException($"Content-part object position {i} cannot have an empty field name.");
+                    throw new InvalidOperationException(string.Format(SR.MultipartObject_EmptyFieldName, i));
                 }
 
                 MultipartObject newObject = new MultipartObject(headers, fieldFilename, fieldName, contentBytes?.ToArray());

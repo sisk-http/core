@@ -7,6 +7,7 @@
 // File name:   ValueResult.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing;
@@ -49,7 +50,7 @@ public class ValueResult<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator ValueResult<T>(T value)
     {
-        if (value == null) throw new NullReferenceException("Router response objects or references cannot be null.");
+        if (value == null) throw new NullReferenceException(SR.ValueResult_Null);
         return Unsafe.As<ValueResult<T>>(value)!;
     }
 }

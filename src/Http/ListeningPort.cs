@@ -7,6 +7,7 @@
 // File name:   ListeningPort.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Net;
 using System.Net.Sockets;
 
@@ -162,11 +163,11 @@ namespace Sisk.Core.Http
         public ListeningPort(string uri)
         {
             int schemeIndex = uri.IndexOf(":");
-            if (schemeIndex == -1) throw new ArgumentException("Scheme was not defined in the URI.");
+            if (schemeIndex == -1) throw new ArgumentException(SR.ListeningPort_Parser_UndefinedScheme);
             int portIndex = uri.IndexOf(":", schemeIndex + 3);
-            if (portIndex == -1) throw new ArgumentException("The URI port must be explicitly defined.");
+            if (portIndex == -1) throw new ArgumentException(SR.ListeningPort_Parser_UndefinedPort);
             int endIndex = uri.IndexOf("/", schemeIndex + 3);
-            if (endIndex == -1 || !uri.EndsWith('/')) throw new ArgumentException("The URI must terminate with /.");
+            if (endIndex == -1 || !uri.EndsWith('/')) throw new ArgumentException(SR.ListeningPort_Parser_UriNotTerminatedSlash);
 
             string schemePart = uri.Substring(0, schemeIndex);
             string hostnamePart = uri.Substring(schemeIndex + 3, portIndex - (schemeIndex + 3));
@@ -182,10 +183,10 @@ namespace Sisk.Core.Http
             }
             else
             {
-                throw new ArgumentException("The URI scheme must be http or https.");
+                throw new ArgumentException(SR.ListeningPort_Parser_InvalidScheme);
             }
 
-            if (!Int32.TryParse(portPart, out int port)) throw new ArgumentException("The URI port is invalid.");
+            if (!Int32.TryParse(portPart, out int port)) throw new ArgumentException(SR.ListeningPort_Parser_InvalidPort);
 
             this.Port = port;
             this.Hostname = hostnamePart;
