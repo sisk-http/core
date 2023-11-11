@@ -185,7 +185,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a listening host through its index.
+        /// Gets or sets a listening host through its index.
         /// </summary>
         /// <param name="index">The Listening Host index</param>
         /// <returns></returns>
@@ -195,7 +195,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Indexer
         /// </type>
-        public ListeningHost this[int index] { get => _hosts[index]; }
+        public ListeningHost this[int index] { get => _hosts[index]; set => _hosts[index] = value; }
 
         internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)
         {

@@ -445,7 +445,7 @@ public partial class HttpServer
             #endregion
 
             // finalizers
-            
+
         }
     }
 }

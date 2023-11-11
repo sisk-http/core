@@ -15,7 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
-namespace Sisk.Core.Http;
+namespace Sisk.Core.Http.Hosting;
 
 /// <summary>
 /// Represents a context constructor for <see cref="HttpServerHostContext"/>.
@@ -29,6 +29,19 @@ namespace Sisk.Core.Http;
 public sealed class HttpServerHostContextBuilder
 {
     private HttpServerHostContext _context;
+    private PortableConfigurationBuilder? _portableConfiguration;
+
+    /// <summary>
+    /// Defines how the constructor should capture errors thrown within
+    /// <see cref="UsePortableConfiguration"/> and display in the Console.
+    /// </summary>
+    /// <definition>
+    /// public static HttpServerHostContextBuilderExceptionMode CatchConfigurationExceptions { get; set; }
+    /// </definition>
+    /// <type>
+    /// Static property
+    /// </type>
+    public static HttpServerHostContextBuilderExceptionMode CatchConfigurationExceptions { get; set; } = HttpServerHostContextBuilderExceptionMode.Normal;
 
     internal HttpServerHostContextBuilder()
     {
@@ -57,7 +70,65 @@ public sealed class HttpServerHostContextBuilder
     /// </type>
     public HttpServerHostContext Build()
     {
+        _portableConfiguration?.Build();
         return _context;
+    }
+
+    /// <summary>
+    /// Defines a function that will be executed immediately before starting the Http server.
+    /// </summary>
+    /// <param name="bootstrapAction">The action which will be executed before the Http server start.</param>
+    /// <definition>
+    /// public void UseBootstraper(Action bootstrapAction)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseBootstraper(Action bootstrapAction)
+    {
+        _context._bootstrapAction = bootstrapAction;
+    }
+
+    /// <summary>
+    /// Enables the portable configuration for this application, which imports settings, parameters,
+    /// and other information from a JSON settings file.
+    /// </summary>
+    /// <param name="portableConfigHandler">The handler of <see cref="PortableConfigurationBuilder"/>.</param>
+    /// <definition>
+    /// public void UsePortableConfiguration(Action{{PortableConfigurationBuilder}} portableConfigHandler)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UsePortableConfiguration(Action<PortableConfigurationBuilder> portableConfigHandler)
+    {
+        _portableConfiguration = new PortableConfigurationBuilder(_context);
+        try
+        {
+            portableConfigHandler(_portableConfiguration);
+        }
+        catch (Exception ex)
+        {
+            if (CatchConfigurationExceptions == HttpServerHostContextBuilderExceptionMode.Normal)
+            {
+                Console.WriteLine(SR.Provider_ConfigParser_CaughtException);
+                Console.WriteLine($"{ex.GetType().Name}: {ex.Message}");
+            }
+            else if (CatchConfigurationExceptions == HttpServerHostContextBuilderExceptionMode.Silent)
+            {
+                ;
+            }
+            else if (CatchConfigurationExceptions == HttpServerHostContextBuilderExceptionMode.Detailed)
+            {
+                Console.WriteLine(SR.Provider_ConfigParser_CaughtException);
+                Console.WriteLine(ex.ToString());
+            }
+            else if (CatchConfigurationExceptions == HttpServerHostContextBuilderExceptionMode.Throw)
+            {
+                throw;
+            }
+            Environment.Exit(2);
+        }
     }
 
     /// <summary>

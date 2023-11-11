@@ -582,7 +582,7 @@ namespace Sisk.Core.Http
             try
             {
 #if NET6_0
-                return (T?)SharedLib.Parseable.ParseInternal<T>(value);
+                return (T?)Parseable.ParseInternal<T>(value);
 #elif NET7_0_OR_GREATER
                 return T.Parse(value, null);
 #endif

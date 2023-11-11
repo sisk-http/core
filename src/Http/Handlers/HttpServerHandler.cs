@@ -23,7 +23,7 @@ namespace Sisk.Core.Http.Handlers;
 public class HttpServerHandler
 {
     /// <summary>
-    /// Method that is called before starting the <see cref="HttpServer"/>.
+    /// Method that is called immediately before starting the <see cref="HttpServer"/>.
     /// </summary>
     /// <param name="server">The Http server entity which is starting.</param>
     /// <definition>
@@ -32,7 +32,7 @@ public class HttpServerHandler
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnSetupHttpServer(HttpServer server) { }
+    public virtual void OnServerStarting(HttpServer server) { }
 
     /// <summary>
     /// Method that is called when an <see cref="Router"/> is binded to the Http server.

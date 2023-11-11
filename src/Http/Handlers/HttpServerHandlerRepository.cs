@@ -26,7 +26,7 @@ internal class HttpServerHandlerRepository
             action(handler);
     }
 
-    internal void SetupHttpServer(HttpServer val) => CallEvery(handler => handler.OnSetupHttpServer(val));
+    internal void ServerStarting(HttpServer val) => CallEvery(handler => handler.OnServerStarting(val));
     internal void SetupRouter(Router val) => CallEvery(handler => handler.OnSetupRouter(val));
     internal void ContextBagCreated(HttpContextBagRepository val) => CallEvery(handler => handler.OnContextBagCreated(val));
     internal void HttpRequestOpen(HttpRequest val) => CallEvery(handler => handler.OnHttpRequestOpen(val));

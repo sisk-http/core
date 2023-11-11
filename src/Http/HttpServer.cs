@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http.Handlers;
+using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
@@ -290,7 +291,7 @@ namespace Sisk.Core.Http
             httpListener.IgnoreWriteExceptions = true;
             httpListener.TimeoutManager.IdleConnection = ServerConfiguration.Flags.IdleConnectionTimeout;
 
-            handler.SetupHttpServer(this);
+            handler.ServerStarting(this);
             BindRouters();
 
             httpListener.Start();

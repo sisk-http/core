@@ -11,7 +11,7 @@ using Sisk.Core.Entity;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 
-namespace Sisk.Core.Http;
+namespace Sisk.Core.Http.Hosting;
 
 /// <summary>
 /// Represents the class that hosts most of the components needed to run a Sisk application.
@@ -24,6 +24,19 @@ namespace Sisk.Core.Http;
 /// </type>
 public class HttpServerHostContext
 {
+    internal Action? _bootstrapAction;
+
+    /// <summary>
+    /// Gets the initialization parameters from the portable configuration file.
+    /// </summary>
+    /// <definition>
+    /// public InitializationParameterCollection Parameters { get; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
+    public InitializationParameterCollection Parameters { get; } = new InitializationParameterCollection();
+
     /// <summary>
     /// Gets the host Http server.
     /// </summary>
@@ -112,7 +125,11 @@ public class HttpServerHostContext
     /// </type>
     public void Start(bool verbose = true, bool preventHault = true)
     {
+        if (_bootstrapAction != null)
+            _bootstrapAction();
+
         HttpServer.Start();
+
         if (verbose)
             Console.WriteLine(SR.Httpserver_StartMessage, HttpServer.ListeningPrefixes[0]);
         if (preventHault)

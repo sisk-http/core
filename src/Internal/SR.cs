@@ -7,12 +7,6 @@
 // File name:   SR.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Sisk.Core.Internal;
 
 static class SR
@@ -50,6 +44,7 @@ static class SR
     public const string LogStream_Peek_NotFilePath = "This method only works when the LogStream is appending contents to an file.";
     public const string LogStream_ExceptionDump_Header = "Exception thrown at {0}";
     public const string LogStream_ExceptionDump_TrimmedFooter = " + ... other trimmed inner exceptions";
+    public const string LogStream_RotatingLogPolicy_NotLocalFile = "Cannot link an rotaging log policy to an log stream which ins't pointing to an local file.";
 
     public const string HttpRequestEventSource_KeepAliveDisposed = "Cannot keep alive an instance that has it's connection disposed.";
 
@@ -70,4 +65,13 @@ static class SR
     public const string Route_Action_AsyncMissingGenericType = "Async route {0} action must return an object in addition to Task.";
 
     public const string ValueResult_Null = "ValueResult cannot hold null values.";
+
+    public const string Provider_ConfigParser_ConfigFileNotFound = "Configuration file {0} was not found.";
+    public const string Provider_ConfigParser_ConfigFileInvalid = "Couldn't read the configuration file.";
+    public const string Provider_ConfigParser_NoListeningHost = "When defined the ListeningHost, the configuration file must define at least one listening host port.";
+    public const string Provider_ConfigParser_SectionRequired = "The \"{0}\" section in the configuration file is required.";
+    public const string Provider_ConfigParser_CaughtException = "Unable to configure the Http server. See details below:";
+
+    public const string InitializationParameterCollection_NullOrEmptyParameter = "The required parameter \"{0}\" is either empty or not present in the configuration file.";
+    public const string InitializationParameterCollection_NullParameter = "The required parameter \"{0}\" is not present in the configuration file.";
 }
