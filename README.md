@@ -43,7 +43,7 @@ PM> NuGet\Install-Package Sisk.HttpServer
 In this repository, you have the source code of:
 
   - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
-  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): the Service Providers utility package for porting your Sisk app between environments.
+  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as [0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
   - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
 
 ## Getting started
