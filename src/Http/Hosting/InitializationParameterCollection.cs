@@ -61,32 +61,35 @@ public class InitializationParameterCollection : IDictionary<string, string?>
         {
             object mappingValue;
             string? value = _decorator[property.Name];
-            Type propertyValue = property.PropertyType;
+            Type propType = property.PropertyType;
 
             if (value == null) continue;
-            if (propertyValue.IsEnum)
+            if (propType.IsEnum)
             {
-                mappingValue = Enum.Parse(propertyValue, value, true);
+                mappingValue = Enum.Parse(propType, value, true);
             }
-            else if (propertyValue == typeof(string))
+            else if (propType == typeof(string))
             {
                 mappingValue = value;
             }
-            else
+            else if (propType.IsValueType)
             {
 #if NET6_0
-                mappingValue = Parseable.ParseInternal(value, propertyValue)!;
+                mappingValue = Parseable.ParseInternal(value, propType)!;
 #elif NET7_0_OR_GREATER
-                if (propertyValue.IsAssignableTo(typeof(IParsable<>)))
+                if (propType.IsAssignableTo(typeof(IParsable<>)))
                 {
-                    mappingValue = propertyValue.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string), typeof(IFormatProvider) })
-                        !.Invoke(propertyValue, new[] { value, null })!;
+                    mappingValue = propType.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string), typeof(IFormatProvider) })
+                        !.Invoke(propType, new[] { value, null })!;
                 }
                 else
                 {
-                    mappingValue = Parseable.ParseInternal(value, propertyValue)!;
+                    mappingValue = Parseable.ParseInternal(value, propType)!;
                 }
 #endif
+            } else
+            {
+                throw new InvalidCastException(string.Format(SR.InitializationParameterCollection_MapCastException, value, propType.FullName));
             }
 
             property.SetValue(parametersObject, mappingValue);

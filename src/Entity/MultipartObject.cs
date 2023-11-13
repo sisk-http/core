@@ -25,27 +25,7 @@ namespace Sisk.Core.Entity
     /// </type>
     public class MultipartObject
     {
-        /// <summary>
-        /// Gets or sets the default content encoding for decoding objects contents as strings.
-        /// </summary>
-        /// <definition>
-        /// public static Encoding DefaultContentEncoding { get; set; }
-        /// </definition>
-        /// <type>
-        /// Static property
-        /// </type>
-        public static Encoding DefaultContentEncoding { get; set; } = Encoding.UTF8;
-
-        /// <summary>
-        /// Gets or sets the default content encoding for decoding multipart-form headers names and values.
-        /// </summary>
-        /// <definition>
-        /// public static Encoding DefaultHeadersEncoding { get; set; }
-        /// </definition>
-        /// <type>
-        /// Static property
-        /// </type>
-        public static Encoding DefaultHeadersEncoding { get; set; } = Encoding.UTF8;
+        private Encoding _baseEncoding;
 
         /// <summary>
         /// The multipart form data object headers.
@@ -120,7 +100,7 @@ namespace Sisk.Core.Entity
         }
 
         /// <summary>
-        /// Reads the content bytes using the <see cref="DefaultContentEncoding"/> encoding.
+        /// Reads the content bytes using the Http request content-encoding.
         /// </summary>
         /// <returns></returns>
         /// <definition>
@@ -131,7 +111,7 @@ namespace Sisk.Core.Entity
         /// </type>
         public string? ReadContentAsString()
         {
-            return ReadContentAsString(DefaultContentEncoding);
+            return ReadContentAsString(_baseEncoding);
         }
 
         /// <summary>
@@ -188,16 +168,17 @@ namespace Sisk.Core.Entity
             }
         }
 
-        internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body)
+        internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
         {
             Headers = headers;
             Filename = filename;
             Name = name;
             ContentBytes = body ?? Array.Empty<byte>();
             ContentLength = body?.Length ?? 0;
+            _baseEncoding = encoding;
         }
 
-        internal static MultipartObject[] ParseMultipartObjects(HttpRequest req)
+        internal static MultipartFormCollection ParseMultipartObjects(HttpRequest req)
         {
             string? contentType = req.Headers["Content-Type"];
             if (contentType is null)
@@ -282,8 +263,8 @@ namespace Sisk.Core.Entity
                     byte J = result[j];
                     if (spaceLength == 2 && headerNameParsed && !headerValueParsed)
                     {
-                        string headerName = DefaultHeadersEncoding.GetString(headerNameBytes.ToArray());
-                        string headerValue = DefaultHeadersEncoding.GetString(headerValueBytes.ToArray());
+                        string headerName = Encoding.UTF8.GetString(headerNameBytes.ToArray());
+                        string headerValue = Encoding.UTF8.GetString(headerValueBytes.ToArray());
 
                         headers.Add(headerName, headerValue.Trim());
                         headerNameParsed = false;
@@ -353,11 +334,11 @@ namespace Sisk.Core.Entity
                     throw new InvalidOperationException(string.Format(SR.MultipartObject_EmptyFieldName, i));
                 }
 
-                MultipartObject newObject = new MultipartObject(headers, fieldFilename, fieldName, contentBytes?.ToArray());
+                MultipartObject newObject = new MultipartObject(headers, fieldFilename, fieldName, contentBytes?.ToArray(), req.RequestEncoding);
                 outputObjects.Add(newObject);
             }
 
-            return outputObjects.ToArray();
+            return new MultipartFormCollection(outputObjects);
         }
     }
 

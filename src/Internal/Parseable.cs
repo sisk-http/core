@@ -13,12 +13,12 @@ namespace Sisk.Core.Internal;
 
 internal class Parseable
 {
-    public static object? ParseInternal<T>(string value) where T : struct
+    public static object ParseInternal<T>(string value) where T : struct
     {
         return ParseInternal(value, typeof(T));
     }
 
-    public static object? ParseInternal(string value, Type type)
+    public static object ParseInternal(string value, Type type)
     {
         if (type == typeof(Byte)) return Byte.Parse(value);
         if (type == typeof(Char)) return Char.Parse(value);
@@ -44,7 +44,6 @@ internal class Parseable
         if (type == typeof(UIntPtr)) return UIntPtr.Parse(value);
         if (type == typeof(Boolean)) return Boolean.Parse(value);
 
-
-        throw new InvalidCastException($"Cannot cast string to {type.FullName}.");
+        throw new InvalidCastException(string.Format(SR.InitializationParameterCollection_MapCastException, value, type.FullName));
     }
 }

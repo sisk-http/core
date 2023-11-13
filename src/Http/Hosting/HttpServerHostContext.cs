@@ -24,8 +24,6 @@ namespace Sisk.Core.Http.Hosting;
 /// </type>
 public class HttpServerHostContext
 {
-    internal Action? _bootstrapAction;
-
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
     /// </summary>
@@ -125,9 +123,6 @@ public class HttpServerHostContext
     /// </type>
     public void Start(bool verbose = true, bool preventHault = true)
     {
-        if (_bootstrapAction != null)
-            _bootstrapAction();
-
         HttpServer.Start();
 
         if (verbose)

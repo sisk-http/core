@@ -430,15 +430,14 @@ namespace Sisk.Core.Http
         /// Gets the multipart form content for this request.
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         /// <definition>
-        /// public MultipartObject[] GetMultipartFormContent()
+        /// public MultipartFormCollection GetMultipartFormContent()
         /// </definition>
         /// <type>
         /// Method
         /// </type> 
-        public MultipartObject[] GetMultipartFormContent()
-        {
+        public MultipartFormCollection GetMultipartFormContent()
+        { 
             return MultipartObject.ParseMultipartObjects(this);
         }
 
@@ -563,26 +562,27 @@ namespace Sisk.Core.Http
         /// <param name="defaultValue">The default value that will be returned if the item is not found in the query.</param>
         /// <definition>
         /// // in .NET 6
-        /// public T? GetQueryValue{{T}}(string queryKeyName, T? defaultValue = default) where T : struct
+        /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct
         /// 
         /// // in .NET 7+
-        /// public T? GetQueryValue{{T}}(string queryKeyName, T? defaultValue = default) where T : IParsable{{T}}
+        /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct, IParsable{{T}}
         /// </definition>
         /// <type>
         /// Method
         /// </type>
 #if NET6_0
-        public T? GetQueryValue<T>(string queryKeyName, T? defaultValue = default) where T : struct
+        public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct
 #elif NET7_0_OR_GREATER
-        public T? GetQueryValue<T>(string queryKeyName, T? defaultValue = default) where T : IParsable<T>
+        public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct, IParsable<T>
 #endif
         {
             string? value = Query[queryKeyName];
             if (value == null) return defaultValue;
+
             try
             {
 #if NET6_0
-                return (T?)Parseable.ParseInternal<T>(value);
+                return (T)Parseable.ParseInternal<T>(value);
 #elif NET7_0_OR_GREATER
                 return T.Parse(value, null);
 #endif

@@ -225,6 +225,7 @@ namespace Sisk.Core.Http
         public HttpServer(HttpServerConfiguration configuration)
         {
             this.ServerConfiguration = configuration;
+            this.handler.RegisterHandler(new DefaultHttpServerHandler());
         }
 
         /// <summary>

@@ -74,4 +74,5 @@ static class SR
 
     public const string InitializationParameterCollection_NullOrEmptyParameter = "The required parameter \"{0}\" is either empty or not present in the configuration file.";
     public const string InitializationParameterCollection_NullParameter = "The required parameter \"{0}\" is not present in the configuration file.";
+    public const string InitializationParameterCollection_MapCastException = "Cannot cast the value \"{0}\" into an {1}.";
 }

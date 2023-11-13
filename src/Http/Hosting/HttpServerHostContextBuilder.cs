@@ -86,7 +86,7 @@ public sealed class HttpServerHostContextBuilder
     /// </type>
     public void UseBootstraper(Action bootstrapAction)
     {
-        _context._bootstrapAction = bootstrapAction;
+        DefaultHttpServerHandler._serverBootstraping = bootstrapAction;
     }
 
     /// <summary>
@@ -263,7 +263,7 @@ public sealed class HttpServerHostContextBuilder
     /// </type>
     public void UseRouter(Action<Router> handler)
     {
-        handler(_context.Router);
+        DefaultHttpServerHandler._routerSetup = handler;
     }
 
     /// <summary>
