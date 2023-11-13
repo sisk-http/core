@@ -7,6 +7,7 @@
 // File name:   HttpResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
@@ -18,15 +19,16 @@ namespace Sisk.Core.Http
     /// Represents an HTTP Response.
     /// </summary>
     /// <definition>
-    /// public sealed class HttpResponse : CookieHelper
+    /// public class HttpResponse : CookieHelper
     /// </definition> 
     /// <type>
     /// Class
     /// </type>
-    public sealed class HttpResponse : CookieHelper
+    public class HttpResponse : CookieHelper
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;
-        internal const byte HTTPRESPONSE_SERVER_CLOSE = 4;
+        internal const byte HTTPRESPONSE_SERVER_REFUSE = 4;
+        internal const byte HTTPRESPONSE_SERVER_CLOSE = 6;
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
         internal const byte HTTPRESPONSE_ERROR = 8;
         internal int CalculedLength = 0;
@@ -66,19 +68,19 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a callback. The provided method must have a valid RouteAttribute attribute.
+        /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a action. The provided method must have a valid RouteAttribute attribute.
         /// </summary>
-        /// <param name="callback">The receiving callback contains a RouteAttribute attribute and its method is GET or ANY.</param>
+        /// <param name="action">The receiving action contains a RouteAttribute attribute and its method is GET or ANY.</param>
         /// <definition>
-        /// public static HttpResponse CreateRedirectResponse(RouterCallback callback)
+        /// public static HttpResponse CreateRedirectResponse(RouterCallback action)
         /// </definition>
         /// <type>
         /// Static method
         /// </type>
-        public static HttpResponse CreateRedirectResponse(RouterCallback callback)
+        public static HttpResponse CreateRedirectResponse(RouteAction action)
         {
-            var definition = RouteDefinition.GetFromCallback(callback);
-            if (!definition.Method.HasFlag(RouteMethod.Get)) throw new InvalidOperationException("The specified method does not handle GET requests.");
+            var definition = RouteDefinition.GetFromCallback(action);
+            if (!definition.Method.HasFlag(RouteMethod.Get)) throw new InvalidOperationException(SR.HttpResponse_Redirect_NotMatchGet);
             return CreateRedirectResponse(definition.Path);
         }
 
@@ -287,6 +289,30 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Sets a cookie and sends it in the response to be set by the client.
+        /// </summary>
+        /// <param name="name">The cookie name.</param>
+        /// <param name="value">The cookie value.</param>
+        /// <param name="expires">The cookie expirity date.</param>
+        /// <param name="maxAge">The cookie max duration after being set.</param>
+        /// <param name="domain">The domain where the cookie will be valid.</param>
+        /// <param name="path">The path where the cookie will be valid.</param>
+        /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
+        /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
+        /// <param name="sameSite">The cookie SameSite parameter.</param>
+        /// <definition>
+        /// public HttpResponse WithCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpResponse WithCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+        {
+            this.SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
+            return this;
+        }
+
+        /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with HTTP OK status code and no content.
         /// </summary>
         /// <definition>
@@ -372,7 +398,8 @@ namespace Sisk.Core.Http
             return null;
         }
 
-        internal override void SetCookieHeader(String name, String value)
+        /// <inheritdoc/>
+        protected override void SetCookieHeader(String name, String value)
         {
             this.Headers.Set(name, value);
         }

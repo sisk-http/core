@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing
@@ -35,25 +36,22 @@ namespace Sisk.Core.Routing
             if (object.ReferenceEquals(server, this.ParentServer)) return;
             this.ParentServer = server;
             this.throwException = server.ServerConfiguration.ThrowExceptions;
+            server.handler.SetupRouter(this);
         }
 
         /// <summary>
-        /// Concats the two routes paths into one.
+        /// Combines the specified URL paths into one.
         /// </summary>
-        /// <param name="path1">The first path to concat;</param>
-        /// <param name="path2">The second path to concat.</param>
+        /// <param name="paths">The string array which contains parts that will be combined.</param>
         /// <definition>
-        /// public static string CombinePaths(string path1, string path2)
+        /// public static string CombinePaths(params string[] paths)
         /// </definition>
         /// <type>
         /// Static method
         /// </type>
-        public static string CombinePaths(string path1, string path2)
+        public static string CombinePaths(params string[] paths)
         {
-            if (path1 == null) throw new ArgumentNullException(nameof(path1));
-            if (path2 == null) throw new ArgumentNullException(nameof(path2));
-
-            return Internal.HttpStringInternals.CombineRoutePaths(path1, path2);
+            return PathUtility.CombinePaths(paths);
         }
 
         /// <summary>
@@ -93,7 +91,7 @@ namespace Sisk.Core.Routing
         public IRequestHandler[]? GlobalRequestHandlers { get; set; }
 
         /// <summary>
-        /// Gets or sets the Router callback exception handler.
+        /// Gets or sets the Router action exception handler.
         /// </summary>
         /// <definition>
         /// public ExceptionErrorCallback? CallbackErrorHandler { get; set; }
@@ -154,11 +152,11 @@ namespace Sisk.Core.Routing
             Type type = typeof(T);
             if (type == typeof(HttpResponse))
             {
-                throw new ArgumentException("Cannot register HttpResponse as an valid type to the action handler.");
+                throw new ArgumentException(SR.Router_Handler_HttpResponseRegister);
             }
             if (actionHandlers.ContainsKey(type))
             {
-                throw new ArgumentException("The specified type is already defined in this router instance.");
+                throw new ArgumentException(SR.Router_Handler_Duplicate);
             }
             actionHandlers.Add(type, actionHandler);
         }
@@ -168,8 +166,9 @@ namespace Sisk.Core.Routing
             Type actionType = routeResult.GetType();
             if (routeResult == null)
             {
-                throw new ArgumentNullException("Action result values cannot be null values.");
+                throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
             }
+
             Type? matchedType = null;
             foreach (Type tkey in actionHandlers.Keys)
             {
@@ -181,7 +180,7 @@ namespace Sisk.Core.Routing
             }
             if (matchedType == null)
             {
-                throw new InvalidOperationException($"Action of type \"{actionType.FullName}\" doens't have an action handler registered on the router that issued it.");
+                throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, actionType.FullName));
             }
 
             var actionHandler = actionHandlers[matchedType];

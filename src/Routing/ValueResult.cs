@@ -7,6 +7,7 @@
 // File name:   ValueResult.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing;
@@ -24,7 +25,7 @@ namespace Sisk.Core.Routing;
 /// <since>0.15</since>
 public class ValueResult<T>
 {
-    // <nodocs />
+    // <nodoc />
     // <inheritdocs />
     private ValueResult()
     {
@@ -34,7 +35,7 @@ public class ValueResult<T>
     /// Implicitly gets the <typeparamref name="T"/> value from a given <see cref="ValueResult{T}"/> instance.
     /// </summary>
     /// <param name="box">The input <see cref="ValueResult{T}"/> instance.</param>
-    /// <nodocs/>
+    /// <nodoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator T(ValueResult<T> box)
     {
@@ -45,11 +46,11 @@ public class ValueResult<T>
     /// Implicitly creates a new <see cref="ValueResult{T}"/> instance from a given <typeparamref name="T"/> value.
     /// </summary>
     /// <param name="value">The input <typeparamref name="T"/> value to wrap.</param>
-    /// <nodocs/>
+    /// <nodoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator ValueResult<T>(T value)
     {
-        if (value == null) throw new NullReferenceException("Router response objects or references cannot be null.");
+        if (value == null) throw new NullReferenceException(SR.ValueResult_Null);
         return Unsafe.As<ValueResult<T>>(value)!;
     }
 }

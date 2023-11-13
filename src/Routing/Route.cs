@@ -7,6 +7,7 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Routing
@@ -22,13 +23,13 @@ namespace Sisk.Core.Routing
     /// </type>
     public class Route
     {
-        internal RouterCallback? _callback { get; set; }
+        internal RouteAction? _callback { get; set; }
         internal bool isReturnTypeTask;
         internal Regex? routeRegex;
         private string path;
 
         /// <summary>
-        /// Gets an boolean indicating if this <see cref="Route"/> callback return is an asynchronous <see cref="Task"/>.
+        /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
         /// <definition>
         /// public bool IsAsync { get; }
@@ -123,12 +124,12 @@ namespace Sisk.Core.Routing
         /// Gets or sets the function that is called after the route is matched with the request.
         /// </summary>
         /// <definition>
-        /// public RouterCallback? Callback { get; set; }
+        /// public RouteAction? Action
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public RouterCallback? Callback
+        public RouteAction? Action
         {
             get => _callback;
             set
@@ -139,12 +140,24 @@ namespace Sisk.Core.Routing
                     var memberInfo = value.Method;
                     var retType = memberInfo.ReturnType;
 
-                    if (retType.IsAssignableTo(typeof(Task)))
+                    if (retType.IsValueType)
+                    {
+                        throw new NotSupportedException(SR.Route_Action_ValueTypeSet);
+                    }
+                    else if (retType.IsAssignableTo(typeof(Task)))
                     {
                         isReturnTypeTask = true;
                         if (retType.GenericTypeArguments.Length == 0)
                         {
-                            throw new InvalidOperationException($"Async route {this} action must return an object in addition to Task.");
+                            throw new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
+                        }
+                        else
+                        {
+                            Type genericAssignType = retType.GenericTypeArguments[0];
+                            if (genericAssignType.IsValueType)
+                            {
+                                throw new NotSupportedException(SR.Route_Action_ValueTypeSet);
+                            }
                         }
                     }
                 }
@@ -152,7 +165,7 @@ namespace Sisk.Core.Routing
         }
 
         /// <summary>
-        /// Gets or sets the RequestHandlers to run before the route's Callback.
+        /// Gets or sets the RequestHandlers to run before the route's Action.
         /// </summary>
         /// <definition>
         /// public IRequestHandler[]? RequestHandlers { get; set; }
@@ -178,18 +191,18 @@ namespace Sisk.Core.Routing
         /// </summary>
         /// <param name="method">The matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.</param>
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
-        /// <param name="callback">The function that is called after the route is matched with the request.</param>
+        /// <param name="action">The function that is called after the route is matched with the request.</param>
         /// <definition>
-        /// public Route(RouteMethod method, string path, RouterCallback callback)
+        /// public Route(RouteMethod method, string path, RouterCallback action)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        public Route(RouteMethod method, string path, RouterCallback callback)
+        public Route(RouteMethod method, string path, RouteAction action)
         {
             Method = method;
             this.path = path;
-            Callback = callback;
+            Action = action;
         }
 
         /// <summary>
@@ -198,20 +211,20 @@ namespace Sisk.Core.Routing
         /// <param name="method">The matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.</param>
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
         /// <param name="name">The route name. It allows it to be found by other routes and makes it easier to create links.</param>
-        /// <param name="callback">The function that is called after the route is matched with the request.</param>
-        /// <param name="beforeCallback">The RequestHandlers to run before the route's Callback.</param>
+        /// <param name="action">The function that is called after the route is matched with the request.</param>
+        /// <param name="beforeCallback">The RequestHandlers to run before the route's Action.</param>
         /// <definition>
-        /// public Route(RouteMethod method, string path, string? name, RouterCallback callback, IRequestHandler[]? beforeCallback)
+        /// public Route(RouteMethod method, string path, string? name, RouterCallback action, IRequestHandler[]? beforeCallback)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        public Route(RouteMethod method, string path, string? name, RouterCallback callback, IRequestHandler[]? beforeCallback)
+        public Route(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback)
         {
             Method = method;
             this.path = path;
             Name = name;
-            Callback = callback;
+            Action = action;
             RequestHandlers = beforeCallback;
         }
 

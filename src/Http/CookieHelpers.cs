@@ -22,7 +22,12 @@ namespace Sisk.Core.Http;
 /// </type>
 public abstract class CookieHelper
 {
-    internal abstract void SetCookieHeader(string name, string value);
+    /// <summary>
+    /// Abstract method that calls the "Set-Cookie" header with the value of the created cookie.
+    /// </summary>
+    /// <param name="name">The cookie header name. Usually Set-Cookie.</param>
+    /// <param name="value">The cookie value.</param>
+    protected abstract void SetCookieHeader(string name, string value);
 
     /// <summary>
     /// Sets a cookie and sends it in the response to be set by the client.
@@ -72,7 +77,12 @@ public abstract class CookieHelper
         }
         if (domain != null)
         {
-            syntax.Add($"Domain={domain}");
+            string d = domain;
+            if (d.StartsWith("https://")) d = d.Substring("https://".Length);
+            if (d.StartsWith("http://")) d = d.Substring("http://".Length);
+            d = d.TrimEnd('/');
+
+            syntax.Add($"Domain={d}");
         }
         if (path != null)
         {

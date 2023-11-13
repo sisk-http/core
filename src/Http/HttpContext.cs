@@ -50,12 +50,12 @@ namespace Sisk.Core.Http
         /// Gets or sets a managed object that is accessed and modified by request handlers.
         /// </summary>
         /// <definition>
-        /// public Dictionary{{string, object?}} RequestBag { get; set; }
+        /// public HttpContextBag RequestBag { get; set; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public Dictionary<string, object?> RequestBag { get; set; } = new Dictionary<string, object?>();
+        public HttpContextBagRepository RequestBag { get; set; } = new HttpContextBagRepository();
 
         /// <summary>
         /// Gets the context Http Server instance.

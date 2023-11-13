@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.HighPerformance;
-using Sisk.ServiceProvider;
 
 namespace NativeAOT_Test;
 

@@ -9,35 +9,12 @@
 
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Core.Internal
 {
     internal static class HttpStringInternals
     {
         public record PathMatchResult(bool IsMatched, NameValueCollection Query);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string CombineRoutePaths(string a, string b)
-        {
-            StringBuilder sb = new StringBuilder();
-            // check if one is absolute
-            if (a.StartsWith("https://") || a.StartsWith("http://"))
-            {
-                sb.Append(a.TrimEnd('/'));
-                sb.Append('/');
-                sb.Append(b.Trim('/'));
-            }
-            else
-            {
-                sb.Append('/');
-                sb.Append(a.Trim('/'));
-                sb.Append('/');
-                sb.Append(b.Trim('/'));
-            }
-
-            return sb.ToString();
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)

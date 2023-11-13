@@ -9,6 +9,7 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
@@ -87,7 +88,7 @@ namespace Sisk.Core.Http
                     bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
                     if (!ok || forwardedAddress == null)
                     {
-                        throw new HttpRequestException("The forwarded IP address is invalid.");
+                        throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
                     }
                     else
                     {
@@ -105,14 +106,14 @@ namespace Sisk.Core.Http
                     int eqPos = cookieExpression.IndexOf("=");
                     if (eqPos < 0)
                     {
-                        throw new HttpRequestException("The cookie header is invalid or is it has an malformed syntax.");
+                        throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
                     }
                     string key = cookieExpression.Substring(0, eqPos).Trim();
                     string value = cookieExpression.Substring(eqPos + 1).Trim();
 
                     if (string.IsNullOrEmpty(key))
                     {
-                        throw new HttpRequestException("The cookie header is invalid or is it has an malformed syntax.");
+                        throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
                     }
 
                     this.Cookies[key] = WebUtility.UrlDecode(value);
@@ -156,21 +157,6 @@ namespace Sisk.Core.Http
             this.contextServerConfiguration = null;
         }
 #pragma warning restore
-
-        internal void ImportContents(Stream listenerRequest)
-        {
-            if (isContentAvailable)
-            {
-                this.contentBytes = Array.Empty<byte>();
-                return;
-            } // avoid reading the input stream twice
-            using (var memoryStream = new MemoryStream())
-            {
-                listenerRequest.CopyTo(memoryStream);
-                this.contentBytes = memoryStream.ToArray();
-                isContentAvailable = true;
-            }
-        }
 
         /// <summary>
         /// Gets a unique random ID for this request.
@@ -444,15 +430,14 @@ namespace Sisk.Core.Http
         /// Gets the multipart form content for this request.
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         /// <definition>
-        /// public MultipartObject[] GetMultipartFormContent()
+        /// public MultipartFormCollection GetMultipartFormContent()
         /// </definition>
         /// <type>
         /// Method
-        /// </type>
-        public MultipartObject[] GetMultipartFormContent()
-        {
+        /// </type> 
+        public MultipartFormCollection GetMultipartFormContent()
+        { 
             return MultipartObject.ParseMultipartObjects(this);
         }
 
@@ -509,24 +494,36 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Creates and stores a managed object in HTTP context bag through it's type.
+        /// </summary>
+        /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
+        /// <returns>Returns the stored object.</returns>
+        /// <definition>
+        /// public T SetContextBag{{T}}() where T : notnull, new()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public T SetContextBag<T>() where T : notnull, new()
+        {
+            return this.Context.RequestBag.Set<T>();
+        }
+
+        /// <summary>
         /// Stores a managed object in HTTP context bag through it's type.
         /// </summary>
         /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
         /// <param name="contextObject">The object which will be stored.</param>
         /// <returns>Returns the stored object.</returns>
         /// <definition>
-        /// public T SetContextBag{{T}}(T contextObject)
+        /// public T SetContextBag{{T}}(T contextObject) where T : notnull
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public T SetContextBag<T>(T contextObject)
+        public T SetContextBag<T>(T contextObject) where T : notnull
         {
-            if (this.Context == null) throw new InvalidOperationException("The request context wasn't linked to the object instance yet.");
-            ArgumentNullException.ThrowIfNull(contextObject);
-            Type contextType = typeof(T);
-            this.Context.RequestBag.Add(contextType.FullName!, contextObject);
-            return contextObject;
+            return this.Context.RequestBag.Set<T>(contextObject);
         }
 
         /// <summary>
@@ -534,16 +531,14 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <typeparam name="T">The type of object which is stored in the HTTP context bag.</typeparam>
         /// <definition>
-        /// public T GetContextBag{{T}}(T contextObject)
+        /// public T GetContextBag{{T}}(T contextObject) where T : notnull
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public T GetContextBag<T>()
+        public T GetContextBag<T>() where T : notnull
         {
-            if (this.Context == null) throw new InvalidOperationException("The request context wasn't linked to the object instance yet.");
-            Type contextType = typeof(T);
-            return (T)this.Context.RequestBag[contextType.FullName!]!;
+            return this.Context.RequestBag.Get<T>();
         }
 
         /// <summary>
@@ -567,33 +562,34 @@ namespace Sisk.Core.Http
         /// <param name="defaultValue">The default value that will be returned if the item is not found in the query.</param>
         /// <definition>
         /// // in .NET 6
-        /// public T? GetQueryValue{{T}}(string queryKeyName, T? defaultValue = default) where T : struct
+        /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct
         /// 
         /// // in .NET 7+
-        /// public T? GetQueryValue{{T}}(string queryKeyName, T? defaultValue = default) where T : IParsable{{T}}
+        /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct, IParsable{{T}}
         /// </definition>
         /// <type>
         /// Method
         /// </type>
 #if NET6_0
-        public T? GetQueryValue<T>(string queryKeyName, T? defaultValue = default) where T : struct
+        public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct
 #elif NET7_0_OR_GREATER
-        public T? GetQueryValue<T>(string queryKeyName, T? defaultValue = default) where T : IParsable<T>
+        public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct, IParsable<T>
 #endif
         {
             string? value = Query[queryKeyName];
             if (value == null) return defaultValue;
+
             try
             {
 #if NET6_0
-                return (T?)Internal.Parseable.ParseInternal<T>(value);
+                return (T)Parseable.ParseInternal<T>(value);
 #elif NET7_0_OR_GREATER
                 return T.Parse(value, null);
 #endif
             }
             catch (InvalidCastException)
             {
-                throw new InvalidCastException($"Cannot cast the query item {queryKeyName} value into an {typeof(T).FullName}.");
+                throw new InvalidCastException(string.Format(SR.HttpRequest_GetQueryValue_CastException, queryKeyName, typeof(T).FullName));
             }
         }
 
@@ -614,19 +610,19 @@ namespace Sisk.Core.Http
         /// Calls another handler for this request, preserving the current call-stack frame, and then returns the response from
         /// it. This method manages to prevent possible stack overflows.
         /// </summary>
-        /// <param name="otherCallback">Defines the <see cref="RouterCallback"/> method which will handle this request.</param>
+        /// <param name="otherCallback">Defines the <see cref="RouteAction"/> method which will handle this request.</param>
         /// <definition>
         /// public object SendTo(RouterCallback otherCallback)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public object SendTo(RouterCallback otherCallback)
+        public object SendTo(RouteAction otherCallback)
         {
             Interlocked.Increment(ref currentFrame);
             if (currentFrame > 64)
             {
-                throw new OverflowException("Too many internal route redirections.");
+                throw new OverflowException(SR.HttpRequest_SendTo_MaxRedirects);
             }
             return otherCallback(this);
         }
@@ -643,7 +639,17 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse Close()
         {
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="statusCode"></param>
+        public void Send(HttpStatusCode statusCode)
+        {
+            byte[] data = Encoding.UTF8.GetBytes($"HTTP/1.1 {(int)statusCode} {statusCode}\n\n");
+            listenerResponse.OutputStream.Write(data);
         }
 
         /// <summary>
@@ -658,11 +664,11 @@ namespace Sisk.Core.Http
         /// Method
         /// </type>
         /// <since>0.15</since> 
-        public Stream GetInputStream()
+        public Stream GetRequestStream()
         {
             if (isContentAvailable)
             {
-                throw new InvalidOperationException("The InputStream property is only accessible by BeforeContents requests handlers.");
+                throw new InvalidOperationException(SR.HttpRequest_InputStreamAlreadyLoaded);
             }
             return listenerRequest.InputStream;
         }
@@ -680,10 +686,37 @@ namespace Sisk.Core.Http
         {
             if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+                throw new InvalidOperationException(SR.HttpRequest_AlreadyInStreamingState);
             }
             isStreaming = true;
             return new HttpResponseStream(listenerResponse, listenerRequest, this);
+        }
+
+        /// <summary>
+        /// Reads the entire request input stream and stores it into <see cref="RawBody"/>. This method is
+        /// invoked automatically when the <see cref="HttpServerFlags.AutoReadRequestStream"/> is
+        /// enabled.
+        /// </summary>
+        /// <definition>
+        /// public void ReadRequestStreamContents()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void ReadRequestStreamContents()
+        {
+            if (isContentAvailable)
+            {
+                if (this.contentBytes == null)
+                    this.contentBytes = Array.Empty<byte>();
+                return;
+            }
+            using (var memoryStream = new MemoryStream())
+            {
+                listenerRequest.InputStream.CopyTo(memoryStream);
+                this.contentBytes = memoryStream.ToArray();
+                isContentAvailable = true;
+            }
         }
 
         /// <summary>
@@ -701,7 +734,7 @@ namespace Sisk.Core.Http
         {
             if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+                throw new InvalidOperationException(SR.HttpRequest_AlreadyInStreamingState);
             }
             isStreaming = true;
             activeEventSource = new HttpRequestEventSource(identifier, listenerResponse, listenerRequest, this);
@@ -726,7 +759,7 @@ namespace Sisk.Core.Http
         {
             if (isStreaming)
             {
-                throw new InvalidOperationException("This HTTP request is already in streaming mode.");
+                throw new InvalidOperationException(SR.HttpRequest_AlreadyInStreamingState);
             }
             isStreaming = true;
             var accept = context.AcceptWebSocketAsync(subprotocol).Result;

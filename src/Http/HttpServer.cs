@@ -7,8 +7,12 @@
 // File name:   HttpServer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http.Handlers;
+using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 namespace Sisk.Core.Http
@@ -31,11 +35,44 @@ namespace Sisk.Core.Http
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
+        internal HttpServerHandlerRepository handler = new HttpServerHandlerRepository();
 
         static HttpServer()
         {
             Version assVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!;
             poweredByHeader = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
+        }
+
+        /// <summary>
+        /// Builds an <see cref="HttpServerHostContext"/> context invoking the handler on it.
+        /// </summary>
+        /// <param name="handler">The action which will configure the host context.</param>
+        /// <definition>
+        /// public static HttpServerHostContext CreateBuilder(Action{{HttpServerHostContextBuilder}} handler)
+        /// </definition>
+        /// <type>
+        /// Static method 
+        /// </type>
+        public static HttpServerHostContext CreateBuilder(Action<HttpServerHostContextBuilder> handler)
+        {
+            var builder = new HttpServerHostContextBuilder();
+            handler(builder);
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds an empty <see cref="HttpServerHostContext"/> context.
+        /// </summary>
+        /// <definition>
+        /// public static HttpServerHostContext CreateBuilder()
+        /// </definition>
+        /// <type>
+        /// Static method 
+        /// </type>
+        public static HttpServerHostContext CreateBuilder()
+        {
+            var builder = new HttpServerHostContextBuilder();
+            return builder.Build();
         }
 
         /// <summary>
@@ -54,11 +91,11 @@ namespace Sisk.Core.Http
         /// Static method 
         /// </type>
         public static HttpServer Emit(
-                        in int insecureHttpPort,
-                        out HttpServerConfiguration configuration,
-                        out ListeningHost host,
-                        out Router router
-                    )
+            in int insecureHttpPort,
+            out HttpServerConfiguration configuration,
+            out ListeningHost host,
+            out Router router
+        )
         {
             router = new Router();
             if (insecureHttpPort == 0)
@@ -188,6 +225,22 @@ namespace Sisk.Core.Http
         public HttpServer(HttpServerConfiguration configuration)
         {
             this.ServerConfiguration = configuration;
+            this.handler.RegisterHandler(new DefaultHttpServerHandler());
+        }
+
+        /// <summary>
+        /// Associate an <see cref="HttpServerHandler"/> in this HttpServer to handle functions such as requests, routers and contexts.
+        /// </summary>
+        /// <typeparam name="T">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
+        /// <definition>
+        /// public void RegisterHandler{{[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T}}() where T : HttpServerHandler, new()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void RegisterHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() where T : HttpServerHandler, new()
+        {
+            handler.RegisterHandler(new T());
         }
 
         /// <summary>
@@ -218,7 +271,7 @@ namespace Sisk.Core.Http
         {
             if (this.ServerConfiguration.ListeningHosts is null)
             {
-                throw new InvalidOperationException("Cannot start the HTTP server with no listening hosts.");
+                throw new InvalidOperationException(SR.Httpserver_NoListeningHost);
             }
 
             listeningPrefixes = new List<string>();
@@ -238,6 +291,10 @@ namespace Sisk.Core.Http
             _isListening = true;
             httpListener.IgnoreWriteExceptions = true;
             httpListener.TimeoutManager.IdleConnection = ServerConfiguration.Flags.IdleConnectionTimeout;
+
+            handler.ServerStarting(this);
+            BindRouters();
+
             httpListener.Start();
             httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
         }

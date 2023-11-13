@@ -10,6 +10,7 @@
 using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing;
 
@@ -58,116 +59,148 @@ public partial class Router
     }
 
     /// <summary>
-    /// Scans for all types that implements <typeparamref name="T"/> and associates an instance of each type to the router. Note that, <typeparamref name="T"/> must be an <see cref="RouterModule"/> type and an accessible constructor
+    /// Scans for all types that implements <typeparamref name="TModule"/> and associates an instance of each type to the router. Note that, <typeparamref name="TModule"/> must be an <see cref="RouterModule"/> type and an accessible constructor
     /// for each type must be present.
     /// </summary>
-    /// <typeparam name="T">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="assembly">The assembly where the scanning types are.</param>
+    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     /// <definition>
-    /// public void AutoScanModules{{T}}(Assembly assembly) where T : RouterModule
+    /// [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    /// public void AutoScanModules{{TModule}}(Assembly assembly, bool activateInstances = true) where TModule : RouterModule, new()
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void AutoScanModules<T>(Assembly assembly) where T : RouterModule
+    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule, new()
     {
-        Type tType = typeof(T);
+        if (!RuntimeFeature.IsDynamicCodeSupported)
+        {
+            throw new NotSupportedException(SR.Router_AutoScanModules_RequiresUnreferencedCode);
+        }
+        Type tType = typeof(TModule);
         var types = assembly.GetTypes();
         foreach (Type type in types)
         {
             if (type.IsAssignableTo(tType))
             {
-                object? instance = Activator.CreateInstance(type);
-                if (instance != null)
-                    SetObject(instance);
+                /*
+                    When scanning and finding an abstract class, the method checks whether
+                    it directly implements RouterModule or whether there is no base-type first.
+
+                    Abstract classes should not be included on the router.
+                 */
+                if (tType.IsAbstract && (type.BaseType == null || type.BaseType == typeof(RouterModule)))
+                {
+                    continue;
+                }
+                else
+                {
+                    if (activateInstances)
+                    {
+                        TModule instance = new TModule();
+                        if (instance != null)
+                            SetObject(instance);
+                    }
+                    else
+                    {
+                        SetObject(type);
+                    }
+                }
             }
         }
     }
 
     /// <summary>
-    /// Scans for all types that implements <typeparamref name="T"/> and associates an instance of each type to the router. Note that, <typeparamref name="T"/> must be an <see cref="RouterModule"/> type and an accessible constructor
+    /// Scans for all types that implements <typeparamref name="TModule"/> and associates an instance of each type to the router. Note that, <typeparamref name="TModule"/> must be an <see cref="RouterModule"/> type and an accessible constructor
     /// for each type must be present.
     /// </summary>
-    /// <typeparam name="T">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
+    /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <definition>
-    /// public void AutoScanModules{{T}}(Assembly assembly) where T : RouterModule
+    /// public void AutoScanModules{{TModule}}() where T : RouterModule, new()
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void AutoScanModules<T>() where T : RouterModule
+    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    public void AutoScanModules<TModule>() where TModule : RouterModule, new()
     {
-        AutoScanModules<T>(typeof(T).Assembly);
+        if (typeof(TModule) == typeof(RouterModule))
+        {
+            throw new InvalidOperationException(SR.Router_AutoScanModules_TModuleSameAssembly);
+        }
+        AutoScanModules<TModule>(typeof(TModule).Assembly);
     }
 
     /// <summary>
-    /// Defines an route with their method, path and callback function.
+    /// Defines an route with their method, path and action function.
     /// </summary>
     /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
     /// <param name="path">The route path.</param>
-    /// <param name="callback">The route function to be called after matched.</param>
+    /// <param name="action">The route function to be called after matched.</param>
     /// <definition>
-    /// public void SetRoute(RouteMethod method, string path, RouterCallback callback)
+    /// public void SetRoute(RouteMethod method, string path, RouterCallback action)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void SetRoute(RouteMethod method, string path, RouterCallback callback)
+    public void SetRoute(RouteMethod method, string path, RouteAction action)
     {
-        Route newRoute = new Route(method, path, null, callback, null);
+        Route newRoute = new Route(method, path, null, action, null);
         Route? collisonRoute;
         if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
         {
-            throw new ArgumentException($"A possible route collision could happen between route {newRoute} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            throw new ArgumentException(string.Format(SR.Router_Set_Collision, newRoute, collisonRoute));
         }
         _routes.Add(newRoute);
     }
 
     /// <summary>
-    /// Defines an route with their method, path, callback function and name.
+    /// Defines an route with their method, path, action function and name.
     /// </summary>
     /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
     /// <param name="path">The route path.</param>
-    /// <param name="callback">The route function to be called after matched.</param>
+    /// <param name="action">The route function to be called after matched.</param>
     /// <param name="name">The route name.</param>
     /// <definition>
-    /// public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name)
+    /// public void SetRoute(RouteMethod method, string path, RouterCallback action, string? name)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name)
+    public void SetRoute(RouteMethod method, string path, RouteAction action, string? name)
     {
-        Route newRoute = new Route(method, path, name, callback, null);
+        Route newRoute = new Route(method, path, name, action, null);
         Route? collisonRoute;
         if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
         {
-            throw new ArgumentException($"A possible route collision could happen between route {newRoute} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            throw new ArgumentException(string.Format(SR.Router_Set_Collision, newRoute, collisonRoute));
         }
         _routes.Add(newRoute);
     }
 
     /// <summary>
-    /// Defines an route with their method, path, callback function, name and request handlers.
+    /// Defines an route with their method, path, action function, name and request handlers.
     /// </summary>
     /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
     /// <param name="path">The route path.</param>
-    /// <param name="callback">The route function to be called after matched.</param>
+    /// <param name="action">The route function to be called after matched.</param>
     /// <param name="name">The route name.</param>
-    /// <param name="middlewares">Handlers that run before calling your route callback.</param>
+    /// <param name="middlewares">Handlers that run before calling your route action.</param>
     /// <definition>
-    /// public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name, IRequestHandler[] middlewares)
+    /// public void SetRoute(RouteMethod method, string path, RouterCallback action, string? name, IRequestHandler[] middlewares)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void SetRoute(RouteMethod method, string path, RouterCallback callback, string? name, IRequestHandler[] middlewares)
+    public void SetRoute(RouteMethod method, string path, RouteAction action, string? name, IRequestHandler[] middlewares)
     {
-        Route newRoute = new Route(method, path, name, callback, middlewares);
+        Route newRoute = new Route(method, path, name, action, middlewares);
         Route? collisonRoute;
         if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
         {
-            throw new ArgumentException($"A possible route collision could happen between route {newRoute} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            throw new ArgumentException(string.Format(SR.Router_Set_Collision, newRoute, collisonRoute));
         }
         _routes.Add(newRoute);
     }
@@ -187,7 +220,7 @@ public partial class Router
         Route? collisonRoute;
         if (!r.UseRegex && (collisonRoute = GetCollisionRoute(r.Method, r.Path)) != null)
         {
-            throw new ArgumentException($"A possible route collision could happen between route {r} and route {collisonRoute}. Please review the methods and paths of these routes.");
+            throw new ArgumentException(string.Format(SR.Router_Set_Collision, r, collisonRoute));
         }
         _routes.Add(r);
     }
@@ -251,11 +284,6 @@ public partial class Router
                 if (atrInstance != null)
                 {
                     List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
-                    if (method.ReturnType.IsValueType)
-                    {
-                        throw new InvalidOperationException($"Couldn't set method {method.DeclaringType?.FullName}.{method.Name} as an route. " +
-                            "The return of a RouterCallback must be a reference type. To return a value type, use \"Object\" or box it with RouteResult<>.");
-                    }
                     if (handlersInstances.Count() > 0)
                     {
                         foreach (RequestHandlerAttribute atr in handlersInstances)
@@ -274,28 +302,28 @@ public partial class Router
 
                     try
                     {
-                        RouterCallback r;
+                        RouteAction r;
 
                         if (instance == null)
                         {
-                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), method);
+                            r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
                         }
                         else
                         {
-                            r = (RouterCallback)Delegate.CreateDelegate(typeof(RouterCallback), instance, method);
+                            r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), instance, method);
                         }
 
                         string path = atrInstance.Path;
-                        if (prefix != null)
+                        if (prefix != null && !atrInstance.UseRegex)
                         {
-                            path = HttpStringInternals.CombineRoutePaths(prefix, path);
+                            path = PathUtility.CombinePaths(prefix, path);
                         }
 
                         Route route = new Route()
                         {
                             Method = atrInstance.Method,
                             Path = path,
-                            Callback = r,
+                            Action = r,
                             Name = atrInstance.Name,
                             RequestHandlers = methodHandlers.ToArray(),
                             LogMode = atrInstance.LogMode,
@@ -306,7 +334,7 @@ public partial class Router
                         Route? collisonRoute;
                         if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
                         {
-                            throw new ArgumentException($"A possible route collision could happen between the route {route} at {method.Name} with route {collisonRoute}. Please review the methods and paths of these routes.");
+                            throw new ArgumentException(string.Format(SR.Router_Set_Collision, route, collisonRoute));
                         }
 
                         rmodule?.OnRouteCreating(route);
@@ -314,7 +342,7 @@ public partial class Router
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception($"Couldn't set method {method.DeclaringType?.FullName}.{method.Name} as an route. See inner exception.", ex);
+                        throw new Exception(string.Format(SR.Router_Set_Exception, method.DeclaringType?.FullName, method.Name), ex);
                     }
                 }
             }
@@ -326,7 +354,7 @@ public partial class Router
     {
         if (!path.StartsWith('/'))
         {
-            throw new ArgumentException("Route paths must start with /.");
+            throw new ArgumentException(SR.Router_Set_InvalidRouteStart);
         }
         foreach (Route r in this._routes)
         {

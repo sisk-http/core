@@ -7,6 +7,7 @@
 // File name:   LogStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Text;
 
 namespace Sisk.Core.Http
@@ -127,7 +128,7 @@ namespace Sisk.Core.Http
         {
             if (this.FilePath == null)
             {
-                throw new NotSupportedException("This method only works when the LogStream is appending content to an file.");
+                throw new NotSupportedException(SR.LogStream_Peek_NotFilePath);
             }
 
             string[] output = Array.Empty<string>();
@@ -362,7 +363,7 @@ namespace Sisk.Core.Http
         void WriteExceptionInternal(StringBuilder exceptionStr, Exception exp, int depth = 0)
         {
             if (depth == 0)
-                exceptionStr.AppendLine($"Exception thrown at {DateTime.Now:R}");
+                exceptionStr.AppendLine(string.Format(SR.LogStream_ExceptionDump_Header, DateTime.Now.ToString("R")));
             exceptionStr.AppendLine(exp.ToString());
 
             if (exp.InnerException != null)
@@ -373,7 +374,7 @@ namespace Sisk.Core.Http
                 }
                 else
                 {
-                    exceptionStr.AppendLine(" + ... other trimmed inner exceptions");
+                    exceptionStr.AppendLine(SR.LogStream_ExceptionDump_TrimmedFooter);
                 }
             }
         }

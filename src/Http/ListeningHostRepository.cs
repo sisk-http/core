@@ -88,7 +88,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void Add(ListeningHost item)
         {
-            if (this.Contains(item)) throw new ArgumentOutOfRangeException("This ListeningHost has already been defined in this collection with identical definitions.");
+            if (this.Contains(item)) throw new ArgumentOutOfRangeException(SR.ListeningHostRepository_Duplicate);
             _hosts.Add(item);
         }
 
@@ -185,7 +185,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a listening host through its index.
+        /// Gets or sets a listening host through its index.
         /// </summary>
         /// <param name="index">The Listening Host index</param>
         /// <returns></returns>
@@ -195,10 +195,16 @@ namespace Sisk.Core.Http
         /// <type>
         /// Indexer
         /// </type>
-        public ListeningHost this[int index] { get => _hosts[index]; }
+        public ListeningHost this[int index] { get => _hosts[index]; set => _hosts[index] = value; }
 
         internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)
         {
+            // theres no need to run dns matching if theres only one
+            // listening host in this repository
+            if (_hosts.Count == 1)
+            {
+                return _hosts[0];
+            }
             foreach (ListeningHost h in this._hosts)
             {
                 foreach (ListeningPort p in h.Ports)

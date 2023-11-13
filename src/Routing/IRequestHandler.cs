@@ -24,7 +24,7 @@ namespace Sisk.Core.Routing
     {
         /// <summary>
         /// This method is called by the <see cref="Router"/> before executing a request when the <see cref="Route"/> instantiates an object that implements this interface. If it returns
-        /// a <see cref="HttpResponse"/> object, the route callback is not called and all execution of the route is stopped. If it returns "null", the execution is continued.
+        /// a <see cref="HttpResponse"/> object, the route action is not called and all execution of the route is stopped. If it returns "null", the execution is continued.
         /// </summary>
         /// <param name="request">The entry HTTP request.</param>
         /// <param name="context">The HTTP request context. It may contain information from other <see cref="IRequestHandler"/>.</param>
@@ -61,17 +61,17 @@ namespace Sisk.Core.Routing
     public enum RequestHandlerExecutionMode
     {
         /// <summary>
-        /// Indicates that the handler must be executed before the router calls the route callback and before the request content is available.
+        /// Indicates that the handler must be executed before the router calls the route action and before the request content is available.
         /// </summary>
         BeforeContents,
 
         /// <summary>
-        /// Indicates that the handler must be executed before the router calls the route callback and after request contents is loaded.
+        /// Indicates that the handler must be executed before the router calls the route action and after request contents is loaded.
         /// </summary>
         BeforeResponse,
 
         /// <summary>
-        /// Indicates that the handler must be executed after the route callback execution.
+        /// Indicates that the handler must be executed after the route action execution.
         /// </summary>
         AfterResponse
     }
