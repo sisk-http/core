@@ -202,7 +202,9 @@ namespace Sisk.Core.Http.Streams
                 }
 
                 TrimMessage(result, message);
-                if (isWaitingNext)
+                bool isPingMessage = message.GetString() == pingPolicy.DataMessage;
+
+                if (isWaitingNext & !isPingMessage)
                 {
                     isWaitingNext = false;
                     lastMessage = message;
