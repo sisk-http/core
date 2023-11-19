@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sisk.Core", "src\Sisk.Core.csproj", "{A72A8C66-1CAD-47F1-A1DF-7686EE951FE2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "extensions", "extensions", "{FF6E673A-4CCA-43AA-A391-9BB28F5D67A5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sisk.BasicAuth", "extensions\Sisk.BasicAuth\Sisk.BasicAuth.csproj", "{2988DA80-828F-4CF1-8E20-A83DB35C7B67}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sisk.ServiceProvider", "extensions\Sisk.ServiceProvider\Sisk.ServiceProvider.csproj", "{D559DBC8-64FF-4242-B10C-7D595584FE5B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{50F58A99-47F5-4CDA-B858-39B04912CAE2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NativeAOT_Test", "tests\NativeAOT_Test\NativeAOT_Test.csproj", "{B42CD5B9-E25B-4C47-B951-ED9D58E5C8B8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A72A8C66-1CAD-47F1-A1DF-7686EE951FE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A72A8C66-1CAD-47F1-A1DF-7686EE951FE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A72A8C66-1CAD-47F1-A1DF-7686EE951FE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A72A8C66-1CAD-47F1-A1DF-7686EE951FE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2988DA80-828F-4CF1-8E20-A83DB35C7B67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2988DA80-828F-4CF1-8E20-A83DB35C7B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2988DA80-828F-4CF1-8E20-A83DB35C7B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2988DA80-828F-4CF1-8E20-A83DB35C7B67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D559DBC8-64FF-4242-B10C-7D595584FE5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D559DBC8-64FF-4242-B10C-7D595584FE5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D559DBC8-64FF-4242-B10C-7D595584FE5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D559DBC8-64FF-4242-B10C-7D595584FE5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B42CD5B9-E25B-4C47-B951-ED9D58E5C8B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B42CD5B9-E25B-4C47-B951-ED9D58E5C8B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B42CD5B9-E25B-4C47-B951-ED9D58E5C8B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B42CD5B9-E25B-4C47-B951-ED9D58E5C8B8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2988DA80-828F-4CF1-8E20-A83DB35C7B67} = {FF6E673A-4CCA-43AA-A391-9BB28F5D67A5}
+		{D559DBC8-64FF-4242-B10C-7D595584FE5B} = {FF6E673A-4CCA-43AA-A391-9BB28F5D67A5}
+		{B42CD5B9-E25B-4C47-B951-ED9D58E5C8B8} = {50F58A99-47F5-4CDA-B858-39B04912CAE2}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0763848A-673A-4233-A0FF-C0D7A8F8D722}
+	EndGlobalSection
+EndGlobal

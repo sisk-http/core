@@ -85,7 +85,7 @@ public partial class HttpServer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void ListenerCallback(IAsyncResult result)
+    private async void ListenerCallback(IAsyncResult result)
     {
         #region Init context variables
         if (_isDisposing || !_isListening)
@@ -118,8 +118,6 @@ public partial class HttpServer
         bool hasErrorLogging = ServerConfiguration.ErrorsLogsStream != null;
         IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
         Uri? connectingUri = baseRequest.Url;
-        int responseStatus = 0;
-        string responseDescription = "";
         NameValueCollection? reqHeaders = null;
         Router.RouterExecutionResult? routerResult = null;
 
@@ -129,7 +127,7 @@ public partial class HttpServer
             Thread.CurrentThread.CurrentUICulture = ServerConfiguration.DefaultCultureInfo;
         }
 
-        HttpServerExecutionResult? executionResult = new HttpServerExecutionResult()
+        HttpServerExecutionResult executionResult = new HttpServerExecutionResult()
         {
             Request = request,
             Response = response,
@@ -231,7 +229,24 @@ public partial class HttpServer
             #region Step 3 - Routing and action
 
             // get response
-            routerResult = matchedListeningHost.Router.Execute(request, baseRequest, matchedListeningHost, ref srContext);
+            var timeout = flag.RouteActionTimeout;
+            if (timeout.Ticks > 0)
+            {
+                var routerTask = matchedListeningHost.Router.Execute(request, baseRequest, matchedListeningHost, srContext);
+                if (await Task.WhenAny(routerTask, Task.Delay(timeout)) == routerTask)
+                {
+                    routerResult = routerTask.Result;
+                }
+                else
+                {
+                    throw new RequestTimeoutException();
+                }
+            }
+            else
+            {
+                routerResult = await matchedListeningHost.Router.Execute(request, baseRequest, matchedListeningHost, srContext);
+            }
+
             response = routerResult.Response;
             useCors = routerResult.Route?.UseCors ?? true;
 
@@ -240,13 +255,13 @@ public partial class HttpServer
                 SetCorsHeaders(flag, baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
             }
 
-            if (response is null || response?.internalStatus == HttpResponse.HTTPRESPONSE_EMPTY)
+            if (response is null || response.internalStatus == HttpResponse.HTTPRESPONSE_EMPTY)
             {
                 baseResponse.StatusCode = 204;
                 executionResult.Status = HttpServerExecutionStatus.NoResponse;
                 goto finishSending;
             }
-            else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_ERROR)
+            else if (response.internalStatus == HttpResponse.HTTPRESPONSE_ERROR)
             {
                 executionResult.Status = HttpServerExecutionStatus.UncaughtExceptionThrown;
                 baseResponse.StatusCode = 500;
@@ -254,75 +269,72 @@ public partial class HttpServer
                     throw routerResult.Exception;
                 goto finishSending;
             }
-            else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ||
-                     response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
+            else if (response.internalStatus == HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ||
+                     response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
                 baseResponse.StatusCode = (int)response.Status;
                 goto finishSending;
             }
-            else if (response?.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)
+            else if (response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
                 baseResponse.Abort();
                 goto finishSending;
             }
 
-            byte[] responseBytes = response!.Content?.ReadAsByteArrayAsync().Result ?? new byte[] { };
-
             if (response.CustomStatus != null)
             {
                 baseResponse.StatusCode = response.CustomStatus.Value.StatusCode;
                 baseResponse.StatusDescription = response.CustomStatus.Value.Description;
-                responseStatus = response.CustomStatus.Value.StatusCode;
-                responseDescription = response.CustomStatus.Value.Description;
             }
             else
             {
                 baseResponse.StatusCode = (int)response.Status;
-                responseStatus = baseResponse.StatusCode;
-                responseDescription = baseResponse.StatusDescription;
             }
 
             baseResponse.KeepAlive = ServerConfiguration.KeepAlive;
-            baseResponse.SendChunked = response.SendChunked;
 
             #endregion
 
             #region Step 4 - Response computing
-
             NameValueCollection resHeaders = new NameValueCollection
             {
                 response.Headers
             };
 
+            long? responseContentLength = response.Content?.Headers.ContentLength;
             if (srContext?.OverrideHeaders.Count > 0) resHeaders.Add(srContext.OverrideHeaders);
 
             foreach (string incameHeader in resHeaders)
             {
-                baseResponse.AddHeader(incameHeader, resHeaders[incameHeader] ?? "");
+                string? value = resHeaders[incameHeader];
+                if (string.IsNullOrEmpty(value)) continue;
+
+                baseResponse.AddHeader(incameHeader, value);
             }
 
-            if (responseBytes.Length > 0)
+            if (response.Content != null && responseContentLength > 0)
             {
-                baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content?.Headers.ContentType?.ToString();
+                // determines the content type
+                baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content.Headers.ContentType?.ToString();
 
-                if (resHeaders["Content-Encoding"] != null)
+                // determines if the response should be sent as chunked or normal
+                if (response.SendChunked)
                 {
-                    baseResponse.ContentEncoding = Encoding.GetEncoding(resHeaders["Content-Encoding"]!);
+                    baseResponse.SendChunked = true;
                 }
                 else
                 {
-                    baseResponse.ContentEncoding = ServerConfiguration.DefaultEncoding;
+                    baseResponse.ContentLength64 = responseContentLength.Value;
                 }
 
-                if (!response.SendChunked)
-                    baseResponse.ContentLength64 = responseBytes.Length;
-
+                // write the output buffer
                 if (context.Request.HttpMethod != "HEAD")
                 {
-                    baseResponse.OutputStream.Write(responseBytes);
-                    outcomingSize += responseBytes.Length;
+                    Stream contentStream = response.Content.ReadAsStream();
+                    contentStream.CopyTo(baseResponse.OutputStream);
+                    outcomingSize += responseContentLength.Value;
                 }
             }
 
@@ -333,8 +345,16 @@ public partial class HttpServer
 
             string httpStatusVerbose = $"{baseResponse.StatusCode} {baseResponse.StatusDescription}";
 
+            if (response?.CalculedLength >= 0)
+            {
+                executionResult.ResponseSize = response.CalculedLength;
+            }
+            else
+            {
+                executionResult.ResponseSize = outcomingSize;
+            }
+
             executionResult.RequestSize = incomingSize;
-            executionResult.ResponseSize = outcomingSize;
             executionResult.Response = response;
 
             if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
@@ -359,11 +379,19 @@ public partial class HttpServer
             executionResult.ServerException = netException;
             hasErrorLogging = false;
         }
+        catch (RequestTimeoutException netException)
+        {
+            baseResponse.StatusCode = 408;
+            executionResult.Status = HttpServerExecutionStatus.RequestTimeout;
+            executionResult.ServerException = netException;
+            hasErrorLogging = false;
+        }
         catch (HttpRequestException requestException)
         {
             baseResponse.StatusCode = 400;
             executionResult.Status = HttpServerExecutionStatus.MalformedRequest;
             executionResult.ServerException = requestException;
+            hasErrorLogging = false;
         }
         catch (Exception ex)
         {
@@ -430,10 +458,8 @@ public partial class HttpServer
                     connectingUri,
                     otherParty,
                     reqHeaders,
-                    responseStatus,
-                    responseDescription,
-                    incomingSize,
-                    outcomingSize,
+                    baseResponse.StatusCode,
+                    baseResponse.StatusDescription,
                     sw.ElapsedMilliseconds,
                     baseRequest.HttpMethod);
 

@@ -25,11 +25,12 @@ public sealed class HttpResponseStream : CookieHelper
 {
     private HttpListenerResponse listenerResponse;
     private bool hasSentData = false;
+    internal long calculatedLength;
 
     internal HttpResponseStream(HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host)
     {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException(nameof(listenerResponse));
-        this.ResponseStream = listenerResponse.OutputStream;
+        this.ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
         HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, listenerRequest, host.hostContext.CrossOriginResourceSharingPolicy, listenerResponse);
     }
 
@@ -192,12 +193,63 @@ public sealed class HttpResponseStream : CookieHelper
     /// </type>
     public HttpResponse Close()
     {
-        return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE);
+        return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
+        {
+            CalculedLength = this.calculatedLength
+        };
     }
 
     /// <inheritdoc/>
     protected override void SetCookieHeader(string name, string value)
     {
         SetHeader(name, value);
+    }
+}
+
+internal class ResponseStreamWriter : Stream
+{
+    private Stream BaseStream;
+    private HttpResponseStream Parent;
+
+    public ResponseStreamWriter(Stream baseStream, HttpResponseStream parent)
+    {
+        BaseStream = baseStream;
+        Parent = parent;
+    }
+
+    public override Boolean CanRead => BaseStream.CanRead;
+
+    public override Boolean CanSeek => BaseStream.CanSeek;
+
+    public override Boolean CanWrite => BaseStream.CanWrite;
+
+    public override Int64 Length => BaseStream.Length;
+
+    public override Int64 Position { get => BaseStream.Position; set => BaseStream.Position = value; }
+
+    public override void Flush()
+    {
+        BaseStream.Flush();
+    }
+
+    public override Int32 Read(Byte[] buffer, Int32 offset, Int32 count)
+    {
+        return BaseStream.Read(buffer, offset, count);
+    }
+
+    public override Int64 Seek(Int64 offset, SeekOrigin origin)
+    {
+        return BaseStream.Seek(offset, origin);
+    }
+
+    public override void SetLength(Int64 value)
+    {
+        BaseStream.SetLength(value);
+    }
+
+    public override void Write(Byte[] buffer, Int32 offset, Int32 count)
+    {
+        BaseStream.Write(buffer, offset, count);
+        Interlocked.Add(ref Parent.calculatedLength, buffer.Length);
     }
 }

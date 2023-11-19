@@ -95,7 +95,7 @@ public partial class Router
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
         Justification = "Task<> is already included with dynamic dependency.")]
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    internal unsafe RouterExecutionResult Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, ref HttpContext? context)
+    internal async Task<RouterExecutionResult> Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, HttpContext? context)
     {
         if (this.ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
 
@@ -259,8 +259,9 @@ public partial class Router
                 if (matchedRoute.isReturnTypeTask)
                 {
                     Task<object> objTask = Unsafe.As<Task<object>>(actionResult);
-                    objTask.Wait();
-                    actionResult = objTask.Result;
+                    //objTask.Wait();
+                    //actionResult = objTask.Result;
+                    actionResult = await objTask;
                 }
 
                 if (actionResult is HttpResponse httpres)
@@ -282,7 +283,8 @@ public partial class Router
                     }
                     else
                     {
-                        return new RouterExecutionResult(new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR), matchedRoute, matchResult, ex);
+                        result = new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR);
+                        return new RouterExecutionResult(result, matchedRoute, matchResult, ex);
                     }
                 }
                 else throw;
@@ -322,6 +324,6 @@ public partial class Router
             #endregion         
         }
 
-        return new RouterExecutionResult(context?.RouterResponse, matchedRoute, matchResult, null);
+        return new RouterExecutionResult(context.RouterResponse, matchedRoute, matchResult, null);
     }
 }

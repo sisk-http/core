@@ -18,7 +18,7 @@ namespace Sisk.Core.Internal
     {
         TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
 
-        HttpServerExecutionResult? res;
+        HttpServerExecutionResult res;
         DateTime d;
         Uri? bReqUri;
         IPAddress? bReqIpAddr;
@@ -31,14 +31,12 @@ namespace Sisk.Core.Internal
         long execTime;
 
         public LoggingFormatter(
-            HttpServerExecutionResult? res,
+            HttpServerExecutionResult res,
             DateTime d, Uri? bReqUri,
             IPAddress? bReqIpAddr,
             NameValueCollection? reqHeaders,
             int bResStatusCode,
             string? bResStatusDescr,
-            float? incomingSize,
-            float? outcomingSize,
             long execTime,
             string bReqMethod)
         {
@@ -49,8 +47,8 @@ namespace Sisk.Core.Internal
             this.reqHeaders = reqHeaders;
             this.bResStatusCode = bResStatusCode;
             this.bResStatusDescr = bResStatusDescr;
-            this.incomingSize = incomingSize;
-            this.outcomingSize = outcomingSize;
+            this.incomingSize = res.RequestSize;
+            this.outcomingSize = res.ResponseSize;
             this.execTime = execTime;
             this.bReqMethod = bReqMethod;
         }

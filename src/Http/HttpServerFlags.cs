@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
+using System.Net;
 
 namespace Sisk.Core.Http
 {
@@ -182,6 +183,23 @@ namespace Sisk.Core.Http
         /// Field
         /// </type>
         public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds(120);
+
+        /// <summary>
+        /// Determines the maximum amount of time an route can process an request, including running request handlers,
+        /// reading body and executing the route action. Specify zero for no limit.
+        /// </summary>
+        /// <docs>
+        ///     <p>
+        ///         Default value: <code>TimeSpan.Zero</code>
+        ///     </p>
+        /// </docs>
+        /// <definition>
+        /// public TimeSpan RouteActionTimeout;
+        /// </definition>
+        /// <type>
+        /// Field
+        /// </type>
+        public TimeSpan RouteActionTimeout = TimeSpan.Zero;
 
         /// <summary>
         /// Determines if the request input stream should be read into an byte array after running all <see cref="RequestHandlerExecutionMode.BeforeContents"/>

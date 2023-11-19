@@ -31,7 +31,7 @@ namespace Sisk.Core.Http
         internal const byte HTTPRESPONSE_SERVER_CLOSE = 6;
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
         internal const byte HTTPRESPONSE_ERROR = 8;
-        internal int CalculedLength = 0;
+        internal long CalculedLength = -1;
 
         /// <summary>
         /// Creates an new empty <see cref="HttpResponse"/> with no status code or contents. This will cause to the HTTP server to close the

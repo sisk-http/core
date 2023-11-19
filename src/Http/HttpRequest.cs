@@ -13,6 +13,7 @@ using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Web;
 
@@ -780,12 +781,7 @@ namespace Sisk.Core.Http
             return $"{Method} {FullPath}";
         }
 
-        internal long CalcRequestSize()
-        {
-            long l = 0;
-            l += listenerRequest.ContentLength64;
-            l += RequestEncoding.GetByteCount(GetRawHttpRequest(false));
-            return l;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal long CalcRequestSize() => listenerRequest.ContentLength64;
     }
 }

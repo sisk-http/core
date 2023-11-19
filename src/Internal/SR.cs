@@ -29,6 +29,7 @@ static class SR
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
     public const string Httpserver_StartMessage = "The HTTP server is listening at {0}";
     public const string Httpserver_Commons_HeaderAfterContents = "Cannot send headers or status code after sending response contents.";
+    public const string Httpserver_Commons_RouterTimeout = "Request maximum execution time exceeded it's limit.";
 
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";
     public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters.";

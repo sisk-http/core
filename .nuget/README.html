@@ -1,37 +1,47 @@
-﻿<!DOCTYPE html>
-<html>
-<head>
-    <title>Features</title>
-</head>
-<body>
-
-    <p>Sisk is a powerful framework for building powerful web applications. It is written in .NET 6 and uses Microsoft-HTTPAPI/2.0 as their main http Engine.</p>
-<h2 id="features">Features</h2>
+﻿<p><strong>Sisk</strong> is a <strong>web development framework</strong> that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.</p>
 <ul>
-<li>Multi-platform and cross-operating system</li>
-<li>Ultra fast response/second average</li>
-<li>Support to operating system's native HTTP interface listener</li>
-<li>Sustainable and maintainable</li>
-<li>Database-agnostic</li>
-<li>Same code implementation for *nix, Mac OS and Windows</li>
-<li>Asynchronous request handling</li>
-<li>Middlewares, before and/or after request handlers</li>
-<li>Configurable error handling</li>
-<li>Support to log access/error logs</li>
-<li>Easy Cross-Origin Resource Sharing setup</li>
-<li>Written in C#</li>
+<li><a href="https://sisk.project-principium.dev/">Discover Sisk</a></li>
+<li><a href="https://sisk.project-principium.dev/read?q=/contents/docs/welcome.md">Documentation</a></li>
+<li><a href="https://github.com/sisk-http/docs/tree/master/archive">Changelog</a></li>
+<li><a href="https://sisk.project-principium.dev/read?q=/contents/spec/index.md">Specification</a></li>
+<li><a href="https://github.com/sisk-http/benchmarks">Benchmark</a></li>
+<li><a href="https://github.com/orgs/sisk-http/projects/1">Roadmap</a></li>
 </ul>
-<blockquote>
-<p>You can use Sisk with HTTPS, HTTP/2 and HTTP/3 QUIC if you follow <a href="https://learn.microsoft.com/en-us/iis/manage/configuring-security/how-to-set-up-ssl-on-iis">this Microsoft tutorial</a>. Requires installation of IIS on Windows.</p>
-</blockquote>
-<h2 id="documentation">Documentation</h2>
-<p>The specification is complete, however, tutorials are yet to come. By the way, you can access the Sisk documentation <a href="https://sisk-http.github.io/docs/static/#/">here</a>.</p>
-<p>You can also view release change logs <a href="https://github.com/sisk-http/docs/blob/master/Changelog.md">here</a>.</p>
-<h2 id="installation">Installation</h2>
-<p>You can install the latest release from Nuget:</p>
-<pre><code>PM&gt; dotnet add package Sisk.HttpServer
+<h3 id="documentation">Documentation</h3>
+<p>You can get started with Sisk <a href="https://sisk.project-principium.dev/read?q=/contents/docs/getting-started.md">here</a> or build the documentation repository <a href="https://github.com/sisk-http/docs">here</a>.</p>
+<p>For information about release notes, changelogs and API breaking changes, see <a href="https://github.com/sisk-http/docs/blob/master/Changelog.md">docs/Changelog.md</a>.</p>
+<h2 id="getting-started">Getting started</h2>
+<p>The Sisk core idea is to create a service that runs on the internet and follows the pattern you define. Moreover, Sisk is a framework that adapts to how you want it to work, not the other way around.</p>
+<p>Due to its explicit nature, its behavior is predictable. The main differentiator from ASP.NET is that Sisk can be up and running in very few lines of code, avoiding unnecessary configurations, and requiring the minimum setup to get your server working. Additionally, it does not demand any additional .NET SDK packages to develop, as the base package of .NET 6 is sufficient to start your development with Sisk.</p>
+<p>It can handle multiple requests asynchronously, provides useful tools to manage and accelerate web development.</p>
+<pre><code class="lang-c#"><span class="hljs-keyword">using</span> Sisk.Core.Http;
+<span class="hljs-keyword">using</span> Sisk.Core.Routing;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">myProgram</span>;
+
+<span class="hljs-keyword">class</span> <span class="hljs-title">Program</span>
+{
+    <span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Main</span>(<span class="hljs-params"><span class="hljs-keyword">string</span>[] args</span>)
+    </span>{
+        <span class="hljs-keyword">var</span> app = HttpServer.CreateBuilder();
+
+        app.Router += <span class="hljs-keyword">new</span> Route(RouteMethod.Get, <span class="hljs-string">"/"</span>, request =&gt;
+        {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> HttpResponse(<span class="hljs-number">200</span>)
+                .WithContent(<span class="hljs-string">"Hello, world!"</span>);
+        });
+
+        app.Start();
+    }
+}
 </code></pre>
-
-
-</body>
-</html>
+<h2 id="main-features">Main features</h2>
+<p>Sisk can do web development the way you want. Create MVC, MVVC, SOLID applications, or any other design pattern you&#39;re interested in.</p>
+<ul>
+<li><strong>Lightweight:</strong> robust projects tested in small, low-cost, low-performance environments and got good results.</li>
+<li><strong>Open-source:</strong> the entire Sisk ecosystem is open source, and all the libraries and technologies we use must be open source as well. Sisk is entirely distributed under the MIT License, which allows the commercial development.</li>
+<li><strong>Sustainable:</strong> you are the one who makes the project, Sisk gives you the tools. Because it is open source, the community (including you) can maintain, fix bugs and improve Sisk over time.</li>
+</ul>
+<h2 id="why-use-sisk-">Why use Sisk?</h2>
+<p>Sisk is a highly modular and sustainable framework designed for creating a variety of applications, including Restful applications, gRPC, Websockets, file servers, GraphQL, Entity Framework, and more. Its development is ongoing, with a focus on simplicity, easy maintenance, and an enjoyable experience for developers. Sisk is known for its efficiency, even in low-performance environments, and it can handle over twenty thousand requests per second. The framework is compatible with any machine supporting .NET, including those that do not require Native AOT. Sisk also offers additional implementations and packages for extended functionality.</p>
+<p>While Sisk draws inspiration from ASP.NET, it aims for simpler and more performant development without the need for installing additional components. It provides a straightforward and robust development model, allowing developers to handle requests efficiently and explicitly. Sisk simplifies HTTP-related tasks and offers comprehensive documentation and open-source access to its source code, making it accessible and easy to learn for web developers.</p>

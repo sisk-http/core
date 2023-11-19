@@ -42,6 +42,7 @@ namespace Sisk.Core.Http.Streams
 
         int attempt = 0;
         int bufferLength = 0;
+        long length = 0;
 
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP web socket connection.
@@ -333,7 +334,10 @@ namespace Sisk.Core.Http.Streams
                 isClosed = true;
                 closeEvent.Set();
             }
-            return new HttpResponse(wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE);
+            return new HttpResponse(wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE)
+            {
+                CalculedLength = length
+            };
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
@@ -358,6 +362,8 @@ namespace Sisk.Core.Http.Streams
 
                     ctx.WebSocket.SendAsync(chunk, msgType, i + 1 == chunks, CancellationToken.None)
                         .AsTask().Wait();
+
+                    length += chunk.Length;
                 }
 
                 attempt = 0;

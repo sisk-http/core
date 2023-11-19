@@ -70,7 +70,6 @@ public sealed class HttpServerHostContextBuilder
     /// </type>
     public HttpServerHostContext Build()
     {
-        _portableConfiguration?.Build();
         return _context;
     }
 
@@ -93,6 +92,10 @@ public sealed class HttpServerHostContextBuilder
     /// Enables the portable configuration for this application, which imports settings, parameters,
     /// and other information from a JSON settings file.
     /// </summary>
+    /// <remarks>
+    /// This method overrides almost all of your <see cref="HttpServer.CreateBuilder()"/> configuration. To avoid this,
+    /// call this method at the beginning of your builder, as the first immediate method.
+    /// </remarks>
     /// <param name="portableConfigHandler">The handler of <see cref="PortableConfigurationBuilder"/>.</param>
     /// <definition>
     /// public void UsePortableConfiguration(Action{{PortableConfigurationBuilder}} portableConfigHandler)
@@ -106,6 +109,7 @@ public sealed class HttpServerHostContextBuilder
         try
         {
             portableConfigHandler(_portableConfiguration);
+            _portableConfiguration.Build();
         }
         catch (Exception ex)
         {
@@ -278,7 +282,7 @@ public sealed class HttpServerHostContextBuilder
     /// Method
     /// </type>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule, new()
+    public void UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule
     {
         _context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly, activateInstances);
     }
@@ -296,7 +300,7 @@ public sealed class HttpServerHostContextBuilder
     /// Method
     /// </type>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule, new()
+    public void UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule
     {
         _context.Router.AutoScanModules<TModule>(t, activateInstances);
     }

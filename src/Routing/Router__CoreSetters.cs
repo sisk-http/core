@@ -67,13 +67,13 @@ public partial class Router
     /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     /// <definition>
     /// [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    /// public void AutoScanModules{{TModule}}(Assembly assembly, bool activateInstances = true) where TModule : RouterModule, new()
+    /// public void AutoScanModules{{TModule}}(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
     /// </definition>
     /// <type>
     /// Method
     /// </type>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule, new()
+    public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
     {
         if (!RuntimeFeature.IsDynamicCodeSupported)
         {
@@ -99,7 +99,7 @@ public partial class Router
                 {
                     if (activateInstances)
                     {
-                        TModule instance = new TModule();
+                        var instance = Activator.CreateInstance(type)!;
                         if (instance != null)
                             SetObject(instance);
                     }
@@ -118,13 +118,13 @@ public partial class Router
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <definition>
-    /// public void AutoScanModules{{TModule}}() where T : RouterModule, new()
+    /// public void AutoScanModules{{TModule}}() where T : RouterModule
     /// </definition>
     /// <type>
     /// Method
     /// </type>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void AutoScanModules<TModule>() where TModule : RouterModule, new()
+    public void AutoScanModules<TModule>() where TModule : RouterModule
     {
         if (typeof(TModule) == typeof(RouterModule))
         {
