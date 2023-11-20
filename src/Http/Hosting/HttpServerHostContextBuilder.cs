@@ -252,6 +252,9 @@ public sealed class HttpServerHostContextBuilder
     /// </type>
     public void UseCors(Action<CrossOriginResourceSharingHeaders> handler)
     {
+        if (_context.CrossOriginResourceSharingPolicy is null)
+            _context.CrossOriginResourceSharingPolicy = CrossOriginResourceSharingHeaders.Empty;
+
         handler(_context.CrossOriginResourceSharingPolicy);
     }
 

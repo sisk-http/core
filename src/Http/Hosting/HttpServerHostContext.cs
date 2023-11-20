@@ -61,12 +61,15 @@ public class HttpServerHostContext
     /// Gets the host <see cref="CrossOriginResourceSharingPolicy"/>.
     /// </summary>
     /// <definition>
-    /// public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get; }
+    /// public CrossOriginResourceSharingHeaders? CrossOriginResourceSharingPolicy { get; set; }
     /// </definition>
     /// <type>
     /// Property
     /// </type>
-    public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy; }
+    public CrossOriginResourceSharingHeaders? CrossOriginResourceSharingPolicy { 
+        get => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy; 
+        set => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy = value;
+    }
 
     /// <summary>
     /// Gets the host router.

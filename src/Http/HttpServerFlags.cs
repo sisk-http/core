@@ -140,7 +140,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <docs>
         ///     <p>
-        ///         Default value: <code>true</code>
+        ///         Default value: <code>false</code>
         ///     </p>
         /// </docs>
         /// <definition>
@@ -149,7 +149,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Field
         /// </type>
-        public bool NormalizeHeadersEncodings = true;
+        public bool NormalizeHeadersEncodings = false;
 
         /// <summary>
         /// Determines if the HTTP server should automatically rewrite paths to end with /. Does not works with Regex routes.

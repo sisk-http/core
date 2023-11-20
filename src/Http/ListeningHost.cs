@@ -39,16 +39,23 @@ namespace Sisk.Core.Http
         /// </type>
         public override bool Equals(object? obj)
         {
-            ListeningHost? other = (obj as ListeningHost);
-            if (other == null) return false;
-            if (other._ports.Length != _ports.Length) return false;
-            for (int i = 0; i < _ports.Length; i++)
+            if (obj is ListeningHost other)
             {
-                ListeningPort A = this._ports[i];
-                ListeningPort B = other._ports[i];
-                if (!A.Equals(B)) return false;
+                if (other == null) return false;
+                if (other._ports.Length != _ports.Length) return false;
+
+                for (int i = 0; i < _ports.Length; i++)
+                {
+                    ListeningPort A = this._ports[i];
+                    ListeningPort B = other._ports[i];
+                    if (!A.Equals(B)) return false;
+                }
+                return true;
             }
-            return true;
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -91,7 +98,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public Entity.CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get; set; } = CrossOriginResourceSharingHeaders.Empty;
+        public Entity.CrossOriginResourceSharingHeaders? CrossOriginResourceSharingPolicy { get; set; }
 
         /// <summary>
         /// Gets or sets a label for this Listening Host.

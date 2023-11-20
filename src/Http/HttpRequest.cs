@@ -54,27 +54,29 @@ namespace Sisk.Core.Http
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
         private bool isContentAvailable = false;
-        private NameValueCollection headers = new NameValueCollection();
+        private NameValueCollection headers;//= new NameValueCollection();
         private int currentFrame = 0;
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal HttpRequest(
-            HttpListenerRequest listenerRequest,
-            HttpListenerResponse listenerResponse,
             HttpServer server,
             ListeningHost host,
             HttpListenerContext context)
         {
+
+            this.context = context;
             this.baseServer = server;
             this.contextServerConfiguration = baseServer.ServerConfiguration;
-            this.listenerResponse = listenerResponse;
-            this.listenerRequest = listenerRequest;
+            this.listenerResponse = context.Response;
+            this.listenerRequest = context.Request;
             this.hostContext = host;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
             this.RequestId = Guid.NewGuid();
+            this.headers = new NameValueCollection();
+            this.Cookies = new NameValueCollection();
+            this.Origin = listenerRequest.LocalEndPoint.Address;
 
-            IPAddress requestRealAddress = listenerRequest.LocalEndPoint.Address;
-            this.Origin = requestRealAddress;
 
             if (contextServerConfiguration.ResolveForwardedOriginAddress)
             {
@@ -138,8 +140,6 @@ namespace Sisk.Core.Http
             {
                 headers = listenerRequest.Headers;
             }
-
-            this.context = context;
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
@@ -148,16 +148,6 @@ namespace Sisk.Core.Http
             tempBytes = inEnc.GetBytes(input);
             return outEnc.GetString(tempBytes);
         }
-
-#pragma warning disable
-        ~HttpRequest()
-        {
-            this.contentBytes = null;
-            this.listenerRequest = null;
-            this.listenerResponse = null;
-            this.contextServerConfiguration = null;
-        }
-#pragma warning restore
 
         /// <summary>
         /// Gets a unique random ID for this request.
@@ -226,7 +216,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public NameValueCollection Cookies { get; private set; } = new NameValueCollection();
+        public NameValueCollection Cookies { get; private set; } //= new NameValueCollection();
 
         /// <summary>
         /// Get the requested host header (without port) from this HTTP request.
@@ -438,7 +428,7 @@ namespace Sisk.Core.Http
         /// Method
         /// </type> 
         public MultipartFormCollection GetMultipartFormContent()
-        { 
+        {
             return MultipartObject.ParseMultipartObjects(this);
         }
 

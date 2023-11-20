@@ -50,8 +50,9 @@ public partial class HttpServer
         }
     }
 
-    internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+    internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders? cors, HttpListenerResponse baseResponse)
     {
+        if (cors is null) return;
         if (!serverFlags.SendCorsHeaders) return;
         if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
         if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
@@ -87,24 +88,27 @@ public partial class HttpServer
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private async void ListenerCallback(IAsyncResult result)
     {
-        #region Init context variables
         if (_isDisposing || !_isListening)
             return;
 
-        httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
-        HttpListenerContext context;
-        HttpRequest request = null!;
-        HttpResponse? response = null;
+        var listener = (HttpListener)result.AsyncState!;
+        listener.BeginGetContext(_listenerCallback, listener);
 
         try
         {
-            context = httpListener.EndGetContext(result);
+            HttpListenerContext context = listener.EndGetContext(result);
+            await ProcessRequest(context);
         }
         catch (Exception)
         {
             return;
         }
+    }
 
+    private async Task ProcessRequest(HttpListenerContext context)
+    {
+        HttpRequest request = null!;
+        HttpResponse? response = null;
         HttpServerFlags flag = ServerConfiguration.Flags;
         Stopwatch sw = new Stopwatch();
         HttpListenerResponse baseResponse = context.Response;
@@ -118,7 +122,6 @@ public partial class HttpServer
         bool hasErrorLogging = ServerConfiguration.ErrorsLogsStream != null;
         IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
         Uri? connectingUri = baseRequest.Url;
-        NameValueCollection? reqHeaders = null;
         Router.RouterExecutionResult? routerResult = null;
 
         if (ServerConfiguration.DefaultCultureInfo != null)
@@ -134,7 +137,7 @@ public partial class HttpServer
             Status = HttpServerExecutionStatus.NoResponse
         };
 
-        #endregion
+        // 38480
 
         try
         {
@@ -157,8 +160,8 @@ public partial class HttpServer
             }
 
             // detect the listening host for this listener
-            ListeningHost? matchedListeningHost = ServerConfiguration.ListeningHosts
-                .GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
+            ListeningHost? matchedListeningHost = _onlyListeningHost ?? ServerConfiguration.ListeningHosts
+                    .GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
 
             if (matchedListeningHost is null)
             {
@@ -166,15 +169,13 @@ public partial class HttpServer
                 executionResult.Status = HttpServerExecutionStatus.DnsUnknownHost;
                 return;
             }
-            else
+
+            request = new HttpRequest(this, matchedListeningHost, context);
+            executionResult.Request = request;
+
+            if (ServerConfiguration.ResolveForwardedOriginAddress)
             {
-                request = new HttpRequest(baseRequest, baseResponse, this, matchedListeningHost, context);
-                reqHeaders = baseRequest.Headers;
-                executionResult.Request = request;
-                if (ServerConfiguration.ResolveForwardedOriginAddress || ServerConfiguration.ResolveForwardedOriginHost)
-                {
-                    otherParty = request.Origin;
-                }
+                otherParty = request.Origin;
             }
 
             if (matchedListeningHost.Router == null || !matchedListeningHost.CanListen)
@@ -184,7 +185,7 @@ public partial class HttpServer
                 return;
             }
 
-            #endregion
+            #endregion // 27668
 
             #region Step 2 - Request validation
 
@@ -215,9 +216,6 @@ public partial class HttpServer
                 baseResponse.StatusCode = 400;
                 return;
             }
-
-            // bind again if not binded
-            matchedListeningHost.Router.BindServer(this);
 
             if (OnConnectionOpen != null)
                 OnConnectionOpen(this, request);
@@ -343,8 +341,6 @@ public partial class HttpServer
         finishSending:
             #region Step 5 - Close streams and send response
 
-            string httpStatusVerbose = $"{baseResponse.StatusCode} {baseResponse.StatusDescription}";
-
             if (response?.CalculedLength >= 0)
             {
                 executionResult.ResponseSize = response.CalculedLength;
@@ -360,7 +356,6 @@ public partial class HttpServer
             if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
                 executionResult.Status = HttpServerExecutionStatus.Executed;
 
-            sw.Stop();
             baseResponse.Close();
             baseRequest.InputStream.Close();
 
@@ -407,6 +402,8 @@ public partial class HttpServer
         }
         finally
         {
+            sw.Stop();
+
             if (closeStream)
             {
                 // Close() would throw an exception if the sent payload length is greater than
@@ -457,7 +454,7 @@ public partial class HttpServer
                     DateTime.Now,
                     connectingUri,
                     otherParty,
-                    reqHeaders,
+                    request.Headers,
                     baseResponse.StatusCode,
                     baseResponse.StatusDescription,
                     sw.ElapsedMilliseconds,
@@ -469,9 +466,6 @@ public partial class HttpServer
                 ServerConfiguration.AccessLogsStream?.WriteLine(line);
             }
             #endregion
-
-            // finalizers
-
         }
     }
 }

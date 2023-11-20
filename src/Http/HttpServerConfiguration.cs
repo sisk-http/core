@@ -68,7 +68,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public LogStream? AccessLogsStream { get; set; } = LogStream.ConsoleOutput;
+        public LogStream? AccessLogsStream { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server error transcriptions to.

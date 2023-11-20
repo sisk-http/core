@@ -35,6 +35,19 @@ public class HttpServerHandler
     public virtual void OnServerStarting(HttpServer server) { }
 
     /// <summary>
+    /// Method that is called immediately after starting the <see cref="HttpServer"/>, when it's
+    /// ready and listening.
+    /// </summary>
+    /// <param name="server">The Http server entity which is ready.</param>
+    /// <definition>
+    /// public virtual void OnServerStarted(HttpServer server)
+    /// </definition>
+    /// <type>
+    /// Virtual method
+    /// </type>
+    public virtual void OnServerStarted(HttpServer server) { }
+
+    /// <summary>
     /// Method that is called when an <see cref="Router"/> is binded to the Http server.
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>

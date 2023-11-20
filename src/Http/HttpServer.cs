@@ -31,6 +31,8 @@ namespace Sisk.Core.Http
         private bool _isListening = false;
         private bool _isDisposing = false;
         private HttpListener httpListener = new HttpListener();
+        private AsyncCallback _listenerCallback;
+        private ListeningHost? _onlyListeningHost;
         internal static string poweredByHeader = "";
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
@@ -224,6 +226,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpServer(HttpServerConfiguration configuration)
         {
+            this._listenerCallback = new AsyncCallback(ListenerCallback);
             this.ServerConfiguration = configuration;
             this.handler.RegisterHandler(new DefaultHttpServerHandler());
         }
@@ -295,8 +298,19 @@ namespace Sisk.Core.Http
             handler.ServerStarting(this);
             BindRouters();
 
+            if (ServerConfiguration.ListeningHosts.Count == 1)
+            {
+                _onlyListeningHost = ServerConfiguration.ListeningHosts[0];
+            }
+            else
+            {
+                _onlyListeningHost = null;
+            }
+
             httpListener.Start();
-            httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), httpListener);
+            httpListener.BeginGetContext(_listenerCallback, httpListener);
+
+            handler.ServerStarted(this);
         }
 
         /// <summary>
