@@ -54,7 +54,7 @@ namespace Sisk.Core.Http
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
         private bool isContentAvailable = false;
-        private NameValueCollection headers;//= new NameValueCollection();
+        private NameValueCollection headers = null!;
         private int currentFrame = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -69,77 +69,90 @@ namespace Sisk.Core.Http
             this.contextServerConfiguration = baseServer.ServerConfiguration;
             this.listenerResponse = context.Response;
             this.listenerRequest = context.Request;
-            this.hostContext = host;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
             this.RequestId = Guid.NewGuid();
-            this.headers = new NameValueCollection();
             this.Cookies = new NameValueCollection();
+            this.hostContext = host;
             this.Origin = listenerRequest.LocalEndPoint.Address;
 
-
-            if (contextServerConfiguration.ResolveForwardedOriginAddress)
+            Task resolveOriginAddress = new Task(() =>
             {
-                string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
-                if (forwardedIp != null)
+                if (contextServerConfiguration.ResolveForwardedOriginAddress)
                 {
-                    /*
-                     * the first entry from the header value is the real client ip.
-                     * source: https://datatracker.ietf.org/doc/html/rfc2616#section-4.2
-                     */
-                    string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(0, forwardedIp.IndexOf(',')) : forwardedIp;
-                    bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
-                    if (!ok || forwardedAddress == null)
+                    string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
+                    if (forwardedIp != null)
                     {
-                        throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
-                    }
-                    else
-                    {
-                        this.Origin = forwardedAddress;
+                        /*
+                         * the first entry from the header value is the real client ip.
+                         * source: https://datatracker.ietf.org/doc/html/rfc2616#section-4.2
+                         */
+                        string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(0, forwardedIp.IndexOf(',')) : forwardedIp;
+                        bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
+                        if (!ok || forwardedAddress == null)
+                        {
+                            throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
+                        }
+                        else
+                        {
+                            this.Origin = forwardedAddress;
+                        }
                     }
                 }
-            }
+            });
 
-            string? cookieHeader = listenerRequest.Headers["cookie"];
-            if (cookieHeader != null)
+            Task parseCookies = new Task(() =>
             {
-                string[] cookieParts = cookieHeader.Split(';');
-                foreach (string cookieExpression in cookieParts)
+                string? cookieHeader = listenerRequest.Headers["cookie"];
+                if (cookieHeader != null)
                 {
-                    int eqPos = cookieExpression.IndexOf("=");
-                    if (eqPos < 0)
+                    string[] cookieParts = cookieHeader.Split(';');
+                    foreach (string cookieExpression in cookieParts)
                     {
-                        throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
-                    }
-                    string key = cookieExpression.Substring(0, eqPos).Trim();
-                    string value = cookieExpression.Substring(eqPos + 1).Trim();
+                        int eqPos = cookieExpression.IndexOf("=");
+                        if (eqPos < 0)
+                        {
+                            throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
+                        }
+                        string key = cookieExpression.Substring(0, eqPos).Trim();
+                        string value = cookieExpression.Substring(eqPos + 1).Trim();
 
-                    if (string.IsNullOrEmpty(key))
-                    {
-                        throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
-                    }
+                        if (string.IsNullOrEmpty(key))
+                        {
+                            throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
+                        }
 
-                    this.Cookies[key] = WebUtility.UrlDecode(value);
+                        this.Cookies[key] = WebUtility.UrlDecode(value);
+                    }
                 }
-            }
+            });
 
-            // normalize headers encoding
-            if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
+            Task normalizeHeaderNames = new Task(() =>
             {
-                Encoding entryCodepage = Encoding.GetEncoding("ISO-8859-1");
-                foreach (string headerName in listenerRequest.Headers)
+                if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
                 {
-                    string headerValue = listenerRequest.Headers[headerName]!;
-                    headers.Add(
-                        headerName,
-                        mbConvertCodepage(headerValue, entryCodepage, listenerRequest.ContentEncoding)
-                    );
+                    headers = new NameValueCollection();
+                    Encoding entryCodepage = Encoding.GetEncoding("ISO-8859-1");
+                    foreach (string headerName in listenerRequest.Headers)
+                    {
+                        string headerValue = listenerRequest.Headers[headerName]!;
+                        headers.Add(
+                            headerName,
+                            mbConvertCodepage(headerValue, entryCodepage, listenerRequest.ContentEncoding)
+                        );
+                    }
                 }
-            }
-            else
-            {
-                headers = listenerRequest.Headers;
-            }
+                else
+                {
+                    headers = listenerRequest.Headers;
+                }
+            });
+
+            resolveOriginAddress.Start();
+            parseCookies.Start();
+            normalizeHeaderNames.Start();
+
+            Task.WaitAll(resolveOriginAddress, parseCookies, normalizeHeaderNames);
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)

@@ -93,12 +93,13 @@ namespace Sisk.Core.Http
         /// Gets or sets the CORS sharing policy object.
         /// </summary>
         /// <definition>
-        /// public Entity.CrossOriginResourceSharingHeaders? CrossOriginResourceSharingPolicy { get; set; }
+        /// public Entity.CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get; set; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public Entity.CrossOriginResourceSharingHeaders? CrossOriginResourceSharingPolicy { get; set; }
+        public Entity.CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get; set; }
+            = new CrossOriginResourceSharingHeaders();
 
         /// <summary>
         /// Gets or sets a label for this Listening Host.

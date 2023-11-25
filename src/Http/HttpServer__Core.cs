@@ -50,9 +50,8 @@ public partial class HttpServer
         }
     }
 
-    internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders? cors, HttpListenerResponse baseResponse)
+    internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
     {
-        if (cors is null) return;
         if (!serverFlags.SendCorsHeaders) return;
         if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
         if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
@@ -330,9 +329,22 @@ public partial class HttpServer
                 // write the output buffer
                 if (context.Request.HttpMethod != "HEAD")
                 {
-                    Stream contentStream = response.Content.ReadAsStream();
-                    contentStream.CopyTo(baseResponse.OutputStream);
                     outcomingSize += responseContentLength.Value;
+
+                    bool isPayloadStreamable =
+                        response.Content is StreamContent ||
+                        responseContentLength > 1024;
+
+                    if (isPayloadStreamable)
+                    {
+                        Stream contentStream = await response.Content.ReadAsStreamAsync();
+                        contentStream.CopyTo(baseResponse.OutputStream);
+                    }
+                    else
+                    {
+                        byte[] contents = await response.Content.ReadAsByteArrayAsync();
+                        baseResponse.OutputStream.Write(contents);
+                    }
                 }
             }
 
