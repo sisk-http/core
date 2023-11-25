@@ -35,6 +35,22 @@ public partial class Router
         return r;
     }
 
+    /// <summary>
+    /// Gets an boolean indicating if there are any route that matches the specified method and route path.
+    /// </summary>
+    /// <param name="method">The route method.</param>
+    /// <param name="path">The route path.</param>
+    /// <definition>
+    /// public bool IsDefined(RouteMethod method, string path)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public bool IsDefined(RouteMethod method, string path)
+    {
+        return GetCollisionRoute(method, path) != null;
+    }
+
     /// <summary> 
     /// Gets an route object by their name that is defined in this Router.
     /// </summary>

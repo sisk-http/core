@@ -10,6 +10,7 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -134,7 +135,7 @@ public partial class Router
                 matchResult = RouteMatchResult.OptionsMatched;
                 break;
             }
-            else if (flag.TreatHeadAsGetMethod && (request.Method == HttpMethod.Head && route.Method == RouteMethod.Get))
+            else if (flag.TreatHeadAsGetMethod && request.Method == HttpMethod.Head && route.Method == RouteMethod.Get)
             {
                 isMethodMatched = true;
             }

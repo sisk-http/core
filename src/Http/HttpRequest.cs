@@ -83,11 +83,7 @@ namespace Sisk.Core.Http
                     string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
                     if (forwardedIp != null)
                     {
-                        /*
-                         * the first entry from the header value is the real client ip.
-                         * source: https://datatracker.ietf.org/doc/html/rfc2616#section-4.2
-                         */
-                        string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(0, forwardedIp.IndexOf(',')) : forwardedIp;
+                        string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
                         bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
                         if (!ok || forwardedAddress == null)
                         {
