@@ -83,7 +83,7 @@ namespace Sisk.Core.Http
                      * the first entry from the header value is the real client ip.
                      * source: https://datatracker.ietf.org/doc/html/rfc2616#section-4.2
                      */
-                    string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(0, forwardedIp.IndexOf(',')) : forwardedIp;
+                    string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
                     bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
                     if (!ok || forwardedAddress == null)
                     {
@@ -146,17 +146,6 @@ namespace Sisk.Core.Http
             tempBytes = inEnc.GetBytes(input);
             return outEnc.GetString(tempBytes);
         }
-
-#pragma warning disable
-        ~HttpRequest()
-        {
-            this.contentBytes = null;
-            this.listenerRequest = null;
-            this.listenerResponse = null;
-            this.contextServerConfiguration = null;
-        }
-#pragma warning restore
-
         internal void ImportContents(Stream listenerRequest)
         {
             if (isContentAvailable)
