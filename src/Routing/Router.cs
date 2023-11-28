@@ -25,6 +25,7 @@ namespace Sisk.Core.Routing
     public partial class Router
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
+
         internal HttpServer? ParentServer { get; private set; }
         internal HashSet<Route> _routes = new HashSet<Route>();
         private bool throwException = false;

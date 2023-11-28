@@ -96,18 +96,17 @@ public partial class Router
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
         Justification = "Task<> is already included with dynamic dependency.")]
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    internal async Task<RouterExecutionResult> Execute(HttpRequest request, HttpListenerRequest baseRequest, ListeningHost matchedHost, HttpContext? context)
+    internal async Task<RouterExecutionResult> Execute(HttpContext context)
     {
         if (this.ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
 
+        HttpRequest request = context.Request;
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
-        context = new HttpContext(this.ParentServer, request, matchedRoute, matchedHost);
         HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
-        request.Context = context;
         bool hasGlobalHandlers = this.GlobalRequestHandlers?.Length > 0;
-
+        
         foreach (Route route in _routes)
         {
             // test path

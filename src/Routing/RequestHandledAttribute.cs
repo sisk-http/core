@@ -11,6 +11,34 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Core.Routing
 {
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
+    /// </summary>
+    /// <definition>
+    /// [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    /// public class RequestHandlerAttribute{{T}} : Attribute where T : IRequestHandler
+    /// </definition>
+    /// <type>
+    /// Class
+    /// </type>
+    public class RequestHandlerAttribute<[DynamicallyAccessedMembers(
+              DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicFields
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors
+        )] T> : RequestHandlerAttribute where T : IRequestHandler
+    {
+        /// <summary>
+        /// Creates an new instance of this <see cref="RequestHandlerAttribute{T}"/> class.
+        /// </summary>
+        public RequestHandlerAttribute() : base(typeof(T)) { }
+    }
+#endif
+
     /// <summary>
     /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
     /// </summary>

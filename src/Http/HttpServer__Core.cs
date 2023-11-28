@@ -93,15 +93,8 @@ public partial class HttpServer
         var listener = (HttpListener)result.AsyncState!;
         listener.BeginGetContext(_listenerCallback, listener);
 
-        try
-        {
-            HttpListenerContext context = listener.EndGetContext(result);
-            await ProcessRequest(context);
-        }
-        catch (Exception)
-        {
-            return;
-        }
+        HttpListenerContext context = listener.EndGetContext(result);
+        await ProcessRequest(context);
     }
 
     private async Task ProcessRequest(HttpListenerContext context)
@@ -170,6 +163,9 @@ public partial class HttpServer
             }
 
             request = new HttpRequest(this, matchedListeningHost, context);
+            srContext = new HttpContext(this, request, null, matchedListeningHost);
+
+            request.Context = srContext;
             executionResult.Request = request;
 
             if (ServerConfiguration.ResolveForwardedOriginAddress)
@@ -229,7 +225,7 @@ public partial class HttpServer
             var timeout = flag.RouteActionTimeout;
             if (timeout.Ticks > 0)
             {
-                var routerTask = matchedListeningHost.Router.Execute(request, baseRequest, matchedListeningHost, srContext);
+                var routerTask = matchedListeningHost.Router.Execute(srContext);
                 if (await Task.WhenAny(routerTask, Task.Delay(timeout)) == routerTask)
                 {
                     routerResult = routerTask.Result;
@@ -241,7 +237,7 @@ public partial class HttpServer
             }
             else
             {
-                routerResult = await matchedListeningHost.Router.Execute(request, baseRequest, matchedListeningHost, srContext);
+                routerResult = await matchedListeningHost.Router.Execute(srContext);
             }
 
             response = routerResult.Response;
