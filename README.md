@@ -1,6 +1,6 @@
 ﻿<div align="center" style="display:grid;place-items:center;">
   <p>
-      <a href="https://sisk.proj.pw/" target="_blank"><img width="160" src="./.github/Icon.png" alt="V logo"></a>
+      <a href="https://sisk.proj.pw/" target="_blank"><img width="160" src="./.github/Icon.png"></a>
   </p>
   <h1>Sisk Framework</h1>
 
