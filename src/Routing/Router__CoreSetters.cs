@@ -107,7 +107,7 @@ public partial class Router
 
                     Abstract classes should not be included on the router.
                  */
-                if (tType.IsAbstract && (type.BaseType == null || type.BaseType == typeof(RouterModule)))
+                if (type.IsAbstract || type == tType)
                 {
                     continue;
                 }

@@ -587,7 +587,7 @@ namespace Sisk.Core.Http
                 return T.Parse(value, null);
 #endif
             }
-            catch (InvalidCastException)
+            catch (Exception)
             {
                 throw new InvalidCastException(string.Format(SR.HttpRequest_GetQueryValue_CastException, queryKeyName, typeof(T).FullName));
             }

@@ -334,7 +334,9 @@ public partial class HttpServer
                     if (isPayloadStreamable)
                     {
                         Stream contentStream = await response.Content.ReadAsStreamAsync();
-                        contentStream.CopyTo(baseResponse.OutputStream);
+                        if (contentStream.CanSeek)
+                            contentStream.Position = 0;
+                        await contentStream.CopyToAsync(baseResponse.OutputStream);
                     }
                     else
                     {
