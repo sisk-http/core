@@ -124,15 +124,16 @@ namespace Sisk.Core.Internal.ServiceProvider
         }
     }
 
-    [JsonSerializable(typeof(ConfigStructureFile))]
-    internal class ConfigStructureFile
+    [JsonSerializable(typeof(JsonObject))]
+    [JsonSerializable(typeof(ConfigStructureFile__ServerConfiguration))]
+    [JsonSerializable(typeof(ConfigStructureFile__ListeningHost))]
+    internal partial class ConfigStructureFile : JsonSerializerContext
     {
         public ConfigStructureFile__ServerConfiguration? Server { get; set; } = null!;
         public ConfigStructureFile__ListeningHost? ListeningHost { get; set; } = null!;
         public JsonObject? Parameters { get; set; }
     }
 
-    [JsonSerializable(typeof(ConfigStructureFile__ServerConfiguration))]
     internal class ConfigStructureFile__ServerConfiguration
     {
         public string? AccessLogsStream { get; set; } = "console";
@@ -145,8 +146,8 @@ namespace Sisk.Core.Internal.ServiceProvider
         public bool ThrowExceptions { get; set; } = true;
     }
 
-    [JsonSerializable(typeof(ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy))]
-    internal class ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy
+    [JsonSerializable(typeof(string[]))]
+    internal partial class ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy : JsonSerializerContext
     {
         public bool? AllowCredentials { get; set; } = null;
         public string[]? ExposeHeaders { get; set; }
@@ -157,8 +158,8 @@ namespace Sisk.Core.Internal.ServiceProvider
         public int? MaxAge { get; set; } = null;
     }
 
-    [JsonSerializable(typeof(ConfigStructureFile__ListeningHost))]
-    internal class ConfigStructureFile__ListeningHost
+    [JsonSerializable(typeof(ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy))]
+    internal partial class ConfigStructureFile__ListeningHost : JsonSerializerContext
     {
         public string? Label { get; set; }
         public string[]? Ports { get; set; }
