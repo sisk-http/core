@@ -14,12 +14,12 @@ namespace Sisk.Core.Internal
 {
     internal static class HttpStringInternals
     {
-        public record PathMatchResult(bool IsMatched, NameValueCollection Query);
+        public record PathMatchResult(bool IsMatched, NameValueCollection? Query);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
         {
-            NameValueCollection query = new NameValueCollection();
+            NameValueCollection? query = null;
             pathPattern = pathPattern.TrimEnd('/');
             requestPath = requestPath.TrimEnd('/');
 
@@ -41,6 +41,7 @@ namespace Sisk.Core.Internal
 
                 if (pathPtt.StartsWith('<') && pathPtt.EndsWith('>'))
                 {
+                    if (query == null) query = new NameValueCollection();
                     string queryValueName = pathPtt.Substring(1, pathPtt.Length - 2);
                     query.Add(queryValueName, reqsPtt);
                 }

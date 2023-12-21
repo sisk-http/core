@@ -329,7 +329,7 @@ public partial class HttpServer
 
                     bool isPayloadStreamable =
                         response.Content is StreamContent ||
-                        responseContentLength > 1024;
+                        responseContentLength > 2 * UnitMb;
 
                     if (isPayloadStreamable)
                     {

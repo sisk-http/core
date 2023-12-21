@@ -7,7 +7,6 @@
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<ServerGarbageCollection>true</ServerGarbageCollection>
 		
 		<OutputType>Library</OutputType>
 		<ImplicitUsings>disable</ImplicitUsings>

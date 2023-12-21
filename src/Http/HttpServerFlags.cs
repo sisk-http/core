@@ -202,23 +202,6 @@ namespace Sisk.Core.Http
         public TimeSpan RouteActionTimeout = TimeSpan.Zero;
 
         /// <summary>
-        /// Determines if the request input stream should be read into an byte array after running all <see cref="RequestHandlerExecutionMode.BeforeContents"/>
-        /// request handlers.
-        /// </summary>
-        /// <docs>
-        ///     <p>
-        ///         Default value: <code>true</code>
-        ///     </p>
-        /// </docs>
-        /// <definition>
-        /// public bool AutoReadRequestStream;
-        /// </definition>
-        /// <type>
-        /// Field
-        /// </type>
-        public bool AutoReadRequestStream = true;
-
-        /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
         /// <definition>

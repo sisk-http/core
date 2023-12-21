@@ -53,8 +53,8 @@ namespace Sisk.Core.Http
         private byte[]? contentBytes;
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
-        private bool isContentAvailable = false;
-        private NameValueCollection headers = null!;
+        private NameValueCollection? headers = null;
+        private NameValueCollection? cookies = null;
         private int currentFrame = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -63,7 +63,6 @@ namespace Sisk.Core.Http
             ListeningHost host,
             HttpListenerContext context)
         {
-
             this.context = context;
             this.baseServer = server;
             this.contextServerConfiguration = baseServer.ServerConfiguration;
@@ -71,84 +70,7 @@ namespace Sisk.Core.Http
             this.listenerRequest = context.Request;
             this.RequestedAt = DateTime.Now;
             this.Query = listenerRequest.QueryString;
-            this.RequestId = Guid.NewGuid();
-            this.Cookies = new NameValueCollection();
             this.hostContext = host;
-            this.Origin = listenerRequest.LocalEndPoint.Address;
-
-            Task resolveOriginAddress = new Task(() =>
-            {
-                if (contextServerConfiguration.ResolveForwardedOriginAddress)
-                {
-                    string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
-                    if (forwardedIp != null)
-                    {
-                        string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
-                        bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
-                        if (!ok || forwardedAddress == null)
-                        {
-                            throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
-                        }
-                        else
-                        {
-                            this.Origin = forwardedAddress;
-                        }
-                    }
-                }
-            });
-
-            Task parseCookies = new Task(() =>
-            {
-                string? cookieHeader = listenerRequest.Headers["cookie"];
-                if (cookieHeader != null)
-                {
-                    string[] cookieParts = cookieHeader.Split(';');
-                    foreach (string cookieExpression in cookieParts)
-                    {
-                        int eqPos = cookieExpression.IndexOf("=");
-                        if (eqPos < 0)
-                        {
-                            throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
-                        }
-                        string key = cookieExpression.Substring(0, eqPos).Trim();
-                        string value = cookieExpression.Substring(eqPos + 1).Trim();
-
-                        if (string.IsNullOrEmpty(key))
-                        {
-                            throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
-                        }
-
-                        this.Cookies[key] = WebUtility.UrlDecode(value);
-                    }
-                }
-            });
-
-            Task normalizeHeaderNames = new Task(() =>
-            {
-                if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
-                {
-                    headers = new NameValueCollection();
-                    Encoding entryCodepage = Encoding.GetEncoding("ISO-8859-1");
-                    foreach (string headerName in listenerRequest.Headers)
-                    {
-                        string headerValue = listenerRequest.Headers[headerName]!;
-                        headers.Add(
-                            headerName,
-                            mbConvertCodepage(headerValue, entryCodepage, listenerRequest.ContentEncoding)
-                        );
-                    }
-                }
-                else
-                {
-                    headers = listenerRequest.Headers;
-                }
-            });
-
-            resolveOriginAddress.Start();
-            parseCookies.Start();
-            normalizeHeaderNames.Start();
-
-            Task.WaitAll(resolveOriginAddress, parseCookies, normalizeHeaderNames);
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
@@ -167,7 +89,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public Guid RequestId { get; private set; }
+        public Guid RequestId { get => listenerRequest.RequestTraceIdentifier; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request was made by an secure transport context (SSL/TLS) or not.
@@ -189,7 +111,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public bool IsContentAvailable { get => isContentAvailable; }
+        public bool IsContentAvailable { get => contentBytes != null; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request has contents.
@@ -213,7 +135,31 @@ namespace Sisk.Core.Http
         /// </type>
         public NameValueCollection Headers
         {
-            get => headers;
+            get
+            {
+                if (headers == null)
+                {
+                    if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
+                    {
+                        headers = new NameValueCollection();
+                        Encoding entryCodepage = Encoding.GetEncoding("ISO-8859-1");
+                        foreach (string headerName in listenerRequest.Headers)
+                        {
+                            string headerValue = listenerRequest.Headers[headerName]!;
+                            headers.Add(
+                                headerName,
+                                mbConvertCodepage(headerValue, entryCodepage, listenerRequest.ContentEncoding)
+                            );
+                        }
+                    }
+                    else
+                    {
+                        headers = listenerRequest.Headers;
+                    }
+                }
+
+                return headers;
+            }
         }
 
         /// <summary>
@@ -225,7 +171,40 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public NameValueCollection Cookies { get; private set; } //= new NameValueCollection();
+        public NameValueCollection Cookies
+        {
+            get
+            {
+                if (cookies == null)
+                {
+                    cookies = new NameValueCollection();
+                    string? cookieHeader = listenerRequest.Headers["cookie"];
+                    if (cookieHeader != null)
+                    {
+                        string[] cookieParts = cookieHeader.Split(';');
+                        foreach (string cookieExpression in cookieParts)
+                        {
+                            int eqPos = cookieExpression.IndexOf("=");
+                            if (eqPos < 0)
+                            {
+                                throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
+                            }
+                            string key = cookieExpression.Substring(0, eqPos).Trim();
+                            string value = cookieExpression.Substring(eqPos + 1).Trim();
+
+                            if (string.IsNullOrEmpty(key))
+                            {
+                                throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
+                            }
+
+                            cookies[key] = WebUtility.UrlDecode(value);
+                        }
+                    }
+                }
+
+                return cookies;
+            }
+        }
 
         /// <summary>
         /// Get the requested host header (without port) from this HTTP request.
@@ -351,7 +330,11 @@ namespace Sisk.Core.Http
         /// </type>
         public byte[] RawBody
         {
-            get => contentBytes ?? Array.Empty<byte>();
+            get
+            {
+                ReadRequestStreamContents();
+                return contentBytes!;
+            }
         }
 
         /// <summary>
@@ -401,7 +384,28 @@ namespace Sisk.Core.Http
         /// </type>
         public IPAddress Origin
         {
-            get; internal set;
+            get
+            {
+                if (contextServerConfiguration.ResolveForwardedOriginAddress)
+                {
+                    string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
+                    if (forwardedIp != null)
+                    {
+                        string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
+                        bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
+                        if (!ok || forwardedAddress == null)
+                        {
+                            throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
+                        }
+                        else
+                        {
+                            return forwardedAddress;
+                        }
+                    }
+                }
+
+                return listenerRequest.RemoteEndPoint.Address;
+            }
         }
 
         /// <summary>
@@ -666,7 +670,7 @@ namespace Sisk.Core.Http
         /// <since>0.15</since> 
         public Stream GetRequestStream()
         {
-            if (isContentAvailable)
+            if (contentBytes != null)
             {
                 throw new InvalidOperationException(SR.HttpRequest_InputStreamAlreadyLoaded);
             }
@@ -705,17 +709,13 @@ namespace Sisk.Core.Http
         /// </type>
         public void ReadRequestStreamContents()
         {
-            if (isContentAvailable)
+            if (this.contentBytes == null)
             {
-                if (this.contentBytes == null)
-                    this.contentBytes = Array.Empty<byte>();
-                return;
-            }
-            using (var memoryStream = new MemoryStream())
-            {
-                listenerRequest.InputStream.CopyTo(memoryStream);
-                this.contentBytes = memoryStream.ToArray();
-                isContentAvailable = true;
+                using (var memoryStream = new MemoryStream())
+                {
+                    listenerRequest.InputStream.CopyTo(memoryStream);
+                    this.contentBytes = memoryStream.ToArray();
+                }
             }
         }
 

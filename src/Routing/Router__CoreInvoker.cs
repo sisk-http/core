@@ -106,7 +106,7 @@ public partial class Router
 
         HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
         bool hasGlobalHandlers = this.GlobalRequestHandlers?.Length > 0;
-        
+
         foreach (Route route in _routes)
         {
             // test path
@@ -145,10 +145,10 @@ public partial class Router
 
             if (isMethodMatched)
             {
-                foreach (string routeParam in pathTest.Query)
-                {
-                    request.Query.Add(routeParam, HttpUtility.UrlDecode(pathTest.Query[routeParam]));
-                }
+                if (pathTest.Query != null)
+                    foreach (string routeParam in pathTest.Query)
+                        request.Query[routeParam] = HttpUtility.UrlDecode(pathTest.Query[routeParam]);
+
                 matchResult = RouteMatchResult.FullyMatched;
                 matchedRoute = route;
                 break;
@@ -212,9 +212,6 @@ public partial class Router
                 }
             }
             #endregion
-
-            if (flag.AutoReadRequestStream)
-                request.ReadRequestStreamContents();
 
             #region Before-response global handlers
             if (hasGlobalHandlers)
