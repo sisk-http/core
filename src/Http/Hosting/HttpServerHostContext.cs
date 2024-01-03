@@ -133,4 +133,9 @@ public class HttpServerHostContext
         if (preventHault)
             Thread.Sleep(-1);
     }
+
+    public async Task StartAsync(bool verbose = true, bool preventHault = true)
+    {
+        await Task.Run(() => Start(verbose, preventHault));
+    }
 }

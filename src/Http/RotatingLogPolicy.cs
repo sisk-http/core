@@ -53,14 +53,19 @@ namespace Sisk.Core.Http
         /// Creates an new <see cref="RotatingLogPolicy"/> instance with the given <see cref="LogStream"/> object to watch.
         /// </summary>
         /// <definition>
-        /// public RotatingLogPolicy(LogStream? ls)
+        /// public RotatingLogPolicy(LogStream ls)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type> 
-        public RotatingLogPolicy(LogStream? ls)
+        public RotatingLogPolicy(LogStream ls)
         {
+            if (ls.rotatingLogPolicy != null)
+            {
+                throw new InvalidOperationException(SR.LogStream_RotatingLogPolicy_AlreadyBind);
+            }
             this._logStream = ls;
+            this._logStream.rotatingLogPolicy = this;
             checkThread = new Thread(new ThreadStart(Check));
             checkThread.IsBackground = true;
         }
@@ -78,12 +83,16 @@ namespace Sisk.Core.Http
         /// </definition>
         /// <type>
         /// Method
-        /// </type> 
+        /// </type>
         public void Configure(long maximumSize, TimeSpan due)
         {
             if (string.IsNullOrEmpty(_logStream?.FilePath))
             {
                 throw new NotSupportedException(SR.LogStream_RotatingLogPolicy_NotLocalFile);
+            }
+            if (checkThread.IsAlive)
+            {
+                throw new NotSupportedException(SR.LogStream_RotatingLogPolicy_AlreadyRunning);
             }
             MaximumSize = maximumSize;
             Due = due;

@@ -45,7 +45,10 @@ static class SR
     public const string LogStream_Peek_NotFilePath = "This method only works when the LogStream is appending contents to an file.";
     public const string LogStream_ExceptionDump_Header = "Exception thrown at {0}";
     public const string LogStream_ExceptionDump_TrimmedFooter = " + ... other trimmed inner exceptions";
+    public const string LogStream_NoFormat = "No format is defined in this LogStream.";
     public const string LogStream_RotatingLogPolicy_NotLocalFile = "Cannot link an rotaging log policy to an log stream which ins't pointing to an local file.";
+    public const string LogStream_RotatingLogPolicy_AlreadyRunning = "This RotatingLogPolicy has already been configured and it is running.";
+    public const string LogStream_RotatingLogPolicy_AlreadyBind = "The specified LogStream is already binded to another RotatingLogPolicy.";
 
     public const string HttpRequestEventSource_KeepAliveDisposed = "Cannot keep alive an instance that has it's connection disposed.";
 

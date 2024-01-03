@@ -29,6 +29,7 @@ namespace Sisk.Core.Http
         private ManualResetEvent terminate = new ManualResetEvent(false);
         private Thread loggingThread;
         private bool isBlocking = false;
+        internal RotatingLogPolicy? rotatingLogPolicy = null;
 
         /// <summary>
         /// Represents a LogStream that writes its output to the <see cref="Console.Out"/> stream.
@@ -40,6 +41,30 @@ namespace Sisk.Core.Http
         /// Field
         /// </type>
         public static LogStream ConsoleOutput = new LogStream(Console.Out);
+
+        /// <summary>
+        /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.
+        /// </summary>
+        /// <remarks>
+        /// Internally, this property creates a new <see cref="RotatingLogPolicy"/> for this log stream if it is not defined before.
+        /// </remarks>
+        /// <definition>
+        /// public RotatingLogPolicy RotatingPolicy
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public RotatingLogPolicy RotatingPolicy
+        {
+            get
+            {
+                if (rotatingLogPolicy == null)
+                {
+                    rotatingLogPolicy = new RotatingLogPolicy(this);
+                }
+                return rotatingLogPolicy;
+            }
+        }
 
         /// <summary>
         /// Gets the absolute path to the file where the log is being written to.
@@ -62,6 +87,17 @@ namespace Sisk.Core.Http
         /// Property
         /// </type>
         public TextWriter? TextWriter { get; private set; } = null;
+
+        /// <summary>
+        /// Gets or sets the function that formats input when used with <see cref="WriteFormat(object?)"/>.
+        /// </summary>
+        /// <definition>
+        /// public Func{{object?, string}}? Format { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public Func<object?, string>? Format { get; set; }
 
         /// <summary>
         /// Gets or sets the encoding used for writting data to the output file. This property is only appliable if
@@ -266,6 +302,26 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Writes the input, formatting with <see cref="Format"/> handler, at the end of the output.
+        /// </summary>
+        /// <param name="input">The input object which will be formatted and written to the output.</param>
+        /// <definition>
+        /// public void WriteFormat(object? input)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void WriteFormat(object? input)
+        {
+            if (Format == null)
+            {
+                throw new InvalidOperationException(SR.LogStream_NoFormat);
+            }
+            string format = Format(input);
+            Write(format);
+        }
+
+        /// <summary>
         /// Writes the text and concats an line-break at the end into the output.
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
@@ -358,6 +414,27 @@ namespace Sisk.Core.Http
             logQueue.Clear();
             TextWriter?.Flush();
             TextWriter?.Close();
+        }
+
+        /// <summary>
+        /// Defines the time interval and size threshold for starting the task, and then starts the task. This method is an
+        /// shortcut for calling <see cref="RotatingLogPolicy.Configure(long, TimeSpan)"/> of this defined <see cref="RotatingPolicy"/> method.
+        /// </summary>
+        /// <remarks>
+        /// The first run is performed immediately after calling this method.
+        /// </remarks>
+        /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
+        /// <param name="dueTime">The time interval between checks.</param>
+        /// <definition>
+        /// public void Configure(long maximumSize, TimeSpan due)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type> 
+        public void ConfigureRotatingPolicy(long maximumSize, TimeSpan dueTime)
+        {
+            var policy = RotatingPolicy;
+            policy.Configure(maximumSize, dueTime);
         }
 
         void WriteExceptionInternal(StringBuilder exceptionStr, Exception exp, int depth = 0)

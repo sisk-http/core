@@ -307,13 +307,13 @@ public partial class HttpServer
                 baseResponse.AddHeader(incameHeader, value);
             }
 
-            if (response.Content != null && responseContentLength > 0)
+            if (response.Content != null)
             {
                 // determines the content type
                 baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content.Headers.ContentType?.ToString();
 
                 // determines if the response should be sent as chunked or normal
-                if (response.SendChunked)
+                if (response.SendChunked || responseContentLength == null)
                 {
                     baseResponse.SendChunked = true;
                 }
@@ -325,7 +325,7 @@ public partial class HttpServer
                 // write the output buffer
                 if (context.Request.HttpMethod != "HEAD")
                 {
-                    outcomingSize += responseContentLength.Value;
+                    outcomingSize += responseContentLength ?? -1;
 
                     bool isPayloadStreamable =
                         response.Content is StreamContent ||
