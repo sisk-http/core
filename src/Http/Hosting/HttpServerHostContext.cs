@@ -122,7 +122,7 @@ public class HttpServerHostContext
     /// public void Start(bool verbose = true, bool preventHault = true)
     /// </definition>
     /// <type>
-    /// Property
+    /// Method
     /// </type>
     public void Start(bool verbose = true, bool preventHault = true)
     {
@@ -134,6 +134,17 @@ public class HttpServerHostContext
             Thread.Sleep(-1);
     }
 
+    /// <summary>
+    /// Asynchronously starts the Http server.
+    /// </summary>
+    /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
+    /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
+    /// <definition>
+    /// public async Task StartAsync(bool verbose = true, bool preventHault = true)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
     public async Task StartAsync(bool verbose = true, bool preventHault = true)
     {
         await Task.Run(() => Start(verbose, preventHault));
