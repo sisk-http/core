@@ -147,7 +147,7 @@ public partial class Router
             {
                 if (pathTest.Query != null)
                     foreach (string routeParam in pathTest.Query)
-                        request.Query[routeParam] = HttpUtility.UrlDecode(pathTest.Query[routeParam]);
+                        request.Query.SetItem(routeParam, HttpUtility.UrlDecode(pathTest.Query[routeParam]));
 
                 matchResult = RouteMatchResult.FullyMatched;
                 matchedRoute = route;
@@ -178,40 +178,12 @@ public partial class Router
             if (flag.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith('/'))
             {
                 HttpResponse res = new HttpResponse();
-                res.Status = HttpStatusCode.MovedPermanently;
+                res.Status = HttpStatusCode.TemporaryRedirect;
                 res.Headers.Add("Location", request.Path + "/" + (request.QueryString ?? ""));
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 
             ParentServer?.handler.ContextBagCreated(context.RequestBag);
-
-            #region Before-contents global handlers 
-            if (hasGlobalHandlers)
-            {
-                foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
-                {
-                    var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                    if (handlerResponse is not null)
-                    {
-                        return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                    }
-                }
-            }
-            #endregion
-
-            #region Before-contents route-specific handlers
-            if (matchedRoute!.RequestHandlers?.Length > 0)
-            {
-                foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeContents))
-                {
-                    var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                    if (handlerResponse is not null)
-                    {
-                        return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                    }
-                }
-            }
-            #endregion
 
             #region Before-response global handlers
             if (hasGlobalHandlers)

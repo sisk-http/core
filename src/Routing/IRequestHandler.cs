@@ -61,12 +61,6 @@ namespace Sisk.Core.Routing
     public enum RequestHandlerExecutionMode
     {
         /// <summary>
-        /// Indicates that the handler must be executed before the router calls the route action and before the request content is available.
-        /// </summary>
-        [Obsolete("This field is deprecated and will be removed in newer versions of Sisk. Use BeforeResponse instead.")]
-        BeforeContents,
-
-        /// <summary>
         /// Indicates that the handler must be executed before the router calls the route action and after request contents is loaded.
         /// </summary>
         BeforeResponse,

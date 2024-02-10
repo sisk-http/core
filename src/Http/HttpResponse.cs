@@ -301,12 +301,12 @@ namespace Sisk.Core.Http
         /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
         /// <param name="sameSite">The cookie SameSite parameter.</param>
         /// <definition>
-        /// public HttpResponse WithCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+        /// public HttpResponse WithCookie(string name, string value, DateTime? expires = null, TimeSpan? maxAge = null, string? domain = null, string? path = null, bool? secure = null, bool? httpOnly = null, string? sameSite = null)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public HttpResponse WithCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+        public HttpResponse WithCookie(string name, string value, DateTime? expires = null, TimeSpan? maxAge = null, string? domain = null, string? path = null, bool? secure = null, bool? httpOnly = null, string? sameSite = null)
         {
             this.SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
             return this;

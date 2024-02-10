@@ -55,6 +55,8 @@ namespace Sisk.Core.Http
         private HttpRequestEventSource? activeEventSource;
         private NameValueCollection? headers = null;
         private NameValueCollection? cookies = null;
+        private ValueItemCollection? query = null;
+        private ValueItemCollection? form = null;
         private int currentFrame = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -69,7 +71,6 @@ namespace Sisk.Core.Http
             this.listenerResponse = context.Response;
             this.listenerRequest = context.Request;
             this.RequestedAt = DateTime.Now;
-            this.Query = listenerRequest.QueryString;
             this.hostContext = host;
         }
 
@@ -355,12 +356,22 @@ namespace Sisk.Core.Http
         /// Gets the HTTP request query extracted from the path string. This property also contains routing parameters.
         /// </summary>
         /// <definition>
-        /// public NameValueCollection Query { get; }
+        /// public ValueItemCollection Query { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public NameValueCollection Query { get; internal set; }
+        public ValueItemCollection Query
+        {
+            get
+            {
+                if (query == null)
+                {
+                    query = ValueItemCollection.FromNameValueCollection("query parameter", listenerRequest.QueryString);
+                }
+                return query;
+            }
+        }
 
         /// <summary>
         /// Gets the HTTP request URL raw query string.
@@ -455,9 +466,13 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        public NameValueCollection GetFormContent()
+        public ValueItemCollection GetFormContent()
         {
-            return HttpUtility.ParseQueryString(Body);
+            if (form == null)
+            {
+                form = ValueItemCollection.FromNameValueCollection("form", HttpUtility.ParseQueryString(Body));
+            }
+            return form;
         }
 
         /// <summary>
@@ -556,7 +571,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName];
+        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName].MaybeNull()?.GetString();
 
         /// <summary>
         /// Gets the value stored from the <see cref="Query"/> and converts it to the given type.
@@ -574,13 +589,14 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
+        [Obsolete("This method is deprecated and will be removed in later versions. Use Query[queryKeyName] instead.")]
 #if NET6_0
         public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct
 #elif NET7_0_OR_GREATER
         public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct, IParsable<T>
 #endif
         {
-            string? value = Query[queryKeyName];
+            string? value = Query[queryKeyName].MaybeNull()?.GetString();
             if (value == null) return defaultValue;
 
             try

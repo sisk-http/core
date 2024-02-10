@@ -260,7 +260,7 @@ public partial class Router
     }
 
     /// <summary>
-    /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
+    /// Searches the object for static methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
     /// </summary>
     /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>

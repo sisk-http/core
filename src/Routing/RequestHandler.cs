@@ -24,7 +24,7 @@ public abstract class RequestHandler : IRequestHandler
 {
     /// <inheritdoc/>
     /// <nodoc/>
-    public virtual RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeContents;
+    public virtual RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeResponse;
 
     /// <inheritdoc/>
     /// <nodoc/>
