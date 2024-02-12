@@ -175,7 +175,7 @@ public partial class Router
             context.MatchedRoute = matchedRoute;
             HttpResponse? result = null;
 
-            if (flag.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith('/'))
+            if (flag.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith('/') && request.Method == HttpMethod.Get)
             {
                 HttpResponse res = new HttpResponse();
                 res.Status = HttpStatusCode.TemporaryRedirect;
@@ -228,8 +228,6 @@ public partial class Router
                 if (matchedRoute.isReturnTypeTask)
                 {
                     Task<object> objTask = Unsafe.As<Task<object>>(actionResult);
-                    //objTask.Wait();
-                    //actionResult = objTask.Result;
                     actionResult = await objTask;
                 }
 
@@ -239,7 +237,7 @@ public partial class Router
                 }
                 else
                 {
-                    result = this.ResolveAction(actionResult);
+                    result = ResolveAction(actionResult);
                 }
             }
             catch (Exception ex)

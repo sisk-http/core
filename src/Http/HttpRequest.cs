@@ -55,11 +55,10 @@ namespace Sisk.Core.Http
         private HttpRequestEventSource? activeEventSource;
         private NameValueCollection? headers = null;
         private NameValueCollection? cookies = null;
-        private ValueItemCollection? query = null;
-        private ValueItemCollection? form = null;
+        private StringValueCollection? query = null;
+        private StringValueCollection? form = null;
         private int currentFrame = 0;
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal HttpRequest(
             HttpServer server,
             ListeningHost host,
@@ -79,6 +78,18 @@ namespace Sisk.Core.Http
             byte[] tempBytes;
             tempBytes = inEnc.GetBytes(input);
             return outEnc.GetString(tempBytes);
+        }
+
+        void ReadRequestStreamContents()
+        {
+            if (this.contentBytes == null)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    listenerRequest.InputStream.CopyTo(memoryStream);
+                    this.contentBytes = memoryStream.ToArray();
+                }
+            }
         }
 
         /// <summary>
@@ -356,18 +367,18 @@ namespace Sisk.Core.Http
         /// Gets the HTTP request query extracted from the path string. This property also contains routing parameters.
         /// </summary>
         /// <definition>
-        /// public ValueItemCollection Query { get; }
+        /// public StringValueCollection Query { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public ValueItemCollection Query
+        public StringValueCollection Query
         {
             get
             {
                 if (query == null)
                 {
-                    query = ValueItemCollection.FromNameValueCollection("query parameter", listenerRequest.QueryString);
+                    query = StringValueCollection.FromNameValueCollection("query parameter", listenerRequest.QueryString);
                 }
                 return query;
             }
@@ -384,6 +395,7 @@ namespace Sisk.Core.Http
         /// </type>
         public string? QueryString { get => listenerRequest.Url?.Query; }
 
+
         /// <summary>
         /// Gets the incoming IP address from the request.
         /// </summary>
@@ -393,7 +405,19 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public IPAddress Origin
+        [Obsolete("This property is deprecated. Use HttpRequest.RemoteAddress instead.")]
+        public IPAddress Origin { get => RemoteAddress; }
+
+        /// <summary>
+        /// Gets the incoming IP address from the request.
+        /// </summary>
+        /// <definition>
+        /// public IPAddress Origin { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public IPAddress RemoteAddress
         {
             get
             {
@@ -466,11 +490,11 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        public ValueItemCollection GetFormContent()
+        public StringValueCollection GetFormContent()
         {
             if (form == null)
             {
-                form = ValueItemCollection.FromNameValueCollection("form", HttpUtility.ParseQueryString(Body));
+                form = StringValueCollection.FromNameValueCollection("form", HttpUtility.ParseQueryString(Body));
             }
             return form;
         }
@@ -571,7 +595,8 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName].MaybeNull()?.GetString();
+        [Obsolete("This method is deprecated and will be removed in later versions. Use Query[queryKeyName] instead.")]
+        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName];
 
         /// <summary>
         /// Gets the value stored from the <see cref="Query"/> and converts it to the given type.
@@ -624,6 +649,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
+        [Obsolete("This method is deprecated and will be removed in later versions. Use Headers[headerName] instead.")]
         public string? GetHeader(string headerName) => Headers[headerName];
 
         /// <summary>
@@ -710,29 +736,6 @@ namespace Sisk.Core.Http
             }
             isStreaming = true;
             return new HttpResponseStream(listenerResponse, listenerRequest, this);
-        }
-
-        /// <summary>
-        /// Reads the entire request input stream and stores it into <see cref="RawBody"/>. This method is
-        /// invoked automatically when the <see cref="HttpServerFlags.AutoReadRequestStream"/> is
-        /// enabled.
-        /// </summary>
-        /// <definition>
-        /// public void ReadRequestStreamContents()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        public void ReadRequestStreamContents()
-        {
-            if (this.contentBytes == null)
-            {
-                using (var memoryStream = new MemoryStream())
-                {
-                    listenerRequest.InputStream.CopyTo(memoryStream);
-                    this.contentBytes = memoryStream.ToArray();
-                }
-            }
         }
 
         /// <summary>

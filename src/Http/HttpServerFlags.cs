@@ -152,7 +152,8 @@ namespace Sisk.Core.Http
         public bool NormalizeHeadersEncodings = false;
 
         /// <summary>
-        /// Determines if the HTTP server should automatically rewrite paths to end with /. Does not works with Regex routes.
+        /// Determines if the HTTP server should automatically rewrite paths to end with /. This flag is only
+        /// applyable to GET requests which aren't using Regex routes.
         /// </summary>
         /// <docs>
         ///     <p>
