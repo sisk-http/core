@@ -106,7 +106,7 @@ public partial class Router
 
         HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
         bool hasGlobalHandlers = this.GlobalRequestHandlers?.Length > 0;
-
+        
         foreach (Route route in _routes)
         {
             // test path

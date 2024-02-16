@@ -27,7 +27,7 @@ static class SR
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";
 
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
-    public const string Httpserver_StartMessage = "The HTTP server is listening at {0}";
+    public const string Httpserver_StartMessage = "The HTTP server is listening at:";
     public const string Httpserver_Commons_HeaderAfterContents = "Cannot send headers or status code after sending response contents.";
     public const string Httpserver_Commons_RouterTimeout = "Request maximum execution time exceeded it's limit.";
 

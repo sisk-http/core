@@ -4,7 +4,7 @@
   </p>
   <h1>Sisk Framework</h1>
 
-  [Discover Sisk](https://sisk.project-principium.dev/) | [Documentation](https://sisk.project-principium.dev/read?q=/contents/docs/welcome.md) | [Changelog](https://github.com/sisk-http/docs/blob/master/Changelog.md) | [Specification](https://sisk.project-principium.dev/read?q=/contents/spec/index.md) | [Benchmark](https://github.com/sisk-http/benchmarks) | [Roadmap](https://github.com/orgs/sisk-http/projects/1)
+  [Discover Sisk](https://sisk.project-principium.dev/) | [Documentation](https://md.proj.pw/sisk-http/docs-v2/main) | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs) | [Benchmarks](https://github.com/sisk-http/benchmarks)
 
   <div>
 
@@ -17,8 +17,6 @@
 
   **Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
 
-  **You can do more with less.**
-
 </div>
 
 ------
@@ -26,7 +24,7 @@
 
 ### Documentation
 
-You can get started with Sisk [here](https://sisk.project-principium.dev/read?q=/contents/docs/getting-started.md) or build the documentation repository [here](https://github.com/sisk-http/docs).
+You can get started with Sisk [here](https://md.proj.pw/sisk-http/docs-v2/main/) or build the documentation repository [here](https://github.com/sisk-http/docs-v2).
 
 For information about release notes, changelogs and API breaking changes, see [docs/Changelog.md](https://github.com/sisk-http/docs/blob/master/Changelog.md).
 
@@ -43,7 +41,7 @@ PM> NuGet\Install-Package Sisk.HttpServer
 In this repository, you have the source code of:
 
   - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
-  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as [0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
+  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): (legacy) the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as 0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
   - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
 
 ## Getting started

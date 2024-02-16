@@ -233,6 +233,20 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Gets the managed object which holds data for an entire HTTP session.
+        /// </summary>
+        /// <remarks>
+        /// This property is an shortcut for <see cref="HttpContext.RequestBag"/> property.
+        /// </remarks>
+        /// <definition>
+        /// public HttpContextBagRepository Bag { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public HttpContextBagRepository Bag { get => Context.RequestBag; }
+
+        /// <summary>
         /// Get the requested host header with the port from this HTTP request.
         /// </summary>
         /// <definition>

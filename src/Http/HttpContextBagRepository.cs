@@ -30,6 +30,20 @@ public class HttpContextBagRepository : IDictionary<string, object?>
         t.Name + "+" + t.GetHashCode();
 
     /// <summary>
+    /// Creates an new instance of the <see cref="HttpContextBagRepository"/> class.
+    /// </summary>
+    /// <definition>
+    /// public HttpContextBagRepository()
+    /// </definition>
+    /// <type>
+    /// Constructor
+    /// </type>
+    public HttpContextBagRepository()
+    {
+
+    }
+
+    /// <summary>
     /// Gets or sets an bag item by it's key.
     /// </summary>
     /// <param name="key">The bag item key name.</param>

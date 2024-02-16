@@ -129,7 +129,12 @@ public class HttpServerHostContext
         HttpServer.Start();
 
         if (verbose)
-            Console.WriteLine(SR.Httpserver_StartMessage, HttpServer.ListeningPrefixes[0]);
+        {
+            Console.WriteLine(SR.Httpserver_StartMessage);
+            foreach (string prefix in HttpServer.ListeningPrefixes)
+                Console.WriteLine("- {0}", prefix);
+        }            
+
         if (preventHault)
             Thread.Sleep(-1);
     }
