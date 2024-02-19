@@ -351,7 +351,7 @@ namespace Sisk.Core.Http.Streams
             try
             {
                 int totalLength = buffer.Length;
-                int chunks = Math.Max(totalLength / bufferLength, 1);
+                int chunks = (int)(Math.Ceiling((double)totalLength / bufferLength));
 
                 for (int i = 0; i < chunks; i++)
                 {
