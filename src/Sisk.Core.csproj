@@ -8,7 +8,7 @@
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DebugType>embedded</DebugType>
-		
+
 		<OutputType>Library</OutputType>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -43,7 +43,7 @@
 
 		<PathMap>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)=.</PathMap>
 	</PropertyGroup>
-
+	
 	<ItemGroup>
 		<None Include="..\.nuget\README.html" Link="README.html" />
 	</ItemGroup>
