@@ -14,7 +14,6 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Core.Http;
 
@@ -133,6 +132,11 @@ public partial class HttpServer
 
         try
         {
+            if (!flag.AsyncRequestProcessing)
+            {
+                Monitor.Enter(httpListener);
+            }
+
             sw.Start();
 
             #region Step 1 - DNS/Listening host matching
@@ -145,7 +149,7 @@ public partial class HttpServer
             }
 
             string dnsSafeHost = connectingUri.DnsSafeHost;
-            string? forwardedHost = baseRequest.Headers["X-Forwarded-Host"];
+            string? forwardedHost = baseRequest.Headers[HttpKnownHeaderNames.XForwardedHost];
             if (ServerConfiguration.ResolveForwardedOriginHost && forwardedHost != null)
             {
                 dnsSafeHost = forwardedHost;
@@ -170,7 +174,7 @@ public partial class HttpServer
 
             if (ServerConfiguration.ResolveForwardedOriginAddress)
             {
-                otherParty = request.Origin;
+                otherParty = request.RemoteAddress;
             }
 
             if (matchedListeningHost.Router == null || !matchedListeningHost.CanListen)
@@ -187,7 +191,7 @@ public partial class HttpServer
             if (ServerConfiguration.IncludeRequestIdHeader)
                 baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
             if (flag.SendSiskHeader)
-                baseResponse.Headers.Set("X-Powered-By", poweredByHeader);
+                baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, poweredByHeader);
 
             long requestMaxSize = ServerConfiguration.MaximumContentLength;
             if (requestMaxSize > 0 && baseRequest.ContentLength64 > requestMaxSize)
@@ -303,14 +307,13 @@ public partial class HttpServer
             {
                 string? value = resHeaders[incameHeader];
                 if (string.IsNullOrEmpty(value)) continue;
-
-                baseResponse.AddHeader(incameHeader, value);
+                baseResponse.Headers[incameHeader] = value;
             }
 
             if (response.Content != null)
             {
                 // determines the content type
-                baseResponse.ContentType = resHeaders["Content-Type"] ?? response.Content.Headers.ContentType?.ToString();
+                baseResponse.ContentType = resHeaders[HttpKnownHeaderNames.ContentType] ?? response.Content.Headers.ContentType?.ToString();
 
                 // determines if the response should be sent as chunked or normal
                 if (response.SendChunked || responseContentLength == null)
@@ -329,14 +332,29 @@ public partial class HttpServer
 
                     bool isPayloadStreamable =
                         response.Content is StreamContent ||
-                        responseContentLength > 2 * UnitMb;
+                        responseContentLength > flag.RequestStreamCopyBufferSize;
 
                     if (isPayloadStreamable)
                     {
                         Stream contentStream = await response.Content.ReadAsStreamAsync();
+
                         if (contentStream.CanSeek)
+                        {
                             contentStream.Position = 0;
-                        await contentStream.CopyToAsync(baseResponse.OutputStream);
+                            if (!baseResponse.SendChunked)
+                                baseResponse.ContentLength64 = contentStream.Length;
+                        }
+                        else
+                        {
+                            if (baseResponse.ContentLength64 == 0)
+                            {
+                                // the content-length wasn't informed and the user didn't set the request to
+                                // send as chunked. so it will throw an exception.
+                                throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
+                            }
+                        }
+
+                        await contentStream.CopyToAsync(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
                     }
                     else
                     {
@@ -474,6 +492,11 @@ public partial class HttpServer
                 formatter.Format(ref line);
 
                 ServerConfiguration.AccessLogsStream?.WriteLine(line);
+            }
+
+            if (!flag.AsyncRequestProcessing)
+            {
+                Monitor.Exit(httpListener);
             }
             #endregion
         }

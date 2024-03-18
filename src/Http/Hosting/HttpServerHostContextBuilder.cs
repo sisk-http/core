@@ -9,7 +9,6 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Handlers;
-using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -140,12 +139,12 @@ public sealed class HttpServerHostContextBuilder
     /// </summary>
     /// <param name="port">The port the server will listen on.</param>
     /// <definition>
-    /// public void UseListeningPort(int port)
+    /// public void UseListeningPort(ushort port)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public void UseListeningPort(int port)
+    public void UseListeningPort(ushort port)
     {
         _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(port);
     }

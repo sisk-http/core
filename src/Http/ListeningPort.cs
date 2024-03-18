@@ -7,7 +7,6 @@
 // File name:   ListeningPort.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Net;
 using System.Net.Sockets;
 
@@ -62,12 +61,12 @@ namespace Sisk.Core.Http
         /// Gets or sets the port where this listening port will refer.
         /// </summary>
         /// <definition>
-        /// public int Port { get; set; }
+        /// public ushort Port { get; set; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public int Port { get; set; }
+        public ushort Port { get; set; }
 
         /// <summary>
         /// Gets or sets whether the server should listen to this port securely (SSL).
@@ -106,7 +105,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Constructor
         /// </type>
-        public ListeningPort(int port)
+        public ListeningPort(ushort port)
         {
             this.Hostname = "localhost";
             this.Port = port;
@@ -119,12 +118,12 @@ namespace Sisk.Core.Http
         /// <param name="port">The port the server will listen on.</param>
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
         /// <definition>
-        /// public ListeningPort(int port, bool secure)
+        /// public ListeningPort(ushort port, bool secure)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        public ListeningPort(int port, bool secure)
+        public ListeningPort(ushort port, bool secure)
         {
             this.Hostname = "localhost";
             this.Port = port;
@@ -138,12 +137,12 @@ namespace Sisk.Core.Http
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
         /// <param name="hostname">The hostname DNS pattern the server will listen to.</param>
         /// <definition>
-        /// public ListeningPort(bool secure, string hostname, int port)
+        /// public ListeningPort(bool secure, string hostname, ushort port)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        public ListeningPort(bool secure, string hostname, int port)
+        public ListeningPort(bool secure, string hostname, ushort port)
         {
             this.Hostname = hostname;
             this.Port = port;
@@ -186,7 +185,7 @@ namespace Sisk.Core.Http
                 throw new ArgumentException(SR.ListeningPort_Parser_InvalidScheme);
             }
 
-            if (!Int32.TryParse(portPart, out int port)) throw new ArgumentException(SR.ListeningPort_Parser_InvalidPort);
+            if (!ushort.TryParse(portPart, out ushort port)) throw new ArgumentException(SR.ListeningPort_Parser_InvalidPort);
 
             this.Port = port;
             this.Hostname = hostnamePart;
@@ -238,7 +237,7 @@ namespace Sisk.Core.Http
         {
             TcpListener l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
-            int port = ((IPEndPoint)l.LocalEndpoint).Port;
+            ushort port = (ushort)((IPEndPoint)l.LocalEndpoint).Port;
             l.Stop();
             return new ListeningPort(port, false);
         }

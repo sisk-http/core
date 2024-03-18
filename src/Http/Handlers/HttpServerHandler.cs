@@ -12,15 +12,15 @@ using Sisk.Core.Routing;
 namespace Sisk.Core.Http.Handlers;
 
 /// <summary>
-/// Represents a handler for the <see cref="HttpServer"/>, router, and related modules.
+/// Represents an event handler for the <see cref="HttpServer"/>, router, and related events.
 /// </summary>
 /// <definition>
-/// public class HttpServerHandler
+/// public abstract class HttpServerHandler
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public class HttpServerHandler
+public abstract class HttpServerHandler
 {
     /// <summary>
     /// Method that is called immediately before starting the <see cref="HttpServer"/>.
@@ -99,7 +99,8 @@ public class HttpServerHandler
     public virtual void OnHttpRequestClose(HttpServerExecutionResult result) { }
 
     /// <summary>
-    /// Method that is called when an exception is caught in the Http server.
+    /// Method that is called when an exception is caught in the Http server. This method is called
+    /// regardless of whether <see cref="HttpServerConfiguration.ThrowExceptions"/> is enabled or not.
     /// </summary>
     /// <param name="exception">The exception object.</param>
     /// <definition>

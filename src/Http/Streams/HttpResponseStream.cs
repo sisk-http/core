@@ -23,8 +23,10 @@ namespace Sisk.Core.Http.Streams;
 /// </type>
 public sealed class HttpResponseStream : CookieHelper
 {
-    private HttpListenerResponse listenerResponse;
+    internal HttpListenerResponse listenerResponse;
     private bool hasSentData = false;
+
+    // calculated on chunked encoding, but set on SetContentLength
     internal long calculatedLength;
 
     internal HttpResponseStream(HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host)
@@ -52,6 +54,8 @@ public sealed class HttpResponseStream : CookieHelper
         set
         {
             listenerResponse.SendChunked = value;
+            if (listenerResponse.ContentLength64 > 0)
+                listenerResponse.ContentLength64 = 0;
         }
     }
 
@@ -65,6 +69,25 @@ public sealed class HttpResponseStream : CookieHelper
     /// Property
     /// </type>
     public Stream ResponseStream { get; private set; }
+
+    /// <summary>
+    /// Sets the Content-Length header of this response stream. If this response stream is using chunked transfer encoding, this method
+    /// will do nothing.
+    /// </summary>
+    /// <param name="contentLength">The length in bytes of the content stream.</param>
+    /// <definition>
+    /// public void SetContentLength(long contentLength)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void SetContentLength(long contentLength)
+    {
+        if (SendChunked)
+            SendChunked = false;
+
+        listenerResponse.ContentLength64 = contentLength;
+    }
 
     /// <summary>
     /// Sets the specific HTTP header into this response stream.
@@ -83,14 +106,11 @@ public sealed class HttpResponseStream : CookieHelper
     public void SetHeader(string headerName, string value)
     {
         if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
-        if (string.Compare(headerName, "Content-Length", true) == 0)
+        if (string.Compare(headerName, HttpKnownHeaderNames.ContentLength, true) == 0)
         {
-            if (SendChunked)
-                return;
-
-            listenerResponse.ContentLength64 = long.Parse(value);
+            SetContentLength(long.Parse(value));
         }
-        else if (string.Compare(headerName, "Content-Type", true) == 0)
+        else if (string.Compare(headerName, HttpKnownHeaderNames.ContentType, true) == 0)
         {
             listenerResponse.ContentType = value;
         }
@@ -249,6 +269,10 @@ internal class ResponseStreamWriter : Stream
 
     public override void Write(Byte[] buffer, Int32 offset, Int32 count)
     {
+        if (Parent.SendChunked == false && Parent.listenerResponse.ContentLength64 == 0)
+        {
+            throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
+        }
         BaseStream.Write(buffer, offset, count);
         Interlocked.Add(ref Parent.calculatedLength, buffer.Length);
     }

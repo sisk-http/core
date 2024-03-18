@@ -9,6 +9,7 @@
 
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing
@@ -27,17 +28,21 @@ namespace Sisk.Core.Routing
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
 
         internal HttpServer? ParentServer { get; private set; }
-        internal HashSet<Route> _routes = new HashSet<Route>();
+        internal IList<Route> _routes = new List<Route>();
         private bool throwException = false;
-        private Dictionary<Type, Func<object, HttpResponse>> actionHandlers;
+        private IDictionary<Type, Func<object, HttpResponse>> actionHandlers;
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal void BindServer(HttpServer server)
         {
-            if (object.ReferenceEquals(server, this.ParentServer)) return;
-            this.ParentServer = server;
-            this.throwException = server.ServerConfiguration.ThrowExceptions;
+            if (ReferenceEquals(server, ParentServer)) return;
+
+            ParentServer = server;
+            throwException = server.ServerConfiguration.ThrowExceptions;
             server.handler.SetupRouter(this);
+
+            _routes = _routes.ToImmutableArray();
+            actionHandlers = actionHandlers.ToImmutableDictionary();
         }
 
         /// <summary>
@@ -164,27 +169,16 @@ namespace Sisk.Core.Routing
 
         HttpResponse ResolveAction(object routeResult)
         {
-            Type actionType = routeResult.GetType();
-            if (routeResult == null)
+            if (routeResult is null)
             {
                 throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
             }
 
-            Type? matchedType = null;
-            foreach (Type tkey in actionHandlers.Keys)
-            {
-                if (actionType.IsAssignableTo(tkey))
-                {
-                    matchedType = tkey;
-                    break;
-                }
-            }
-            if (matchedType == null)
+            Type actionType = routeResult.GetType();
+            if (!actionHandlers.TryGetValue(actionType, out var actionHandler))
             {
                 throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, actionType.FullName));
             }
-
-            var actionHandler = actionHandlers[matchedType];
 
             return actionHandler(routeResult);
         }

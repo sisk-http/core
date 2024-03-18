@@ -7,6 +7,7 @@
 // File name:   CookieHelpers.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Web;
 
 namespace Sisk.Core.Http;
@@ -101,7 +102,7 @@ public abstract class CookieHelper
             syntax.Add($"SameSite={sameSite}");
         }
 
-        SetCookieHeader("Set-Cookie", String.Join("; ", syntax));
+        SetCookieHeader(HttpKnownHeaderNames.SetCookie, String.Join("; ", syntax));
     }
 
 }

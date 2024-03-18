@@ -7,7 +7,6 @@
 // File name:   HttpResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
@@ -268,6 +267,24 @@ namespace Sisk.Core.Http
         public HttpResponse WithStatus(int status)
         {
             this.Status = (HttpStatusCode)status;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the HTTP response status information from an <see cref="HttpStatusInformation"/> object.
+        /// </summary>
+        /// <param name="statusInformation">The status information.</param>
+        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
+        /// <definition>
+        /// public HttpResponse WithStatus(int status)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpResponse WithStatus(HttpStatusInformation statusInformation)
+        {
+            this.Status = default;
+            this.CustomStatus = statusInformation;
             return this;
         }
 

@@ -17,12 +17,12 @@ internal class HttpServerHandlerRepository
 
     public void RegisterHandler(HttpServerHandler handler)
     {
-        this.handlers.Add(handler);
+        handlers.Add(handler);
     }
 
     private void CallEvery(Action<HttpServerHandler> action)
     {
-        foreach (HttpServerHandler handler in this.handlers)
+        foreach (HttpServerHandler handler in handlers)
             action(handler);
     }
 

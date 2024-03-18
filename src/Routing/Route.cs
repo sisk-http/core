@@ -7,8 +7,6 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Routing
@@ -166,7 +164,7 @@ namespace Sisk.Core.Routing
         }
 
         /// <summary>
-        /// Gets or sets the RequestHandlers to run before the route's Action.
+        /// Gets or sets the request handlers instances to run before the route's Action.
         /// </summary>
         /// <definition>
         /// public IRequestHandler[]? RequestHandlers { get; set; }
@@ -177,7 +175,7 @@ namespace Sisk.Core.Routing
         public IRequestHandler[]? RequestHandlers { get; set; }
 
         /// <summary>
-        /// Gets or sets the global request handlers that will not run on this route. The verification is given by the identifier of the instance of an <see cref="IRequestHandler"/>.
+        /// Gets or sets the global request handlers instances that will not run on this route.
         /// </summary>
         /// <definition>
         /// public IRequestHandler[]? BypassGlobalRequestHandlers { get; set; }

@@ -24,7 +24,7 @@ namespace Sisk.Core.Http
     public class ListeningHost
     {
         private ListeningPort[] _ports = null!;
-        internal int[] _numericPorts = null!;
+        internal ushort[] _numericPorts = null!;
 
         /// <summary>
         /// Determines if another object is equals to this class instance.

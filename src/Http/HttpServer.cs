@@ -10,7 +10,6 @@
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
-using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -87,13 +86,13 @@ namespace Sisk.Core.Http
         /// <param name="router">The <see cref="Router"/> object issued from this method.</param>
         /// <returns></returns>
         /// <definition>
-        /// public static HttpServer Emit(in int insecureHttpPort, out HttpServerConfiguration configuration, out ListeningHost host, out Router router)
+        /// public static HttpServer Emit(in ushort insecureHttpPort, out HttpServerConfiguration configuration, out ListeningHost host, out Router router)
         /// </definition>
         /// <type>
         /// Static method 
         /// </type>
         public static HttpServer Emit(
-            in int insecureHttpPort,
+            in ushort insecureHttpPort,
             out HttpServerConfiguration configuration,
             out ListeningHost host,
             out Router router
@@ -186,9 +185,13 @@ namespace Sisk.Core.Http
         /// <definition>
         /// public event ServerExecutionEventHandler? OnConnectionClose;
         /// </definition>
+        /// <remarks>
+        /// This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.
+        /// </remarks>
         /// <type>
         /// Property
         /// </type>
+        [Obsolete("This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.")]
         public event ServerExecutionEventHandler? OnConnectionClose;
 
         /// <summary>
@@ -197,9 +200,13 @@ namespace Sisk.Core.Http
         /// <definition>
         /// public event ReceiveRequestEventHandler? OnConnectionOpen;
         /// </definition>
+        /// <remarks>
+        /// This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.
+        /// </remarks>
         /// <type>
         /// Property
         /// </type>
+        [Obsolete("This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.")]
         public event ReceiveRequestEventHandler? OnConnectionOpen;
 
         /// <summary>

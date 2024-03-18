@@ -7,7 +7,6 @@
 // File name:   RotatingLogPolicy.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.IO.Compression;
 
 namespace Sisk.Core.Http

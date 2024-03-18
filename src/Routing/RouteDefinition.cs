@@ -7,7 +7,6 @@
 // File name:   RouteDefinition.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Reflection;
 
 namespace Sisk.Core.Routing;

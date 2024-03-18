@@ -7,8 +7,6 @@
 // File name:   SR.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Core.Internal;
-
 static class SR
 {
     public const string MultipartObject_ContentTypeMissing = "Content-Type header cannot be null when retriving a multipart form content";
@@ -25,6 +23,7 @@ static class SR
     public const string HttpRequest_AlreadyInStreamingState = "This HTTP request is already streaming another context.";
 
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";
+    public const string HttpResponse_Stream_ContentLenghtNotSet = "To write content to the response output stream, you need to specify the length of the content with SetContentLength or use a chunked-encoded transfer.";
 
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
     public const string Httpserver_StartMessage = "The HTTP server is listening at:";
@@ -82,5 +81,4 @@ static class SR
 
     public const string ValueItem_ValueNull = "The value \"{0}\" contained at this {1} is null or it's undefined.";
     public const string ValueItem_CastException = "Cannot cast the value \"{0}\" at parameter {1} into an {2}.";
-
 }

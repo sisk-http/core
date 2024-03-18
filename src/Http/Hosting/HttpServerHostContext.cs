@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
-using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http.Hosting;
@@ -66,8 +65,9 @@ public class HttpServerHostContext
     /// <type>
     /// Property
     /// </type>
-    public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { 
-        get => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy; 
+    public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy
+    {
+        get => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy;
         set => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy = value;
     }
 
@@ -133,7 +133,7 @@ public class HttpServerHostContext
             Console.WriteLine(SR.Httpserver_StartMessage);
             foreach (string prefix in HttpServer.ListeningPrefixes)
                 Console.WriteLine("- {0}", prefix);
-        }            
+        }
 
         if (preventHault)
             Thread.Sleep(-1);

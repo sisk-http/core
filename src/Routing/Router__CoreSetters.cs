@@ -372,10 +372,13 @@ public partial class Router
         {
             throw new ArgumentException(SR.Router_Set_InvalidRouteStart);
         }
+
         foreach (Route r in this._routes)
         {
-            bool methodMatch = method != RouteMethod.Any && method == r.Method;
-            bool pathMatch = HttpStringInternals.IsPathMatch(r.Path, path, MatchRoutesIgnoreCase).IsMatched;
+            bool methodMatch = 
+                (method == RouteMethod.Any || r.Method == RouteMethod.Any) ||
+                method == r.Method;
+            bool pathMatch = HttpStringInternals.PathRouteMatch(r.Path, path, MatchRoutesIgnoreCase);
 
             if (methodMatch && pathMatch)
             {

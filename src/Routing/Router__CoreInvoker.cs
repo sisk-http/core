@@ -10,7 +10,6 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -57,23 +56,30 @@ public partial class Router
         }
     }
 
+    internal IEnumerable<IRequestHandler> FilterRequestHandlerEnumerate(RequestHandlerExecutionMode mode, params IEnumerable<IRequestHandler>?[] baseLists)
+    {
+        foreach (var baseList in baseLists)
+        {
+            if (baseList is null)
+            {
+                continue;
+            }
+            foreach (var handler in baseList)
+            {
+                if (handler.ExecutionMode == mode)
+                    yield return handler;
+            }
+        }
+    }
+
     internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, IRequestHandler[]? bypass)
     {
-        HttpResponse? result = null;
-        if (bypass != null)
+        if (bypass is not null && bypass.Contains(handler))
         {
-            bool isBypassed = false;
-            foreach (IRequestHandler bypassed in bypass)
-            {
-                if (object.ReferenceEquals(bypassed, handler))
-                {
-                    isBypassed = true;
-                    break;
-                }
-            }
-            if (isBypassed) return null;
+            return null;
         }
 
+        HttpResponse? result = null;
         try
         {
             result = handler.Execute(request, context);
@@ -86,6 +92,7 @@ public partial class Router
                 {
                     result = CallbackErrorHandler(ex, context);
                 }
+                else { /* do nothing */ };
             }
             else throw;
         }
@@ -105,19 +112,29 @@ public partial class Router
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
         HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
-        bool hasGlobalHandlers = this.GlobalRequestHandlers?.Length > 0;
-        
+
         foreach (Route route in _routes)
         {
             // test path
-            Internal.HttpStringInternals.PathMatchResult pathTest;
-            if (route.UseRegex)
+            HttpStringInternals.PathMatchResult pathTest;
+            string reqUrlTest;
+
+            if (flag.UnescapedRouteMatching)
             {
-                pathTest = TestRouteMatchUsingRegex(route, request.Path);
+                reqUrlTest = HttpUtility.UrlDecode(request.Path);
             }
             else
             {
-                pathTest = HttpStringInternals.IsPathMatch(route.Path, request.Path, MatchRoutesIgnoreCase);
+                reqUrlTest = request.Path;
+            }
+
+            if (route.UseRegex)
+            {
+                pathTest = TestRouteMatchUsingRegex(route, reqUrlTest);
+            }
+            else
+            {
+                pathTest = HttpStringInternals.IsPathMatch(route.Path, reqUrlTest, MatchRoutesIgnoreCase);
             }
 
             if (!pathTest.IsMatched)
@@ -185,30 +202,13 @@ public partial class Router
 
             ParentServer?.handler.ContextBagCreated(context.RequestBag);
 
-            #region Before-response global handlers
-            if (hasGlobalHandlers)
+            #region Before-response handlers
+            foreach (IRequestHandler handler in FilterRequestHandlerEnumerate(RequestHandlerExecutionMode.BeforeResponse, GlobalRequestHandlers, matchedRoute.RequestHandlers))
             {
-                foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
+                var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                if (handlerResponse is not null)
                 {
-                    var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                    if (handlerResponse is not null)
-                    {
-                        return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                    }
-                }
-            }
-            #endregion
-
-            #region Before-response route-specific handlers
-            if (matchedRoute!.RequestHandlers?.Length > 0)
-            {
-                foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.BeforeResponse))
-                {
-                    var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                    if (handlerResponse is not null)
-                    {
-                        return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                    }
+                    return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
                 }
             }
             #endregion
@@ -263,32 +263,15 @@ public partial class Router
             #endregion
 
             #region After-response global handlers
-            if (hasGlobalHandlers)
+            foreach (IRequestHandler handler in FilterRequestHandlerEnumerate(RequestHandlerExecutionMode.AfterResponse, GlobalRequestHandlers, matchedRoute.RequestHandlers))
             {
-                foreach (IRequestHandler handler in this.GlobalRequestHandlers!.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
+                var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
+                if (handlerResponse is not null)
                 {
-                    var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                    if (handlerResponse is not null)
-                    {
-                        return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                    }
+                    return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
                 }
             }
-            #endregion
-
-            #region After-response route-specific handlers
-            if (matchedRoute!.RequestHandlers?.Length > 0)
-            {
-                foreach (IRequestHandler handler in matchedRoute.RequestHandlers.Where(r => r.ExecutionMode == RequestHandlerExecutionMode.AfterResponse))
-                {
-                    var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                    if (handlerResponse is not null)
-                    {
-                        return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                    }
-                }
-            }
-            #endregion         
+            #endregion     
         }
 
         return new RouterExecutionResult(context.RouterResponse, matchedRoute, matchResult, null);

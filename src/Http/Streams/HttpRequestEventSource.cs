@@ -7,7 +7,6 @@
 // File name:   HttpRequestEventSource.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Net;
 
 namespace Sisk.Core.Http.Streams

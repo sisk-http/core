@@ -190,7 +190,7 @@ namespace Sisk.Core.Http
                 if (cookies == null)
                 {
                     cookies = new NameValueCollection();
-                    string? cookieHeader = listenerRequest.Headers["cookie"];
+                    string? cookieHeader = listenerRequest.Headers[HttpKnownHeaderNames.Cookie];
                     if (cookieHeader != null)
                     {
                         string[] cookieParts = cookieHeader.Split(';');
@@ -429,7 +429,7 @@ namespace Sisk.Core.Http
         /// public IPAddress Origin { get; }
         /// </definition>
         /// <type>
-        /// Property
+        /// Property 
         /// </type>
         public IPAddress RemoteAddress
         {
@@ -437,7 +437,7 @@ namespace Sisk.Core.Http
             {
                 if (contextServerConfiguration.ResolveForwardedOriginAddress)
                 {
-                    string? forwardedIp = listenerRequest.Headers["X-Forwarded-For"];
+                    string? forwardedIp = listenerRequest.Headers[HttpKnownHeaderNames.XForwardedFor];
                     if (forwardedIp != null)
                     {
                         string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
@@ -700,16 +700,6 @@ namespace Sisk.Core.Http
         public HttpResponse Close()
         {
             return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="statusCode"></param>
-        public void Send(HttpStatusCode statusCode)
-        {
-            byte[] data = Encoding.UTF8.GetBytes($"HTTP/1.1 {(int)statusCode} {statusCode}\n\n");
-            listenerResponse.OutputStream.Write(data);
         }
 
         /// <summary>

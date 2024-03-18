@@ -7,7 +7,6 @@
 // File name:   HttpContextBagRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
@@ -27,7 +26,7 @@ public class HttpContextBagRepository : IDictionary<string, object?>
     private readonly Dictionary<string, object?> _values = new();
 
     private static string GetTypeKeyName(Type t) =>
-        t.Name + "+" + t.GetHashCode();
+        t.FullName + "+" + t.GetHashCode();
 
     /// <summary>
     /// Creates an new instance of the <see cref="HttpContextBagRepository"/> class.
@@ -251,6 +250,26 @@ public class HttpContextBagRepository : IDictionary<string, object?>
     {
         bool b = _values.TryGetValue(key, out Object? v);
         value = v;
+        return b;
+    }
+
+    /// <summary>
+    /// Gets the value associated with the specified key and casts it into <typeparamref name="TResult"/>.
+    /// </summary>
+    /// <typeparam name="TResult">The type which will be casted into.</typeparam>
+    /// <param name="key">The key whose to get.</param>
+    /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
+    /// <returns>true if the object is find with the specified key; otherwise, false.</returns>
+    /// <definition>
+    /// public Boolean TryGetValue{{TResult}}(String key, [MaybeNullWhen(false)] out TResult? value)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public Boolean TryGetValue<TResult>(String key, [MaybeNullWhen(false)] out TResult? value)
+    {
+        bool b = _values.TryGetValue(key, out Object? v);
+        value = (TResult?)v;
         return b;
     }
 

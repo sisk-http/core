@@ -4,15 +4,8 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   ValueItem.cs
+// File name:   StringValue.cs
 // Repository:  https://github.com/sisk-http/core
-
-using Sisk.Core.Internal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Entity;
 
@@ -272,9 +265,24 @@ public class StringValue
         }
     }
 
+    /// <inheritdoc/>
     /// <nodocs/>
     public static implicit operator string?(StringValue i)
     {
         return i.Value;
+    }
+
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public static bool operator ==(StringValue i, string? other)
+    {
+        return i.Value == other;
+    }
+
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public static bool operator !=(StringValue i, string? other)
+    {
+        return i.Value != other;
     }
 }

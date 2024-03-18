@@ -132,31 +132,7 @@ namespace Sisk.Core.Http
         public static string GetStatusCodeDescription(int statusCode)
         {
             ValidateStatusCode(statusCode);
-
-            string text = ((HttpStatusCode)statusCode)
-                .ToString();
-
-            if (text.Length < 2)
-            {
-                return text.ToUpper();
-            }
-
-            var sb = new StringBuilder();
-            sb.Append(char.ToUpperInvariant(text[0]));
-            for (int i = 1; i < text.Length; ++i)
-            {
-                char c = text[i];
-                if (char.IsUpper(c))
-                {
-                    sb.Append(' ');
-                    sb.Append(char.ToUpperInvariant(c));
-                }
-                else
-                {
-                    sb.Append(c);
-                }
-            }
-            return sb.ToString();
+            return HttpStatusDescription.Get(statusCode);
         }
     }
 }

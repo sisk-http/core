@@ -8,11 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Http.Handlers;
 

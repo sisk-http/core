@@ -7,7 +7,6 @@
 // File name:   LogStream.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Text;
 
 namespace Sisk.Core.Http
@@ -445,7 +444,7 @@ namespace Sisk.Core.Http
 
             if (exp.InnerException != null)
             {
-                if (depth <= 10)
+                if (depth <= 3)
                 {
                     WriteExceptionInternal(exceptionStr, exp.InnerException, depth + 1);
                 }

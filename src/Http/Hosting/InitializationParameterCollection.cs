@@ -87,7 +87,8 @@ public class InitializationParameterCollection : IDictionary<string, string?>
                     mappingValue = Parseable.ParseInternal(value, propType)!;
                 }
 #endif
-            } else
+            }
+            else
             {
                 throw new InvalidCastException(string.Format(SR.InitializationParameterCollection_MapCastException, value, propType.FullName));
             }

@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
-using System.Net;
 
 namespace Sisk.Core.Http
 {
@@ -38,6 +37,39 @@ namespace Sisk.Core.Http
         /// Field
         /// </type>
         public bool ThrowContentOnNonSemanticMethods = true;
+
+        /// <summary>
+        /// Determines if the HTTP server should matches route after URL decoding the request path.
+        /// </summary>
+        /// <docs>
+        ///     <p>
+        ///         Default value: <code>true</code>
+        ///     </p>
+        /// </docs>
+        /// <definition>
+        /// public bool UnescapedRouteMatching;
+        /// </definition>
+        /// <type>
+        /// Field
+        /// </type>
+        public bool UnescapedRouteMatching = true;
+
+        /// <summary>
+        /// Determines if the HTTP server should handle requests asynchronously or if
+        /// it should limit the request processing to one request per time.
+        /// </summary>
+        /// <docs>
+        ///     <p>
+        ///         Default value: <code>false</code>
+        ///     </p>
+        /// </docs>
+        /// <definition>
+        /// public bool AsyncRequestProcessing;
+        /// </definition>
+        /// <type>
+        /// Field
+        /// </type>
+        public bool AsyncRequestProcessing = true;
 
         /// <summary>
         /// Determines the HTTP header name of the request ID.
@@ -72,7 +104,8 @@ namespace Sisk.Core.Http
         public bool SendCorsHeaders = true;
 
         /// <summary>
-        /// Determines if the HTTP server should automatically send HTTP headers of an pre-processed GET response if the request is using HEAD method.
+        /// Determines if the HTTP server should automatically send HTTP headers of an pre-processed GET response
+        /// if the request is using HEAD method.
         /// </summary>
         /// <docs>
         ///     <p>
@@ -136,6 +169,23 @@ namespace Sisk.Core.Http
         public int WebSocketBufferSize = 1024;
 
         /// <summary>
+        /// Specifies the size, in bytes, of the copy buffer of both streams (inbound and outgoing)
+        /// of the response stream.
+        /// </summary>
+        /// <docs>
+        ///     <p>
+        ///         Default value: <code>81920</code>
+        ///     </p>
+        /// </docs>
+        /// <definition>
+        /// public int RequestStreamCopyBufferSize;
+        /// </definition>
+        /// <type>
+        /// Field
+        /// </type>
+        public int RequestStreamCopyBufferSize = 81920;
+
+        /// <summary>
         /// Determines if the HTTP server should convert request headers encoding to the content encoding.
         /// </summary>
         /// <docs>
@@ -152,8 +202,8 @@ namespace Sisk.Core.Http
         public bool NormalizeHeadersEncodings = false;
 
         /// <summary>
-        /// Determines if the HTTP server should automatically rewrite paths to end with /. This flag is only
-        /// applyable to GET requests which aren't using Regex routes.
+        /// Determines if the HTTP server should automatically rewrite GET requests to end their path with /. This is 
+        /// non-applyable to Regex routes.
         /// </summary>
         /// <docs>
         ///     <p>
@@ -187,7 +237,8 @@ namespace Sisk.Core.Http
 
         /// <summary>
         /// Determines the maximum amount of time an route can process an request, including running request handlers,
-        /// reading body and executing the route action. Specify zero for no limit.
+        /// reading body and executing the route action. Specify zero for no limit. When the route action running time
+        /// reaches it's timeout, an <see cref="RequestTimeoutException"/> is thrown.
         /// </summary>
         /// <docs>
         ///     <p>
