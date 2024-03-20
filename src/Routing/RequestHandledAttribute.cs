@@ -36,6 +36,16 @@ namespace Sisk.Core.Routing
         /// Creates an new instance of this <see cref="RequestHandlerAttribute{T}"/> class.
         /// </summary>
         public RequestHandlerAttribute() : base(typeof(T)) { }
+
+        /// <summary>
+        /// Creates an new instance of this <see cref="RequestHandlerAttribute{T}"/> class with the specified
+        /// constructor arguments for <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="constructorArguments">An optional array of objects which is passed to the request handler constructor.</param>
+        public RequestHandlerAttribute(params object?[] constructorArguments) : base(typeof(T))
+        {
+            ConstructorArguments = constructorArguments;
+        }
     }
 #endif
 

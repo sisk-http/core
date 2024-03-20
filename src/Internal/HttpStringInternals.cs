@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Internal
@@ -85,7 +86,7 @@ namespace Sisk.Core.Internal
                 return new PathMatchResult(false, query);
             }
 
-            for (int i = 0; i < pathPatternParts.Length; i++)
+            for (int i = 0; i < splnA; i++)
             {
                 Range pathRng = pathPatternParts[i];
                 Range reqsRng = requestPathParts[i];
@@ -96,7 +97,7 @@ namespace Sisk.Core.Internal
                 if (pathPtt.StartsWith(ROUTE_GROUP_START) && pathPtt.EndsWith(ROUTE_GROUP_END))
                 {
                     if (query == null) query = new NameValueCollection();
-                    string queryValueName = new string(pathPtt[new Range(1, pathPtt.Length - 2)]);
+                    string queryValueName = new string(pathPtt[new Range(1, pathPtt.Length - 1)]);
                     query.Add(queryValueName, new string(reqsPtt));
                 }
                 else

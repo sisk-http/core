@@ -191,7 +191,7 @@ public partial class HttpServer
             if (ServerConfiguration.IncludeRequestIdHeader)
                 baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
             if (flag.SendSiskHeader)
-                baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, poweredByHeader);
+                baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, PoweredBy);
 
             long requestMaxSize = ServerConfiguration.MaximumContentLength;
             if (requestMaxSize > 0 && baseRequest.ContentLength64 > requestMaxSize)

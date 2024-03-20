@@ -29,6 +29,7 @@ namespace Sisk.Core.Http
         private Thread loggingThread;
         private bool isBlocking = false;
         internal RotatingLogPolicy? rotatingLogPolicy = null;
+        internal CircularBuffer<string>? _bufferingContent = null;
 
         /// <summary>
         /// Represents a LogStream that writes its output to the <see cref="Console.Out"/> stream.
@@ -66,6 +67,18 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Gets an boolean indicating if this <see cref="LogStream"/> is buffering output messages
+        /// to their internal message buffer.
+        /// </summary>
+        /// <definition>
+        /// public bool IsBuffering { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public bool IsBuffering { get => _bufferingContent is not null; }
+
+        /// <summary>
         /// Gets the absolute path to the file where the log is being written to.
         /// </summary>
         /// <definition>
@@ -74,18 +87,29 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public string? FilePath { get; private set; } = null;
+        public string? FilePath { get; } = null;
 
         /// <summary>
-        /// Gets the <see cref="TextWriter"/> object where the log is being written to.
+        /// Gets the <see cref="System.IO.TextWriter"/> object where the log is being written to.
         /// </summary>
         /// <definition>
-        /// public TextWriter? TextWriter { get; }
+        /// public TextWriter? TextWriter { get; set; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public TextWriter? TextWriter { get; private set; } = null;
+        public TextWriter? TextWriter { get; set; } = null;
+
+        /// <summary>
+        /// Gets the <see cref="System.IO.StreamWriter"/> object where the log is being written to.
+        /// </summary>
+        /// <definition>
+        /// public StreamWriter? StreamWriter { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public StreamWriter? StreamWriter { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the function that formats input when used with <see cref="WriteFormat(object?)"/>.
@@ -96,6 +120,8 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
+        [Obsolete("This property no longer works and will be removed in future versions of Sisk. To write messages with custom formats, extend " +
+            "this class and override WriteLine.")]
         public Func<object?, string>? Format { get; set; }
 
         /// <summary>
@@ -120,7 +146,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="LogStream"/> instance with the given TextWriter object.
         /// </summary>
-        /// <param name="tw">Represents the writer which this instance will write log to.</param>
+        /// <param name="tw">The <see cref="System.IO.TextWriter"/> instance which this instance will write log to.</param>
         /// <definition>
         /// public LogStream(TextWriter tw)
         /// </definition>
@@ -148,31 +174,63 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Reads the last few lines of the linked log file.
+        /// Creates an new <see cref="LogStream"/> instance with the given <see cref="System.IO.StreamWriter"/> resource.
         /// </summary>
-        /// <param name="lines">The amount of lines to be read from the file.</param>
-        /// <returns></returns>
-        /// <exception cref="NotSupportedException">Thrown when used with a log file for a stream, textwriter, or other non-file structure.</exception>
+        /// <param name="sw">The stream which the log stream will write log to.</param>
         /// <definition>
-        /// public string[] Peek(int lines)
+        /// public LogStream(StreamWriter sw)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        public string[] Peek(int lines)
+        public LogStream(StreamWriter sw) : this()
         {
-            if (this.FilePath == null)
+            StreamWriter = sw;
+        }
+
+        /// <summary>
+        /// Creates an new <see cref="LogStream"/> instance which writes text to an file and an <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="filename">The file path where this instance will write log to.</param>
+        /// <param name="tw">Represents the writer which this instance will write log to.</param>
+        /// <param name="sw">The <see cref="System.IO.TextWriter"/> instance which this instance will write log to.</param>
+        /// <definition>
+        /// public LogStream(string? filename, TextWriter? tw, StreamWriter? sw)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public LogStream(string? filename, TextWriter? tw, StreamWriter? sw) : this()
+        {
+            if (filename is not null) FilePath = Path.GetFullPath(filename);
+            TextWriter = tw;
+            StreamWriter = sw;
+        }
+
+        /// <summary>
+        /// Reads the output buffer. To use this method, it's required to set this
+        /// <see cref="LogStream"/> buffering with <see cref="StartBuffering(int)"/>.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">Thrown when this LogStream is not buffering.</exception>
+        /// <definition>
+        /// public string Peek()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public string Peek()
+        {
+            if (_bufferingContent is null)
             {
-                throw new NotSupportedException(SR.LogStream_Peek_NotFilePath);
+                throw new InvalidOperationException(SR.LogStream_NotBuffering);
             }
 
-            string[] output = Array.Empty<string>();
-            if (File.Exists(this.FilePath))
+            lock (_bufferingContent)
             {
-                output = File.ReadLines(this.FilePath, this.Encoding).TakeLast(lines).ToArray();
+                string[] lines = _bufferingContent.ToArray();
+                return string.Join("", lines);
             }
-
-            return output;
         }
 
         /// <summary>
@@ -210,6 +268,24 @@ namespace Sisk.Core.Http
             isBlocking = false;
         }
 
+        /// <summary>
+        /// Start buffering all output to an alternate stream in memory for readability with <see cref="Peek(int)"/> later.
+        /// </summary>
+        /// <param name="lines">The amount of lines to store in the buffer.</param>
+        public void StartBuffering(int lines)
+        {
+            if (_bufferingContent is not null) return;
+            _bufferingContent = new CircularBuffer<string>(lines);
+        }
+
+        /// <summary>
+        /// Stops buffering output to the alternative stream.
+        /// </summary>
+        public void StopBuffering()
+        {
+            _bufferingContent = null;
+        }
+
         private void setWatcher()
         {
             if (!isBlocking)
@@ -224,8 +300,6 @@ namespace Sisk.Core.Http
                 int i = WaitHandle.WaitAny(new WaitHandle[] { watcher, terminate });
                 if (i == 1) return; // terminate
 
-                //Console.WriteLine("{0,20}{1,20} {2}", "", "queue ++", logQueue.Count);
-
                 watcher.Reset();
                 waiter.Reset();
 
@@ -239,17 +313,33 @@ namespace Sisk.Core.Http
                 StringBuilder exitBuffer = new StringBuilder();
                 foreach (object? line in copy)
                 {
-                    exitBuffer.Append(line?.ToString());
+                    exitBuffer.AppendLine(line?.ToString());
                 }
 
-                if (FilePath != null)
+                if (FilePath is null && TextWriter is null && StreamWriter is null)
                 {
-                    File.AppendAllText(FilePath!, exitBuffer.ToString(), Encoding);
+                    throw new InvalidOperationException(SR.LogStream_NoOutput);
                 }
-                else if (TextWriter != null)
+
+                if (_bufferingContent is not null)
+                {
+                    _bufferingContent.PushBack(exitBuffer.ToString());
+                }
+
+                // writes log to outputs
+                if (FilePath is not null)
+                {
+                    File.AppendAllText(FilePath, exitBuffer.ToString(), Encoding);
+                }
+                if (TextWriter is not null)
                 {
                     TextWriter?.Write(exitBuffer.ToString());
                     TextWriter?.Flush();
+                }
+                if (StreamWriter is not null)
+                {
+                    StreamWriter.Write(exitBuffer.ToString());
+                    StreamWriter.Flush();
                 }
             }
         }
@@ -258,28 +348,28 @@ namespace Sisk.Core.Http
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
         /// <definition>
-        /// public void Close()
+        /// public virtual void Close()
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public void Close() => Dispose();
+        public virtual void Close() => Dispose();
 
         /// <summary>
         /// Writes an exception description in the log.
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
         /// <definition>
-        /// public void WriteException(Exception exp)
+        /// public virtual void WriteException(Exception exp)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public void WriteException(Exception exp)
+        public virtual void WriteException(Exception exp)
         {
             StringBuilder sexc = new StringBuilder();
             WriteExceptionInternal(sexc, exp, 0);
-            WriteLine(sexc.ToString());
+            WriteLine(sexc.ToString(), Array.Empty<object?>());
         }
 
         /// <summary>
@@ -293,11 +383,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteLine()
         {
-            lock (logQueue)
-            {
-                logQueue.Enqueue("\n");
-                setWatcher();
-            }
+            WriteLine("", Array.Empty<object?>());
         }
 
         /// <summary>
@@ -310,14 +396,11 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
+        [Obsolete("This method no longer works and will be removed in future versions of Sisk. To write messages with custom formats, extend " +
+            "this class and override WriteLine.")]
         public void WriteFormat(object? input)
         {
-            if (Format == null)
-            {
-                throw new InvalidOperationException(SR.LogStream_NoFormat);
-            }
-            string format = Format(input);
-            Write(format);
+            return;
         }
 
         /// <summary>
@@ -332,11 +415,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteLine(object? message)
         {
-            lock (logQueue)
-            {
-                logQueue.Enqueue(message?.ToString() + "\n");
-                setWatcher();
-            }
+            WriteLine(message?.ToString() ?? "", Array.Empty<object?>());
         }
 
         /// <summary>
@@ -351,11 +430,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteLine(string message)
         {
-            lock (logQueue)
-            {
-                logQueue.Enqueue(message + "\n");
-                setWatcher();
-            }
+            WriteLine(message, Array.Empty<object?>());
         }
 
         /// <summary>
@@ -364,16 +439,16 @@ namespace Sisk.Core.Http
         /// <param name="format">The string format that represents the arguments positions.</param>
         /// <param name="args">An array of objects that represents the string format slots values.</param>
         /// <definition>
-        /// public void WriteLine(string format, params object?[] args)
+        /// public virtual void WriteLine(string format, params object?[] args)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public void WriteLine(string format, params object?[] args)
+        public virtual void WriteLine(string format, params object?[] args)
         {
             lock (logQueue)
             {
-                logQueue.Enqueue(string.Format(format, args) + "\n");
+                logQueue.Enqueue(string.Format(format, args));
                 setWatcher();
             }
         }
@@ -388,13 +463,10 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
+        [Obsolete("This method no longer works and will be removed in future versions of Sisk. Use WriteLine instead.")]
         public void Write(object? value)
         {
-            lock (logQueue)
-            {
-                logQueue.Enqueue(value);
-                setWatcher();
-            }
+            return;
         }
 
         /// <summary>
@@ -413,6 +485,8 @@ namespace Sisk.Core.Http
             logQueue.Clear();
             TextWriter?.Flush();
             TextWriter?.Close();
+            StreamWriter?.Flush();
+            StreamWriter?.Close();
         }
 
         /// <summary>
@@ -435,22 +509,21 @@ namespace Sisk.Core.Http
             var policy = RotatingPolicy;
             policy.Configure(maximumSize, dueTime);
         }
-
-        void WriteExceptionInternal(StringBuilder exceptionStr, Exception exp, int depth = 0)
+        void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, int currentDepth = 0)
         {
-            if (depth == 0)
-                exceptionStr.AppendLine(string.Format(SR.LogStream_ExceptionDump_Header, DateTime.Now.ToString("R")));
-            exceptionStr.AppendLine(exp.ToString());
+            if (currentDepth == 0)
+                exceptionSbuilder.AppendLine(string.Format(SR.LogStream_ExceptionDump_Header, DateTime.Now.ToString("R")));
+            exceptionSbuilder.AppendLine(exp.ToString());
 
             if (exp.InnerException != null)
             {
-                if (depth <= 3)
+                if (currentDepth <= 3)
                 {
-                    WriteExceptionInternal(exceptionStr, exp.InnerException, depth + 1);
+                    WriteExceptionInternal(exceptionSbuilder, exp.InnerException, currentDepth + 1);
                 }
                 else
                 {
-                    exceptionStr.AppendLine(SR.LogStream_ExceptionDump_TrimmedFooter);
+                    exceptionSbuilder.AppendLine(SR.LogStream_ExceptionDump_TrimmedFooter);
                 }
             }
         }

@@ -27,12 +27,33 @@ namespace Sisk.Core.Http
     /// </type>
     public partial class HttpServer : IDisposable
     {
+        /// <summary>
+        /// Gets the X-Powered-By Sisk header value.
+        /// </summary>
+        /// <definition>
+        /// public static string PoweredBy { get; }
+        /// </definition>
+        /// <type>
+        /// Static property
+        /// </type>
+        public static string PoweredBy { get; private set; } = "";
+
+        /// <summary>
+        /// Gets the current Sisk version.
+        /// </summary>
+        /// <definition>
+        /// public static Version SiskVersion { get; }
+        /// </definition>
+        /// <type>
+        /// Static property
+        /// </type>
+        public static Version SiskVersion { get; private set; } = null!;
+
         private bool _isListening = false;
         private bool _isDisposing = false;
         private HttpListener httpListener = new HttpListener();
         private AsyncCallback _listenerCallback;
         private ListeningHost? _onlyListeningHost;
-        internal static string poweredByHeader = "";
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
@@ -41,7 +62,8 @@ namespace Sisk.Core.Http
         static HttpServer()
         {
             Version assVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!;
-            poweredByHeader = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
+            PoweredBy = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
+            SiskVersion = assVersion;
         }
 
         /// <summary>
@@ -219,7 +241,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        public string GetVersion() => poweredByHeader;
+        public string GetVersion() => PoweredBy;
 
         /// <summary>
         /// Creates a new default configuration <see cref="Sisk.Core.Http.HttpServer"/> instance with the given Route and server configuration.
@@ -251,6 +273,21 @@ namespace Sisk.Core.Http
         public void RegisterHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() where T : HttpServerHandler, new()
         {
             handler.RegisterHandler(new T());
+        }
+
+        /// <summary>
+        /// Associate an <see cref="HttpServerHandler"/> in this HttpServer to handle functions such as requests, routers and contexts.
+        /// </summary>
+        /// <param name="obj">The instance of the server handler.</param>
+        /// <definition>
+        /// public void RegisterHandler(HttpServerHandler obj) 
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public void RegisterHandler(HttpServerHandler obj)
+        {
+            handler.RegisterHandler(obj);
         }
 
         /// <summary>

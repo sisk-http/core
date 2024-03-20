@@ -23,13 +23,11 @@ public partial class Router
     private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
     {
         if (method == RouteMethod.Any) return true;
-        Enum.TryParse(typeof(RouteMethod), ogRqMethod, true, out object? ogRqParsedObj);
-        if (ogRqParsedObj is null)
+        if (Enum.TryParse(ogRqMethod, true, out RouteMethod ogRqParsed))
         {
-            return false;
+            return method.HasFlag(ogRqParsed);
         }
-        RouteMethod ogRqParsed = (RouteMethod)ogRqParsedObj!;
-        return method.HasFlag(ogRqParsed);
+        return false;
     }
 
     private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex(Route route, string requestPath)

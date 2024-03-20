@@ -321,4 +321,19 @@ public sealed class HttpServerHostContextBuilder
     {
         _context.HttpServer.RegisterHandler<THandler>();
     }
+
+    /// <summary>
+    /// This method is an shortcut for calling <see cref="HttpServer.RegisterHandler"/>.
+    /// </summary>
+    /// <param name="handler">The instance of the server handler.</param>
+    /// <definition>
+    /// public void UseHandler(HttpServerHandler handler)
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void UseHandler(HttpServerHandler handler)
+    {
+        _context.HttpServer.RegisterHandler(handler);
+    }
 }

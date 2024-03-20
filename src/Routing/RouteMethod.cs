@@ -16,7 +16,7 @@ namespace Sisk.Core.Routing
     /// [Flags]
     /// public enum RouteMethod : int
     /// </definition>
-    /// <type>
+    /// <type> 
     /// Enum
     /// </type>
 
