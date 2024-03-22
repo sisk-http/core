@@ -73,7 +73,7 @@ public class StringValue
     /// <type>
     /// Property
     /// </type>
-    public bool IsNull { get => _ref == null; }
+    public bool IsNull { get => _ref is null; }
 
     /// <summary>
     /// Returns a self-reference to this object when its value is not null.
@@ -284,5 +284,24 @@ public class StringValue
     public static bool operator !=(StringValue i, string? other)
     {
         return i.Value != other;
+    }
+
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(this, obj))
+        {
+            return true;
+        }
+        if (ReferenceEquals(obj, null))
+        {
+            return false;
+        }
+        if (obj is StringValue val)
+        {
+            return val.Value?.Equals(this.Value) == true;
+        }
+        return false;
     }
 }

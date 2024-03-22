@@ -30,11 +30,23 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     {
         StringValueCollection vcol = new StringValueCollection(paramName);
 
-        foreach (string key in col.Keys)
+        for (int i = 0; i < col.Keys.Count; i++)
         {
-            vcol.items.Add(key, col[key]);
-        }
+            string? keyValue = col.Keys[i];
+            string? value;
 
+            if (keyValue is null)
+            {
+                value = col[i];
+                if (value is null) continue;
+                vcol.items.Add(value, "");
+            }
+            else
+            {
+                value = col[keyValue];
+                vcol.items.Add(keyValue, value);
+            }
+        }
         return vcol;
     }
 

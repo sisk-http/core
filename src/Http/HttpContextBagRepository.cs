@@ -108,6 +108,24 @@ public class HttpContextBagRepository : IDictionary<string, object?>
     }
 
     /// <summary>
+    /// Determines whether the specified <typeparamref name="T"/> singleton is defined in this context and tries to
+    /// output it.
+    /// </summary>
+    /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
+    /// <returns>true if the object is find with the specified key; otherwise, false.</returns>
+    /// <typeparam name="T">The singleton type.</typeparam>
+    /// <definition>
+    /// public bool IsSet{{T}}([NotNullWhen(true)] out T value) where T : notnull
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public bool IsSet<T>([NotNullWhen(true)] out T? value) where T : notnull
+    {
+        return TryGetValue(GetTypeKeyName(typeof(T)), out value);
+    }
+
+    /// <summary>
     /// Removes an singleton object from it's type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The singleton type.</typeparam>
@@ -269,8 +287,16 @@ public class HttpContextBagRepository : IDictionary<string, object?>
     public Boolean TryGetValue<TResult>(String key, [MaybeNullWhen(false)] out TResult? value)
     {
         bool b = _values.TryGetValue(key, out Object? v);
-        value = (TResult?)v;
-        return b;
+        if (b)
+        {
+            value = (TResult?)v;
+            return true;
+        }
+        else
+        {
+            value = default;
+            return false;
+        }
     }
 
     /// <inheritdoc />

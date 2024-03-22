@@ -136,7 +136,16 @@ namespace Sisk.Core.Http
         /// </type>
         public Encoding Encoding { get; set; } = Encoding.UTF8;
 
-        private LogStream()
+        /// <summary>
+        /// Creates an new <see cref="LogStream"/> instance with no predefined outputs.
+        /// </summary>
+        /// <definition>
+        /// public LogStream()
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public LogStream()
         {
             loggingThread = new Thread(new ThreadStart(ProcessQueue));
             loggingThread.IsBackground = true;
@@ -367,9 +376,9 @@ namespace Sisk.Core.Http
         /// </type>
         public virtual void WriteException(Exception exp)
         {
-            StringBuilder sexc = new StringBuilder();
-            WriteExceptionInternal(sexc, exp, 0);
-            WriteLine(sexc.ToString(), Array.Empty<object?>());
+            StringBuilder excpStr = new StringBuilder();
+            WriteExceptionInternal(excpStr, exp, 0);
+            WriteLine(excpStr.ToString(), Array.Empty<object?>());
         }
 
         /// <summary>
@@ -446,9 +455,26 @@ namespace Sisk.Core.Http
         /// </type>
         public virtual void WriteLine(string format, params object?[] args)
         {
+            EnqueueMessageLine(string.Format(format, args));
+        }
+
+        /// <summary>
+        /// Represents the method that enqueues a message to the queue of messages to be written to output streams.
+        /// </summary>
+        /// <param name="message">The message which will be written.</param>
+        /// <exception cref="ArgumentNullException">Thrown when the message is null.</exception>
+        /// <definition>
+        /// protected void EnqueueMessage(string message)
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        protected void EnqueueMessageLine(string message)
+        {
+            ArgumentNullException.ThrowIfNull(message, nameof(message));
             lock (logQueue)
             {
-                logQueue.Enqueue(string.Format(format, args));
+                logQueue.Enqueue(message);
                 setWatcher();
             }
         }
@@ -499,7 +525,7 @@ namespace Sisk.Core.Http
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="dueTime">The time interval between checks.</param>
         /// <definition>
-        /// public void Configure(long maximumSize, TimeSpan due)
+        /// public void ConfigureRotatingPolicy(long maximumSize, TimeSpan due)
         /// </definition>
         /// <type>
         /// Method
@@ -509,6 +535,7 @@ namespace Sisk.Core.Http
             var policy = RotatingPolicy;
             policy.Configure(maximumSize, dueTime);
         }
+
         void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, int currentDepth = 0)
         {
             if (currentDepth == 0)

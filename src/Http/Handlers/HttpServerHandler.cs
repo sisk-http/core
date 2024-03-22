@@ -27,12 +27,13 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="server">The Http server entity which is starting.</param>
     /// <definition>
-    /// public virtual void OnSetupHttpServer(HttpServer server)
+    /// protected virtual void OnSetupHttpServer(HttpServer server)
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnServerStarting(HttpServer server) { }
+    protected virtual void OnServerStarting(HttpServer server) { }
+    internal void InvokeOnServerStarting(HttpServer server) => OnServerStarting(server);
 
     /// <summary>
     /// Method that is called immediately after starting the <see cref="HttpServer"/>, when it's
@@ -40,24 +41,27 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="server">The Http server entity which is ready.</param>
     /// <definition>
-    /// public virtual void OnServerStarted(HttpServer server)
+    /// protected virtual void OnServerStarted(HttpServer server)
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnServerStarted(HttpServer server) { }
+    protected virtual void OnServerStarted(HttpServer server) { }
+    internal void InvokeOnServerStarted(HttpServer server) => OnServerStarted(server);
 
     /// <summary>
     /// Method that is called when an <see cref="Router"/> is binded to the Http server.
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>
     /// <definition>
-    /// public virtual void OnSetupRouter(Router router)
+    /// protected virtual void OnSetupRouter(Router router)
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnSetupRouter(Router router) { }
+    protected virtual void OnSetupRouter(Router router) { }
+
+    internal void InvokeOnSetupRouter(Router router) => OnSetupRouter(router);
 
     /// <summary>
     /// Method that is called when an <see cref="HttpContextBagRepository"/> is created within an
@@ -65,12 +69,13 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="contextBag">The creating context bag.</param>
     /// <definition>
-    /// public virtual void OnContextBagCreated(HttpContextBagRepository contextBag) 
+    /// protected virtual void OnContextBagCreated(HttpContextBagRepository contextBag) 
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnContextBagCreated(HttpContextBagRepository contextBag) { }
+    protected virtual void OnContextBagCreated(HttpContextBagRepository contextBag) { }
+    internal void InvokeOnContextBagCreated(HttpContextBagRepository contextBag) => OnContextBagCreated(contextBag);
 
     /// <summary>
     /// Method that is called when an <see cref="HttpRequest"/> is received in the
@@ -78,12 +83,13 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="request">The connecting Http request entity.</param>
     /// <definition>
-    /// public virtual void OnHttpRequestOpen(HttpRequest request)
+    /// protected virtual void OnHttpRequestOpen(HttpRequest request)
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnHttpRequestOpen(HttpRequest request) { }
+    protected virtual void OnHttpRequestOpen(HttpRequest request) { }
+    internal void InvokeOnHttpRequestOpen(HttpRequest request) => OnHttpRequestOpen(request);
 
     /// <summary>
     /// Method that is called when an <see cref="HttpRequest"/> is closed in the
@@ -91,12 +97,13 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="result">The result of the execution of the request.</param>
     /// <definition>
-    /// public virtual void OnHttpRequestClose(HttpServerExecutionResult result)
+    /// protected virtual void OnHttpRequestClose(HttpServerExecutionResult result)
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnHttpRequestClose(HttpServerExecutionResult result) { }
+    protected virtual void OnHttpRequestClose(HttpServerExecutionResult result) { }
+    internal void InvokeOnHttpRequestClose(HttpServerExecutionResult result) => OnHttpRequestClose(result);
 
     /// <summary>
     /// Method that is called when an exception is caught in the Http server. This method is called
@@ -104,10 +111,11 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="exception">The exception object.</param>
     /// <definition>
-    /// public virtual void OnException(Exception exception)
+    /// protected virtual void OnException(Exception exception)
     /// </definition>
     /// <type>
     /// Virtual method
     /// </type>
-    public virtual void OnException(Exception exception) { }
+    protected virtual void OnException(Exception exception) { }
+    internal void InvokeOnException(Exception exception) => OnException(exception);
 }

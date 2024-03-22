@@ -59,6 +59,17 @@ public sealed class HttpServerHostContextBuilder
     }
 
     /// <summary>
+    /// Gets or sets the Server Configuration object.
+    /// </summary>
+    /// <definition>
+    /// public HttpServerConfiguration ServerConfiguration { get; set; }
+    /// </definition>
+    /// <type>
+    /// Property
+    /// </type>
+    public HttpServerConfiguration ServerConfiguration { get => _context.ServerConfiguration; set => value = _context.ServerConfiguration; }
+
+    /// <summary>
     /// Builds an <see cref="HttpServerHostContext"/> with the specified parameters.
     /// </summary>
     /// <definition>

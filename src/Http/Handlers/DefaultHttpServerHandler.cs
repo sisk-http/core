@@ -16,13 +16,13 @@ internal class DefaultHttpServerHandler : HttpServerHandler
     internal static Action<Router>? _routerSetup;
     internal static Action? _serverBootstraping;
 
-    public override void OnServerStarting(HttpServer server)
+    protected override void OnServerStarting(HttpServer server)
     {
         base.OnServerStarting(server);
         if (_serverBootstraping != null) _serverBootstraping();
     }
 
-    public override void OnSetupRouter(Router router)
+    protected override void OnSetupRouter(Router router)
     {
         base.OnSetupRouter(router);
         if (_routerSetup != null) _routerSetup(router);
