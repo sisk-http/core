@@ -103,8 +103,9 @@ public partial class Router
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal async Task<RouterExecutionResult> Execute(HttpContext context)
     {
-        if (this.ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
+        if (ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
 
+        context.Router = this;
         HttpRequest request = context.Request;
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
@@ -225,8 +226,7 @@ public partial class Router
 
                 if (matchedRoute.isReturnTypeTask)
                 {
-                    Task<object> objTask = Unsafe.As<Task<object>>(actionResult);
-                    actionResult = await objTask;
+                    actionResult = await Unsafe.As<object, Task<object>>(ref actionResult);
                 }
 
                 if (actionResult is HttpResponse httpres)

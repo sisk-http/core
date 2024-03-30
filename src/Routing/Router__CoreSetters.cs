@@ -64,7 +64,7 @@ public partial class Router
     /// </type>
     public Route? GetRouteFromName(string name)
     {
-        foreach (Route r in this._routes)
+        foreach (Route r in _routes)
         {
             if (r.Name == name)
             {
@@ -373,9 +373,9 @@ public partial class Router
             throw new ArgumentException(SR.Router_Set_InvalidRouteStart);
         }
 
-        foreach (Route r in this._routes)
+        foreach (Route r in _routes)
         {
-            bool methodMatch = 
+            bool methodMatch =
                 (method == RouteMethod.Any || r.Method == RouteMethod.Any) ||
                 method == r.Method;
             bool pathMatch = HttpStringInternals.PathRouteMatch(r.Path, path, MatchRoutesIgnoreCase);

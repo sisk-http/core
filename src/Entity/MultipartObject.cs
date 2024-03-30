@@ -24,7 +24,7 @@ namespace Sisk.Core.Entity
     /// </type>
     public class MultipartObject
     {
-        private Encoding _baseEncoding;
+        private readonly Encoding _baseEncoding;
 
         /// <summary>
         /// The multipart form data object headers.

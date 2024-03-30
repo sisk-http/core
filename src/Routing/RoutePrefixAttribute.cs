@@ -49,6 +49,6 @@ public class RoutePrefixAttribute : Attribute
         {
             throw new ArgumentNullException(nameof(prefix));
         }
-        this.Prefix = prefix;
+        Prefix = prefix;
     }
 }

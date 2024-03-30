@@ -9,6 +9,7 @@
 
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Core.Entity;
 
@@ -16,15 +17,27 @@ namespace Sisk.Core.Entity;
 /// Represents an collection of <see cref="StringValue"/>.
 /// </summary>
 /// <definition>
-/// public sealed class StringValueCollection : IEnumerable{{StringValue}}, IEnumerable{{KeyValuePair{{string, string}}}}
+/// public sealed class StringValueCollection : IEnumerable{{StringValue}}, IEnumerable{{KeyValuePair{{string, string}}}},
+///     IReadOnlyDictionary{{string, StringValue}}
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerable<KeyValuePair<string, string>>
+public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerable<KeyValuePair<string, string>>, IReadOnlyDictionary<string, StringValue>
 {
     internal Dictionary<string, string?> items;
     internal string paramName;
+
+    /// <summary>
+    /// Represents an empty <see cref="StringValueCollection"/> field.
+    /// </summary>
+    /// <definition>
+    /// public static readonly StringValueCollection Empty;
+    /// </definition>
+    /// <type>
+    /// Field
+    /// </type>
+    public static readonly StringValueCollection Empty = new StringValueCollection("empty");
 
     internal static StringValueCollection FromNameValueCollection(string paramName, NameValueCollection col)
     {
@@ -105,6 +118,23 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// </type>
     public int Count { get => items.Count; }
 
+    /// <inheritdoc/>
+    /// <nodoc/>
+    public IEnumerable<string> Keys => items.Keys;
+
+    /// <inheritdoc/>
+    /// <nodoc/>
+    public IEnumerable<StringValue> Values
+    {
+        get
+        {
+            foreach (var item in items)
+            {
+                yield return new StringValue(item.Key, paramName, item.Value);
+            }
+        }
+    }
+
     /// <summary>
     /// Gets an <see cref="StringValue"/> item by their key name.
     /// </summary>
@@ -155,6 +185,32 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
     {
         return items.GetEnumerator();
+    }
+
+    /// <inheritdoc/>
+    /// <nodoc/>
+    public bool ContainsKey(string key)
+    {
+        return items.ContainsKey(key);
+    }
+
+    /// <inheritdoc/>
+    /// <nodoc/>
+    public bool TryGetValue(string key, [NotNull()] out StringValue value)
+    {
+        var sv = GetItem(key);
+        value = sv;
+        return sv.IsNull;
+    }
+
+    /// <inheritdoc/>
+    /// <nodoc/>
+    IEnumerator<KeyValuePair<string, StringValue>> IEnumerable<KeyValuePair<string, StringValue>>.GetEnumerator()
+    {
+        foreach (string key in items.Keys)
+        {
+            yield return new KeyValuePair<string, StringValue>(key, new StringValue(key, paramName, items[key]));
+        }
     }
 
     /// <inheritdoc/>

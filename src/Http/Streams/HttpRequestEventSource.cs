@@ -22,12 +22,12 @@ namespace Sisk.Core.Http.Streams
     /// </type>
     public class HttpRequestEventSource : IDisposable
     {
-        ManualResetEvent terminatingMutex = new ManualResetEvent(false);
-        HttpStreamPingPolicy pingPolicy;
-        HttpListenerResponse res;
-        HttpListenerRequest req;
-        HttpRequest reqObj;
-        HttpServer hostServer;
+        readonly ManualResetEvent terminatingMutex = new ManualResetEvent(false);
+        readonly HttpStreamPingPolicy pingPolicy;
+        readonly HttpListenerResponse res;
+        readonly HttpListenerRequest req;
+        readonly HttpRequest reqObj;
+        readonly HttpServer hostServer;
         TimeSpan keepAlive = TimeSpan.Zero;
         DateTime lastSuccessfullMessage = DateTime.Now;
         int length = 0;

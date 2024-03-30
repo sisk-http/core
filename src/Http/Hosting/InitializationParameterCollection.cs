@@ -26,7 +26,7 @@ namespace Sisk.Core.Http.Hosting;
 /// </type>
 public class InitializationParameterCollection : IDictionary<string, string?>
 {
-    private NameValueCollection _decorator = new NameValueCollection();
+    private readonly NameValueCollection _decorator = new NameValueCollection();
     private bool _isReadonly = false;
 
     /// <summary>

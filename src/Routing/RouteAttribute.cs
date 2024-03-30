@@ -103,8 +103,8 @@ namespace Sisk.Core.Routing
         /// </type>
         public RouteAttribute(RouteMethod method, string path)
         {
-            this.Method = method;
-            this.Path = path;
+            Method = method;
+            Path = path;
         }
     }
 

@@ -107,9 +107,9 @@ namespace Sisk.Core.Http
         /// </type>
         public ListeningPort(ushort port)
         {
-            this.Hostname = "localhost";
-            this.Port = port;
-            this.Secure = Port == 443;
+            Hostname = "localhost";
+            Port = port;
+            Secure = Port == 443;
         }
 
         /// <summary>
@@ -125,9 +125,9 @@ namespace Sisk.Core.Http
         /// </type>
         public ListeningPort(ushort port, bool secure)
         {
-            this.Hostname = "localhost";
-            this.Port = port;
-            this.Secure = secure;
+            Hostname = "localhost";
+            Port = port;
+            Secure = secure;
         }
 
         /// <summary>
@@ -144,9 +144,9 @@ namespace Sisk.Core.Http
         /// </type>
         public ListeningPort(bool secure, string hostname, ushort port)
         {
-            this.Hostname = hostname;
-            this.Port = port;
-            this.Secure = secure;
+            Hostname = hostname;
+            Port = port;
+            Secure = secure;
         }
 
         /// <summary>
@@ -174,11 +174,11 @@ namespace Sisk.Core.Http
 
             if (schemePart == "http")
             {
-                this.Secure = false;
+                Secure = false;
             }
             else if (schemePart == "https")
             {
-                this.Secure = true;
+                Secure = true;
             }
             else
             {
@@ -187,8 +187,8 @@ namespace Sisk.Core.Http
 
             if (!ushort.TryParse(portPart, out ushort port)) throw new ArgumentException(SR.ListeningPort_Parser_InvalidPort);
 
-            this.Port = port;
-            this.Hostname = hostnamePart;
+            Port = port;
+            Hostname = hostnamePart;
         }
 
         /// <summary>
@@ -206,7 +206,7 @@ namespace Sisk.Core.Http
         {
             if (obj == null) return false;
             ListeningPort p = (ListeningPort)obj;
-            return p.Secure == this.Secure && p.Port == this.Port && p.Hostname == this.Hostname;
+            return p.Secure == Secure && p.Port == Port && p.Hostname == Hostname;
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Sisk.Core.Http
         /// </type>
         public override int GetHashCode()
         {
-            return (this.Secure.GetHashCode()) ^ (this.Port.GetHashCode()) ^ (this.Hostname.GetHashCode());
+            return (Secure.GetHashCode()) ^ (Port.GetHashCode()) ^ (Hostname.GetHashCode());
         }
 
         /// <summary>

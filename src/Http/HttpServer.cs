@@ -51,8 +51,8 @@ namespace Sisk.Core.Http
 
         private bool _isListening = false;
         private bool _isDisposing = false;
-        private HttpListener httpListener = new HttpListener();
-        private AsyncCallback _listenerCallback;
+        private readonly HttpListener httpListener = new HttpListener();
+        private readonly AsyncCallback _listenerCallback;
         private ListeningHost? _onlyListeningHost;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
@@ -255,9 +255,9 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpServer(HttpServerConfiguration configuration)
         {
-            this._listenerCallback = new AsyncCallback(ListenerCallback);
-            this.ServerConfiguration = configuration;
-            this.handler.RegisterHandler(new DefaultHttpServerHandler());
+            _listenerCallback = new AsyncCallback(ListenerCallback);
+            ServerConfiguration = configuration;
+            handler.RegisterHandler(new DefaultHttpServerHandler());
         }
 
         /// <summary>
@@ -316,13 +316,13 @@ namespace Sisk.Core.Http
         /// </type>
         public void Start()
         {
-            if (this.ServerConfiguration.ListeningHosts is null)
+            if (ServerConfiguration.ListeningHosts is null)
             {
                 throw new InvalidOperationException(SR.Httpserver_NoListeningHost);
             }
 
             listeningPrefixes = new List<string>();
-            foreach (ListeningHost listeningHost in this.ServerConfiguration.ListeningHosts)
+            foreach (ListeningHost listeningHost in ServerConfiguration.ListeningHosts)
             {
                 foreach (ListeningPort port in listeningHost.Ports)
                 {
@@ -384,8 +384,8 @@ namespace Sisk.Core.Http
         public void Dispose()
         {
             _isDisposing = true;
-            this.httpListener.Close();
-            this.ServerConfiguration.Dispose();
+            httpListener.Close();
+            ServerConfiguration.Dispose();
         }
 
         private enum StreamMethodCallback

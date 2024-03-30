@@ -7,6 +7,7 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Routing
@@ -26,6 +27,18 @@ namespace Sisk.Core.Routing
         internal bool isReturnTypeTask;
         internal Regex? routeRegex;
         private string path;
+
+        /// <summary>
+        /// Gets or sets an <see cref="TypedValueDictionary"/> for this route, which can hold contextual variables
+        /// for this <see cref="Route"/> object.
+        /// </summary>
+        /// <definition>
+        /// public TypedBagRepository Bag { get; set; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public TypedValueDictionary Bag { get; set; } = new TypedValueDictionary(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
@@ -238,7 +251,7 @@ namespace Sisk.Core.Routing
         /// </type>
         public Route()
         {
-            this.path = "/";
+            path = "/";
         }
 
         /// <summary>
@@ -254,40 +267,44 @@ namespace Sisk.Core.Routing
         {
             if (string.IsNullOrEmpty(Name))
             {
-                return $"[Method={Method}, Path={Path}]";
+                return $"{{Method = {Method}, Path = {Path}}}";
             }
             else
             {
-                return $"[Method={Method}, Name={Name}]";
+                return $"{{Method = {Method}, Path = {Path}, Name={Name}}}";
             }
         }
     }
 
     /// <summary>
-    /// Determines the way the server can write log messages. This enumerator is for giving permissions for certain contexts to be able or not to write to the logs.
+    /// Determines the way the server can write log messages. This enumerator is for giving permissions for certain contexts
+    /// to be able or not to write to the server logs, such as <see cref="Http.HttpServerConfiguration.AccessLogsStream"/> and <see cref="Http.HttpServerConfiguration.ErrorsLogsStream"/>.
     /// </summary>
     /// <definition>
+    /// [Flags]
     /// public enum LogOutput
     /// </definition>
     /// <type>
     /// Enum
     /// </type>
-
     [Flags]
     public enum LogOutput
     {
         /// <summary>
-        /// Determines that the context or the route can write log messages only to the access logs.
+        /// Determines that the context or the route can write log messages only to the access logs through <see cref="Http.HttpServerConfiguration.AccessLogsStream"/>.
         /// </summary>
         AccessLog = 1,
+
         /// <summary>
-        /// Determines that the context or the route can write error messages only to the error logs.
+        /// Determines that the context or the route can write error messages only to the error logs through <see cref="Http.HttpServerConfiguration.ErrorsLogsStream"/>.
         /// </summary>
         ErrorLog = 2,
+
         /// <summary>
         /// Determines that the context or the route can write log messages to both error and access logs.
         /// </summary>
         Both = AccessLog | ErrorLog,
+
         /// <summary>
         /// Determines that the context or the route cannot write any log messages.
         /// </summary>

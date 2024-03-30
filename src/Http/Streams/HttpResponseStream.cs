@@ -32,7 +32,7 @@ public sealed class HttpResponseStream : CookieHelper
     internal HttpResponseStream(HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host)
     {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException(nameof(listenerResponse));
-        this.ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
+        ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
         HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, listenerRequest, host.hostContext.CrossOriginResourceSharingPolicy, listenerResponse);
     }
 
@@ -215,7 +215,7 @@ public sealed class HttpResponseStream : CookieHelper
     {
         return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
         {
-            CalculedLength = this.calculatedLength
+            CalculedLength = calculatedLength
         };
     }
 
@@ -228,8 +228,8 @@ public sealed class HttpResponseStream : CookieHelper
 
 internal class ResponseStreamWriter : Stream
 {
-    private Stream BaseStream;
-    private HttpResponseStream Parent;
+    private readonly Stream BaseStream;
+    private readonly HttpResponseStream Parent;
 
     public ResponseStreamWriter(Stream baseStream, HttpResponseStream parent)
     {

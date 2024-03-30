@@ -101,6 +101,18 @@ namespace Sisk.Core.Http
         /// </type>
         public Route? MatchedRoute { get; internal set; }
 
+        /// <summary>
+        /// Gets the <see cref="Sisk.Core.Routing.Router"/> where this context was
+        /// created.
+        /// </summary>
+        /// <definition>
+        /// public Router? Router { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public Router? Router { get; internal set; }
+
         internal HttpContext(HttpServer httpServer, HttpRequest request, Route? matchedRoute, ListeningHost host)
         {
             Request = request;

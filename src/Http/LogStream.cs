@@ -22,11 +22,11 @@ namespace Sisk.Core.Http
     /// </type>
     public class LogStream : IDisposable
     {
-        private Queue<object?> logQueue = new Queue<object?>();
-        private ManualResetEvent watcher = new ManualResetEvent(false);
-        private ManualResetEvent waiter = new ManualResetEvent(false);
-        private ManualResetEvent terminate = new ManualResetEvent(false);
-        private Thread loggingThread;
+        private readonly Queue<object?> logQueue = new Queue<object?>();
+        private readonly ManualResetEvent watcher = new ManualResetEvent(false);
+        private readonly ManualResetEvent waiter = new ManualResetEvent(false);
+        private readonly ManualResetEvent terminate = new ManualResetEvent(false);
+        private readonly Thread loggingThread;
         private bool isBlocking = false;
         internal RotatingLogPolicy? rotatingLogPolicy = null;
         internal CircularBuffer<string>? _bufferingContent = null;
@@ -79,15 +79,36 @@ namespace Sisk.Core.Http
         public bool IsBuffering { get => _bufferingContent is not null; }
 
         /// <summary>
-        /// Gets the absolute path to the file where the log is being written to.
+        /// Gets or sets the absolute path to the file where the log is being written to.
         /// </summary>
+        /// <remarks>
+        /// When setting this method, if the file directory doens't exists, it is created.
+        /// </remarks>
         /// <definition>
-        /// public string? FilePath { get; }
+        /// public string? FilePath { get; set; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public string? FilePath { get; } = null;
+        public string? FilePath
+        {
+            get => filePath; set
+            {
+                if (value is not null)
+                {
+                    filePath = Path.GetFullPath(value);
+
+                    string? dirPath = Path.GetDirectoryName(filePath);
+                    if (dirPath is not null)
+                        Directory.CreateDirectory(dirPath);
+                }
+                else
+                {
+                    filePath = null;
+                }
+            }
+        }
+        string? filePath;
 
         /// <summary>
         /// Gets the <see cref="System.IO.TextWriter"/> object where the log is being written to.
@@ -98,18 +119,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public TextWriter? TextWriter { get; set; } = null;
-
-        /// <summary>
-        /// Gets the <see cref="System.IO.StreamWriter"/> object where the log is being written to.
-        /// </summary>
-        /// <definition>
-        /// public StreamWriter? StreamWriter { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        public StreamWriter? StreamWriter { get; set; } = null;
+        public TextWriter? TextWriter { get; set; }
 
         /// <summary>
         /// Gets or sets the function that formats input when used with <see cref="WriteFormat(object?)"/>.
@@ -179,41 +189,24 @@ namespace Sisk.Core.Http
         /// </type>
         public LogStream(string filename) : this()
         {
-            FilePath = Path.GetFullPath(filename);
-        }
-
-        /// <summary>
-        /// Creates an new <see cref="LogStream"/> instance with the given <see cref="System.IO.StreamWriter"/> resource.
-        /// </summary>
-        /// <param name="sw">The stream which the log stream will write log to.</param>
-        /// <definition>
-        /// public LogStream(StreamWriter sw)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
-        public LogStream(StreamWriter sw) : this()
-        {
-            StreamWriter = sw;
+            FilePath = filename;
         }
 
         /// <summary>
         /// Creates an new <see cref="LogStream"/> instance which writes text to an file and an <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="filename">The file path where this instance will write log to.</param>
-        /// <param name="tw">Represents the writer which this instance will write log to.</param>
-        /// <param name="sw">The <see cref="System.IO.TextWriter"/> instance which this instance will write log to.</param>
+        /// <param name="tw">Represents the text writer which this instance will write log to.</param>
         /// <definition>
-        /// public LogStream(string? filename, TextWriter? tw, StreamWriter? sw)
+        /// public LogStream(string? filename, TextWriter? tw)
         /// </definition>
         /// <type>
         /// Constructor
         /// </type>
-        public LogStream(string? filename, TextWriter? tw, StreamWriter? sw) : this()
+        public LogStream(string? filename, TextWriter? tw) : this()
         {
             if (filename is not null) FilePath = Path.GetFullPath(filename);
             TextWriter = tw;
-            StreamWriter = sw;
         }
 
         /// <summary>
@@ -278,7 +271,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Start buffering all output to an alternate stream in memory for readability with <see cref="Peek(int)"/> later.
+        /// Start buffering all output to an alternate stream in memory for readability with <see cref="Peek"/> later.
         /// </summary>
         /// <param name="lines">The amount of lines to store in the buffer.</param>
         public void StartBuffering(int lines)
@@ -325,7 +318,7 @@ namespace Sisk.Core.Http
                     exitBuffer.AppendLine(line?.ToString());
                 }
 
-                if (FilePath is null && TextWriter is null && StreamWriter is null)
+                if (FilePath is null && TextWriter is null)
                 {
                     throw new InvalidOperationException(SR.LogStream_NoOutput);
                 }
@@ -344,11 +337,6 @@ namespace Sisk.Core.Http
                 {
                     TextWriter?.Write(exitBuffer.ToString());
                     TextWriter?.Flush();
-                }
-                if (StreamWriter is not null)
-                {
-                    StreamWriter.Write(exitBuffer.ToString());
-                    StreamWriter.Flush();
                 }
             }
         }
@@ -511,8 +499,6 @@ namespace Sisk.Core.Http
             logQueue.Clear();
             TextWriter?.Flush();
             TextWriter?.Close();
-            StreamWriter?.Flush();
-            StreamWriter?.Close();
         }
 
         /// <summary>
@@ -525,15 +511,16 @@ namespace Sisk.Core.Http
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="dueTime">The time interval between checks.</param>
         /// <definition>
-        /// public void ConfigureRotatingPolicy(long maximumSize, TimeSpan due)
+        /// public LogStream ConfigureRotatingPolicy(long maximumSize, TimeSpan due)
         /// </definition>
         /// <type>
         /// Method
-        /// </type> 
-        public void ConfigureRotatingPolicy(long maximumSize, TimeSpan dueTime)
+        /// </type>
+        public LogStream ConfigureRotatingPolicy(long maximumSize, TimeSpan dueTime)
         {
             var policy = RotatingPolicy;
             policy.Configure(maximumSize, dueTime);
+            return this;
         }
 
         void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, int currentDepth = 0)

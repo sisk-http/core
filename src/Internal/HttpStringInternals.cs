@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Internal

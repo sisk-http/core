@@ -13,7 +13,7 @@ namespace Sisk.Core.Http.Handlers;
 
 internal class HttpServerHandlerRepository
 {
-    private List<HttpServerHandler> handlers = new List<HttpServerHandler>();
+    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>();
 
     public void RegisterHandler(HttpServerHandler handler)
     {

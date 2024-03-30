@@ -66,6 +66,6 @@ public abstract class AsyncRequestHandler : IRequestHandler
     /// <nodoc/>
     public HttpResponse? Execute(HttpRequest request, HttpContext context)
     {
-        return this.ExecuteAsync(request, context).GetAwaiter().GetResult();
+        return ExecuteAsync(request, context).GetAwaiter().GetResult();
     }
 }

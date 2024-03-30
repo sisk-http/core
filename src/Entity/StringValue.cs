@@ -20,9 +20,9 @@ namespace Sisk.Core.Entity;
 /// </type>
 public class StringValue
 {
-    private string? _ref;
-    private string argName;
-    private string argType;
+    private readonly string? _ref;
+    private readonly string argName;
+    private readonly string argType;
 
     internal StringValue(string name, string type, string? data)
     {
@@ -276,32 +276,42 @@ public class StringValue
     /// <nodocs/>
     public static bool operator ==(StringValue i, string? other)
     {
-        return i.Value == other;
+        return i.Equals(other);
     }
 
     /// <inheritdoc/>
     /// <nodocs/>
     public static bool operator !=(StringValue i, string? other)
     {
-        return i.Value != other;
+        return !i.Equals(other);
     }
 
     /// <inheritdoc/>
     /// <nodocs/>
     public override bool Equals(object? obj)
     {
-        if (ReferenceEquals(this, obj))
+        if (obj is null)
         {
-            return true;
+            return IsNull;
         }
-        if (ReferenceEquals(obj, null))
+        else if (obj is StringValue sv)
+        {
+            return Value?.Equals(sv.Value) == true;
+        }
+        else if (obj is string ss)
+        {
+            return Value?.Equals(ss) == true;
+        }
+        else
         {
             return false;
         }
-        if (obj is StringValue val)
-        {
-            return val.Value?.Equals(this.Value) == true;
-        }
-        return false;
+    }
+
+    /// <inheritdoc/>
+    /// <nodocs/>
+    public override int GetHashCode()
+    {
+        return Value?.GetHashCode() ?? 0;
     }
 }

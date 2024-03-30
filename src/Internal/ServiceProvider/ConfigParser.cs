@@ -34,7 +34,8 @@ namespace Sisk.Core.Internal.ServiceProvider
                 {
                     AllowTrailingCommas = true,
                     PropertyNameCaseInsensitive = true,
-                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
+                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 })) as ConfigStructureFile;
 
             if (config is null)

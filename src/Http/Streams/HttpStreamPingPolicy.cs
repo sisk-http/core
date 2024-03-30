@@ -20,8 +20,8 @@ namespace Sisk.Core.Http.Streams;
 /// </type>
 public sealed class HttpStreamPingPolicy
 {
-    private HttpWebSocket? __ws_parent;
-    private HttpRequestEventSource? __sse_parent;
+    private readonly HttpWebSocket? __ws_parent;
+    private readonly HttpRequestEventSource? __sse_parent;
     private Timer? _timer;
 
     /// <summary>
@@ -48,11 +48,11 @@ public sealed class HttpStreamPingPolicy
 
     internal HttpStreamPingPolicy(HttpRequestEventSource parent)
     {
-        this.__sse_parent = parent;
+        __sse_parent = parent;
     }
     internal HttpStreamPingPolicy(HttpWebSocket parent)
     {
-        this.__ws_parent = parent;
+        __ws_parent = parent;
     }
 
     /// <summary>

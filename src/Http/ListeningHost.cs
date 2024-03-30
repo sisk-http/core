@@ -46,7 +46,7 @@ namespace Sisk.Core.Http
 
                 for (int i = 0; i < _ports.Length; i++)
                 {
-                    ListeningPort A = this._ports[i];
+                    ListeningPort A = _ports[i];
                     ListeningPort B = other._ports[i];
                     if (!A.Equals(B)) return false;
                 }
@@ -171,8 +171,8 @@ namespace Sisk.Core.Http
         /// </type>
         public ListeningHost(string uri, Router r)
         {
-            this.Ports = new ListeningPort[] { new ListeningPort(uri) };
-            this.Router = r;
+            Ports = new ListeningPort[] { new ListeningPort(uri) };
+            Router = r;
         }
     }
 }

@@ -46,10 +46,10 @@ namespace Sisk.Core.Http
     {
         internal HttpServer baseServer;
         internal ListeningHost hostContext;
-        private HttpServerConfiguration contextServerConfiguration;
-        private HttpListenerResponse listenerResponse;
-        private HttpListenerRequest listenerRequest;
-        private HttpListenerContext context;
+        private readonly HttpServerConfiguration contextServerConfiguration;
+        private readonly HttpListenerResponse listenerResponse;
+        private readonly HttpListenerRequest listenerRequest;
+        private readonly HttpListenerContext context;
         private byte[]? contentBytes;
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
@@ -65,12 +65,12 @@ namespace Sisk.Core.Http
             HttpListenerContext context)
         {
             this.context = context;
-            this.baseServer = server;
-            this.contextServerConfiguration = baseServer.ServerConfiguration;
-            this.listenerResponse = context.Response;
-            this.listenerRequest = context.Request;
-            this.RequestedAt = DateTime.Now;
-            this.hostContext = host;
+            baseServer = server;
+            contextServerConfiguration = baseServer.ServerConfiguration;
+            listenerResponse = context.Response;
+            listenerRequest = context.Request;
+            RequestedAt = DateTime.Now;
+            hostContext = host;
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
@@ -82,12 +82,12 @@ namespace Sisk.Core.Http
 
         void ReadRequestStreamContents()
         {
-            if (this.contentBytes == null)
+            if (contentBytes == null)
             {
                 using (var memoryStream = new MemoryStream())
                 {
                     listenerRequest.InputStream.CopyTo(memoryStream);
-                    this.contentBytes = memoryStream.ToArray();
+                    contentBytes = memoryStream.ToArray();
                 }
             }
         }
@@ -134,7 +134,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public bool HasContents { get => this.ContentLength > 0; }
+        public bool HasContents { get => ContentLength > 0; }
 
         /// <summary>
         /// Gets the HTTP request headers.
@@ -563,7 +563,7 @@ namespace Sisk.Core.Http
         /// </type>
         public T SetContextBag<T>() where T : notnull, new()
         {
-            return this.Context.RequestBag.Set<T>();
+            return Context.RequestBag.Set<T>();
         }
 
         /// <summary>
@@ -580,7 +580,7 @@ namespace Sisk.Core.Http
         /// </type>
         public T SetContextBag<T>(T contextObject) where T : notnull
         {
-            return this.Context.RequestBag.Set<T>(contextObject);
+            return Context.RequestBag.Set<T>(contextObject);
         }
 
         /// <summary>
@@ -595,7 +595,7 @@ namespace Sisk.Core.Http
         /// </type>
         public T GetContextBag<T>() where T : notnull
         {
-            return this.Context.RequestBag.Get<T>();
+            return Context.RequestBag.Get<T>();
         }
 
         /// <summary>

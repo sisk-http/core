@@ -27,7 +27,7 @@ namespace Sisk.Core.Http.Hosting;
 /// </type>
 public sealed class HttpServerHostContextBuilder
 {
-    private HttpServerHostContext _context;
+    private readonly HttpServerHostContext _context;
     private PortableConfigurationBuilder? _portableConfiguration;
 
     /// <summary>

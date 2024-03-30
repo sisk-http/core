@@ -7,8 +7,9 @@
 // File name:   MultipartFormCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Collections;
+using System.Collections.Immutable;
+using System.Text;
 
 namespace Sisk.Core.Entity;
 
@@ -16,111 +17,96 @@ namespace Sisk.Core.Entity;
 /// Represents an class which hosts an multipart form data contents.
 /// </summary>
 /// <definition>
-/// public class MultipartFormCollection : IEnumerable{{MultipartObject}}
+/// public class MultipartFormCollection : IEnumerable{{MultipartObject}}, IReadOnlyList{{MultipartObject}},
+///     IReadOnlyCollection{{MultipartObject}}
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public class MultipartFormCollection : IEnumerable<MultipartObject>
+public class MultipartFormCollection : IEnumerable<MultipartObject>, IReadOnlyList<MultipartObject>, IReadOnlyCollection<MultipartObject>
 {
-    private List<MultipartObject> _items;
+    private readonly IList<MultipartObject> _items;
 
-    internal MultipartFormCollection(List<MultipartObject> items)
+    internal MultipartFormCollection(IEnumerable<MultipartObject> items)
     {
-        _items = items ?? throw new ArgumentNullException(nameof(items));
+        _items = items.ToImmutableList() ?? throw new ArgumentNullException(nameof(items));
     }
 
     /// <summary>
-    /// Reads an form item by it's name and return an string representation
-    /// of it's value.
+    /// Reads an form item contents by it's name.
     /// </summary>
     /// <param name="name">The form item name.</param>
+    /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
     /// <definition>
-    /// public string? GetString(string name)
+    /// public string? GetItem(string name, bool ignoreCase = false)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public string? GetString(string name)
+    public MultipartObject? GetItem(string name, bool ignoreCase = false)
     {
-        return GetItem(name)?.ReadContentAsString();
+        return _items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0);
     }
 
     /// <summary>
-    /// Reads an form item by it's name.
+    /// Reads an form item contents by it's name and returns their content as string.
     /// </summary>
     /// <param name="name">The form item name.</param>
+    /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
+    /// <param name="encoding">Optional. Specifies the <see cref="Encoding"/> used to read the content.</param>
     /// <definition>
-    /// public MultipartObject? GetItem(string name)
+    /// public string? GetString(string name, bool ignoreCase = false, Encoding? encoding = null)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-    public MultipartObject? GetItem(string name)
+    public string? GetString(string name, bool ignoreCase = false, Encoding? encoding = null)
     {
-        return _items
-             .FirstOrDefault(i => string.Compare(name, i.Name, true) == 0);
+        Encoding _enc = encoding ?? Encoding.UTF8;
+        return _items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0)?.ReadContentAsString(_enc);
     }
 
     /// <summary>
-    /// Reads an form item by it's name and casts it into an <typeparamref name="T"/>.
+    /// Gets an <see cref="StringValue"/> object from the form item content string.
     /// </summary>
-    /// <typeparam name="T">The supported structure type which will be converted to.</typeparam>
     /// <param name="name">The form item name.</param>
-    /// <param name="defaultValue">The default value if the item is not found.</param>
     /// <definition>
-    /// .NET 6:
-    /// public T GetItem{{T}}(string name, T defaultValue = default) where T : struct
-    /// 
-    /// .NET 7 and above:
-    /// public T GetItem{{T}}(string name, T defaultValue = default) where T : struct, IParsable{{T}}
+    /// public StringValue GetStringValue(string name)
     /// </definition>
     /// <type>
     /// Method
     /// </type>
-#if NET6_0
-    public T GetItem<T>(string name, T defaultValue = default) where T : struct
-#elif NET7_0_OR_GREATER
-    public T GetItem<T>(string name, T defaultValue = default) where T : struct, IParsable<T>
-#endif
+    public StringValue GetStringValue(string name)
     {
-        string? value = _items
-            .FirstOrDefault(i => string.Compare(name, i.Name, true) == 0)?
-            .ReadContentAsString();
-
-        if (value == null) return defaultValue;
-
-        try
-        {
-#if NET6_0
-            return (T)Parseable.ParseInternal<T>(value);
-#elif NET7_0_OR_GREATER
-            return T.Parse(value, null);
-#endif
-        }
-        catch (InvalidCastException)
-        {
-            throw new InvalidCastException(string.Format(SR.HttpRequest_GetQueryValue_CastException, name, typeof(T).FullName));
-        }
+        return new StringValue(name, "multipart form", GetItem(name, true)?.ReadContentAsString());
     }
 
-    /// <nodocs/>
-    public static implicit operator MultipartObject[](MultipartFormCollection t)
-    {
-        return t._items.ToArray();
-    }
-
-    /// <inheritdoc/>
     /// <nodoc/>
+    /// <inheritdoc/>
+    public MultipartObject this[int index] => ((IReadOnlyList<MultipartObject>)_items)[index];
+
+    /// <nodoc/>
+    /// <inheritdoc/>
+    public int Count => ((IReadOnlyCollection<MultipartObject>)_items).Count;
+
+    /// <nodoc/>
+    /// <inheritdoc/>
     public IEnumerator<MultipartObject> GetEnumerator()
     {
         return ((IEnumerable<MultipartObject>)_items).GetEnumerator();
     }
 
-    /// <inheritdoc/>
     /// <nodoc/>
+    /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((IEnumerable)_items).GetEnumerator();
+    }
+
+    /// <nodoc/>
+    /// <inheritdoc/>
+    public static implicit operator MultipartObject[](MultipartFormCollection t)
+    {
+        return t._items.ToArray();
     }
 }

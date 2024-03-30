@@ -13,12 +13,12 @@ namespace Sisk.Core.Entity
     /// Provides a class to provide Cross Origin response headers for when communicating with a browser.
     /// </summary>
     /// <definition>
-    /// public class CrossOriginResourceSharingHeaders
+    /// public sealed class CrossOriginResourceSharingHeaders
     /// </definition>
     /// <type>
     /// Class
     /// </type>
-    public class CrossOriginResourceSharingHeaders
+    public sealed class CrossOriginResourceSharingHeaders
     {
         /// <summary>
         /// Gets an instance of an empty CrossOriginResourceSharingHeaders.

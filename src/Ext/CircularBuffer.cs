@@ -7,24 +7,10 @@
 // File name:   CircularBuffer.cs
 // Repository:  https://github.com/sisk-http/core
 
-// The source code below was forked from
-// https://github.com/joaoportela/CircularBuffer-CSharp/blob/master/CircularBuffer/CircularBuffer.cs
-// at date 19-03-2024, which holds the license https://unlicense.org.
-
 using System.Collections;
 
-/// <inheritdoc/>
-/// <summary>
-/// Circular buffer.
-/// 
-/// When writing to a full buffer:
-/// PushBack -> removes this[0] / Front()
-/// PushFront -> removes this[Size-1] / Back()
-/// 
-/// this implementation is inspired by
-/// http://www.boost.org/doc/libs/1_53_0/libs/circular_buffer/doc/circular_buffer.html
-/// because I liked their interface.
-/// </summary>
+
+/// <nodocs />
 internal class CircularBuffer<T> : IEnumerable<T>
 {
     private readonly T[] _buffer;
@@ -243,7 +229,7 @@ internal class CircularBuffer<T> : IEnumerable<T>
     {
         ThrowIfEmpty("Cannot take elements from an empty buffer.");
         Decrement(ref _end);
-        _buffer[_end] = default(T);
+        _buffer[_end] = default(T)!;
         --_size;
     }
 
@@ -254,7 +240,7 @@ internal class CircularBuffer<T> : IEnumerable<T>
     public void PopFront()
     {
         ThrowIfEmpty("Cannot take elements from an empty buffer.");
-        _buffer[_start] = default(T);
+        _buffer[_start] = default(T)!;
         Increment(ref _start);
         --_size;
     }
@@ -285,7 +271,7 @@ internal class CircularBuffer<T> : IEnumerable<T>
         var segments = ToArraySegments();
         foreach (ArraySegment<T> segment in segments)
         {
-            Array.Copy(segment.Array, segment.Offset, newArray, newArrayOffset, segment.Count);
+            Array.Copy(segment.Array!, segment.Offset, newArray, newArrayOffset, segment.Count);
             newArrayOffset += segment.Count;
         }
         return newArray;
@@ -320,7 +306,7 @@ internal class CircularBuffer<T> : IEnumerable<T>
         {
             for (int i = 0; i < segment.Count; i++)
             {
-                yield return segment.Array[segment.Offset + i];
+                yield return segment.Array![segment.Offset + i];
             }
         }
     }

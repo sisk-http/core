@@ -16,19 +16,19 @@ namespace Sisk.Core.Internal
 {
     internal class LoggingFormatter
     {
-        TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+        readonly TimeSpan currentTimezoneDiff = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
 
-        HttpServerExecutionResult res;
-        DateTime d;
-        Uri? bReqUri;
-        IPAddress? bReqIpAddr;
-        NameValueCollection? reqHeaders;
-        int bResStatusCode;
-        string? bResStatusDescr;
-        string bReqMethod;
-        float? incomingSize;
-        float? outcomingSize;
-        long execTime;
+        readonly HttpServerExecutionResult res;
+        readonly DateTime d;
+        readonly Uri? bReqUri;
+        readonly IPAddress? bReqIpAddr;
+        readonly NameValueCollection? reqHeaders;
+        readonly int bResStatusCode;
+        readonly string? bResStatusDescr;
+        readonly string bReqMethod;
+        readonly float? incomingSize;
+        readonly float? outcomingSize;
+        readonly long execTime;
 
         public LoggingFormatter(
             HttpServerExecutionResult res,
@@ -47,8 +47,8 @@ namespace Sisk.Core.Internal
             this.reqHeaders = reqHeaders;
             this.bResStatusCode = bResStatusCode;
             this.bResStatusDescr = bResStatusDescr;
-            this.incomingSize = res.RequestSize;
-            this.outcomingSize = res.ResponseSize;
+            incomingSize = res.RequestSize;
+            outcomingSize = res.ResponseSize;
             this.execTime = execTime;
             this.bReqMethod = bReqMethod;
         }
@@ -79,7 +79,7 @@ namespace Sisk.Core.Internal
         private static string? lms(LoggingFormatter lc) => lc.execTime.ToString();
         private static string? ls(LoggingFormatter lc) => lc.res?.Status.ToString();
 
-        private static MethodInfo[] Callers = typeof(LoggingFormatter).GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo[] Callers = typeof(LoggingFormatter).GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
 
         private void replaceEntities(ref string format)
         {

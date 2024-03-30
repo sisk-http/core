@@ -23,7 +23,7 @@ namespace Sisk.Core.Http
     /// </type>
     public class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
     {
-        private List<ListeningHost> _hosts = new List<ListeningHost>();
+        private readonly List<ListeningHost> _hosts = new List<ListeningHost>();
 
         /// <summary>
         /// Creates a new instance of an empty <see cref="ListeningHostRepository"/>.
@@ -88,7 +88,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void Add(ListeningHost item)
         {
-            if (this.Contains(item)) throw new ArgumentOutOfRangeException(SR.ListeningHostRepository_Duplicate);
+            if (Contains(item)) throw new ArgumentOutOfRangeException(SR.ListeningHostRepository_Duplicate);
             _hosts.Add(item);
         }
 
@@ -181,7 +181,7 @@ namespace Sisk.Core.Http
         /// </type>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace Sisk.Core.Http
 
         internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)
         {
-            foreach (ListeningHost h in this._hosts)
+            foreach (ListeningHost h in _hosts)
             {
                 foreach (ListeningPort p in h.Ports)
                 {

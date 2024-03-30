@@ -25,7 +25,7 @@ namespace Sisk.Core.Http.Streams
     public sealed class HttpWebSocket
     {
         bool isListening = true;
-        HttpStreamPingPolicy pingPolicy;
+        readonly HttpStreamPingPolicy pingPolicy;
 
         internal WebSocketMessage? lastMessage = null;
         internal CancellationTokenSource asyncListenerToken = null!;
@@ -41,7 +41,7 @@ namespace Sisk.Core.Http.Streams
         internal string? identifier = null;
 
         int attempt = 0;
-        int bufferLength = 0;
+        readonly int bufferLength = 0;
         long length = 0;
 
         /// <summary>
@@ -126,10 +126,10 @@ namespace Sisk.Core.Http.Streams
         internal HttpWebSocket(HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier)
         {
             this.ctx = ctx;
-            this.request = req;
-            this.bufferLength = request.baseServer.ServerConfiguration.Flags.WebSocketBufferSize;
+            request = req;
+            bufferLength = request.baseServer.ServerConfiguration.Flags.WebSocketBufferSize;
             this.identifier = identifier;
-            this.pingPolicy = new HttpStreamPingPolicy(this);
+            pingPolicy = new HttpStreamPingPolicy(this);
 
             if (identifier != null)
             {
@@ -392,7 +392,7 @@ namespace Sisk.Core.Http.Streams
         /// </type>
         public void WaitForClose(TimeSpan timeout)
         {
-            this.closeTimeout = timeout;
+            closeTimeout = timeout;
             closeEvent.WaitOne();
         }
 

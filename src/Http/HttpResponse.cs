@@ -148,8 +148,8 @@ namespace Sisk.Core.Http
 
         internal HttpResponse(HttpListenerResponse res)
         {
-            this.Status = (HttpStatusCode)res.StatusCode;
-            this.Headers.Add(res.Headers);
+            Status = (HttpStatusCode)res.StatusCode;
+            Headers.Add(res.Headers);
         }
 
         /// <summary>
@@ -167,10 +167,10 @@ namespace Sisk.Core.Http
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"HTTP/1.1 {(int)Status}");
-            foreach (string header in this.Headers)
+            foreach (string header in Headers)
             {
                 sb.Append(header + ": ");
-                sb.Append(this.Headers[header]);
+                sb.Append(Headers[header]);
                 sb.Append('\n');
             }
             sb.Append('\n');
@@ -196,7 +196,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithContent(string content)
         {
-            this.Content = new StringContent(content);
+            Content = new StringContent(content);
             return this;
         }
 
@@ -213,7 +213,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithContent(HttpContent content)
         {
-            this.Content = content;
+            Content = content;
             return this;
         }
 
@@ -231,7 +231,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithHeader(string headerKey, string headerValue)
         {
-            this.Headers.Set(headerKey, headerValue);
+            Headers.Set(headerKey, headerValue);
             return this;
         }
 
@@ -249,7 +249,7 @@ namespace Sisk.Core.Http
         public HttpResponse WithHeader(NameValueCollection headers)
         {
             foreach (string key in headers.Keys)
-                this.Headers.Set(key, headers[key]);
+                Headers.Set(key, headers[key]);
             return this;
         }
 
@@ -266,7 +266,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithStatus(int status)
         {
-            this.Status = (HttpStatusCode)status;
+            Status = (HttpStatusCode)status;
             return this;
         }
 
@@ -283,8 +283,8 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithStatus(HttpStatusInformation statusInformation)
         {
-            this.Status = default;
-            this.CustomStatus = statusInformation;
+            Status = default;
+            CustomStatus = statusInformation;
             return this;
         }
 
@@ -301,7 +301,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithStatus(HttpStatusCode status)
         {
-            this.Status = status;
+            Status = status;
             return this;
         }
 
@@ -325,7 +325,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithCookie(string name, string value, DateTime? expires = null, TimeSpan? maxAge = null, string? domain = null, string? path = null, bool? secure = null, bool? httpOnly = null, string? sameSite = null)
         {
-            this.SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
+            SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
             return this;
         }
 
@@ -340,8 +340,8 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse()
         {
-            this.Status = HttpStatusCode.OK;
-            this.Content = null;
+            Status = HttpStatusCode.OK;
+            Content = null;
         }
 
         /// <summary>
@@ -399,8 +399,8 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse(HttpStatusCode status, HttpContent? content)
         {
-            this.Status = status;
-            this.Content = content;
+            Status = status;
+            Content = content;
         }
 
         internal string? GetHeader(string headerName)
@@ -418,7 +418,7 @@ namespace Sisk.Core.Http
         /// <inheritdoc/>
         protected override void SetCookieHeader(String name, String value)
         {
-            this.Headers.Set(name, value);
+            Headers.Set(name, value);
         }
     }
 }

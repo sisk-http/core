@@ -15,14 +15,14 @@ namespace Sisk.Core.Http
     /// Provides a managed utility for rotating log files by their file size.
     /// </summary>
     /// <definition>
-    /// public class RotatingLogPolicy : IDisposable
+    /// public sealed class RotatingLogPolicy : IDisposable
     /// </definition>
     /// <type>
     /// Class
     /// </type>
-    public class RotatingLogPolicy : IDisposable
+    public sealed class RotatingLogPolicy : IDisposable
     {
-        private Thread checkThread;
+        private readonly Thread checkThread;
         private bool isTerminating = false;
         internal LogStream? _logStream;
 
@@ -63,8 +63,8 @@ namespace Sisk.Core.Http
             {
                 throw new InvalidOperationException(SR.LogStream_RotatingLogPolicy_AlreadyBind);
             }
-            this._logStream = ls;
-            this._logStream.rotatingLogPolicy = this;
+            _logStream = ls;
+            _logStream.rotatingLogPolicy = this;
             checkThread = new Thread(new ThreadStart(Check));
             checkThread.IsBackground = true;
         }

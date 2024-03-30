@@ -4,13 +4,12 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   HttpStatusCode.cs
+// File name:   HttpStatusInformation.cs
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Internal;
 using System.Net;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Core.Http
 {

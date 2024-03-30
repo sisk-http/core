@@ -14,12 +14,12 @@ namespace Sisk.Core.Http;
 /// the <see cref="HttpServerFlags.RouteActionTimeout"/>.
 /// </summary>
 /// <definition>
-/// public class HttpRequestException : Exception
+/// public sealed class HttpRequestException : Exception
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public class RequestTimeoutException : Exception
+public sealed class RequestTimeoutException : Exception
 {
     /// <inheritdoc/>
     /// <nodoc/>
