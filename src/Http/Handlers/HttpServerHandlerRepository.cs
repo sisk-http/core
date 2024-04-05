@@ -13,7 +13,13 @@ namespace Sisk.Core.Http.Handlers;
 
 internal class HttpServerHandlerRepository
 {
+    private readonly HttpServer parent;
     private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>();
+
+    public HttpServerHandlerRepository(HttpServer parent)
+    {
+        this.parent = parent;
+    }
 
     public void RegisterHandler(HttpServerHandler handler)
     {
@@ -23,7 +29,18 @@ internal class HttpServerHandlerRepository
     private void CallEvery(Action<HttpServerHandler> action)
     {
         foreach (HttpServerHandler handler in handlers)
-            action(handler);
+            try
+            {
+                action(handler);
+            }
+            catch (Exception ex)
+            {
+                if (parent.ServerConfiguration.ThrowExceptions)
+                {
+                    parent.ServerConfiguration.ErrorsLogsStream?.WriteException(ex);
+                }
+                else throw;
+            }
     }
 
     internal void ServerStarting(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStarting(val));

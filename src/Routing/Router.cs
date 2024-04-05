@@ -9,6 +9,7 @@
 
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
+using System.Collections;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 
@@ -18,12 +19,12 @@ namespace Sisk.Core.Routing
     /// Represents a collection of Routes and main executor of callbacks in an <see cref="HttpServer"/>.
     /// </summary>
     /// <definition>
-    /// public class Router
+    /// public class Router : IEnumerable{{Route}}
     /// </definition>
     /// <type>
     /// Class
     /// </type>
-    public partial class Router
+    public partial class Router : IEnumerable<Route>
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
 
@@ -128,8 +129,8 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Property
         /// </type>
-        public NoMatchedRouteErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new NoMatchedRouteErrorCallback(
-                            () => new HttpResponse(System.Net.HttpStatusCode.MethodNotAllowed));
+        public MethodNotAllowedErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new MethodNotAllowedErrorCallback(
+                            (c) => new HttpResponse(System.Net.HttpStatusCode.MethodNotAllowed));
 
         /// <summary>
         /// Gets all routes defined on this router instance.
@@ -181,6 +182,20 @@ namespace Sisk.Core.Routing
             }
 
             return actionHandler(routeResult);
+        }
+
+        /// <inheritdoc/>
+        /// <nodoc/>
+        public IEnumerator<Route> GetEnumerator()
+        {
+            return _routes.GetEnumerator();
+        }
+
+        /// <inheritdoc/>
+        /// <nodoc/>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)_routes).GetEnumerator();
         }
     }
 

@@ -57,7 +57,7 @@ namespace Sisk.Core.Http
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
-        internal HttpServerHandlerRepository handler = new HttpServerHandlerRepository();
+        internal HttpServerHandlerRepository handler;
 
         static HttpServer()
         {
@@ -257,6 +257,7 @@ namespace Sisk.Core.Http
         {
             _listenerCallback = new AsyncCallback(ListenerCallback);
             ServerConfiguration = configuration;
+            handler = new HttpServerHandlerRepository(this);
             handler.RegisterHandler(new DefaultHttpServerHandler());
         }
 

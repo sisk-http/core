@@ -57,11 +57,8 @@ namespace Sisk.Core.Http
         public CultureInfo? DefaultCultureInfo { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server access messages to.
+        /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server access messages to.
         /// </summary>
-        /// <remarks>
-        /// This property defaults to Console.Out.
-        /// </remarks> 
         /// <definition>
         /// public TextWriter? AccessLogsStream { get; set; }
         /// </definition>
@@ -71,11 +68,8 @@ namespace Sisk.Core.Http
         public LogStream? AccessLogsStream { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets the <see cref="TextWriter"/> object which the HTTP server will write HTTP server error transcriptions to.
+        /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server error transcriptions to.
         /// </summary>
-        /// <remarks>
-        /// This stream can be empty if ThrowExceptions is true.
-        /// </remarks>
         /// <definition>
         /// public TextWriter? ErrorsLogsStream { get; set; }
         /// </definition>

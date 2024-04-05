@@ -37,6 +37,18 @@ namespace Sisk.Core.Routing
     public delegate HttpResponse NoMatchedRouteErrorCallback();
 
     /// <summary>
+    /// Represents the function that is called when an request reaches it's route path, but it's
+    /// method is incorrect.
+    /// </summary>
+    /// <definition>
+    /// public delegate HttpResponse MethodNotAllowedErrorCallback(HttpContext context);
+    /// </definition>
+    /// <type>
+    /// Delegate
+    /// </type>
+    public delegate HttpResponse MethodNotAllowedErrorCallback(HttpContext context);
+
+    /// <summary>
     /// Represents the function that is called after the route action threw an exception.
     /// </summary>
     /// <returns></returns>

@@ -40,7 +40,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Field
         /// </type>
-        public static LogStream ConsoleOutput = new LogStream(Console.Out);
+        public static readonly LogStream ConsoleOutput = new LogStream(Console.Out);
 
         /// <summary>
         /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.
@@ -325,7 +325,7 @@ namespace Sisk.Core.Http
 
                 if (_bufferingContent is not null)
                 {
-                    _bufferingContent.PushBack(exitBuffer.ToString());
+                    _bufferingContent.Add(exitBuffer.ToString());
                 }
 
                 // writes log to outputs
@@ -366,7 +366,7 @@ namespace Sisk.Core.Http
         {
             StringBuilder excpStr = new StringBuilder();
             WriteExceptionInternal(excpStr, exp, 0);
-            WriteLine(excpStr.ToString(), Array.Empty<object?>());
+            WriteLineInternal(excpStr.ToString());
         }
 
         /// <summary>
@@ -380,7 +380,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteLine()
         {
-            WriteLine("", Array.Empty<object?>());
+            WriteLineInternal("");
         }
 
         /// <summary>
@@ -412,7 +412,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteLine(object? message)
         {
-            WriteLine(message?.ToString() ?? "", Array.Empty<object?>());
+            WriteLineInternal(message?.ToString() ?? "");
         }
 
         /// <summary>
@@ -427,7 +427,7 @@ namespace Sisk.Core.Http
         /// </type>
         public void WriteLine(string message)
         {
-            WriteLine(message, Array.Empty<object?>());
+            WriteLineInternal(message);
         }
 
         /// <summary>
@@ -436,35 +436,23 @@ namespace Sisk.Core.Http
         /// <param name="format">The string format that represents the arguments positions.</param>
         /// <param name="args">An array of objects that represents the string format slots values.</param>
         /// <definition>
-        /// public virtual void WriteLine(string format, params object?[] args)
+        /// public void WriteLine(string format, params object?[] args)
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        public virtual void WriteLine(string format, params object?[] args)
+        public void WriteLine(string format, params object?[] args)
         {
-            EnqueueMessageLine(string.Format(format, args));
+            WriteLineInternal(string.Format(format, args));
         }
 
         /// <summary>
-        /// Represents the method that enqueues a message to the queue of messages to be written to output streams.
+        /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
         /// </summary>
-        /// <param name="message">The message which will be written.</param>
-        /// <exception cref="ArgumentNullException">Thrown when the message is null.</exception>
-        /// <definition>
-        /// protected void EnqueueMessage(string message)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        protected void EnqueueMessageLine(string message)
+        /// <param name="line">The line which will be written to the log stream.</param>
+        protected virtual void WriteLineInternal(string line)
         {
-            ArgumentNullException.ThrowIfNull(message, nameof(message));
-            lock (logQueue)
-            {
-                logQueue.Enqueue(message);
-                setWatcher();
-            }
+            EnqueueMessageLine(line.Normalize());
         }
 
         /// <summary>
@@ -521,6 +509,16 @@ namespace Sisk.Core.Http
             var policy = RotatingPolicy;
             policy.Configure(maximumSize, dueTime);
             return this;
+        }
+
+        void EnqueueMessageLine(string message)
+        {
+            ArgumentNullException.ThrowIfNull(message, nameof(message));
+            lock (logQueue)
+            {
+                logQueue.Enqueue(message);
+                setWatcher();
+            }
         }
 
         void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, int currentDepth = 0)

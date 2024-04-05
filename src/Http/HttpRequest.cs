@@ -53,7 +53,7 @@ namespace Sisk.Core.Http
         private byte[]? contentBytes;
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
-        private NameValueCollection? headers = null;
+        private HttpHeaderCollection? headers = null;
         private NameValueCollection? cookies = null;
         private StringValueCollection? query = null;
         private StringValueCollection? form = null;
@@ -84,7 +84,7 @@ namespace Sisk.Core.Http
         {
             if (contentBytes == null)
             {
-                using (var memoryStream = new MemoryStream())
+                using (var memoryStream = new MemoryStream((int)ContentLength))
                 {
                     listenerRequest.InputStream.CopyTo(memoryStream);
                     contentBytes = memoryStream.ToArray();
@@ -140,12 +140,12 @@ namespace Sisk.Core.Http
         /// Gets the HTTP request headers.
         /// </summary>
         /// <definition>
-        /// public NameValueCollection Headers { get; }
+        /// public HttpHeaderCollection Headers { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public NameValueCollection Headers
+        public HttpHeaderCollection Headers
         {
             get
             {
@@ -153,7 +153,7 @@ namespace Sisk.Core.Http
                 {
                     if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
                     {
-                        headers = new NameValueCollection();
+                        headers = new HttpHeaderCollection();
                         Encoding entryCodepage = Encoding.GetEncoding("ISO-8859-1");
                         foreach (string headerName in listenerRequest.Headers)
                         {
@@ -166,7 +166,7 @@ namespace Sisk.Core.Http
                     }
                     else
                     {
-                        headers = listenerRequest.Headers;
+                        headers = new HttpHeaderCollection(listenerRequest.Headers);
                     }
                 }
 
@@ -708,7 +708,7 @@ namespace Sisk.Core.Http
         /// cached in this object.
         /// </summary>
         /// <definition>
-        /// public Stream GetInputStream()
+        /// public Stream GetRequestStream()
         /// </definition>
         /// <type>
         /// Method

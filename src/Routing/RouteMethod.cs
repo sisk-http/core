@@ -87,7 +87,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Enum Value
         /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.CustomStatus or RouterMethod.Any property for routes." +
+        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
             " This enum value will be removed in a future Sisk update.")]
         Copy = 2 << 5,
 
@@ -122,7 +122,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Enum Value
         /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.CustomStatus or RouterMethod.Any property for routes." +
+        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
             " This enum value will be removed in a future Sisk update.")]
         Link = 2 << 8,
 
@@ -135,7 +135,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Enum Value
         /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.CustomStatus or RouterMethod.Any property for routes." +
+        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
             " This enum value will be removed in a future Sisk update.")]
         Unlink = 2 << 9,
 
@@ -148,7 +148,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Enum Value
         /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.CustomStatus or RouterMethod.Any property for routes." +
+        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
             " This enum value will be removed in a future Sisk update.")]
         View = 2 << 10,
 

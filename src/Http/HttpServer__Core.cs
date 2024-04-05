@@ -280,16 +280,8 @@ public partial class HttpServer
                 goto finishSending;
             }
 
-            if (response.CustomStatus != null)
-            {
-                baseResponse.StatusCode = response.CustomStatus.Value.StatusCode;
-                baseResponse.StatusDescription = response.CustomStatus.Value.Description;
-            }
-            else
-            {
-                baseResponse.StatusCode = (int)response.Status;
-            }
-
+            baseResponse.StatusCode = response.StatusInformation.StatusCode;
+            baseResponse.StatusDescription = response.StatusInformation.Description;
             baseResponse.KeepAlive = ServerConfiguration.KeepAlive;
 
             #endregion
@@ -310,19 +302,39 @@ public partial class HttpServer
                 baseResponse.Headers[incameHeader] = value;
             }
 
-            if (response.Content != null)
+            if (response.Content is not null)
             {
+                Stream? contentStream = null;
                 // determines the content type
                 baseResponse.ContentType = resHeaders[HttpKnownHeaderNames.ContentType] ?? response.Content.Headers.ContentType?.ToString();
 
-                // determines if the response should be sent as chunked or normal
-                if (response.SendChunked || responseContentLength == null)
+                // determines if the response should be sent as chunked or normal 
+                if (response.SendChunked)
                 {
                     baseResponse.SendChunked = true;
                 }
+                else if (responseContentLength is long contentLength)
+                {
+                    baseResponse.ContentLength64 = contentLength;
+                }
+                else if (response.Content is StreamContent stmContent)
+                {
+                    contentStream = await stmContent.ReadAsStreamAsync();
+                    if (!contentStream.CanSeek)
+                    {
+                        throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
+                    }
+                    else
+                    {
+                        contentStream.Position = 0;
+                        baseResponse.ContentLength64 = contentStream.Length;
+                    }
+                }
                 else
                 {
-                    baseResponse.ContentLength64 = responseContentLength.Value;
+                    // the content-length wasn't informed and the user didn't set the request to
+                    // send as chunked. so it will throw an exception.
+                    throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
                 }
 
                 // write the output buffer
@@ -336,23 +348,8 @@ public partial class HttpServer
 
                     if (isPayloadStreamable)
                     {
-                        Stream contentStream = await response.Content.ReadAsStreamAsync();
-
-                        if (contentStream.CanSeek)
-                        {
-                            contentStream.Position = 0;
-                            if (!baseResponse.SendChunked)
-                                baseResponse.ContentLength64 = contentStream.Length;
-                        }
-                        else
-                        {
-                            if (baseResponse.ContentLength64 == 0)
-                            {
-                                // the content-length wasn't informed and the user didn't set the request to
-                                // send as chunked. so it will throw an exception.
-                                throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
-                            }
-                        }
+                        if (contentStream is null)
+                            contentStream = await response.Content.ReadAsStreamAsync();
 
                         await contentStream.CopyToAsync(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
                     }
@@ -420,6 +417,7 @@ public partial class HttpServer
         {
             if (!ServerConfiguration.ThrowExceptions)
             {
+                baseResponse.StatusCode = 500;
                 executionResult.ServerException = ex;
                 executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
             }
@@ -443,7 +441,7 @@ public partial class HttpServer
                 catch (Exception)
                 {
                     baseResponse.Abort();
-                }
+                }                
             }
 
             if (OnConnectionClose != null)

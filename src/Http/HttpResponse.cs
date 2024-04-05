@@ -19,7 +19,7 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <definition>
     /// public class HttpResponse : CookieHelper
-    /// </definition> 
+    /// </definition>
     /// <type>
     /// Class
     /// </type>
@@ -84,16 +84,15 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets or sets an custom HTTP status code and description for this HTTP response. If this property ins't null, it will overwrite
-        /// the <see cref="Status"/> property in this class.
+        /// Gets or sets the HTTP status code and description for this HTTP response.
         /// </summary>
         /// <definition>
-        /// public HttpStatusInformation? CustomStatus { get; set; }
+        /// public HttpStatusInformation StatusInformation { get; set; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public HttpStatusInformation? CustomStatus { get; set; } = null;
+        public HttpStatusInformation StatusInformation { get; set; } = new HttpStatusInformation();
 
         /// <summary>
         /// Gets or sets the HTTP response status code.
@@ -104,7 +103,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Property
         /// </type>
-        public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+        public HttpStatusCode Status { get => (HttpStatusCode)StatusInformation.StatusCode; set => StatusInformation = new HttpStatusInformation(value); }
 
         /// <summary>
         /// Gets a <see cref="NameValueCollection"/> instance of the HTTP response headers.
@@ -146,12 +145,6 @@ namespace Sisk.Core.Http
             this.internalStatus = internalStatus;
         }
 
-        internal HttpResponse(HttpListenerResponse res)
-        {
-            Status = (HttpStatusCode)res.StatusCode;
-            Headers.Add(res.Headers);
-        }
-
         /// <summary>
         /// Gets the raw HTTP response message.
         /// </summary>
@@ -166,16 +159,23 @@ namespace Sisk.Core.Http
         public string GetRawHttpResponse(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"HTTP/1.1 {(int)Status}");
+            sb.AppendLine($"HTTP/1.1 {StatusInformation}");
             foreach (string header in Headers)
             {
                 sb.Append(header + ": ");
                 sb.Append(Headers[header]);
                 sb.Append('\n');
             }
+            if (Content?.Headers is not null)
+                foreach (var header in Content.Headers)
+                {
+                    sb.Append(header.Key + ": ");
+                    sb.Append(string.Join(", ", header.Value));
+                    sb.Append('\n');
+                }
             sb.Append('\n');
 
-            if (includeBody)
+            if (includeBody && Content is not StreamContent)
             {
                 sb.Append(Content?.ReadAsStringAsync().Result);
             }
@@ -283,8 +283,7 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse WithStatus(HttpStatusInformation statusInformation)
         {
-            Status = default;
-            CustomStatus = statusInformation;
+            StatusInformation = statusInformation;
             return this;
         }
 
@@ -340,8 +339,6 @@ namespace Sisk.Core.Http
         /// </type>
         public HttpResponse()
         {
-            Status = HttpStatusCode.OK;
-            Content = null;
         }
 
         /// <summary>
@@ -389,6 +386,18 @@ namespace Sisk.Core.Http
         public HttpResponse(HttpContent? content) : this(HttpStatusCode.OK, content) { }
 
         /// <summary>
+        /// Creates an new <see cref="HttpResponse"/> instanec with given string content and status code as 200 OK.
+        /// </summary>
+        /// <param name="stringContent">The UTF-8 string content.</param>
+        /// <definition>
+        /// public HttpResponse(string stringContent)
+        /// </definition>
+        /// <type>
+        /// Constructor
+        /// </type>
+        public HttpResponse(string stringContent) : this(HttpStatusCode.OK, new StringContent(stringContent)) { }
+
+        /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP contents.
         /// </summary>
         /// <definition>
@@ -401,18 +410,6 @@ namespace Sisk.Core.Http
         {
             Status = status;
             Content = content;
-        }
-
-        internal string? GetHeader(string headerName)
-        {
-            foreach (string header in Headers.Keys)
-            {
-                if (string.Compare(header, headerName, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    return Headers[header];
-                }
-            }
-            return null;
         }
 
         /// <inheritdoc/>

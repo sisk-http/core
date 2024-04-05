@@ -184,7 +184,8 @@ public partial class Router
         }
         else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null)
         {
-            return new RouterExecutionResult(MethodNotAllowedErrorHandler(), matchedRoute, matchResult, null);
+            context.MatchedRoute = matchedRoute;
+            return new RouterExecutionResult(MethodNotAllowedErrorHandler(context), matchedRoute, matchResult, null);
         }
         else if (matchResult == RouteMatchResult.FullyMatched && matchedRoute != null)
         {

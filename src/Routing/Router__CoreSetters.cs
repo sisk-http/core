@@ -242,7 +242,8 @@ public partial class Router
     }
 
     /// <summary>
-    /// Searches the object instance for methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
+    /// Searches in the specified object for instance methods marked with routing attributes, such as <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates
+    /// routes from them. All routes is delegated to the specified instance.
     /// </summary>
     /// <param name="attrClassInstance">The instance of the class where the instance methods are. The routing methods must be instance methods and marked with <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
@@ -260,7 +261,8 @@ public partial class Router
     }
 
     /// <summary>
-    /// Searches the object for static methods with attribute <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates routes from them.
+    /// Searches in the specified object for static methods marked with routing attributes, such as <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates
+    /// routes from them.
     /// </summary>
     /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
@@ -274,6 +276,26 @@ public partial class Router
     {
         MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
         SetInternal(methods, attrClassType, null);
+    }
+
+    /// <summary>
+    /// Searches in the specified object for static methods marked with routing attributes, such as <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates
+    /// routes from them.
+    /// </summary>
+    /// <remarks>
+    /// This method is an shortcut for <see cref="SetObject(Type)"/>.
+    /// </remarks>
+    /// <typeparam name="TObject">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</typeparam>
+    /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
+    /// <definition>
+    /// public void SetObject{{TObject}}()
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void SetObject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TObject>()
+    {
+        SetObject(typeof(TObject));
     }
 
     private void SetInternal(MethodInfo[] methods, Type callerType, object? instance)

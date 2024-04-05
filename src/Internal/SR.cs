@@ -23,7 +23,7 @@ static class SR
     public const string HttpRequest_AlreadyInStreamingState = "This HTTP request is already streaming another context.";
 
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";
-    public const string HttpResponse_Stream_ContentLenghtNotSet = "To write content to the response output stream, you need to specify the length of the content with SetContentLength or use a chunked-encoded transfer.";
+    public const string HttpResponse_Stream_ContentLenghtNotSet = "The response has content, but the content length was not defined. To send content without a specified length, enable HttpResponse.SendChunked.";
 
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
     public const string Httpserver_StartMessage = "The HTTP server is listening at:";
