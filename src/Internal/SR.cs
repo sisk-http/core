@@ -29,6 +29,7 @@ static class SR
     public const string Httpserver_StartMessage = "The HTTP server is listening at:";
     public const string Httpserver_Commons_HeaderAfterContents = "Cannot send headers or status code after sending response contents.";
     public const string Httpserver_Commons_RouterTimeout = "Request maximum execution time exceeded it's limit.";
+    public const string Httpserver_WaitNext_Race_Condition = "This HTTP server is already waiting for the next request in another call of this method.";
 
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";
     public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters.";

@@ -7,6 +7,7 @@
 // File name:   HttpStringInternals.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 
@@ -22,6 +23,11 @@ namespace Sisk.Core.Internal
             const char SEPARATOR = '/';
             const string ROUTE_GROUP_START = "<";
             const string ROUTE_GROUP_END = ">";
+
+            if (routeA == Route.AnyPath || routeB == Route.AnyPath)
+            {
+                return true;
+            }
 
             int pathPatternSepCount = routeA.Count(SEPARATOR);
             int reqsPatternSepCount = routeB.Count(SEPARATOR);
@@ -69,6 +75,11 @@ namespace Sisk.Core.Internal
             const string ROUTE_GROUP_START = "<";
             const string ROUTE_GROUP_END = ">";
 
+            if (pathPattern == Route.AnyPath)
+            {
+                return new PathMatchResult(true, null);
+            }
+
             NameValueCollection? query = null;
 
             int pathPatternSepCount = pathPattern.Count(SEPARATOR);
@@ -113,6 +124,11 @@ namespace Sisk.Core.Internal
 #else
         public static bool PathRouteMatch(string routeA, string routeB, bool ignoreCase)
         {
+            if (routeA == Route.AnyPath || routeB == Route.AnyPath)
+            {
+                return true;
+            }
+
             string[] routeAP = routeA.Split('/', StringSplitOptions.RemoveEmptyEntries);
             string[] routeBP = routeB.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
@@ -146,6 +162,11 @@ namespace Sisk.Core.Internal
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
         {
+            if (pathPattern == Route.AnyPath)
+            {
+                return new PathMatchResult(true, null);
+            }
+
             NameValueCollection? query = null;
 
             string[] pathPatternParts = pathPattern.Split('/', StringSplitOptions.RemoveEmptyEntries);

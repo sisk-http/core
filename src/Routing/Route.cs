@@ -27,6 +27,17 @@ namespace Sisk.Core.Routing
         internal bool isReturnTypeTask;
         internal Regex? routeRegex;
         private string path;
+        
+        /// <summary>
+        /// Represents an route path which captures any URL path.
+        /// </summary>
+        /// <definition>
+        /// public const string AnyPath = "**RouteAnyPath";
+        /// </definition>
+        /// <type>
+        /// Constant
+        /// </type>
+        public const string AnyPath = "/<<ANY>>";
 
         /// <summary>
         /// Gets or sets an <see cref="TypedValueDictionary"/> for this route, which can hold contextual variables

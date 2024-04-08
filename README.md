@@ -88,3 +88,11 @@ Sisk can do web development the way you want. Create MVC, MVVC, SOLID applicatio
 Sisk is a highly modular and sustainable framework designed for creating a variety of applications, including Restful applications, gRPC, Websockets, file servers, GraphQL, Entity Framework, and more. Its development is ongoing, with a focus on simplicity, easy maintenance, and an enjoyable experience for developers. Sisk is known for its efficiency, even in low-performance environments, and it can handle over twenty thousand requests per second. The framework is compatible with any machine supporting .NET, including those that do not require Native AOT. Sisk also offers additional implementations and packages for extended functionality.
 
 While Sisk draws inspiration from ASP.NET, it aims for simpler and more performant development without the need for installing additional components. It provides a straightforward and robust development model, allowing developers to handle requests efficiently and explicitly. Sisk simplifies HTTP-related tasks and offers comprehensive documentation and open-source access to its source code, making it accessible and easy to learn for web developers.
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/sisk-http/core.svg?variant=light)](https://starchart.cc/sisk-http/core)
+
+## License
+
+The entire Sisk ecosystem is licensed under the [MIT License](https://sisk.project-principium.dev/license).

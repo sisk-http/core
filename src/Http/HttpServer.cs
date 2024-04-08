@@ -21,7 +21,7 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <definition>
     /// public class HttpServer : IDisposable
-    /// </definition> 
+    /// </definition>
     /// <type>
     /// Class
     /// </type>
@@ -58,6 +58,10 @@ namespace Sisk.Core.Http
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
         internal HttpServerHandlerRepository handler;
+        
+        internal AutoResetEvent waitNextEvent = new AutoResetEvent(false);
+        internal bool isWaitingNextEvent = false;
+        internal HttpServerExecutionResult? waitingExecutionResult;
 
         static HttpServer()
         {
@@ -74,12 +78,28 @@ namespace Sisk.Core.Http
         /// public static HttpServerHostContext CreateBuilder(Action{{HttpServerHostContextBuilder}} handler)
         /// </definition>
         /// <type>
-        /// Static method 
+        /// Static method
         /// </type>
         public static HttpServerHostContext CreateBuilder(Action<HttpServerHostContextBuilder> handler)
         {
             var builder = new HttpServerHostContextBuilder();
             handler(builder);
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds an empty <see cref="HttpServerHostContext"/> context with predefined listening port.
+        /// </summary>
+        /// <definition>
+        /// public static HttpServerHostContext CreateBuilder(ushort port)
+        /// </definition>
+        /// <type>
+        /// Static method
+        /// </type>
+        public static HttpServerHostContext CreateBuilder(ushort port)
+        {
+            var builder = new HttpServerHostContextBuilder();
+            builder.UseListeningPort(port);
             return builder.Build();
         }
 
@@ -90,7 +110,7 @@ namespace Sisk.Core.Http
         /// public static HttpServerHostContext CreateBuilder()
         /// </definition>
         /// <type>
-        /// Static method 
+        /// Static method
         /// </type>
         public static HttpServerHostContext CreateBuilder()
         {
@@ -111,7 +131,7 @@ namespace Sisk.Core.Http
         /// public static HttpServer Emit(in ushort insecureHttpPort, out HttpServerConfiguration configuration, out ListeningHost host, out Router router)
         /// </definition>
         /// <type>
-        /// Static method 
+        /// Static method
         /// </type>
         public static HttpServer Emit(
             in ushort insecureHttpPort,
@@ -281,7 +301,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="obj">The instance of the server handler.</param>
         /// <definition>
-        /// public void RegisterHandler(HttpServerHandler obj) 
+        /// public void RegisterHandler(HttpServerHandler obj)
         /// </definition>
         /// <type>
         /// Method
@@ -290,6 +310,52 @@ namespace Sisk.Core.Http
         {
             handler.RegisterHandler(obj);
         }
+
+        /// <summary>
+        /// Waits for the next execution result from the server. This method obtains the next completed context from the HTTP server,
+        /// both with the request and its response. This method does not interrupt the asynchronous processing of requests.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method, it starts the HTTP server if it ins't started yet.
+        /// </remarks>
+        /// <definition>
+        /// public HttpServerExecutionResult WaitNext()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public HttpServerExecutionResult WaitNext()
+        {
+            if (!IsListening)
+                Start();
+            if (isWaitingNextEvent)
+                throw new InvalidOperationException(SR.Httpserver_WaitNext_Race_Condition);
+
+            waitingExecutionResult = null;
+            isWaitingNextEvent = true;
+            waitNextEvent.WaitOne();
+
+            return waitingExecutionResult!;
+        }
+
+        /// <summary>
+        /// Waits for the next execution result from the server asynchronously. This method obtains the next completed context from the HTTP server,
+        /// both with the request and its response. This method does not interrupt the asynchronous processing of requests.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method, it starts the HTTP server if it ins't started yet.
+        /// </remarks>
+        /// <definition>
+        /// public async Task{{HttpServerExecutionResult}} WaitNextAsync()
+        /// </definition>
+        /// <type>
+        /// Method
+        /// </type>
+        public async Task<HttpServerExecutionResult> WaitNextAsync()
+        {
+            return await Task.Run(WaitNext);
+        }
+
 
         /// <summary>
         /// Restarts this HTTP server, sending all processing responses and starting them again, reading the listening ports again.

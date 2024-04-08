@@ -16,12 +16,12 @@ namespace Sisk.Core.Http.Hosting;
 /// Represents the class that hosts most of the components needed to run a Sisk application.
 /// </summary>
 /// <definition>
-/// public class HttpServerHostContext
+/// public class HttpServerHostContext : IDisposable
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public class HttpServerHostContext
+public class HttpServerHostContext : IDisposable
 {
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
@@ -153,5 +153,19 @@ public class HttpServerHostContext
     public async Task StartAsync(bool verbose = true, bool preventHault = true)
     {
         await Task.Run(() => Start(verbose, preventHault));
+    }
+
+    /// <summary>
+    /// Invalidates this class and releases the resources used by it, and permanently closes the HTTP server.
+    /// </summary>
+    /// <definition>
+    /// public void Dispose()
+    /// </definition>
+    /// <type>
+    /// Method
+    /// </type>
+    public void Dispose()
+    {
+        HttpServer.Dispose();
     }
 }

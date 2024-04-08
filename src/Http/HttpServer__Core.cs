@@ -308,7 +308,7 @@ public partial class HttpServer
                 // determines the content type
                 baseResponse.ContentType = resHeaders[HttpKnownHeaderNames.ContentType] ?? response.Content.Headers.ContentType?.ToString();
 
-                // determines if the response should be sent as chunked or normal 
+                // determines if the response should be sent as chunked or normal
                 if (response.SendChunked)
                 {
                     baseResponse.SendChunked = true;
@@ -441,7 +441,7 @@ public partial class HttpServer
                 catch (Exception)
                 {
                     baseResponse.Abort();
-                }                
+                }
             }
 
             if (OnConnectionClose != null)
@@ -490,6 +490,13 @@ public partial class HttpServer
                 formatter.Format(ref line);
 
                 ServerConfiguration.AccessLogsStream?.WriteLine(line);
+            }
+
+            if (isWaitingNextEvent)
+            {
+                waitingExecutionResult = executionResult;
+                waitNextEvent.Set();
+                isWaitingNextEvent = false;
             }
 
             if (!flag.AsyncRequestProcessing)
