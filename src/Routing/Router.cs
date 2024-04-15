@@ -10,8 +10,10 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections;
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+record struct RouteDictItem(System.Type type, System.Func<object, Sisk.Core.Http.HttpResponse> lambda);
 
 namespace Sisk.Core.Routing
 {
@@ -19,31 +21,38 @@ namespace Sisk.Core.Routing
     /// Represents a collection of Routes and main executor of callbacks in an <see cref="HttpServer"/>.
     /// </summary>
     /// <definition>
-    /// public class Router : IEnumerable{{Route}}
+    /// public sealed class Router : IEnumerable{{Route}}
     /// </definition>
     /// <type>
     /// Class
     /// </type>
-    public partial class Router : IEnumerable<Route>
+    public sealed partial class Router : IEnumerable<Route>
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
-
         internal HttpServer? ParentServer { get; private set; }
-        internal IList<Route> _routes = new List<Route>();
-        private bool throwException = false;
-        private IDictionary<Type, Func<object, HttpResponse>> actionHandlers;
+
+        internal List<Route> _routesList = new();
+        internal List<RouteDictItem> _actionHandlersList = new();
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal void BindServer(HttpServer server)
         {
-            if (ReferenceEquals(server, ParentServer)) return;
-
-            ParentServer = server;
-            throwException = server.ServerConfiguration.ThrowExceptions;
-            server.handler.SetupRouter(this);
-
-            _routes = _routes.ToImmutableArray();
-            actionHandlers = actionHandlers.ToImmutableDictionary();
+            if (ParentServer is not null)
+            {
+                if (ReferenceEquals(server, ParentServer))
+                {
+                    return;
+                }
+                else
+                {
+                    throw new InvalidOperationException(SR.Router_BindException);
+                }
+            }
+            else
+            {
+                ParentServer = server;
+                server.handler.SetupRouter(this);
+            }
         }
 
         /// <summary>
@@ -83,7 +92,6 @@ namespace Sisk.Core.Routing
         /// </type>
         public Router()
         {
-            actionHandlers = new Dictionary<Type, Func<object, HttpResponse>>();
         }
 
         /// <summary>
@@ -142,7 +150,7 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Method
         /// </type>
-        public Route[] GetDefinedRoutes() => _routes.ToArray();
+        public Route[] GetDefinedRoutes() => _routesList.ToArray();
 
         /// <summary>
         /// Register an type handling association to converting it to an <see cref="HttpResponse"/> object.
@@ -161,11 +169,15 @@ namespace Sisk.Core.Routing
             {
                 throw new ArgumentException(SR.Router_Handler_HttpResponseRegister);
             }
-            if (actionHandlers.ContainsKey(type))
+            for (int i = 0; i < _actionHandlersList!.Count; i++)
             {
-                throw new ArgumentException(SR.Router_Handler_Duplicate);
+                RouteDictItem item = _actionHandlersList[i];
+                if (item.type.Equals(type))
+                {
+                    throw new ArgumentException(SR.Router_Handler_Duplicate);
+                }
             }
-            actionHandlers.Add(type, actionHandler);
+            _actionHandlersList.Add(new RouteDictItem(type, actionHandler));
         }
 
         HttpResponse ResolveAction(object routeResult)
@@ -176,26 +188,38 @@ namespace Sisk.Core.Routing
             }
 
             Type actionType = routeResult.GetType();
-            if (!actionHandlers.TryGetValue(actionType, out var actionHandler))
+
+            Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(_actionHandlersList);
+            ref RouteDictItem pointer = ref MemoryMarshal.GetReference(hspan);
+            for (int i = 0; i < hspan.Length; i++)
             {
-                throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, actionType.FullName));
+                ref RouteDictItem current = ref Unsafe.Add(ref pointer, i);
+                if (current.type.Equals(actionType))
+                {
+                    return current.lambda(routeResult);
+                }
             }
 
-            return actionHandler(routeResult);
+            throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, actionType.FullName));
         }
 
         /// <inheritdoc/>
         /// <nodoc/>
         public IEnumerator<Route> GetEnumerator()
         {
-            return _routes.GetEnumerator();
+            return ((IEnumerable<Route>)_routesList).GetEnumerator();
         }
 
         /// <inheritdoc/>
         /// <nodoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable)_routes).GetEnumerator();
+            return _routesList.GetEnumerator();
+        }
+
+        internal void FreeHttpServer()
+        {
+            ParentServer = null;
         }
     }
 

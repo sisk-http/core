@@ -12,7 +12,9 @@ using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -20,6 +22,7 @@ namespace Sisk.Core.Routing;
 
 public partial class Router
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
     {
         if (method == RouteMethod.Any) return true;
@@ -32,7 +35,7 @@ public partial class Router
 
     private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex(Route route, string requestPath)
     {
-        if (route.routeRegex == null)
+        if (route.routeRegex is null)
         {
             route.routeRegex = new Regex(route.Path, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
         }
@@ -41,8 +44,9 @@ public partial class Router
         if (test.Success)
         {
             NameValueCollection query = new NameValueCollection();
-            foreach (Group group in test.Groups)
+            for (int i = 0; i < test.Groups.Count; i++)
             {
+                Group group = test.Groups[i];
                 if (group.Index.ToString() == group.Name) continue;
                 query.Add(group.Name, group.Value);
             }
@@ -54,26 +58,32 @@ public partial class Router
         }
     }
 
-    internal IEnumerable<IRequestHandler> FilterRequestHandlerEnumerate(RequestHandlerExecutionMode mode, params IEnumerable<IRequestHandler>?[] baseLists)
+    internal bool InvokeRequestHandlerGroup(RequestHandlerExecutionMode mode, IRequestHandler[] baseLists, IRequestHandler[]? bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception)
     {
-        foreach (var baseList in baseLists)
+        ref IRequestHandler pointer = ref MemoryMarshal.GetArrayDataReference(baseLists);
+        for (int i = 0; i < baseLists.Length; i++)
         {
-            if (baseList is null)
+            var rh = Unsafe.Add(ref pointer, i);
+            if (rh.ExecutionMode == mode)
             {
-                continue;
-            }
-            foreach (var handler in baseList)
-            {
-                if (handler.ExecutionMode == mode)
-                    yield return handler;
+                HttpResponse? response = InvokeHandler(rh, request, context, bypassList, out exception);
+                if (response is not null)
+                {
+                    result = response;
+                    return true;
+                }
             }
         }
+        result = null;
+        exception = null;
+        return false;
     }
 
-    internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, IRequestHandler[]? bypass)
+    internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, IRequestHandler[]? bypass, out Exception? exception)
     {
         if (bypass is not null && bypass.Contains(handler))
         {
+            exception = null;
             return null;
         }
 
@@ -84,7 +94,8 @@ public partial class Router
         }
         catch (Exception ex)
         {
-            if (!throwException)
+            exception = ex;
+            if (!ParentServer!.ServerConfiguration.ThrowExceptions)
             {
                 if (CallbackErrorHandler is not null)
                 {
@@ -95,13 +106,12 @@ public partial class Router
             else throw;
         }
 
+        exception = null;
         return result;
     }
 
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
-        Justification = "Task<> is already included with dynamic dependency.")]
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    internal async Task<RouterExecutionResult> Execute(HttpContext context)
+    internal RouterExecutionResult Execute(HttpContext context)
     {
         if (ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
 
@@ -112,8 +122,12 @@ public partial class Router
 
         HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
 
-        foreach (Route route in _routes)
+        Span<Route> rspan = CollectionsMarshal.AsSpan(_routesList);
+        ref Route rPointer = ref MemoryMarshal.GetReference(rspan);
+        for (int i = 0; i < rspan.Length; i++)
         {
+            Route route = Unsafe.Add(ref rPointer, i);
+
             // test path
             HttpStringInternals.PathMatchResult pathTest;
             string reqUrlTest;
@@ -161,9 +175,21 @@ public partial class Router
 
             if (isMethodMatched)
             {
-                if (pathTest.Query != null)
-                    foreach (string routeParam in pathTest.Query)
-                        request.Query.SetItem(routeParam, HttpUtility.UrlDecode(pathTest.Query[routeParam]));
+                if (pathTest.Query is not null)
+                {
+                    var keys = pathTest.Query.Keys;
+
+                    for (int j = 0; j < keys.Count; j++)
+                    {
+                        string? queryItem = keys[j];
+                        if (string.IsNullOrEmpty(queryItem)) continue;
+
+                        string? value = pathTest.Query[queryItem];
+                        if (string.IsNullOrEmpty(value)) continue;
+
+                        request.Query.SetItem(queryItem, HttpUtility.UrlDecode(pathTest.Query[queryItem]));
+                    }
+                }
 
                 matchResult = RouteMatchResult.FullyMatched;
                 matchedRoute = route;
@@ -203,13 +229,15 @@ public partial class Router
             ParentServer?.handler.ContextBagCreated(context.RequestBag);
 
             #region Before-response handlers
-            foreach (IRequestHandler handler in FilterRequestHandlerEnumerate(RequestHandlerExecutionMode.BeforeResponse, GlobalRequestHandlers, matchedRoute.RequestHandlers))
+            HttpResponse? rhResponse;
+            Exception? rhException;
+            if (GlobalRequestHandlers is not null && InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
             {
-                var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                if (handlerResponse is not null)
-                {
-                    return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                }
+                return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
+            }
+            if (matchedRoute.RequestHandlers is not null && InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException))
+            {
+                return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }
             #endregion
 
@@ -227,7 +255,8 @@ public partial class Router
 
                 if (matchedRoute.isReturnTypeTask)
                 {
-                    actionResult = await Unsafe.As<object, Task<object>>(ref actionResult);
+                    ref Task<object> actionTask = ref Unsafe.As<object, Task<object>>(ref actionResult);
+                    actionResult = actionTask.GetAwaiter().GetResult();
                 }
 
                 if (actionResult is HttpResponse httpres)
@@ -241,7 +270,7 @@ public partial class Router
             }
             catch (Exception ex)
             {
-                if (!throwException && (ex is not HttpListenerException))
+                if (!ParentServer!.ServerConfiguration.ThrowExceptions && (ex is not HttpListenerException))
                 {
                     if (CallbackErrorHandler is not null)
                     {
@@ -262,13 +291,13 @@ public partial class Router
             #endregion
 
             #region After-response global handlers
-            foreach (IRequestHandler handler in FilterRequestHandlerEnumerate(RequestHandlerExecutionMode.AfterResponse, GlobalRequestHandlers, matchedRoute.RequestHandlers))
+            if (GlobalRequestHandlers is not null && InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
             {
-                var handlerResponse = InvokeHandler(handler, request, context, matchedRoute.BypassGlobalRequestHandlers);
-                if (handlerResponse is not null)
-                {
-                    return new RouterExecutionResult(handlerResponse, matchedRoute, matchResult, null);
-                }
+                return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
+            }
+            if (matchedRoute.RequestHandlers is not null && InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException))
+            {
+                return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }
             #endregion     
         }

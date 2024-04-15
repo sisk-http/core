@@ -269,9 +269,9 @@ internal class ResponseStreamWriter : Stream
 
     public override void Write(Byte[] buffer, Int32 offset, Int32 count)
     {
-        if (Parent.SendChunked == false && Parent.listenerResponse.ContentLength64 == 0)
+        if (Parent.listenerResponse.ContentLength64 == 0)
         {
-            throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
+            Parent.SendChunked = true;
         }
         BaseStream.Write(buffer, offset, count);
         Interlocked.Add(ref Parent.calculatedLength, buffer.Length);

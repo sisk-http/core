@@ -7,6 +7,7 @@
 // File name:   HttpResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Net;
@@ -106,15 +107,15 @@ namespace Sisk.Core.Http
         public HttpStatusCode Status { get => (HttpStatusCode)StatusInformation.StatusCode; set => StatusInformation = new HttpStatusInformation(value); }
 
         /// <summary>
-        /// Gets a <see cref="NameValueCollection"/> instance of the HTTP response headers.
+        /// Gets a <see cref="HttpHeaderCollection"/> instance of the HTTP response headers.
         /// </summary>
         /// <definition>
-        /// public NameValueCollection Headers { get; }
+        /// public HttpHeaderCollection Headers { get; }
         /// </definition>
         /// <type>
         /// Property
         /// </type>
-        public NameValueCollection Headers { get; private set; } = new NameValueCollection();
+        public HttpHeaderCollection Headers { get; private set; } = new HttpHeaderCollection();
 
         /// <summary>
         /// Gets or sets the HTTP response body contents.

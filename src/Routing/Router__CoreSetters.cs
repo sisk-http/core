@@ -64,7 +64,7 @@ public partial class Router
     /// </type>
     public Route? GetRouteFromName(string name)
     {
-        foreach (Route r in _routes)
+        foreach (Route r in _routesList)
         {
             if (r.Name == name)
             {
@@ -162,15 +162,7 @@ public partial class Router
     /// Method
     /// </type>
     public void SetRoute(RouteMethod method, string path, RouteAction action)
-    {
-        Route newRoute = new Route(method, path, null, action, null);
-        Route? collisonRoute;
-        if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
-        {
-            throw new ArgumentException(string.Format(SR.Router_Set_Collision, newRoute, collisonRoute));
-        }
-        _routes.Add(newRoute);
-    }
+        => SetRoute(new Route(method, path, action));
 
     /// <summary>
     /// Defines an route with their method, path, action function and name.
@@ -186,15 +178,7 @@ public partial class Router
     /// Method
     /// </type>
     public void SetRoute(RouteMethod method, string path, RouteAction action, string? name)
-    {
-        Route newRoute = new Route(method, path, name, action, null);
-        Route? collisonRoute;
-        if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
-        {
-            throw new ArgumentException(string.Format(SR.Router_Set_Collision, newRoute, collisonRoute));
-        }
-        _routes.Add(newRoute);
-    }
+        => SetRoute(new Route(method, path, name, action, null));
 
     /// <summary>
     /// Defines an route with their method, path, action function, name and request handlers.
@@ -211,15 +195,7 @@ public partial class Router
     /// Method
     /// </type>
     public void SetRoute(RouteMethod method, string path, RouteAction action, string? name, IRequestHandler[] middlewares)
-    {
-        Route newRoute = new Route(method, path, name, action, middlewares);
-        Route? collisonRoute;
-        if ((collisonRoute = GetCollisionRoute(newRoute.Method, newRoute.Path)) != null)
-        {
-            throw new ArgumentException(string.Format(SR.Router_Set_Collision, newRoute, collisonRoute));
-        }
-        _routes.Add(newRoute);
-    }
+        => SetRoute(new Route(method, path, name, action, middlewares));
 
     /// <summary>
     /// Defines an route in this Router instance.
@@ -238,7 +214,8 @@ public partial class Router
         {
             throw new ArgumentException(string.Format(SR.Router_Set_Collision, r, collisonRoute));
         }
-        _routes.Add(r);
+
+        _routesList!.Add(r);
     }
 
     /// <summary>
@@ -395,8 +372,9 @@ public partial class Router
             throw new ArgumentException(SR.Router_Set_InvalidRouteStart);
         }
 
-        foreach (Route r in _routes)
+        for (int i = 0; i < _routesList.Count; i++)
         {
+            Route r = _routesList[i];
             bool methodMatch =
                 (method == RouteMethod.Any || r.Method == RouteMethod.Any) ||
                 method == r.Method;

@@ -50,6 +50,34 @@ public abstract class HttpServerHandler
     internal void InvokeOnServerStarted(HttpServer server) => OnServerStarted(server);
 
     /// <summary>
+    /// Method that is called before the <see cref="HttpServer"/> stop, when it is
+    /// stopping from listening requests.
+    /// </summary>
+    /// <param name="server">The Http server entity which is stopping.</param>
+    /// <definition>
+    /// protected virtual void OnServerStopping(HttpServer server)
+    /// </definition>
+    /// <type>
+    /// Virtual method
+    /// </type>
+    protected virtual void OnServerStopping(HttpServer server) { }
+    internal void InvokeOnServerStopping(HttpServer server) => OnServerStopping(server);
+
+    /// <summary>
+    /// Method that is called after the <see cref="HttpServer"/> is stopped, meaning
+    /// it has stopped from listening to requests.
+    /// </summary>
+    /// <param name="server">The Http server entity which has stopped.</param>
+    /// <definition>
+    /// protected virtual void OnServerStopped(HttpServer server)
+    /// </definition>
+    /// <type>
+    /// Virtual method
+    /// </type>
+    protected virtual void OnServerStopped(HttpServer server) { }
+    internal void InvokeOnServerStopped(HttpServer server) => OnServerStopped(server);
+
+    /// <summary>
     /// Method that is called when an <see cref="Router"/> is binded to the Http server.
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>

@@ -609,8 +609,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Method
         /// </type>
-        [Obsolete("This method is deprecated and will be removed in later versions. Use Query[queryKeyName] instead.")]
-        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName];
+        public string? GetQueryValue(string queryKeyName) => Query[queryKeyName].Value;
 
         /// <summary>
         /// Gets the value stored from the <see cref="Query"/> and converts it to the given type.
@@ -619,32 +618,19 @@ namespace Sisk.Core.Http
         /// <param name="queryKeyName">The name of the URL parameter. The search is ignore-case.</param>
         /// <param name="defaultValue">The default value that will be returned if the item is not found in the query.</param>
         /// <definition>
-        /// // in .NET 6
         /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct
-        /// 
-        /// // in .NET 7+
-        /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct, IParsable{{T}}
         /// </definition>
         /// <type>
         /// Method
         /// </type>
-        [Obsolete("This method is deprecated and will be removed in later versions. Use Query[queryKeyName] instead.")]
-#if NET6_0
         public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct
-#elif NET7_0_OR_GREATER
-        public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct, IParsable<T>
-#endif
         {
-            string? value = Query[queryKeyName].MaybeNull()?.GetString();
-            if (value == null) return defaultValue;
+            StringValue value = Query[queryKeyName];
+            if (value.IsNull) return defaultValue;
 
             try
             {
-#if NET6_0
-                return (T)Parseable.ParseInternal<T>(value);
-#elif NET7_0_OR_GREATER
-                return T.Parse(value, null);
-#endif
+                return value.Get<T>();
             }
             catch (Exception)
             {

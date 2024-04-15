@@ -79,19 +79,6 @@ namespace Sisk.Core.Routing
         Delete = 2 << 4,
 
         /// <summary>
-        /// Represents the HTTP COPY method.
-        /// </summary>
-        /// <definition>
-        /// Copy = 2 &lt;&lt; 5
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
-            " This enum value will be removed in a future Sisk update.")]
-        Copy = 2 << 5,
-
-        /// <summary>
         /// Represents the HTTP HEAD method.
         /// </summary>
         /// <definition>
@@ -114,66 +101,14 @@ namespace Sisk.Core.Routing
         Options = 2 << 7,
 
         /// <summary>
-        /// Represents the HTTP LINK method.
-        /// </summary>
-        /// <definition>
-        /// Link = 2 &lt;&lt; 8
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
-            " This enum value will be removed in a future Sisk update.")]
-        Link = 2 << 8,
-
-        /// <summary>
-        /// Represents the HTTP UNLINK method.
-        /// </summary>
-        /// <definition>
-        /// Unlink = 2 &lt;&lt; 9
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
-            " This enum value will be removed in a future Sisk update.")]
-        Unlink = 2 << 9,
-
-        /// <summary>
-        /// Represents the HTTP VIEW method.
-        /// </summary>
-        /// <definition>
-        /// View = 2 &lt;&lt; 10
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
-        [Obsolete("This HTTP method is not defined in RFC 7231, Session 4, making it specific to a specific technology. To use custom HTTP methods, consider using the HttpResponse.StatusInformation or RouterMethod.Any property for routes." +
-            " This enum value will be removed in a future Sisk update.")]
-        View = 2 << 10,
-
-        /// <summary>
-        /// Represents the HTTP TRACE method.
-        /// </summary>
-        /// <definition>
-        /// Trace = 2 &lt;&lt; 11
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
-        Trace = 2 << 11,
-
-        /// <summary>
         /// Represents any HTTP method.
         /// </summary>
         /// <definition>
-        /// Any = Get | Post | Put | Patch | Delete | Copy | Head | Options | Link | Unlink | View | Trace
+        /// Any = Get | Post | Put | Patch | Delete | Copy | Head | Options
         /// </definition>
         /// <type>
         /// Enum Value
         /// </type>
-#pragma warning disable CS0618
-        Any = Get | Post | Put | Patch | Delete | Copy | Head | Options | Link | Unlink | View | Trace
-#pragma warning restore CS0618
+        Any = Get | Post | Put | Patch | Delete | Head | Options
     }
 }

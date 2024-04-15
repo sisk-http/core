@@ -14,6 +14,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http;
 
@@ -60,8 +61,9 @@ public partial class HttpServer
             string? origin = baseRequest.Headers["Origin"];
             if (origin != null)
             {
-                foreach (var definedOrigin in cors.AllowOrigins)
+                for (int i = 0; i < cors.AllowOrigins.Length; i++)
                 {
+                    string definedOrigin = cors.AllowOrigins[i];
                     if (string.Compare(definedOrigin, origin, true) == 0)
                     {
                         baseResponse.Headers.Set("Access-Control-Allow-Origin", origin);
@@ -75,16 +77,29 @@ public partial class HttpServer
         if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
     }
 
+    private void UnbindRouters()
+    {
+        foreach (var lh in ServerConfiguration.ListeningHosts)
+        {
+            if (lh.Router is { } router && ReferenceEquals(this, router.ParentServer))
+            {
+                router.FreeHttpServer();
+            }
+        }
+    }
+
     private void BindRouters()
     {
         foreach (var lh in ServerConfiguration.ListeningHosts)
         {
-            lh.Router?.BindServer(this);
+            if (lh.Router is { } router && router.ParentServer is null)
+            {
+                router.BindServer(this);
+            }
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private async void ListenerCallback(IAsyncResult result)
+    private void ListenerCallback(IAsyncResult result)
     {
         if (_isDisposing || !_isListening)
             return;
@@ -93,10 +108,11 @@ public partial class HttpServer
         listener.BeginGetContext(_listenerCallback, listener);
 
         HttpListenerContext context = listener.EndGetContext(result);
-        await ProcessRequest(context);
+        ProcessRequest(context);
     }
 
-    private async Task ProcessRequest(HttpListenerContext context)
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private void ProcessRequest(HttpListenerContext context)
     {
         HttpRequest request = null!;
         HttpResponse? response = null;
@@ -114,6 +130,11 @@ public partial class HttpServer
         IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
         Uri? connectingUri = baseRequest.Url;
         Router.RouterExecutionResult? routerResult = null;
+
+#pragma warning disable CS0219
+        // only used to debug where an request dies in http1.1
+        string _debugState = "begin";
+#pragma warning restore CS0219
 
         if (ServerConfiguration.DefaultCultureInfo != null)
         {
@@ -139,6 +160,7 @@ public partial class HttpServer
 
             sw.Start();
 
+            _debugState = "host_matching";
             #region Step 1 - DNS/Listening host matching
 
             if (connectingUri is null)
@@ -177,11 +199,15 @@ public partial class HttpServer
                 otherParty = request.RemoteAddress;
             }
 
-            if (matchedListeningHost.Router == null || !matchedListeningHost.CanListen)
+            if (!matchedListeningHost.CanListen)
             {
                 baseResponse.StatusCode = 503; // Service Unavailable
                 executionResult.Status = HttpServerExecutionStatus.ListeningHostNotReady;
                 return;
+            }
+            else
+            {
+                matchedListeningHost.Router!.BindServer(this);
             }
 
             #endregion // 27668
@@ -209,6 +235,9 @@ public partial class HttpServer
                 || request.Method == HttpMethod.Options
                 || request.Method == HttpMethod.Head
                 || request.Method == HttpMethod.Trace
+#if NET7_0_OR_GREATER
+                || request.Method == HttpMethod.Connect
+#endif
                 ) && context.Request.ContentLength64 > 0)
             {
                 executionResult.Status = HttpServerExecutionStatus.ContentServedOnIllegalMethod;
@@ -216,9 +245,7 @@ public partial class HttpServer
                 return;
             }
 
-            if (OnConnectionOpen != null)
-                OnConnectionOpen(this, request);
-
+            _debugState = "request_create";
             handler.HttpRequestOpen(request);
 
             #endregion
@@ -226,24 +253,9 @@ public partial class HttpServer
             #region Step 3 - Routing and action
 
             // get response
-            var timeout = flag.RouteActionTimeout;
-            if (timeout.Ticks > 0)
-            {
-                var routerTask = matchedListeningHost.Router.Execute(srContext);
-                if (await Task.WhenAny(routerTask, Task.Delay(timeout)) == routerTask)
-                {
-                    routerResult = routerTask.Result;
-                }
-                else
-                {
-                    throw new RequestTimeoutException();
-                }
-            }
-            else
-            {
-                routerResult = await matchedListeningHost.Router.Execute(srContext);
-            }
+            routerResult = matchedListeningHost.Router.Execute(srContext);
 
+            _debugState = "receive_response";
             response = routerResult.Response;
             useCors = routerResult.Route?.UseCors ?? true;
 
@@ -252,6 +264,7 @@ public partial class HttpServer
                 SetCorsHeaders(flag, baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
             }
 
+            _debugState = "check_response";
             if (response is null || response.internalStatus == HttpResponse.HTTPRESPONSE_EMPTY)
             {
                 baseResponse.StatusCode = 204;
@@ -280,6 +293,7 @@ public partial class HttpServer
                 goto finishSending;
             }
 
+            _debugState = "send_status";
             baseResponse.StatusCode = response.StatusInformation.StatusCode;
             baseResponse.StatusDescription = response.StatusInformation.Description;
             baseResponse.KeepAlive = ServerConfiguration.KeepAlive;
@@ -295,13 +309,18 @@ public partial class HttpServer
             long? responseContentLength = response.Content?.Headers.ContentLength;
             if (srContext?.OverrideHeaders.Count > 0) resHeaders.Add(srContext.OverrideHeaders);
 
-            foreach (string incameHeader in resHeaders)
+            for (int i = 0; i < resHeaders.Count; i++)
             {
+                string? incameHeader = resHeaders.Keys[i];
+                if (string.IsNullOrEmpty(incameHeader)) continue;
+
                 string? value = resHeaders[incameHeader];
                 if (string.IsNullOrEmpty(value)) continue;
+
                 baseResponse.Headers[incameHeader] = value;
             }
 
+            _debugState = "sent_headers";
             if (response.Content is not null)
             {
                 Stream? contentStream = null;
@@ -319,10 +338,10 @@ public partial class HttpServer
                 }
                 else if (response.Content is StreamContent stmContent)
                 {
-                    contentStream = await stmContent.ReadAsStreamAsync();
+                    contentStream = stmContent.ReadAsStream();
                     if (!contentStream.CanSeek)
                     {
-                        throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
+                        baseResponse.SendChunked = true;
                     }
                     else
                     {
@@ -333,8 +352,9 @@ public partial class HttpServer
                 else
                 {
                     // the content-length wasn't informed and the user didn't set the request to
-                    // send as chunked. so it will throw an exception.
-                    throw new InvalidOperationException(SR.HttpResponse_Stream_ContentLenghtNotSet);
+                    // send as chunked. so the server will send the response by chunked encoding
+                    // mode by default
+                    baseResponse.SendChunked = true;
                 }
 
                 // write the output buffer
@@ -349,14 +369,16 @@ public partial class HttpServer
                     if (isPayloadStreamable)
                     {
                         if (contentStream is null)
-                            contentStream = await response.Content.ReadAsStreamAsync();
+                            contentStream = response.Content.ReadAsStream();
 
-                        await contentStream.CopyToAsync(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
+                        contentStream.CopyTo(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
+                        _debugState = "send_streamable_end_write";
                     }
                     else
                     {
-                        byte[] contents = await response.Content.ReadAsByteArrayAsync();
+                        byte[] contents = response.Content.ReadAsByteArrayAsync().Result;
                         baseResponse.OutputStream.Write(contents);
+                        _debugState = "send_payload_end_write";
                     }
                 }
             }
@@ -366,6 +388,7 @@ public partial class HttpServer
         finishSending:
             #region Step 5 - Close streams and send response
 
+            _debugState = "content_sent";
             if (response?.CalculedLength >= 0)
             {
                 executionResult.ResponseSize = response.CalculedLength;
@@ -381,10 +404,12 @@ public partial class HttpServer
             if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
                 executionResult.Status = HttpServerExecutionStatus.Executed;
 
+            _debugState = "define_result";
             baseResponse.Close();
             baseRequest.InputStream.Close();
 
             closeStream = false;
+            _debugState = "close_streams";
             #endregion
         }
         catch (ObjectDisposedException objException)
@@ -396,13 +421,6 @@ public partial class HttpServer
         catch (HttpListenerException netException)
         {
             executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
-            executionResult.ServerException = netException;
-            hasErrorLogging = false;
-        }
-        catch (RequestTimeoutException netException)
-        {
-            baseResponse.StatusCode = 408;
-            executionResult.Status = HttpServerExecutionStatus.RequestTimeout;
             executionResult.ServerException = netException;
             hasErrorLogging = false;
         }
@@ -442,11 +460,6 @@ public partial class HttpServer
                 {
                     baseResponse.Abort();
                 }
-            }
-
-            if (OnConnectionClose != null)
-            {
-                OnConnectionClose(this, executionResult);
             }
 
             handler.HttpRequestClose(executionResult);

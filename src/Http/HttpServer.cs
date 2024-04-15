@@ -58,7 +58,7 @@ namespace Sisk.Core.Http
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
         internal List<string>? listeningPrefixes;
         internal HttpServerHandlerRepository handler;
-        
+
         internal AutoResetEvent waitNextEvent = new AutoResetEvent(false);
         internal bool isWaitingNextEvent = false;
         internal HttpServerExecutionResult? waitingExecutionResult;
@@ -220,36 +220,6 @@ namespace Sisk.Core.Http
         /// Property
         /// </type>
         public HttpWebSocketConnectionCollection WebSockets { get => _wsCollection; }
-
-        /// <summary>
-        /// Event that is called when this <see cref="HttpServer"/> computes an request and it's response.
-        /// </summary>
-        /// <definition>
-        /// public event ServerExecutionEventHandler? OnConnectionClose;
-        /// </definition>
-        /// <remarks>
-        /// This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.
-        /// </remarks>
-        /// <type>
-        /// Property
-        /// </type>
-        [Obsolete("This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.")]
-        public event ServerExecutionEventHandler? OnConnectionClose;
-
-        /// <summary>
-        /// Event that is called when this <see cref="HttpServer"/> receives an request.
-        /// </summary>
-        /// <definition>
-        /// public event ReceiveRequestEventHandler? OnConnectionOpen;
-        /// </definition>
-        /// <remarks>
-        /// This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.
-        /// </remarks>
-        /// <type>
-        /// Property
-        /// </type>
-        [Obsolete("This event is now obsolete and will be removed in later Sisk versions. Use HttpServerHandlers instead.")]
-        public event ReceiveRequestEventHandler? OnConnectionOpen;
 
         /// <summary>
         /// Get Sisk version label.
@@ -435,8 +405,12 @@ namespace Sisk.Core.Http
         /// </type>
         public void Stop()
         {
+            handler.Stopping(this);
             _isListening = false;
             httpListener.Stop();
+
+            UnbindRouters();
+            handler.Stopped(this);
         }
 
         /// <summary>
@@ -453,13 +427,6 @@ namespace Sisk.Core.Http
             _isDisposing = true;
             httpListener.Close();
             ServerConfiguration.Dispose();
-        }
-
-        private enum StreamMethodCallback
-        {
-            Nothing,
-            Abort,
-            Close
         }
     }
 }

@@ -238,7 +238,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Determines the maximum amount of time an route can process an request, including running request handlers,
         /// reading body and executing the route action. Specify zero for no limit. When the route action running time
-        /// reaches it's timeout, an <see cref="RequestTimeoutException"/> is thrown.
+        /// reaches it's timeout, an RequestTimeoutException is thrown.
         /// </summary>
         /// <docs>
         ///     <p>
@@ -251,6 +251,7 @@ namespace Sisk.Core.Http
         /// <type>
         /// Field
         /// </type>
+        [Obsolete("This property was deprecated and will do nothing. It will be removed in later Sisk versions.", true)]
         public TimeSpan RouteActionTimeout = TimeSpan.Zero;
 
         /// <summary>

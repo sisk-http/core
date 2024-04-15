@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 namespace Sisk.Core.Http
 {
     /// <summary>
-    /// Represents a structure that holds an HTTP response status information, with its code and description.
+    /// Represents a structure that holds an HTTP response status information, with it's status code and description.
     /// </summary>
     /// <definition>
     /// public struct HttpStatusInformation : IComparable, IEquatable{{HttpStatusInformation}}
@@ -31,6 +31,15 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the short description of the HTTP message.
         /// </summary>
+        /// <remarks>
+        /// Custom status descriptions is only supported for plain HTTP/1.1 and 1.0 transfers.
+        /// </remarks>
+        /// <definition>
+        /// public string Description
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
         public string Description
         {
             get => __description;
@@ -44,6 +53,12 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the numeric HTTP status code of the HTTP message.
         /// </summary>
+        /// <definition>
+        /// public string Description
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
         public int StatusCode
         {
             get => __statusCode;
@@ -108,6 +123,9 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="HttpStatusInformation"/> instance with given parameters.
         /// </summary>
+        /// <remarks>
+        /// Custom status descriptions is only supported for plain HTTP/1.1 and 1.0 transfers.
+        /// </remarks>
         /// <param name="description">Sets the short description of the HTTP message.</param>
         /// <param name="statusCode">Sets the numeric HTTP status code of the HTTP message.</param>
         /// <exception cref="ArgumentNullException"></exception>
@@ -226,7 +244,7 @@ namespace Sisk.Core.Http
         /// <nodoc/>
         public override int GetHashCode()
         {
-            return this.__statusCode.GetHashCode() ^ this.__statusCode.GetHashCode();
+            return this.__statusCode.GetHashCode() ^ this.__description.GetHashCode();
         }
 
         /// <summary>

@@ -7,7 +7,7 @@
 // File name:   SR.cs
 // Repository:  https://github.com/sisk-http/core
 
-static class SR
+static partial class SR
 {
     public const string MultipartObject_ContentTypeMissing = "Content-Type header cannot be null when retriving a multipart form content";
     public const string MultipartObject_BoundaryMissing = "No boundary was specified for this multipart form content.";
@@ -23,7 +23,6 @@ static class SR
     public const string HttpRequest_AlreadyInStreamingState = "This HTTP request is already streaming another context.";
 
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";
-    public const string HttpResponse_Stream_ContentLenghtNotSet = "The response has content, but the content length was not defined. To send content without a specified length, enable HttpResponse.SendChunked.";
 
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
     public const string Httpserver_StartMessage = "The HTTP server is listening at:";
@@ -64,7 +63,9 @@ static class SR
     public const string Router_Handler_ActionNullValue = "Action result values cannot be null values.";
     public const string Router_Handler_UnrecognizedAction = "Action of type \"{0}\" doens't have an action handler registered on the router that issued it.";
     public const string Router_NotBinded = "No HTTP server instance is binded to this Router.";
+    public const string Router_BindException = "This router is binded to another HTTP Server instance.";
     public const string Router_NoRouteActionDefined = "No route action was defined to the route {0}.";
+    public const string Router_ReadOnlyException = "It's not possible to modify the routes or handlers for this router, as it is read-only.";
 
     public const string Route_Action_ValueTypeSet = "Defining actions which their return type is an value type is not supported. Encapsulate it with ValueResult<T>.";
     public const string Route_Action_AsyncMissingGenericType = "Async route {0} action must return an object in addition to Task.";
@@ -83,4 +84,9 @@ static class SR
 
     public const string ValueItem_ValueNull = "The value \"{0}\" contained at this {1} is null or it's undefined.";
     public const string ValueItem_CastException = "Cannot cast the value \"{0}\" at parameter {1} into an {2}.";
+
+    public static string Format(string format, params object?[] items)
+    {
+        return String.Format(format, items);
+    }
 }

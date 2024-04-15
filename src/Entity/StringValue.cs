@@ -7,18 +7,20 @@
 // File name:   StringValue.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Runtime.CompilerServices;
+
 namespace Sisk.Core.Entity;
 
 /// <summary>
 /// Represents an instance that hosts a string value and allows conversion to common types.
 /// </summary>
 /// <definition>
-/// public class StringValue
+/// public struct StringValue
 /// </definition>
 /// <type>
 /// Class
 /// </type>
-public class StringValue
+public struct StringValue
 {
     private readonly string? _ref;
     private readonly string argName;
@@ -103,6 +105,20 @@ public class StringValue
     {
         ThrowIfNull();
         return _ref!;
+    }
+
+    /// <summary>
+    /// Gets a <see cref="char"/> from this <see cref="StringValue"/>. This method will throw an <see cref="NullReferenceException"/> if
+    /// the value stored in this instance is null.
+    /// </summary>
+    /// <returns>An non-null char value.</returns>
+    public char GetChar()
+    {
+        ThrowIfNull();
+        if (_ref!.Length != 1)
+            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "char"));
+
+        return _ref[0];
     }
 
     /// <summary>
@@ -255,6 +271,17 @@ public class StringValue
         {
             throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "GUID"));
         }
+    }
+
+    /// <summary>
+    /// Gets an not null value from the specified <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The type to convert the value to.</typeparam>
+    public T Get<T>() where T : struct
+    {
+        ThrowIfNull();
+        object result = Internal.Parseable.ParseInternal<T>(_ref!);
+        return Unsafe.Unbox<T>(result);
     }
 
     void ThrowIfNull()

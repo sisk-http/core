@@ -9,7 +9,7 @@
 
 using System.Collections;
 
-namespace System;
+namespace Sisk.Core.Entity;
 
 /// <summary>
 /// Represents an thread-safe, fixed-capacity circular buffer that stores elements of <typeparamref name="T"/>.
@@ -18,7 +18,7 @@ namespace System;
 /// <nodoc/>
 public class CircularBuffer<T> : IEnumerable<T>
 {
-    readonly T[] items;
+    T[] items;
 
     int capacity = 0;
 
@@ -52,10 +52,34 @@ public class CircularBuffer<T> : IEnumerable<T>
     }
 
     /// <summary>
+    /// Clears the circular buffer contents and recreates the array.
+    /// </summary>
+    public void Clear()
+    {
+        items = new T[capacity];
+    }
+
+    /// <summary>
+    /// Changes the capacity of elements in this circular buffer to the specified new size.
+    /// </summary>
+    /// <param name="capacity">The new size for this circular buffer.</param>
+    public void Resize(int capacity)
+    {
+        if (capacity <= 0) throw new ArgumentException("Capacity cannot be less or equals to zero.");
+        Array.Resize(ref items, capacity);
+        this.capacity = capacity;
+    }
+
+    /// <summary>
     /// Returns an array representation of this <see cref="CircularBuffer{T}"/> items in their defined
     /// positions within the capacity.
     /// </summary>
     public T[] ToArray() => items;
+
+    /// <summary>
+    /// Creates an new <see cref="ReadOnlySpan{T}"/> over the circular buffer.
+    /// </summary>
+    public ReadOnlySpan<T> ToSpan() => new ReadOnlySpan<T>(items);
 
     /// <summary>
     /// Gets the current capacity of this <see cref="CircularBuffer{T}"/>.

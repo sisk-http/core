@@ -8,6 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http.Handlers;
 
@@ -28,7 +31,12 @@ internal class HttpServerHandlerRepository
 
     private void CallEvery(Action<HttpServerHandler> action)
     {
-        foreach (HttpServerHandler handler in handlers)
+        Span<HttpServerHandler> hspan = CollectionsMarshal.AsSpan<HttpServerHandler>(handlers);
+        ref HttpServerHandler hpointer = ref MemoryMarshal.GetReference(hspan);
+        for (int i = 0; i < hspan.Length; i++)
+        {
+            HttpServerHandler handler = Unsafe.Add(ref hpointer, i);
+
             try
             {
                 action(handler);
@@ -41,6 +49,7 @@ internal class HttpServerHandlerRepository
                 }
                 else throw;
             }
+        }
     }
 
     internal void ServerStarting(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStarting(val));
@@ -50,4 +59,6 @@ internal class HttpServerHandlerRepository
     internal void HttpRequestOpen(HttpRequest val) => CallEvery(handler => handler.InvokeOnHttpRequestOpen(val));
     internal void HttpRequestClose(HttpServerExecutionResult val) => CallEvery(handler => handler.InvokeOnHttpRequestClose(val));
     internal void Exception(Exception val) => CallEvery(handler => handler.InvokeOnException(val));
+    internal void Stopping(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStopping(val));
+    internal void Stopped(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStopped(val));
 }

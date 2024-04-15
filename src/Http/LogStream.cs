@@ -7,6 +7,7 @@
 // File name:   LogStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using System.Text;
 
 namespace Sisk.Core.Http
@@ -120,19 +121,6 @@ namespace Sisk.Core.Http
         /// Property
         /// </type>
         public TextWriter? TextWriter { get; set; }
-
-        /// <summary>
-        /// Gets or sets the function that formats input when used with <see cref="WriteFormat(object?)"/>.
-        /// </summary>
-        /// <definition>
-        /// public Func{{object?, string}}? Format { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        [Obsolete("This property no longer works and will be removed in future versions of Sisk. To write messages with custom formats, extend " +
-            "this class and override WriteLine.")]
-        public Func<object?, string>? Format { get; set; }
 
         /// <summary>
         /// Gets or sets the encoding used for writting data to the output file. This property is only appliable if
@@ -384,23 +372,6 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Writes the input, formatting with <see cref="Format"/> handler, at the end of the output.
-        /// </summary>
-        /// <param name="input">The input object which will be formatted and written to the output.</param>
-        /// <definition>
-        /// public void WriteFormat(object? input)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        [Obsolete("This method no longer works and will be removed in future versions of Sisk. To write messages with custom formats, extend " +
-            "this class and override WriteLine.")]
-        public void WriteFormat(object? input)
-        {
-            return;
-        }
-
-        /// <summary>
         /// Writes the text and concats an line-break at the end into the output.
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
@@ -453,22 +424,6 @@ namespace Sisk.Core.Http
         protected virtual void WriteLineInternal(string line)
         {
             EnqueueMessageLine(line.Normalize());
-        }
-
-        /// <summary>
-        /// Writes the text into the output.
-        /// </summary>
-        /// <param name="value">The text which will be inserted at the output.</param>
-        /// <definition>
-        /// public void Write(object? value)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        [Obsolete("This method no longer works and will be removed in future versions of Sisk. Use WriteLine instead.")]
-        public void Write(object? value)
-        {
-            return;
         }
 
         /// <summary>
