@@ -13,7 +13,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-record struct RouteDictItem(System.Type type, System.Func<object, Sisk.Core.Http.HttpResponse> lambda);
+record struct RouteDictItem(System.Type type, Delegate lambda);
 
 namespace Sisk.Core.Routing
 {
@@ -50,8 +50,8 @@ namespace Sisk.Core.Routing
             }
             else
             {
-                ParentServer = server;
                 server.handler.SetupRouter(this);
+                ParentServer = server;              
             }
         }
 
@@ -69,6 +69,17 @@ namespace Sisk.Core.Routing
         {
             return PathUtility.CombinePaths(paths);
         }
+
+        /// <summary>
+        /// Gets an boolean indicating where this <see cref="Router"/> is read-only or not.
+        /// </summary>
+        /// <definition>
+        /// public bool IsReadOnly { get; }
+        /// </definition>
+        /// <type>
+        /// Property
+        /// </type>
+        public bool IsReadOnly { get => ParentServer is not null; }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
@@ -162,8 +173,12 @@ namespace Sisk.Core.Routing
         /// <type>
         /// Method
         /// </type>
-        public void RegisterValueHandler<T>(Func<object, HttpResponse> actionHandler)
+        public void RegisterValueHandler<T>(Func<T, HttpResponse> actionHandler)
         {
+            if (IsReadOnly)
+            {
+                throw new InvalidOperationException(SR.Router_ReadOnlyException);
+            }
             Type type = typeof(T);
             if (type == typeof(HttpResponse))
             {
@@ -194,9 +209,9 @@ namespace Sisk.Core.Routing
             for (int i = 0; i < hspan.Length; i++)
             {
                 ref RouteDictItem current = ref Unsafe.Add(ref pointer, i);
-                if (current.type.Equals(actionType))
+                if (actionType.IsAssignableTo(current.type))
                 {
-                    return current.lambda(routeResult);
+                    return (HttpResponse)current.lambda.DynamicInvoke(routeResult)!;
                 }
             }
 

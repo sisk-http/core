@@ -206,9 +206,13 @@ public partial class Router
     /// </definition>
     /// <type>
     /// Method
-    /// </type>
+    /// </type> 
     public void SetRoute(Route r)
     {
+        if (IsReadOnly)
+        {
+            throw new InvalidOperationException(SR.Router_ReadOnlyException);
+        }
         Route? collisonRoute;
         if (!r.UseRegex && (collisonRoute = GetCollisionRoute(r.Method, r.Path)) != null)
         {
