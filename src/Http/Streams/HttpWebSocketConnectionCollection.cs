@@ -12,12 +12,6 @@ namespace Sisk.Core.Http.Streams
     /// <summary>
     /// Provides a managed object to manage <see cref="HttpWebSocket"/> connections.
     /// </summary>
-    /// <definition>
-    /// public class HttpWebSocketConnectionCollection
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public class HttpWebSocketConnectionCollection
     {
         internal List<HttpWebSocket> _ws = new List<HttpWebSocket>();
@@ -25,23 +19,11 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Represents an event that is fired when an <see cref="HttpWebSocket"/> is registered in this collection.
         /// </summary>
-        /// <definition>
-        /// public event WebSocketRegistrationHandler? OnRegister;
-        /// </definition>
-        /// <type>
-        /// Event
-        /// </type>
         public event WebSocketRegistrationHandler? OnWebSocketRegister;
 
         /// <summary>
         /// Represents an event that is fired when an <see cref="HttpWebSocket"/> is closed and removed from this collection.
         /// </summary>
-        /// <definition>
-        /// public event EventSourceUnregistrationHandler? OnEventSourceUnregistration;
-        /// </definition>
-        /// <type>
-        /// Event
-        /// </type>
         public event WebSocketRegistrationHandler? OnWebSocketUnregister;
 
         internal HttpWebSocketConnectionCollection() { }
@@ -80,13 +62,6 @@ namespace Sisk.Core.Http.Streams
         /// Gets the Web Sockect connection for the specified identifier.
         /// </summary>
         /// <param name="identifier">The Web Socket identifier.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpWebSocket? GetByIdentifier(string identifier)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpWebSocket? GetByIdentifier(string identifier)
         {
             lock (_ws)
@@ -100,13 +75,6 @@ namespace Sisk.Core.Http.Streams
         /// Gets all actives <see cref="HttpWebSocket"/> instances that matches their identifier predicate.
         /// </summary>
         /// <param name="predicate">The expression on the an non-empty Web Socket identifier.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpWebSocket[] Find(Func&lt;string, bool&gt; predicate)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpWebSocket[] Find(Func<string, bool> predicate)
         {
             lock (_ws)
@@ -118,13 +86,6 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Gets all actives <see cref="HttpWebSocket"/> instances.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpWebSocket[] All()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpWebSocket[] All()
         {
             lock (_ws)
@@ -136,23 +97,11 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Gets an number indicating the amount of active web socket connections.
         /// </summary>
-        /// <definition>
-        /// public int ActiveConnections { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public int ActiveConnections { get => _ws.Count; }
 
         /// <summary>
         /// Closes all registered and active <see cref="HttpWebSocket"/> in this collections.
         /// </summary>
-        /// <definition>
-        /// public void DropAll()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void DropAll()
         {
             lock (_ws)
@@ -167,12 +116,6 @@ namespace Sisk.Core.Http.Streams
     /// </summary>
     /// <param name="sender">Represents the caller <see cref="HttpWebSocketConnectionCollection"/> object.</param>
     /// <param name="ws">Represents the registered <see cref="HttpWebSocket"/> web socket connection.</param>
-    /// <definition>
-    /// public delegate void WebSocketRegistrationHandler(object sender, HttpWebSocket ws);
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
     public delegate void WebSocketRegistrationHandler(object sender, HttpWebSocket ws);
 
     /// <summary>
@@ -180,11 +123,5 @@ namespace Sisk.Core.Http.Streams
     /// </summary>
     /// <param name="sender">Represents the caller <see cref="HttpWebSocketConnectionCollection"/> object.</param>
     /// <param name="ws">Represents the closed <see cref="HttpWebSocket"/> web socket connection.</param>
-    /// <definition>
-    /// public delegate void WebSocketUnregistrationHandler(object sender, HttpWebSocket ws);
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
     public delegate void WebSocketUnregistrationHandler(object sender, HttpWebSocket ws);
 }

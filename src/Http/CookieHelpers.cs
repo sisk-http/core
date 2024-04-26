@@ -15,12 +15,6 @@ namespace Sisk.Core.Http;
 /// <summary>
 /// Provides a class that contains useful methods for working with cookies in HTTP responses.
 /// </summary>
-/// <definition>
-/// public abstract class CookieHelper
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public abstract class CookieHelper
 {
     /// <summary>
@@ -35,12 +29,6 @@ public abstract class CookieHelper
     /// </summary>
     /// <param name="name">The cookie name.</param>
     /// <param name="value">The cookie value.</param>
-    /// <definition>
-    /// public void SetCookie(string name, string value)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetCookie(string name, string value)
     {
         SetCookieHeader("Set-Cookie", $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
@@ -58,12 +46,6 @@ public abstract class CookieHelper
     /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
     /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
     /// <param name="sameSite">The cookie SameSite parameter.</param>
-    /// <definition>
-    /// public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
     {
         List<string> syntax = new List<string>();

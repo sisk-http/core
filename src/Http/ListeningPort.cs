@@ -15,79 +15,49 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Provides a structure to contain a listener port for an <see cref="ListeningHost"/> instance.
     /// </summary>
-    /// <docs>
-    ///     <p>
+    /// <example>
+    ///     <para>
     ///         A listener port represents an access point on the HTTP server.
     ///         It consists of an indicator that it should use a secure connection (HTTPS), its hostname and port.
-    ///     </p>
-    ///     <p>
+    ///     </para>
+    ///     <para>
     ///         It must start with https:// or http://, and must terminate with an /.
-    ///     </p>
-    ///     <p>
+    ///     </para>
+    ///     <para>
     ///         It is represented by the syntax:
-    ///     </p>
+    ///     </para>
     ///     <pre><code class="lang-none">
     ///         [http|https]://[hostname]:[port]/
     ///     </code></pre>
-    ///     <p>
+    ///     <para>
     ///         Examples:
-    ///     </p>
-    ///     <pre><code class="lang-none">
+    ///     </para>
+    ///     <code>
     ///         http://localhost:80/
     ///         https://subdomain.domain.net:443/
     ///         http://182.32.112.223:5251/
-    ///     </code></pre>
-    /// </docs>
-    /// <definition>
-    /// public struct ListeningPort
-    /// </definition>
-    /// <type>
-    /// Struct
-    /// </type>
+    ///     </code>
+    /// </example>
     public struct ListeningPort
     {
         /// <summary>
         /// Gets or sets the DNS hostname pattern where this listening port will refer.
         /// </summary>
-        /// <definition>
-        /// public string Hostname { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Hostname { get; set; }
 
         /// <summary>
         /// Gets or sets the port where this listening port will refer.
         /// </summary>
-        /// <definition>
-        /// public ushort Port { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public ushort Port { get; set; }
 
         /// <summary>
         /// Gets or sets whether the server should listen to this port securely (SSL).
         /// </summary>
-        /// <definition>
-        /// public bool Secure { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool Secure { get; set; }
 
         /// <summary>
         /// Creates an new <see cref="ListeningPort"/> instance with default parameters.
         /// </summary>
-        /// <definition>
-        /// public ListeningPort()
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public ListeningPort()
         {
             Hostname = "localhost";
@@ -99,12 +69,6 @@ namespace Sisk.Core.Http
         /// Creates an new <see cref="ListeningPort"/> instance with the specified port at the loopback host.
         /// </summary>
         /// <param name="port">The port the server will listen on. If this port is the default HTTPS port (443), the class will have the property <see cref="Secure"/> to true.</param>
-        /// <definition>
-        /// public ListeningPort(int port)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public ListeningPort(ushort port)
         {
             Hostname = "localhost";
@@ -117,12 +81,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="port">The port the server will listen on.</param>
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
-        /// <definition>
-        /// public ListeningPort(ushort port, bool secure)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public ListeningPort(ushort port, bool secure)
         {
             Hostname = "localhost";
@@ -136,12 +94,6 @@ namespace Sisk.Core.Http
         /// <param name="port">The port the server will listen on.</param>
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
         /// <param name="hostname">The hostname DNS pattern the server will listen to.</param>
-        /// <definition>
-        /// public ListeningPort(bool secure, string hostname, ushort port)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public ListeningPort(bool secure, string hostname, ushort port)
         {
             Hostname = hostname;
@@ -153,12 +105,6 @@ namespace Sisk.Core.Http
         /// Creates an new <see cref="ListeningPort"/> instance with the specified URI.
         /// </summary>
         /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
-        /// <definition>
-        /// public ListeningPort(string uri)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public ListeningPort(string uri)
         {
             int schemeIndex = uri.IndexOf(":");
@@ -195,13 +141,6 @@ namespace Sisk.Core.Http
         /// Determines if another object is equals to this class instance.
         /// </summary>
         /// <param name="obj">The another object which will be used to compare.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public override bool Equals(object? obj)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public override bool Equals(object? obj)
         {
             if (obj == null) return false;
@@ -212,13 +151,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the hash code for this listening port.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public override int GetHashCode()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public override int GetHashCode()
         {
             return (Secure.GetHashCode()) ^ (Port.GetHashCode()) ^ (Hostname.GetHashCode());
@@ -227,12 +159,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an <see cref="ListeningPort"/> object with an random insecure port.
         /// </summary>
-        /// <definition>
-        /// public static ListeningPort GetRandomPort()
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static ListeningPort GetRandomPort()
         {
             TcpListener l = new TcpListener(IPAddress.Loopback, 0);
@@ -245,12 +171,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an string representation of this <see cref="ListeningPort"/>.
         /// </summary>
-        /// <definition>
-        /// public override string ToString()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public override string ToString()
         {
             return $"{(Secure ? "https" : "http")}://{Hostname}:{Port}/";

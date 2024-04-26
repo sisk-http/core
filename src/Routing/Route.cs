@@ -15,107 +15,52 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Represents an HTTP route to be matched by an <see cref="Router"/> object.
     /// </summary>
-    /// <definition>
-    /// public class Route
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public class Route
     {
         internal RouteAction? _callback { get; set; }
         internal bool isReturnTypeTask;
         internal Regex? routeRegex;
         private string path;
-        
+
         /// <summary>
         /// Represents an route path which captures any URL path.
         /// </summary>
-        /// <definition>
-        /// public const string AnyPath = "**RouteAnyPath";
-        /// </definition>
-        /// <type>
-        /// Constant
-        /// </type>
         public const string AnyPath = "/<<ANY>>";
 
         /// <summary>
         /// Gets or sets an <see cref="TypedValueDictionary"/> for this route, which can hold contextual variables
         /// for this <see cref="Route"/> object.
         /// </summary>
-        /// <definition>
-        /// public TypedBagRepository Bag { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public TypedValueDictionary Bag { get; set; } = new TypedValueDictionary(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
-        /// <definition>
-        /// public bool IsAsync { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        /// <since>0.16</since>
         public bool IsAsync { get => isReturnTypeTask; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
         /// </summary>
-        /// <definition>
-        /// public LogOutput LogMode { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public LogOutput LogMode { get; set; } = LogOutput.Both;
 
         /// <summary>
         /// Get or sets if this route should use regex to be interpreted instead of predefined templates.
         /// </summary>
-        /// <definition>
-        /// public bool UseRegex { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool UseRegex { get; set; }
 
         /// <summary>
         /// Gets or sets whether this route should send Cross-Origin Resource Sharing headers in the response.
         /// </summary>
-        /// <definition>
-        /// public bool UseCors { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool UseCors { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.
         /// </summary>
-        /// <definition>
-        /// public RouteMethod Method { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public RouteMethod Method { get; set; }
 
         /// <summary>
         /// Gets or sets the path expression that will be interpreted by the router and validated by the requests.
         /// </summary>
-        /// <definition>
-        /// public string Path { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Path
         {
             get
@@ -135,23 +80,11 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the route name. It allows it to be found by other routes and makes it easier to create links.
         /// </summary>
-        /// <definition>
-        /// public string? Name { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the function that is called after the route is matched with the request.
         /// </summary>
-        /// <definition>
-        /// public RouteAction? Action
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public RouteAction? Action
         {
             get => _callback;
@@ -190,23 +123,11 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the request handlers instances to run before the route's Action.
         /// </summary>
-        /// <definition>
-        /// public IRequestHandler[]? RequestHandlers { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public IRequestHandler[]? RequestHandlers { get; set; }
 
         /// <summary>
         /// Gets or sets the global request handlers instances that will not run on this route.
         /// </summary>
-        /// <definition>
-        /// public IRequestHandler[]? BypassGlobalRequestHandlers { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public IRequestHandler[]? BypassGlobalRequestHandlers { get; set; }
 
         /// <summary>
@@ -215,12 +136,6 @@ namespace Sisk.Core.Routing
         /// <param name="method">The matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.</param>
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
         /// <param name="action">The function that is called after the route is matched with the request.</param>
-        /// <definition>
-        /// public Route(RouteMethod method, string path, RouterCallback action)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public Route(RouteMethod method, string path, RouteAction action)
         {
             Method = method;
@@ -236,12 +151,6 @@ namespace Sisk.Core.Routing
         /// <param name="name">The route name. It allows it to be found by other routes and makes it easier to create links.</param>
         /// <param name="action">The function that is called after the route is matched with the request.</param>
         /// <param name="beforeCallback">The RequestHandlers to run before the route's Action.</param>
-        /// <definition>
-        /// public Route(RouteMethod method, string path, string? name, RouterCallback action, IRequestHandler[]? beforeCallback)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public Route(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback)
         {
             Method = method;
@@ -254,12 +163,6 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Creates an new <see cref="Route"/> instance with no parameters.
         /// </summary>
-        /// <definition>
-        /// public Route()
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public Route()
         {
             path = "/";
@@ -268,12 +171,6 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an string notation for this <see cref="Route"/> object.
         /// </summary>
-        /// <definition>
-        /// public override string ToString()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public override string ToString()
         {
             if (string.IsNullOrEmpty(Name))
@@ -291,13 +188,6 @@ namespace Sisk.Core.Routing
     /// Determines the way the server can write log messages. This enumerator is for giving permissions for certain contexts
     /// to be able or not to write to the server logs, such as <see cref="Http.HttpServerConfiguration.AccessLogsStream"/> and <see cref="Http.HttpServerConfiguration.ErrorsLogsStream"/>.
     /// </summary>
-    /// <definition>
-    /// [Flags]
-    /// public enum LogOutput
-    /// </definition>
-    /// <type>
-    /// Enum
-    /// </type>
     [Flags]
     public enum LogOutput
     {

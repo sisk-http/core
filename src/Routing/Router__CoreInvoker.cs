@@ -10,9 +10,7 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections.Specialized;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -199,7 +197,7 @@ public partial class Router
 
         if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null)
         {
-            return new RouterExecutionResult(NotFoundErrorHandler(), null, matchResult, null);
+            return new RouterExecutionResult(NotFoundErrorHandler(context), null, matchResult, null);
         }
         else if (matchResult == RouteMatchResult.OptionsMatched)
         {

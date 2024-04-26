@@ -14,12 +14,6 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Represents an interface that is executed before a request.
     /// </summary>
-    /// <definition>
-    /// public interface IRequestHandler
-    /// </definition>
-    /// <type>
-    /// Interface
-    /// </type>
     public interface IRequestHandler
     {
         /// <summary>
@@ -28,36 +22,17 @@ namespace Sisk.Core.Routing
         /// </summary>
         /// <param name="request">The entry HTTP request.</param>
         /// <param name="context">The HTTP request context. It may contain information from other <see cref="IRequestHandler"/>.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// HttpResponse? Execute(HttpRequest request, HttpContext context);
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         HttpResponse? Execute(HttpRequest request, HttpContext context);
 
         /// <summary>
         /// Gets or sets when this RequestHandler should run.
         /// </summary>
-        /// <definition>
-        /// RequestHandlerExecutionMode ExecutionMode { get; init; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         RequestHandlerExecutionMode ExecutionMode { get; init; }
     }
 
     /// <summary>
     /// Defines when the <see cref="IRequestHandler"/> object should be executed.
     /// </summary>
-    /// <definition>
-    /// public enum RequestHandlerExecutionMode
-    /// </definition>
-    /// <type>
-    /// Enum
-    /// </type>
     public enum RequestHandlerExecutionMode
     {
         /// <summary>

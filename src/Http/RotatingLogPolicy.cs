@@ -14,12 +14,6 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Provides a managed utility for rotating log files by their file size.
     /// </summary>
-    /// <definition>
-    /// public sealed class RotatingLogPolicy : IDisposable
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public sealed class RotatingLogPolicy : IDisposable
     {
         private readonly Thread checkThread;
@@ -29,34 +23,16 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the file size threshold in bytes for when the file will be compressed and then cleared.
         /// </summary>
-        /// <definition>
-        /// public long MaximumSize { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public long MaximumSize { get; private set; }
 
         /// <summary>
         /// Gets the time interval between checks.
         /// </summary>
-        /// <definition>
-        /// public TimeSpan Due { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type> 
         public TimeSpan Due { get; private set; }
 
         /// <summary>
         /// Creates an new <see cref="RotatingLogPolicy"/> instance with the given <see cref="LogStream"/> object to watch.
         /// </summary>
-        /// <definition>
-        /// public RotatingLogPolicy(LogStream ls)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type> 
         public RotatingLogPolicy(LogStream ls)
         {
             if (ls.rotatingLogPolicy != null)
@@ -77,12 +53,6 @@ namespace Sisk.Core.Http
         /// </remarks>
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="due">The time interval between checks.</param>
-        /// <definition>
-        /// public void Configure(long maximumSize, TimeSpan due)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void Configure(long maximumSize, TimeSpan due)
         {
             if (string.IsNullOrEmpty(_logStream?.FilePath))
@@ -142,13 +112,7 @@ namespace Sisk.Core.Http
 
         /// <summary>
         /// Waits for the last scheduled run and terminates this class and its resources.
-        /// </summary>
-        /// <definition>
-        /// public void Dispose()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type> 
+        /// </summary> 
         public void Dispose()
         {
             isTerminating = true;

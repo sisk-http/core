@@ -14,12 +14,6 @@ namespace Sisk.Core.Http.Streams
     /// <summary>
     /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
     /// </summary>
-    /// <definition>
-    /// public class HttpRequestEventSource : IDisposable
-    /// </definition>
-    /// <type>
-    /// Class 
-    /// </type>
     public class HttpRequestEventSource : IDisposable
     {
         readonly ManualResetEvent terminatingMutex = new ManualResetEvent(false);
@@ -46,56 +40,26 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP event source connection.
         /// </summary>
-        /// <definition>
-        /// public HttpStreamPingPolicy PingPolicy { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpStreamPingPolicy PingPolicy { get => pingPolicy; }
 
         /// <summary>
         /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
         /// </summary>
-        /// <definition>
-        /// public HttpRequest HttpRequest { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpRequest HttpRequest => reqObj;
 
         /// <summary>
         /// Gets an integer indicating the total bytes sent by this instance to the client.
         /// </summary>
-        /// <definition>
-        /// public int SentContentLength { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public int SentContentLength { get => length; }
 
         /// <summary>
         /// Gets an unique identifier label to this EventStream connection, useful for finding this connection's reference later.
         /// </summary>
-        /// <definition>
-        /// public string? Identifier { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string? Identifier { get; private set; }
 
         /// <summary>
         /// Gets an boolean indicating if this connection is open and this instance can send messages.
         /// </summary>
-        /// <definition>
-        /// public bool IsDisposed { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool IsActive { get; private set; }
 
         internal HttpRequestEventSource(string? identifier, HttpListenerResponse res, HttpListenerRequest req, HttpRequest host)
@@ -138,12 +102,6 @@ namespace Sisk.Core.Http.Streams
         /// Configures the ping policy for this instance of HTTP Event Source.
         /// </summary>
         /// <param name="act">The method that runs on the ping policy for this HTTP Event Source.</param>
-        /// <definition>
-        /// public void WithPing(Action'HttpStreamPingPolicy act)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void WithPing(Action<HttpStreamPingPolicy> act)
         {
             act(pingPolicy);
@@ -154,12 +112,6 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         /// <param name="name">The header name.</param>
         /// <param name="value">The header value.</param>
-        /// <definition>
-        /// public void AppendHeader(string name, string value)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void AppendHeader(string name, string value)
         {
             if (hasSentData)
@@ -173,12 +125,6 @@ namespace Sisk.Core.Http.Streams
         /// Writes a event message with their data to the event listener and returns an boolean indicating if the message was delivered to the client.
         /// </summary>
         /// <param name="data">The message text.</param>
-        /// <definition>
-        /// public bool Send(string data)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public bool Send(string data)
         {
             if (!IsActive)
@@ -195,12 +141,6 @@ namespace Sisk.Core.Http.Streams
         /// Writes a event message with their data to the event listener and returns an boolean indicating if the message was delivered to the client.
         /// </summary>
         /// <param name="data">The message object.</param>
-        /// <definition>
-        /// public bool Send(object? data)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public bool Send(object? data)
         {
             if (!IsActive)
@@ -217,12 +157,6 @@ namespace Sisk.Core.Http.Streams
         /// Asynchronously waits for the connection to close before continuing execution. This method
         /// is released when either the client or the server reaches an sending failure.
         /// </summary>
-        /// <definition>
-        /// public void KeepAlive()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void KeepAlive()
         {
             if (!IsActive)
@@ -237,12 +171,6 @@ namespace Sisk.Core.Http.Streams
         /// an maximum keep alive timeout. This method is released when either the client or the server reaches an sending failure.
         /// </summary>
         /// <param name="maximumIdleTolerance">The maximum timeout interval for an idle connection to automatically release this method.</param>
-        /// <definition>
-        /// public void KeepAlive()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void WaitForFail(TimeSpan maximumIdleTolerance)
         {
             if (!IsActive)
@@ -257,12 +185,6 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Closes the event listener and it's connection.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse Close()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse Close()
         {
             if (!isClosed)
@@ -281,12 +203,6 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Cancels the sending queue from sending pending messages and clears the queue.
         /// </summary>
-        /// <definition>
-        /// public void Cancel()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void Cancel()
         {
             sendQueue.Clear();
@@ -319,12 +235,6 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Flushes and releases the used resources of this class instance.
         /// </summary>
-        /// <definition>
-        /// public void Dispose()
-        /// </definition>
-        /// <type>
-        /// Method 
-        /// </type>
         public void Dispose()
         {
             if (isDisposed) return;

@@ -14,23 +14,11 @@ namespace Sisk.Core.Routing;
 /// <summary>
 /// Represents a class that implements <see cref="IRequestHandler"/> and its execution method is asynchronous.
 /// </summary>
-/// <definition>
-/// public abstract class AsyncRequestHandler : IRequestHandler
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public abstract class AsyncRequestHandler : IRequestHandler
 {
     /// <summary>
     /// Gets or sets when this RequestHandler should run.
     /// </summary>
-    /// <definition>
-    /// public abstract RequestHandlerExecutionMode ExecutionMode { get; init; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public abstract RequestHandlerExecutionMode ExecutionMode { get; init; }
 
     /// <summary>
@@ -39,31 +27,18 @@ public abstract class AsyncRequestHandler : IRequestHandler
     /// </summary>
     /// <param name="request">The entry HTTP request.</param>
     /// <param name="context">The HTTP request context. It may contain information from other <see cref="IRequestHandler"/>.</param>
-    /// <returns></returns>
-    /// <definition>
-    /// public abstract Task{{HttpResponse?}} ExecuteAsync(HttpRequest request, HttpContext context)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public abstract Task<HttpResponse?> ExecuteAsync(HttpRequest request, HttpContext context);
 
     /// <summary>
     /// Returns an null <see cref="HttpResponse"/> reference, which points to the next request handler or route action.
     /// </summary>
-    /// <definition>
-    /// public HttpResponse? Next()
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public HttpResponse? Next()
     {
         return null;
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public HttpResponse? Execute(HttpRequest request, HttpContext context)
     {
         return ExecuteAsync(request, context).GetAwaiter().GetResult();

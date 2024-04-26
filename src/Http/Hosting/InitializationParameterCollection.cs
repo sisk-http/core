@@ -18,12 +18,6 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Provides a collection of HTTP server initialization variables.
 /// </summary>
-/// <definition>
-/// public class InitializationParameterCollection : IDictionary{{string, string?}}
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public class InitializationParameterCollection : IDictionary<string, string?>
 {
     private readonly NameValueCollection _decorator = new NameValueCollection();
@@ -32,24 +26,12 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     /// <summary>
     /// Gets an instance of <see cref="NameValueCollection"/> with the values of this class.
     /// </summary>
-    /// <definition>
-    /// public NameValueCollection AsNameValueCollection()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public NameValueCollection AsNameValueCollection() => _decorator;
 
     /// <summary>
     /// Associates the parameters received in the service configuration to a managed object.
     /// </summary>
     /// <typeparam name="T">The type of the managed object that will have the service parameters mapped.</typeparam>
-    /// <definition>
-    /// public T MapTo{{T}}(NameValueCollection setupParameters)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075", Justification = "The return value of method 'System.Reflection.PropertyInfo.PropertyType.get' does not have matching annotations.")]
     public T Map<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : new()
     {
@@ -106,12 +88,6 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     /// If the parameter doens't meet the above requirements, an <see cref="ArgumentNullException"/> exception is thrown.
     /// </remarks>
     /// <param name="parameterName">The parameter name which will be evaluated.</param>
-    /// <definition>
-    /// public void EnsureNotNullOrEmpty(string parameterName)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void EnsureNotNullOrEmpty(string parameterName)
     {
         if (string.IsNullOrEmpty(_decorator[parameterName])) throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName));
@@ -124,19 +100,13 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     /// If the parameter doens't meet the above requirements, an <see cref="ArgumentNullException"/> exception is thrown.
     /// </remarks>
     /// <param name="parameterName">The parameter name which will be evaluated.</param>
-    /// <definition>
-    /// public void EnsureNotNull(string parameterName)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void EnsureNotNull(string parameterName)
     {
         if (string.IsNullOrEmpty(_decorator[parameterName])) throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullParameter, parameterName));
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public string? this[string key]
     {
         get => _decorator[key];
@@ -148,7 +118,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public ICollection<string> Keys
     {
         get
@@ -161,7 +131,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public ICollection<string?> Values
     {
         get
@@ -174,15 +144,15 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public int Count => _decorator.Count;
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool IsReadOnly => _isReadonly;
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public void Add(string key, string? value)
     {
         ThrowIfReadonly();
@@ -190,7 +160,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public void Add(KeyValuePair<string, string?> item)
     {
         ThrowIfReadonly();
@@ -198,7 +168,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public void Clear()
     {
         ThrowIfReadonly();
@@ -206,35 +176,35 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool Contains(KeyValuePair<string, string?> item)
     {
         return Keys.Contains(item.Key) && _decorator[item.Key] == item.Value;
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool ContainsKey(string key)
     {
         return Keys.Contains(key);
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public void CopyTo(KeyValuePair<string, string?>[] array, int arrayIndex)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
     {
         return (IEnumerator<KeyValuePair<string, string?>>)_decorator.GetEnumerator();
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool Remove(string key)
     {
         ThrowIfReadonly();
@@ -243,7 +213,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool Remove(KeyValuePair<string, string?> item)
     {
         ThrowIfReadonly();
@@ -252,7 +222,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool TryGetValue(string key, out string? value)
     {
         if (ContainsKey(key))
@@ -268,7 +238,7 @@ public class InitializationParameterCollection : IDictionary<string, string?>
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return _decorator.GetEnumerator();

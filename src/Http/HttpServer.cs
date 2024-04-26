@@ -19,34 +19,16 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Provides an lightweight HTTP server powered by Sisk.
     /// </summary>
-    /// <definition>
-    /// public class HttpServer : IDisposable
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public partial class HttpServer : IDisposable
     {
         /// <summary>
         /// Gets the X-Powered-By Sisk header value.
         /// </summary>
-        /// <definition>
-        /// public static string PoweredBy { get; }
-        /// </definition>
-        /// <type>
-        /// Static property
-        /// </type>
         public static string PoweredBy { get; private set; } = "";
 
         /// <summary>
         /// Gets the current Sisk version.
         /// </summary>
-        /// <definition>
-        /// public static Version SiskVersion { get; }
-        /// </definition>
-        /// <type>
-        /// Static property
-        /// </type>
         public static Version SiskVersion { get; private set; } = null!;
 
         private bool _isListening = false;
@@ -74,12 +56,6 @@ namespace Sisk.Core.Http
         /// Builds an <see cref="HttpServerHostContext"/> context invoking the handler on it.
         /// </summary>
         /// <param name="handler">The action which will configure the host context.</param>
-        /// <definition>
-        /// public static HttpServerHostContext CreateBuilder(Action{{HttpServerHostContextBuilder}} handler)
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpServerHostContext CreateBuilder(Action<HttpServerHostContextBuilder> handler)
         {
             var builder = new HttpServerHostContextBuilder();
@@ -90,12 +66,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Builds an empty <see cref="HttpServerHostContext"/> context with predefined listening port.
         /// </summary>
-        /// <definition>
-        /// public static HttpServerHostContext CreateBuilder(ushort port)
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpServerHostContext CreateBuilder(ushort port)
         {
             var builder = new HttpServerHostContextBuilder();
@@ -106,12 +76,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Builds an empty <see cref="HttpServerHostContext"/> context.
         /// </summary>
-        /// <definition>
-        /// public static HttpServerHostContext CreateBuilder()
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpServerHostContext CreateBuilder()
         {
             var builder = new HttpServerHostContextBuilder();
@@ -126,13 +90,6 @@ namespace Sisk.Core.Http
         /// <param name="configuration">The <see cref="HttpServerConfiguration"/> object issued from this method.</param>
         /// <param name="host">The <see cref="ListeningHost"/> object issued from this method.</param>
         /// <param name="router">The <see cref="Router"/> object issued from this method.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public static HttpServer Emit(in ushort insecureHttpPort, out HttpServerConfiguration configuration, out ListeningHost host, out Router router)
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpServer Emit(
             in ushort insecureHttpPort,
             out HttpServerConfiguration configuration,
@@ -169,80 +126,37 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the Server Configuration object.
         /// </summary>
-        /// <definition>
-        /// public HttpServerConfiguration ServerConfiguration { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpServerConfiguration ServerConfiguration { get; set; } = new HttpServerConfiguration();
 
         /// <summary>
         /// Gets an boolean indicating if this HTTP server is running and listening.
         /// </summary>
-        /// <definition>
-        /// public bool IsListening { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool IsListening { get => _isListening && !_isDisposing; }
 
         /// <summary>
         /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
         /// </summary>
-        /// <definition>
-        /// public string ListeningPrefixes { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string[] ListeningPrefixes => listeningPrefixes?.ToArray() ?? Array.Empty<string>();
 
         /// <summary>
         /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
         /// </summary>
-        /// <definition>
-        /// public HttpEventSourceCollection EventSources { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpEventSourceCollection EventSources { get => _eventCollection; }
 
         /// <summary>
         /// Gets an <see cref="HttpWebSocketConnectionCollection"/> with active Web Sockets connections in this HTTP server.
         /// </summary>
-        /// <definition>
-        /// public HttpWebSocketConnectionCollection WebSockets { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpWebSocketConnectionCollection WebSockets { get => _wsCollection; }
 
         /// <summary>
-        /// Get Sisk version label.
+        /// Gets the Sisk version label.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public string GetVersion()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public string GetVersion() => PoweredBy;
 
         /// <summary>
         /// Creates a new default configuration <see cref="Sisk.Core.Http.HttpServer"/> instance with the given Route and server configuration.
         /// </summary>
         /// <param name="configuration">The configuration object of the server.</param>
-        /// <definition>
-        /// public HttpServer(HttpServerConfiguration configuration)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public HttpServer(HttpServerConfiguration configuration)
         {
             _listenerCallback = new AsyncCallback(ListenerCallback);
@@ -255,12 +169,6 @@ namespace Sisk.Core.Http
         /// Associate an <see cref="HttpServerHandler"/> in this HttpServer to handle functions such as requests, routers and contexts.
         /// </summary>
         /// <typeparam name="T">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
-        /// <definition>
-        /// public void RegisterHandler{{[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T}}() where T : HttpServerHandler, new()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void RegisterHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() where T : HttpServerHandler, new()
         {
             handler.RegisterHandler(new T());
@@ -270,12 +178,6 @@ namespace Sisk.Core.Http
         /// Associate an <see cref="HttpServerHandler"/> in this HttpServer to handle functions such as requests, routers and contexts.
         /// </summary>
         /// <param name="obj">The instance of the server handler.</param>
-        /// <definition>
-        /// public void RegisterHandler(HttpServerHandler obj)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void RegisterHandler(HttpServerHandler obj)
         {
             handler.RegisterHandler(obj);
@@ -288,12 +190,6 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// Calling this method, it starts the HTTP server if it ins't started yet.
         /// </remarks>
-        /// <definition>
-        /// public HttpServerExecutionResult WaitNext()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpServerExecutionResult WaitNext()
         {
             if (!IsListening)
@@ -315,12 +211,6 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// Calling this method, it starts the HTTP server if it ins't started yet.
         /// </remarks>
-        /// <definition>
-        /// public async Task{{HttpServerExecutionResult}} WaitNextAsync()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public async Task<HttpServerExecutionResult> WaitNextAsync()
         {
             return await Task.Run(WaitNext);
@@ -330,12 +220,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Restarts this HTTP server, sending all processing responses and starting them again, reading the listening ports again.
         /// </summary>
-        /// <definition>
-        /// public void Restart()
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public void Restart()
         {
             Stop();
@@ -345,12 +229,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Starts listening to the set port and handling requests on this server.
         /// </summary>
-        /// <definition>
-        /// public void Start()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void Start()
         {
             if (ServerConfiguration.ListeningHosts is null)
@@ -397,12 +275,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Stops the server from listening and stops the request handler.
         /// </summary>
-        /// <definition>
-        /// public void Stop()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void Stop()
         {
             handler.Stopping(this);
@@ -416,12 +288,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Invalidates this class and releases the resources used by it, and permanently closes the HTTP server.
         /// </summary>
-        /// <definition>
-        /// public void Dispose()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void Dispose()
         {
             _isDisposing = true;

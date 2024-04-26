@@ -16,12 +16,6 @@ namespace Sisk.Core.Entity;
 /// Represents the base class for storing and retriving data by their type fluent
 /// methods.
 /// </summary>
-/// <definition>
-/// public class TypedBagRepository : IDictionary{{string, object?}}
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public class TypedValueDictionary : IDictionary<string, object?>
 {
     readonly Dictionary<string, object?> _values;
@@ -29,12 +23,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <summary>
     /// Creates an new <see cref="TypedValueDictionary"/> instance with default parameters.
     /// </summary>
-    /// <definition>
-    /// public TypedBagRepository()
-    /// </definition>
-    /// <type>
-    /// Constructor
-    /// </type>
     public TypedValueDictionary()
     {
         _values = new();
@@ -44,12 +32,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Creates an new <see cref="TypedValueDictionary"/> instance with default parameters with the specified
     /// <see cref="StringComparer"/>.
     /// </summary>
-    /// <definition>
-    /// public TypedBagRepository(StringComparer keyComparer)
-    /// </definition>
-    /// <type>
-    /// Constructor
-    /// </type>
     public TypedValueDictionary(StringComparer keyComparer)
     {
         _values = new Dictionary<string, object?>(keyComparer);
@@ -59,12 +41,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Gets the Type full qualified key name.
     /// </summary>
     /// <param name="t">The type to get their qualified key name.</param>
-    /// <definition>
-    /// protected string GetTypeKeyName(Type t)
-    /// </definition>
-    /// <type>
-    /// Protected method
-    /// </type>
     protected string GetTypeKeyName(Type t) =>
         t.FullName + "+" + t.GetHashCode();
 
@@ -72,12 +48,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Determines whether the specified <typeparamref name="T"/> singleton is defined in this context.
     /// </summary>
     /// <typeparam name="T">The singleton type.</typeparam>
-    /// <definition>
-    /// public bool IsSet{{T}}() where T : notnull
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public bool IsSet<T>() where T : notnull
     {
         return _values.ContainsKey(GetTypeKeyName(typeof(T)));
@@ -88,14 +58,8 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// output it.
     /// </summary>
     /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
-    /// <returns>true if the object is find with the specified key; otherwise, false.</returns>
+    /// <returns>True if the object is find with the specified key; otherwise, false.</returns>
     /// <typeparam name="T">The singleton type.</typeparam>
-    /// <definition>
-    /// public bool IsSet{{T}}([NotNullWhen(true)] out T value) where T : notnull
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public bool IsSet<T>([NotNullWhen(true)] out T? value) where T : notnull
     {
         return TryGetValue(GetTypeKeyName(typeof(T)), out value);
@@ -105,12 +69,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Removes an singleton object from it's type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The singleton type.</typeparam>
-    /// <definition>
-    /// public void Unset{{T}}() where T : notnull
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void Unset<T>() where T : notnull
     {
         _values.Remove(GetTypeKeyName(typeof(T)));
@@ -120,12 +78,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Creates and adds an singleton of <typeparamref name="T"/> in this context bag.
     /// </summary>
     /// <typeparam name="T">The object that will be defined in this context bag.</typeparam>
-    /// <definition>
-    /// public T Set{{T}}() where T : notnull, new()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public T Set<T>() where T : notnull, new()
     {
         return Set<T>(new T());
@@ -136,12 +88,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// </summary>
     /// <typeparam name="T">The object that will be defined in this context bag.</typeparam>
     /// <param name="value">The instance of <typeparamref name="T"/> which will be defined in this context bag.</param>
-    /// <definition>
-    /// public T Set{{T}}(T value) where T : notnull
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public T Set<T>(T value) where T : notnull
     {
         Type contextType = typeof(T);
@@ -153,12 +99,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Gets a singleton previously defined in this context bag via it's type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
-    /// <definition>
-    /// public T Get{{T}}() where T : notnull
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public T Get<T>() where T : notnull
     {
         Type contextType = typeof(T);
@@ -174,90 +114,90 @@ public class TypedValueDictionary : IDictionary<string, object?>
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public object? this[string key] { get => _values[key]; set => _values[key] = value; }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public ICollection<string> Keys => _values.Keys;
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public ICollection<object?> Values => _values.Values;
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public int Count => _values.Count;
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public bool IsReadOnly => false;
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public void Add(string key, object? value)
     {
         _values.Add(key, value);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public void Add(KeyValuePair<string, object?> item)
     {
         _values.Add(item.Key, item.Value);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public void Clear()
     {
         _values.Clear();
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public bool Contains(KeyValuePair<string, object?> item)
     {
         return _values.Contains(item);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public bool ContainsKey(string key)
     {
         return _values.ContainsKey(key);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
     {
         ((ICollection<KeyValuePair<string, object?>>)_values).CopyTo(array, arrayIndex);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
     {
         return _values.GetEnumerator();
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public bool Remove(string key)
     {
         return _values.Remove(key);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public bool Remove(KeyValuePair<string, object?> item)
     {
         return ((ICollection<KeyValuePair<string, object?>>)_values).Remove(item);
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
     {
         return _values.TryGetValue(key, out value);
@@ -270,12 +210,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <param name="key">The key whose to get.</param>
     /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
     /// <returns>true if the object is find with the specified key; otherwise, false.</returns>
-    /// <definition>
-    /// public Boolean TryGetValue{{TResult}}(String key, [MaybeNullWhen(false)] out TResult? value)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public bool TryGetValue<TResult>(string key, [MaybeNullWhen(false)] out TResult? value)
     {
         bool b = _values.TryGetValue(key, out var v);
@@ -292,7 +226,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     }
 
     /// <inheritdoc />
-    /// <nodoc />
+    /// <exclude />
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((IEnumerable)_values).GetEnumerator();

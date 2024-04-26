@@ -13,35 +13,17 @@ namespace Sisk.Core.Routing;
 /// Indicates that extended class supports router modules, which allows the management of routes,
 /// request handlers and prefixes.
 /// </summary>
-/// <definition>
-/// public class RouterModule
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public class RouterModule
 {
     /// <summary>
     /// Gets or sets the request handlers this class has implemented.
     /// </summary>
-    /// <definition>
-    /// public List{{IRequestHandler}} RequestHandlers { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public List<IRequestHandler> RequestHandlers { get; set; } = new List<IRequestHandler>();
 
     /// <summary>
     /// Gets or sets the router prefix for this class. This property overrides any
     /// value defined by <see cref="RoutePrefixAttribute"/> set in this class.
     /// </summary>
-    /// <definition>
-    /// public string? Prefix { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public string? Prefix { get; set; }
 
     /// <summary>
@@ -49,12 +31,6 @@ public class RouterModule
     /// </summary>
     /// <param name="handler">The <see cref="IRequestHandler"/> instance which will be applied to all registered routes
     /// of this class.</param>
-    /// <definition>
-    /// public void HasRequestHandler(IRequestHandler handler)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void HasRequestHandler(IRequestHandler handler)
     {
         RequestHandlers.Add(handler);
@@ -66,12 +42,6 @@ public class RouterModule
     /// be overloaded in the extending class and must not be called directly.
     /// </summary>
     /// <param name="configuringRoute">The route being defined on the router.</param>
-    /// <definition>
-    /// public virtual void OnRouteCreating(Route configuringRoute)
-    /// </definition>
-    /// <type>
-    /// Virtual Method
-    /// </type>
     public virtual void OnRouteCreating(Route configuringRoute)
     {
     }

@@ -23,12 +23,6 @@ public partial class Router
     /// </summary>
     /// <param name="r">The router instance which the route is being set.</param>
     /// <param name="route">The route to be defined in the router.</param>
-    /// <definition>
-    /// public static Router operator +(Router r, Route route)
-    /// </definition>
-    /// <type>
-    /// Operator
-    /// </type>
     public static Router operator +(Router r, Route route)
     {
         r.SetRoute(route);
@@ -40,12 +34,6 @@ public partial class Router
     /// </summary>
     /// <param name="method">The route method.</param>
     /// <param name="path">The route path.</param>
-    /// <definition>
-    /// public bool IsDefined(RouteMethod method, string path)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public bool IsDefined(RouteMethod method, string path)
     {
         return GetCollisionRoute(method, path) != null;
@@ -55,13 +43,6 @@ public partial class Router
     /// Gets an route object by their name that is defined in this Router.
     /// </summary>
     /// <param name="name">The route name.</param>
-    /// <returns></returns>
-    /// <definition>
-    /// public Route? GetRouteFromName(string name)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public Route? GetRouteFromName(string name)
     {
         foreach (Route r in _routesList)
@@ -81,13 +62,6 @@ public partial class Router
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="assembly">The assembly where the scanning types are.</param>
     /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
-    /// <definition>
-    /// [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    /// public void AutoScanModules{{TModule}}(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
     {
@@ -133,12 +107,6 @@ public partial class Router
     /// for each type must be present.
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
-    /// <definition>
-    /// public void AutoScanModules{{TModule}}() where T : RouterModule
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>() where TModule : RouterModule
     {
@@ -155,12 +123,6 @@ public partial class Router
     /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    /// <definition>
-    /// public void SetRoute(RouteMethod method, string path, RouterCallback action)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetRoute(RouteMethod method, string path, RouteAction action)
         => SetRoute(new Route(method, path, action));
 
@@ -171,12 +133,6 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     /// <param name="name">The route name.</param>
-    /// <definition>
-    /// public void SetRoute(RouteMethod method, string path, RouterCallback action, string? name)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetRoute(RouteMethod method, string path, RouteAction action, string? name)
         => SetRoute(new Route(method, path, name, action, null));
 
@@ -188,12 +144,6 @@ public partial class Router
     /// <param name="action">The route function to be called after matched.</param>
     /// <param name="name">The route name.</param>
     /// <param name="middlewares">Handlers that run before calling your route action.</param>
-    /// <definition>
-    /// public void SetRoute(RouteMethod method, string path, RouterCallback action, string? name, IRequestHandler[] middlewares)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetRoute(RouteMethod method, string path, RouteAction action, string? name, IRequestHandler[] middlewares)
         => SetRoute(new Route(method, path, name, action, middlewares));
 
@@ -201,12 +151,6 @@ public partial class Router
     /// Defines an route in this Router instance.
     /// </summary>
     /// <param name="r">The route to be defined in the Router.</param>
-    /// <definition>
-    /// public void SetRoute(Route r)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type> 
     public void SetRoute(Route r)
     {
         if (IsReadOnly)
@@ -228,12 +172,6 @@ public partial class Router
     /// </summary>
     /// <param name="attrClassInstance">The instance of the class where the instance methods are. The routing methods must be instance methods and marked with <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
-    /// <definition>
-    /// public void SetObject(object attrClassInstance)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetObject(object attrClassInstance)
     {
         Type attrClassType = attrClassInstance.GetType();
@@ -247,12 +185,6 @@ public partial class Router
     /// </summary>
     /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
-    /// <definition>
-    /// public void SetObject(Type attrClassType)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
     {
         MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
@@ -268,12 +200,6 @@ public partial class Router
     /// </remarks>
     /// <typeparam name="TObject">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</typeparam>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
-    /// <definition>
-    /// public void SetObject{{TObject}}()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void SetObject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TObject>()
     {
         SetObject(typeof(TObject));

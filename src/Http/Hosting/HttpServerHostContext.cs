@@ -15,56 +15,26 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Represents the class that hosts most of the components needed to run a Sisk application.
 /// </summary>
-/// <definition>
-/// public class HttpServerHostContext : IDisposable
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public class HttpServerHostContext : IDisposable
 {
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
     /// </summary>
-    /// <definition>
-    /// public InitializationParameterCollection Parameters { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public InitializationParameterCollection Parameters { get; } = new InitializationParameterCollection();
 
     /// <summary>
     /// Gets the host Http server.
     /// </summary>
-    /// <definition>
-    /// public HttpServer HttpServer { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public HttpServer HttpServer { get; private set; }
 
     /// <summary>
     /// Gets the host server configuration.
     /// </summary>
-    /// <definition>
-    /// public HttpServerConfiguration ServerConfiguration { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public HttpServerConfiguration ServerConfiguration { get => HttpServer.ServerConfiguration; }
 
     /// <summary>
     /// Gets the host <see cref="CrossOriginResourceSharingPolicy"/>.
     /// </summary>
-    /// <definition>
-    /// public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy
     {
         get => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy;
@@ -74,12 +44,6 @@ public class HttpServerHostContext : IDisposable
     /// <summary>
     /// Gets the host router.
     /// </summary>
-    /// <definition>
-    /// public Router Router { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public Router Router
     {
         get => ServerConfiguration.ListeningHosts[0].Router!;
@@ -89,23 +53,11 @@ public class HttpServerHostContext : IDisposable
     /// <summary>
     /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    /// <definition>
-    /// public TextWriter? AccessLogs { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public LogStream? AccessLogs { get => ServerConfiguration?.AccessLogsStream; }
 
     /// <summary>
     /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    /// <definition>
-    /// public TextWriter? ErrorLogs { get; } 
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public LogStream? ErrorLogs { get => ServerConfiguration?.ErrorsLogsStream; }
 
     internal HttpServerHostContext(HttpServer httpServer)
@@ -118,12 +70,6 @@ public class HttpServerHostContext : IDisposable
     /// </summary>
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
-    /// <definition>
-    /// public void Start(bool verbose = true, bool preventHault = true)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void Start(bool verbose = true, bool preventHault = true)
     {
         HttpServer.Start();
@@ -144,12 +90,6 @@ public class HttpServerHostContext : IDisposable
     /// </summary>
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
-    /// <definition>
-    /// public async Task StartAsync(bool verbose = true, bool preventHault = true)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public async Task StartAsync(bool verbose = true, bool preventHault = true)
     {
         await Task.Run(() => Start(verbose, preventHault));
@@ -158,12 +98,6 @@ public class HttpServerHostContext : IDisposable
     /// <summary>
     /// Invalidates this class and releases the resources used by it, and permanently closes the HTTP server.
     /// </summary>
-    /// <definition>
-    /// public void Dispose()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void Dispose()
     {
         HttpServer.Dispose();

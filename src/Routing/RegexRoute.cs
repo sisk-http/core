@@ -15,16 +15,10 @@ namespace Sisk.Core.Routing;
 /// Represents an <see cref="Route"/> which it's implementation already enables
 /// <see cref="Route.UseRegex"/>.
 /// </summary>
-/// <definition>
-/// public class RegexRoute
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public class RegexRoute : Route
 {
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
 #if NET6_0
     public RegexRoute(RouteMethod method, string path, RouteAction action) : base(method, path, action)
 #elif NET7_0_OR_GREATER
@@ -36,7 +30,7 @@ public class RegexRoute : Route
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
 #if NET6_0
     public RegexRoute(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback) : base(method, path, name, action, beforeCallback)
 #elif NET7_0_OR_GREATER

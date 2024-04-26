@@ -12,12 +12,6 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Represents how the builder event error message should be displayed.
 /// </summary>
-/// <definition>
-/// public enum HttpServerHostContextBuilderExceptionMode
-/// </definition>
-/// <type>
-/// Enum
-/// </type>
 public enum HttpServerHostContextBuilderExceptionMode
 {
     /// <summary>

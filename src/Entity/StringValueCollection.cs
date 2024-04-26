@@ -16,13 +16,6 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an collection of <see cref="StringValue"/>.
 /// </summary>
-/// <definition>
-/// public sealed class StringValueCollection : IEnumerable{{StringValue}}, IEnumerable{{KeyValuePair{{string, string}}}},
-///     IReadOnlyDictionary{{string, StringValue}}
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerable<KeyValuePair<string, string>>, IReadOnlyDictionary<string, StringValue>
 {
     internal Dictionary<string, string?> items;
@@ -31,12 +24,6 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <summary>
     /// Represents an empty <see cref="StringValueCollection"/> field.
     /// </summary>
-    /// <definition>
-    /// public static readonly StringValueCollection Empty;
-    /// </definition>
-    /// <type>
-    /// Field
-    /// </type>
     public static readonly StringValueCollection Empty = new StringValueCollection("empty");
 
     internal static StringValueCollection FromNameValueCollection(string paramName, NameValueCollection col)
@@ -78,23 +65,11 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// Gets an <see cref="IDictionary"/> object with the data of this <see cref="StringValueCollection"/>
     /// with their keys and values.
     /// </summary>
-    /// <definition>
-    /// public IDictionary{{string, string?}} AsDictionary()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public IDictionary<string, string?> AsDictionary() => items;
 
     /// <summary>
     /// Gets an <see cref="NameValueCollection"/> with the data of this <see cref="StringValueCollection"/>.
     /// </summary>
-    /// <definition>
-    /// public NameValueCollection AsNameValueCollection()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public NameValueCollection AsNameValueCollection()
     {
         NameValueCollection n = new NameValueCollection();
@@ -110,20 +85,14 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <summary>
     /// Gets the number of items defined in this <see cref="StringValueCollection"/>.
     /// </summary>
-    /// <definition>
-    /// public int Count { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public int Count { get => items.Count; }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public IEnumerable<string> Keys => items.Keys;
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public IEnumerable<StringValue> Values
     {
         get
@@ -138,12 +107,6 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <summary>
     /// Gets an <see cref="StringValue"/> item by their key name.
     /// </summary>
-    /// <definition>
-    /// public StringValue this[string name] { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public StringValue this[string name] { get => GetItem(name); }
 
     /// <summary>
@@ -151,12 +114,6 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// not found by their name, an empty non-null <see cref="StringValue"/> with no value is
     /// returned.
     /// </summary>
-    /// <definition>
-    /// public StringValue GetItem(string name)
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public StringValue GetItem(string name)
     {
         items.TryGetValue(name, out string? value);
@@ -164,7 +121,7 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public IEnumerator<StringValue> GetEnumerator()
     {
         foreach (string key in items.Keys)
@@ -174,28 +131,28 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
     {
         return items.GetEnumerator();
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool ContainsKey(string key)
     {
         return items.ContainsKey(key);
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public bool TryGetValue(string key, [NotNull()] out StringValue value)
     {
         var sv = GetItem(key);
@@ -204,7 +161,7 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     IEnumerator<KeyValuePair<string, StringValue>> IEnumerable<KeyValuePair<string, StringValue>>.GetEnumerator()
     {
         foreach (string key in items.Keys)
@@ -214,14 +171,14 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public static implicit operator Dictionary<string, string?>(StringValueCollection vcol)
     {
         return (Dictionary<string, string?>)vcol.AsDictionary();
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public static implicit operator NameValueCollection(StringValueCollection vcol)
     {
         return vcol.AsNameValueCollection();

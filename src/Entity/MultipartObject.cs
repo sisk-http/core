@@ -16,12 +16,6 @@ namespace Sisk.Core.Entity
     /// <summary>
     /// Represents an multipart/form-data object.
     /// </summary>
-    /// <definition>
-    /// public class MultipartObject
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public class MultipartObject
     {
         private readonly Encoding _baseEncoding;
@@ -29,68 +23,31 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// The multipart form data object headers.
         /// </summary>
-        /// <definition>
-        /// public NameValueCollection Headers { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public NameValueCollection Headers { get; private set; }
 
         /// <summary>
         /// The name of the file provided by Multipart form data. Null is returned if the object is not a file.
         /// </summary>
-        /// <definition>
-        /// public string? Filename { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string? Filename { get; private set; }
 
         /// <summary>
         /// The multipart form data object field name.
         /// </summary>
-        /// <definition>
-        /// public string Name { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Name { get; private set; }
 
         /// <summary>
         /// The multipart form data content bytes.
         /// </summary>
-        /// <definition>
-        /// public byte[] ContentBytes { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public byte[] ContentBytes { get; private set; }
 
         /// <summary>
         /// The multipart form data content length.
         /// </summary>
-        /// <definition>
-        /// public int ContentLength { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public int ContentLength { get; private set; }
 
         /// <summary>
         /// Reads the content bytes with the given encoder.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public string? ReadContentAsString(Encoding encoder)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public string? ReadContentAsString(Encoding encoder)
         {
             if (ContentLength == 0)
@@ -101,13 +58,6 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// Reads the content bytes using the Http request content-encoding.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public string? ReadContentAsString()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public string? ReadContentAsString()
         {
             return ReadContentAsString(_baseEncoding);
@@ -116,13 +66,6 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// Determine the image format based in the file header for each image content type.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public MultipartObjectImageFormat GetImageFormat()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public MultipartObjectCommonFormat GetCommonFileFormat()
         {
             IEnumerable<byte> len8 = ContentBytes.Take(8);
@@ -344,100 +287,46 @@ namespace Sisk.Core.Entity
     /// <summary>
     /// Represents an image format for Multipart objects.
     /// </summary>
-    /// <definition>
-    /// public enum MultipartObjectImageFormat
-    /// </definition>
-    /// <type>
-    /// Enum
-    /// </type>
     public enum MultipartObjectCommonFormat
     {
         /// <summary>
         /// Represents that the object is not a recognized image.
         /// </summary>
-        /// <definition>
-        /// Unknown = 0
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         Unknown = 0,
 
         /// <summary>
         /// Represents an JPEG/JPG image.
         /// </summary>
-        /// <definition>
-        /// JPEG = 100
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         JPEG = 100,
 
         /// <summary>
         /// Represents an GIF image.
         /// </summary>
-        /// <definition>
-        /// GIF = 101
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         GIF = 101,
 
         /// <summary>
         /// Represents an PNG image.
         /// </summary>
-        /// <definition>
-        /// PNG = 102
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         PNG = 102,
 
         /// <summary>
         /// Represents an TIFF image.
         /// </summary>
-        /// <definition>
-        /// TIFF = 103
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         TIFF = 103,
 
         /// <summary>
         /// Represents an bitmap image.
         /// </summary>
-        /// <definition>
-        /// BMP = 104
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         BMP = 104,
 
         /// <summary>
         /// Represents an WebP image.
         /// </summary>
-        /// <definition>
-        /// WEBP = 105
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         WEBP = 105,
 
         /// <summary>
         /// Represents an PDF file.
         /// </summary>
-        /// <definition>
-        /// PDF = 200
-        /// </definition>
-        /// <type>
-        /// Enum Value
-        /// </type>
         PDF = 200
     }
 }

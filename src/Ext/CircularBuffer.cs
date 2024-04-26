@@ -15,7 +15,7 @@ namespace Sisk.Core.Entity;
 /// Represents an thread-safe, fixed-capacity circular buffer that stores elements of <typeparamref name="T"/>.
 /// </summary>
 /// <typeparam name="T">The type of elements stored in the buffer.</typeparam>
-/// <nodoc/>
+/// <exclude/>
 public class CircularBuffer<T> : IEnumerable<T>
 {
     T[] items;
@@ -87,14 +87,14 @@ public class CircularBuffer<T> : IEnumerable<T>
     public int Capacity { get => capacity; }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     public IEnumerator<T> GetEnumerator()
     {
         return ((IEnumerable<T>)items).GetEnumerator();
     }
 
     /// <inheritdoc/>
-    /// <nodoc/>
+    /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return items.GetEnumerator();

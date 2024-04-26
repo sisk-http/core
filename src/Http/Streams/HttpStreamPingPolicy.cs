@@ -12,12 +12,6 @@ namespace Sisk.Core.Http.Streams;
 /// <summary>
 /// Provides an automatic ping sender for HTTP Event Source connections.
 /// </summary>
-/// <definition>
-/// public class HttpStreamPingPolicy
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public sealed class HttpStreamPingPolicy
 {
     private readonly HttpWebSocket? __ws_parent;
@@ -27,23 +21,11 @@ public sealed class HttpStreamPingPolicy
     /// <summary>
     /// Gets or sets the payload message that is sent to the server as a ping message.
     /// </summary>
-    /// <definition>
-    /// public string DataMessage { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public string DataMessage { get; set; } = "%ping%";
 
     /// <summary>
     /// Gets or sets the sending interval for each ping message.
     /// </summary>
-    /// <definition>
-    /// public TimeSpan Interval { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(1);
 
     internal HttpStreamPingPolicy(HttpRequestEventSource parent)
@@ -58,12 +40,6 @@ public sealed class HttpStreamPingPolicy
     /// <summary>
     /// Starts sending periodic pings to the client.
     /// </summary>
-    /// <definition>
-    /// public void Start()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public void Start()
     {
         _timer = new Timer(new TimerCallback(OnCallback), null, 0, (int)Interval.TotalMilliseconds);

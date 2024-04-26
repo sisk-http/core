@@ -18,14 +18,8 @@ record struct RouteDictItem(System.Type type, Delegate lambda);
 namespace Sisk.Core.Routing
 {
     /// <summary>
-    /// Represents a collection of Routes and main executor of callbacks in an <see cref="HttpServer"/>.
+    /// Represents a collection of <see cref="Route"/> and main executor of actions in the <see cref="HttpServer"/>.
     /// </summary>
-    /// <definition>
-    /// public sealed class Router : IEnumerable{{Route}}
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public sealed partial class Router : IEnumerable<Route>
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
@@ -51,7 +45,7 @@ namespace Sisk.Core.Routing
             else
             {
                 server.handler.SetupRouter(this);
-                ParentServer = server;              
+                ParentServer = server;
             }
         }
 
@@ -59,12 +53,6 @@ namespace Sisk.Core.Routing
         /// Combines the specified URL paths into one.
         /// </summary>
         /// <param name="paths">The string array which contains parts that will be combined.</param>
-        /// <definition>
-        /// public static string CombinePaths(params string[] paths)
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static string CombinePaths(params string[] paths)
         {
             return PathUtility.CombinePaths(paths);
@@ -73,34 +61,16 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating where this <see cref="Router"/> is read-only or not.
         /// </summary>
-        /// <definition>
-        /// public bool IsReadOnly { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool IsReadOnly { get => ParentServer is not null; }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
         /// </summary>
-        /// <definition>
-        /// public bool MatchRoutesIgnoreCase { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool MatchRoutesIgnoreCase { get; set; } = false;
 
         /// <summary>
         /// Creates an new <see cref="Router"/> instance with default properties values.
         /// </summary>
-        /// <definition>
-        /// public Router()
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public Router()
         {
         }
@@ -108,71 +78,34 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
         /// </summary>
-        /// <definition>
-        /// public IRequestHandler[]? GlobalRequestHandlers { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public IRequestHandler[]? GlobalRequestHandlers { get; set; }
 
         /// <summary>
         /// Gets or sets the Router action exception handler.
         /// </summary>
-        /// <definition>
-        /// public ExceptionErrorCallback? CallbackErrorHandler { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public ExceptionErrorCallback? CallbackErrorHandler { get; set; }
 
         /// <summary>
         /// Gets or sets the Router "404 Not Found" handler.
         /// </summary>
-        /// <definition>
-        /// public NoMatchedRouteErrorCallback? NotFoundErrorHandler { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        public NoMatchedRouteErrorCallback? NotFoundErrorHandler { get; set; } = new NoMatchedRouteErrorCallback(
-                            () => new HttpResponse(System.Net.HttpStatusCode.NotFound));
+        public RoutingErrorCallback? NotFoundErrorHandler { get; set; } = new RoutingErrorCallback(
+                            (c) => new HttpResponse(System.Net.HttpStatusCode.NotFound));
 
         /// <summary>
         /// Gets or sets the Router "405 Method Not Allowed" handler.
         /// </summary>
-        /// <definition>
-        /// public NoMatchedRouteErrorCallback? MethodNotAllowedErrorHandler { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
-        public MethodNotAllowedErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new MethodNotAllowedErrorCallback(
+        public RoutingErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new RoutingErrorCallback(
                             (c) => new HttpResponse(System.Net.HttpStatusCode.MethodNotAllowed));
 
         /// <summary>
         /// Gets all routes defined on this router instance.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public Route[] GetDefinedRoutes()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public Route[] GetDefinedRoutes() => _routesList.ToArray();
 
         /// <summary>
         /// Register an type handling association to converting it to an <see cref="HttpResponse"/> object.
         /// </summary>
         /// <param name="actionHandler">The function that receives an object of the T and returns an <see cref="HttpResponse"/> response from the informed object.</param>
-        /// <definition>
-        /// public void RegisterActionAssociation{{T}}(T type, Action{{T, HttpResponse}} actionHandler) where T : Type
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public void RegisterValueHandler<T>(Func<T, HttpResponse> actionHandler)
         {
             if (IsReadOnly)
@@ -219,14 +152,14 @@ namespace Sisk.Core.Routing
         }
 
         /// <inheritdoc/>
-        /// <nodoc/>
+        /// <exclude/>
         public IEnumerator<Route> GetEnumerator()
         {
             return ((IEnumerable<Route>)_routesList).GetEnumerator();
         }
 
         /// <inheritdoc/>
-        /// <nodoc/>
+        /// <exclude/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _routesList.GetEnumerator();

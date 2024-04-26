@@ -18,12 +18,6 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents an HTTP Response.
     /// </summary>
-    /// <definition>
-    /// public class HttpResponse : CookieHelper
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public class HttpResponse : CookieHelper
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;
@@ -37,12 +31,6 @@ namespace Sisk.Core.Http
         /// Creates an new empty <see cref="HttpResponse"/> with no status code or contents. This will cause to the HTTP server to close the
         /// connection between the server and the client and don't deliver any response.
         /// </summary>
-        /// <definition>
-        /// public static HttpResponse CreateEmptyResponse()
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpResponse CreateEmptyResponse()
         {
             return new HttpResponse(HTTPRESPONSE_EMPTY);
@@ -52,12 +40,6 @@ namespace Sisk.Core.Http
         /// Creates an new redirect <see cref="HttpResponse"/> with given location header.
         /// </summary>
         /// <param name="location">The absolute or relative URL path which the client must be redirected to.</param>
-        /// <definition>
-        /// public static HttpResponse CreateRedirectResponse(string location)
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpResponse CreateRedirectResponse(string location)
         {
             HttpResponse res = new HttpResponse();
@@ -71,12 +53,6 @@ namespace Sisk.Core.Http
         /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a action. The provided method must have a valid RouteAttribute attribute.
         /// </summary>
         /// <param name="action">The receiving action contains a RouteAttribute attribute and its method is GET or ANY.</param>
-        /// <definition>
-        /// public static HttpResponse CreateRedirectResponse(RouterCallback action)
-        /// </definition>
-        /// <type>
-        /// Static method
-        /// </type>
         public static HttpResponse CreateRedirectResponse(RouteAction action)
         {
             var definition = RouteDefinition.GetFromCallback(action);
@@ -87,56 +63,26 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the HTTP status code and description for this HTTP response.
         /// </summary>
-        /// <definition>
-        /// public HttpStatusInformation StatusInformation { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpStatusInformation StatusInformation { get; set; } = new HttpStatusInformation();
 
         /// <summary>
         /// Gets or sets the HTTP response status code.
         /// </summary>
-        /// <definition>
-        /// public HttpStatusCode Status { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpStatusCode Status { get => (HttpStatusCode)StatusInformation.StatusCode; set => StatusInformation = new HttpStatusInformation(value); }
 
         /// <summary>
         /// Gets a <see cref="HttpHeaderCollection"/> instance of the HTTP response headers.
         /// </summary>
-        /// <definition>
-        /// public HttpHeaderCollection Headers { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpHeaderCollection Headers { get; private set; } = new HttpHeaderCollection();
 
         /// <summary>
         /// Gets or sets the HTTP response body contents.
         /// </summary>
-        /// <definition>
-        /// public HttpContent? Content { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpContent? Content { get; set; }
 
         /// <summary>
         /// Gets or sets whether the HTTP response can be sent chunked.
         /// </summary>
-        /// <definition>
-        /// public bool SendChunked { get; set; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool SendChunked { get; set; } = false;
 
         internal byte internalStatus = 0;
@@ -150,13 +96,6 @@ namespace Sisk.Core.Http
         /// Gets the raw HTTP response message.
         /// </summary>
         /// <param name="includeBody">Determines whether the message content will also be included in the return from this function.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public string GetRawHttpResponse(bool includeBody = true)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public string GetRawHttpResponse(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
@@ -189,12 +128,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="content">The UTF-8 string containing the response body.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithContent(string content)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithContent(string content)
         {
             Content = new StringContent(content);
@@ -206,12 +139,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="content">The HTTP content which implements <see cref="HttpContent"/>.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithContent(HttpContent content)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithContent(HttpContent content)
         {
             Content = content;
@@ -224,12 +151,6 @@ namespace Sisk.Core.Http
         /// <param name="headerKey">The name of the header.</param>
         /// <param name="headerValue">The header value.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithHeader(string headerKey, string headerValue)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithHeader(string headerKey, string headerValue)
         {
             Headers.Set(headerKey, headerValue);
@@ -241,12 +162,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="headers">An collection of headers, described by their value (header names) and keys (header values).</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithHeader(NameValueCollection headers)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithHeader(NameValueCollection headers)
         {
             foreach (string key in headers.Keys)
@@ -259,12 +174,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="status">The HTTP status code.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithStatus(int status)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithStatus(int status)
         {
             Status = (HttpStatusCode)status;
@@ -276,12 +185,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="statusInformation">The status information.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithStatus(int status)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithStatus(HttpStatusInformation statusInformation)
         {
             StatusInformation = statusInformation;
@@ -293,12 +196,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="status">The HTTP status code.</param>
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        /// <definition>
-        /// public HttpResponse WithStatus(HttpStatusCode status)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithStatus(HttpStatusCode status)
         {
             Status = status;
@@ -317,12 +214,6 @@ namespace Sisk.Core.Http
         /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
         /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
         /// <param name="sameSite">The cookie SameSite parameter.</param>
-        /// <definition>
-        /// public HttpResponse WithCookie(string name, string value, DateTime? expires = null, TimeSpan? maxAge = null, string? domain = null, string? path = null, bool? secure = null, bool? httpOnly = null, string? sameSite = null)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse WithCookie(string name, string value, DateTime? expires = null, TimeSpan? maxAge = null, string? domain = null, string? path = null, bool? secure = null, bool? httpOnly = null, string? sameSite = null)
         {
             SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
@@ -332,12 +223,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with HTTP OK status code and no content.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse()
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public HttpResponse()
         {
         }
@@ -345,68 +230,39 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse(HttpStatusCode status)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
+        /// <param name="status">The <see cref="HttpStatusCode"/> of this HTTP response.</param>
         public HttpResponse(HttpStatusCode status) : this(status, null) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse(int status) 
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
+        /// <param name="status">The status code of this HTTP response.</param>
         public HttpResponse(int status) : this((HttpStatusCode)status, null) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP content.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse(int status, HttpContent? content)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
+        /// <param name="status">The status code of this HTTP response.</param>
+        /// <param name="content">The response content, if any.</param>
         public HttpResponse(int status, HttpContent? content) : this((HttpStatusCode)status, content) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given HTTP content, with default status code as 200 OK.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse(HttpContent? content)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
+        /// <param name="content">The response content, if any.</param>
         public HttpResponse(HttpContent? content) : this(HttpStatusCode.OK, content) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instanec with given string content and status code as 200 OK.
         /// </summary>
         /// <param name="stringContent">The UTF-8 string content.</param>
-        /// <definition>
-        /// public HttpResponse(string stringContent)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
         public HttpResponse(string stringContent) : this(HttpStatusCode.OK, new StringContent(stringContent)) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP contents.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse(HttpStatusCode status, HttpContent content)
-        /// </definition>
-        /// <type>
-        /// Constructor
-        /// </type>
+        /// <param name="status">The <see cref="HttpStatusCode"/> of this HTTP response.</param>
+        /// <param name="content">The response content, if any.</param>
         public HttpResponse(HttpStatusCode status, HttpContent? content)
         {
             Status = status;

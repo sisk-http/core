@@ -22,12 +22,6 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents an exception that is thrown while a request is being interpreted by the HTTP server.
     /// </summary>
-    /// <definition>
-    /// public class HttpRequestException : Exception
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public class HttpRequestException : Exception
     {
         internal HttpRequestException(string message) : base(message) { }
@@ -36,12 +30,6 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents an HTTP request received by a Sisk server.
     /// </summary>
-    /// <definition>
-    /// public sealed class HttpRequest
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public sealed class HttpRequest
     {
         internal HttpServer baseServer;
@@ -95,56 +83,26 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets a unique random ID for this request.
         /// </summary>
-        /// <definition>
-        /// public string RequestId { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public Guid RequestId { get => listenerRequest.RequestTraceIdentifier; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request was made by an secure transport context (SSL/TLS) or not.
         /// </summary>
-        /// <definition>
-        /// public bool IsSecure { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool IsSecure { get => listenerRequest.IsSecureConnection; }
 
         /// <summary>
         /// Gets a boolean indicating whether the content of this request has been processed by the server.
         /// </summary>
-        /// <definition>
-        /// public bool IsContentAvailable { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool IsContentAvailable { get => contentBytes != null; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request has contents.
         /// </summary>
-        /// <definition>
-        /// public bool HasContents { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool HasContents { get => ContentLength > 0; }
 
         /// <summary>
         /// Gets the HTTP request headers.
         /// </summary>
-        /// <definition>
-        /// public HttpHeaderCollection Headers { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpHeaderCollection Headers
         {
             get
@@ -177,12 +135,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an <see cref="NameValueCollection"/> object with all cookies set in this request.
         /// </summary>
-        /// <definition>
-        /// public NameValueCollection Cookies { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public NameValueCollection Cookies
         {
             get
@@ -221,12 +173,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Get the requested host header (without port) from this HTTP request.
         /// </summary>
-        /// <definition>
-        /// public string Host { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Host
         {
             get => listenerRequest.Url!.Host;
@@ -238,23 +184,11 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is an shortcut for <see cref="HttpContext.RequestBag"/> property.
         /// </remarks>
-        /// <definition>
-        /// public HttpContextBagRepository Bag { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpContextBagRepository Bag { get => Context.RequestBag; }
 
         /// <summary>
         /// Get the requested host header with the port from this HTTP request.
         /// </summary>
-        /// <definition>
-        /// public string Authority { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Authority
         {
             get => listenerRequest.Url!.Authority;
@@ -263,12 +197,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request path without the query string.
         /// </summary>
-        /// <definition>
-        /// public string Path { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Path
         {
             get => listenerRequest.Url?.AbsolutePath ?? "/";
@@ -277,12 +205,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the full HTTP request path with the query string.
         /// </summary>
-        /// <definition>
-        /// public string FullPath { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string FullPath
         {
             get => listenerRequest.RawUrl ?? "/";
@@ -291,12 +213,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the full URL for this request, with scheme, host, port (if any), path and query.
         /// </summary>
-        /// <definition>
-        /// public string FullUrl { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string FullUrl
         {
             get => listenerRequest.Url!.ToString();
@@ -305,12 +221,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the Encoding used in the request.
         /// </summary>
-        /// <definition>
-        /// public Encoding RequestEncoding { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public Encoding RequestEncoding
         {
             get => listenerRequest.ContentEncoding;
@@ -319,12 +229,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request method.
         /// </summary>
-        /// <definition>
-        /// public HttpMethod Method { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpMethod Method
         {
             get => new HttpMethod(listenerRequest.HttpMethod);
@@ -334,12 +238,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request body as string, decoded by the request content encoding.
         /// </summary>
-        /// <definition>
-        /// public string Body { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string Body
         {
             get => listenerRequest.ContentEncoding.GetString(RawBody);
@@ -348,12 +246,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request body as a byte array.
         /// </summary>
-        /// <definition>
-        /// public byte[] RawBody { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public byte[] RawBody
         {
             get
@@ -366,12 +258,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the content length in bytes.
         /// </summary>
-        /// <definition>
-        /// public long ContentLength { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public long ContentLength
         {
             get => listenerRequest.ContentLength64;
@@ -380,12 +266,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request query extracted from the path string. This property also contains routing parameters.
         /// </summary>
-        /// <definition>
-        /// public StringValueCollection Query { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public StringValueCollection Query
         {
             get
@@ -401,36 +281,18 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request URL raw query string.
         /// </summary>
-        /// <definition>
-        /// public string? QueryString { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public string? QueryString { get => listenerRequest.Url?.Query; }
 
 
         /// <summary>
         /// Gets the incoming IP address from the request.
         /// </summary>
-        /// <definition>
-        /// public IPAddress Origin { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         [Obsolete("This property is deprecated. Use HttpRequest.RemoteAddress instead.")]
         public IPAddress Origin { get => RemoteAddress; }
 
         /// <summary>
         /// Gets the incoming IP address from the request.
         /// </summary>
-        /// <definition>
-        /// public IPAddress Origin { get; }
-        /// </definition>
-        /// <type>
-        /// Property 
-        /// </type>
         public IPAddress RemoteAddress
         {
             get
@@ -460,35 +322,16 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the moment which the request was received by the server.
         /// </summary>
-        /// <definition>
-        /// public DateTime RequestedAt { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public DateTime RequestedAt { get; private init; }
 
         /// <summary>
         /// Gets the HttpContext for this request.
         /// </summary>
-        /// <definition>
-        /// public HttpContext Context { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpContext Context { get; internal set; } = null!;
 
         /// <summary>
         /// Gets the multipart form content for this request.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public MultipartFormCollection GetMultipartFormContent()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type> 
         public MultipartFormCollection GetMultipartFormContent()
         {
             return MultipartObject.ParseMultipartObjects(this);
@@ -497,13 +340,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the values sent by a form in this request.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public NameValueCollection GetFormContent()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public StringValueCollection GetFormContent()
         {
             if (form == null)
@@ -516,13 +352,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the raw HTTP request message from the socket.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public string GetRawHttpRequest(bool includeBody = true)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public string GetRawHttpRequest(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
@@ -555,12 +384,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
         /// <returns>Returns the stored object.</returns>
-        /// <definition>
-        /// public T SetContextBag{{T}}() where T : notnull, new()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public T SetContextBag<T>() where T : notnull, new()
         {
             return Context.RequestBag.Set<T>();
@@ -572,12 +395,6 @@ namespace Sisk.Core.Http
         /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
         /// <param name="contextObject">The object which will be stored.</param>
         /// <returns>Returns the stored object.</returns>
-        /// <definition>
-        /// public T SetContextBag{{T}}(T contextObject) where T : notnull
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public T SetContextBag<T>(T contextObject) where T : notnull
         {
             return Context.RequestBag.Set<T>(contextObject);
@@ -587,12 +404,6 @@ namespace Sisk.Core.Http
         /// Gets an managed object from the HTTP context bag through it's type.
         /// </summary>
         /// <typeparam name="T">The type of object which is stored in the HTTP context bag.</typeparam>
-        /// <definition>
-        /// public T GetContextBag{{T}}(T contextObject) where T : notnull
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public T GetContextBag<T>() where T : notnull
         {
             return Context.RequestBag.Get<T>();
@@ -602,13 +413,6 @@ namespace Sisk.Core.Http
         /// Gets a query value using an case-insensitive search.
         /// </summary>
         /// <param name="queryKeyName">The query value name.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public string? GetQueryValue(string queryKeyName)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public string? GetQueryValue(string queryKeyName) => Query[queryKeyName].Value;
 
         /// <summary>
@@ -617,12 +421,6 @@ namespace Sisk.Core.Http
         /// <typeparam name="T">The parseable type which will be converted to.</typeparam>
         /// <param name="queryKeyName">The name of the URL parameter. The search is ignore-case.</param>
         /// <param name="defaultValue">The default value that will be returned if the item is not found in the query.</param>
-        /// <definition>
-        /// public T GetQueryValue{{T}}(string queryKeyName, T defaultValue = default) where T : struct
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct
         {
             StringValue value = Query[queryKeyName];
@@ -642,13 +440,6 @@ namespace Sisk.Core.Http
         /// Gets a header value using a case-insensitive search.
         /// </summary>
         /// <param name="headerName">The header name.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public string? GetHeader(string headerName)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         [Obsolete("This method is deprecated and will be removed in later versions. Use Headers[headerName] instead.")]
         public string? GetHeader(string headerName) => Headers[headerName];
 
@@ -657,12 +448,6 @@ namespace Sisk.Core.Http
         /// it. This method manages to prevent possible stack overflows.
         /// </summary>
         /// <param name="otherCallback">Defines the <see cref="RouteAction"/> method which will handle this request.</param>
-        /// <definition>
-        /// public object SendTo(RouterCallback otherCallback)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public object SendTo(RouteAction otherCallback)
         {
             Interlocked.Increment(ref currentFrame);
@@ -676,13 +461,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Closes this HTTP request and their connection with the remote client without sending any response.
         /// </summary>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpResponse Close()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponse Close()
         {
             return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);
@@ -693,13 +471,6 @@ namespace Sisk.Core.Http
         /// content has not been imported by the HTTP server and will invalidate the body content 
         /// cached in this object.
         /// </summary>
-        /// <definition>
-        /// public Stream GetRequestStream()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
-        /// <since>0.15</since> 
         public Stream GetRequestStream()
         {
             if (contentBytes != null)
@@ -712,12 +483,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an HTTP response stream for this HTTP request.
         /// </summary>
-        /// <definition>
-        /// public HttpResponseStream GetResponseStream()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpResponseStream GetResponseStream()
         {
             if (isStreaming)
@@ -733,12 +498,6 @@ namespace Sisk.Core.Http
         /// event source listening state.
         /// </summary>
         /// <param name="identifier">Optional. Defines an label to the EventStream connection, useful for finding this connection's reference later.</param>
-        /// <definition>
-        /// public HttpRequestEventSource GetEventSource(string? identifier = null)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type>
         public HttpRequestEventSource GetEventSource(string? identifier = null)
         {
             if (isStreaming)
@@ -756,14 +515,6 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="subprotocol">Optional. Determines the sub-protocol to plug the websocket in.</param>
         /// <param name="identifier">Optional. Defines an label to the Web Socket connection, useful for finding this connection's reference later.</param>
-        /// <returns></returns>
-        /// <definition>
-        /// public HttpWebSocket GetWebSocket(string? subprotocol = null)
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type> 
-        /// <exception cref="InvalidOperationException"></exception>
         public HttpWebSocket GetWebSocket(string? subprotocol = null, string? identifier = null)
         {
             if (isStreaming)
@@ -778,12 +529,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an string representation of this <see cref="HttpRequest"/> object.
         /// </summary>
-        /// <definition>
-        /// public override String ToString()
-        /// </definition>
-        /// <type>
-        /// Method
-        /// </type> 
         public override String ToString()
         {
             return $"{Method} {FullPath}";

@@ -14,12 +14,6 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <param name="sender">The <see cref="HttpServer"/> calling the function.</param>
     /// <param name="e">Server request and operation information.</param>
-    /// <definition>
-    /// public delegate void ServerExecutionEventHandler(object sender, HttpServerExecutionResult e);
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
     public delegate void ServerExecutionEventHandler(object sender, HttpServerExecutionResult e);
 
     /// <summary>
@@ -27,100 +21,47 @@ namespace Sisk.Core.Http
     /// </summary>
     /// <param name="sender">The <see cref="HttpServer"/> calling the function.</param>
     /// <param name="request">The received request.</param>
-    /// <definition>
-    /// public delegate void ReceiveRequestEventHandler(object sender, HttpRequest request);
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
     public delegate void ReceiveRequestEventHandler(object sender, HttpRequest request);
 
     /// <summary>
     /// Represents the results of executing a request on the server.
     /// </summary>
-    /// <definition>
-    /// public class HttpServerExecutionResult
-    /// </definition>
-    /// <type>
-    /// Class
-    /// </type>
     public class HttpServerExecutionResult
     {
         /// <summary>
         /// Represents the request received in this diagnosis.
         /// </summary>
-        /// <definition>
-        /// public HttpRequest Request { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpRequest Request { get; internal set; } = null!;
 
         /// <summary>
         /// Represents the response sent by the server.
         /// </summary>
-        /// <definition>
-        /// public HttpResponse? Response { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpResponse? Response { get; internal set; }
 
         /// <summary>
         /// Represents the status of server operation.
         /// </summary>
-        /// <definition>
-        /// public HttpServerExecutionStatus Status { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public HttpServerExecutionStatus Status { get; internal set; }
 
         /// <summary>
         /// Gets the exception that was thrown when executing the route, if any.
         /// </summary>
-        /// <definition>
-        /// public Exception? ServerException { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public Exception? ServerException { get; internal set; }
 
         /// <summary>
         /// Gets an boolean indicating if this execution status is an success status.
         /// </summary>
-        /// <definition>
-        /// public bool IsSuccessStatus { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.ConnectionClosed; }
 
         /// <summary>
         /// Gets the request size in bytes.
         /// </summary>
-        /// <definition>
-        /// public long RequestSize { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
+
         public long RequestSize { get; internal set; }
 
         /// <summary>
         /// Gets the response size in bytes, if any.
         /// </summary>
-        /// <definition>
-        /// public long ResponseSize { get; }
-        /// </definition>
-        /// <type>
-        /// Property
-        /// </type>
         public long ResponseSize { get; internal set; }
 
         internal HttpServerExecutionResult() { }
@@ -129,12 +70,6 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents the status of an execution of a request on an <see cref="HttpServer"/>.
     /// </summary>
-    /// <definition>
-    /// public enum HttpServerExecutionStatus
-    /// </definition>
-    /// <type>
-    /// Enum
-    /// </type>
     public enum HttpServerExecutionStatus
     {
         /// <summary>

@@ -15,48 +15,16 @@ namespace Sisk.Core.Routing
     /// Represents the function that is called after the route is matched with the request.
     /// </summary>
     /// <param name="request">The received request on the router.</param>
-    /// <returns></returns>
-    /// <definition>
-    /// public delegate object RouterCallback(HttpRequest request);
-    /// </definition>
-    /// <type> 
-    /// Delegate
-    /// </type>
     public delegate object RouteAction(HttpRequest request);
 
     /// <summary>
-    /// Represents the function that is called after no route is matched with the request.
+    /// Represents the function that is called when an request reaches an error on the 
+    /// router.
     /// </summary>
-    /// <returns></returns>
-    /// <definition>
-    /// public delegate HttpResponse NoMatchedRouteErrorCallback();
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
-    public delegate HttpResponse NoMatchedRouteErrorCallback();
-
-    /// <summary>
-    /// Represents the function that is called when an request reaches it's route path, but it's
-    /// method is incorrect.
-    /// </summary>
-    /// <definition>
-    /// public delegate HttpResponse MethodNotAllowedErrorCallback(HttpContext context);
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
-    public delegate HttpResponse MethodNotAllowedErrorCallback(HttpContext context);
+    public delegate HttpResponse RoutingErrorCallback(HttpContext context);
 
     /// <summary>
     /// Represents the function that is called after the route action threw an exception.
     /// </summary>
-    /// <returns></returns>
-    /// <definition>
-    /// public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpContext context);
-    /// </definition>
-    /// <type>
-    /// Delegate
-    /// </type>
     public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpContext context);
 }

@@ -14,24 +14,12 @@ namespace Sisk.Core.Http.Handlers;
 /// <summary>
 /// Represents an event handler for the <see cref="HttpServer"/>, router, and related events.
 /// </summary>
-/// <definition>
-/// public abstract class HttpServerHandler
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public abstract class HttpServerHandler
 {
     /// <summary>
     /// Method that is called immediately before starting the <see cref="HttpServer"/>.
     /// </summary>
     /// <param name="server">The Http server entity which is starting.</param>
-    /// <definition>
-    /// protected virtual void OnSetupHttpServer(HttpServer server)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnServerStarting(HttpServer server) { }
     internal void InvokeOnServerStarting(HttpServer server) => OnServerStarting(server);
 
@@ -40,12 +28,6 @@ public abstract class HttpServerHandler
     /// ready and listening.
     /// </summary>
     /// <param name="server">The Http server entity which is ready.</param>
-    /// <definition>
-    /// protected virtual void OnServerStarted(HttpServer server)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnServerStarted(HttpServer server) { }
     internal void InvokeOnServerStarted(HttpServer server) => OnServerStarted(server);
 
@@ -54,12 +36,6 @@ public abstract class HttpServerHandler
     /// stopping from listening requests.
     /// </summary>
     /// <param name="server">The Http server entity which is stopping.</param>
-    /// <definition>
-    /// protected virtual void OnServerStopping(HttpServer server)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnServerStopping(HttpServer server) { }
     internal void InvokeOnServerStopping(HttpServer server) => OnServerStopping(server);
 
@@ -68,12 +44,6 @@ public abstract class HttpServerHandler
     /// it has stopped from listening to requests.
     /// </summary>
     /// <param name="server">The Http server entity which has stopped.</param>
-    /// <definition>
-    /// protected virtual void OnServerStopped(HttpServer server)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnServerStopped(HttpServer server) { }
     internal void InvokeOnServerStopped(HttpServer server) => OnServerStopped(server);
 
@@ -81,12 +51,6 @@ public abstract class HttpServerHandler
     /// Method that is called when an <see cref="Router"/> is binded to the Http server.
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>
-    /// <definition>
-    /// protected virtual void OnSetupRouter(Router router)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnSetupRouter(Router router) { }
 
     internal void InvokeOnSetupRouter(Router router) => OnSetupRouter(router);
@@ -96,12 +60,6 @@ public abstract class HttpServerHandler
     /// <see cref="HttpRequest"/> object.
     /// </summary>
     /// <param name="contextBag">The creating context bag.</param>
-    /// <definition>
-    /// protected virtual void OnContextBagCreated(HttpContextBagRepository contextBag) 
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnContextBagCreated(HttpContextBagRepository contextBag) { }
     internal void InvokeOnContextBagCreated(HttpContextBagRepository contextBag) => OnContextBagCreated(contextBag);
 
@@ -110,12 +68,6 @@ public abstract class HttpServerHandler
     /// Http server.
     /// </summary>
     /// <param name="request">The connecting Http request entity.</param>
-    /// <definition>
-    /// protected virtual void OnHttpRequestOpen(HttpRequest request)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnHttpRequestOpen(HttpRequest request) { }
     internal void InvokeOnHttpRequestOpen(HttpRequest request) => OnHttpRequestOpen(request);
 
@@ -124,12 +76,6 @@ public abstract class HttpServerHandler
     /// Http server.
     /// </summary>
     /// <param name="result">The result of the execution of the request.</param>
-    /// <definition>
-    /// protected virtual void OnHttpRequestClose(HttpServerExecutionResult result)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnHttpRequestClose(HttpServerExecutionResult result) { }
     internal void InvokeOnHttpRequestClose(HttpServerExecutionResult result) => OnHttpRequestClose(result);
 
@@ -138,12 +84,6 @@ public abstract class HttpServerHandler
     /// regardless of whether <see cref="HttpServerConfiguration.ThrowExceptions"/> is enabled or not.
     /// </summary>
     /// <param name="exception">The exception object.</param>
-    /// <definition>
-    /// protected virtual void OnException(Exception exception)
-    /// </definition>
-    /// <type>
-    /// Virtual method
-    /// </type>
     protected virtual void OnException(Exception exception) { }
     internal void InvokeOnException(Exception exception) => OnException(exception);
 }

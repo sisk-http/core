@@ -14,12 +14,6 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an instance that hosts a string value and allows conversion to common types.
 /// </summary>
-/// <definition>
-/// public struct StringValue
-/// </definition>
-/// <type>
-/// Class
-/// </type>
 public struct StringValue
 {
     private readonly string? _ref;
@@ -36,56 +30,26 @@ public struct StringValue
     /// <summary>
     /// Gets the name of the property that hosts this <see cref="StringValue"/>.
     /// </summary>
-    /// <definition>
-    /// public string Name { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public string Name { get => argName; }
 
     /// <summary>
     /// Gets the value slot of this <see cref="StringValue"/>.
     /// </summary>
-    /// <definition>
-    /// public string? Value { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public string? Value { get => _ref; }
 
     /// <summary>
     /// Gets an boolean indicating if this object value is null or an empty string.
     /// </summary>
-    /// <definition>
-    /// public bool IsNullOrEmpty { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public bool IsNullOrEmpty { get => string.IsNullOrEmpty(_ref); }
 
     /// <summary>
     /// Gets an boolean indicating if this object value is null.
     /// </summary>
-    /// <definition>
-    /// public bool IsNull { get; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public bool IsNull { get => _ref is null; }
 
     /// <summary>
     /// Returns a self-reference to this object when its value is not null.
     /// </summary>
-    /// <definition>
-    /// public StringValue? MaybeNull()
-    /// </definition>
-    /// <type>
-    /// Method
-    /// </type>
     public StringValue? MaybeNull()
     {
         if (IsNull)
@@ -293,28 +257,28 @@ public struct StringValue
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public static implicit operator string?(StringValue i)
     {
         return i.Value;
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public static bool operator ==(StringValue i, string? other)
     {
         return i.Equals(other);
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public static bool operator !=(StringValue i, string? other)
     {
         return !i.Equals(other);
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public override bool Equals(object? obj)
     {
         if (obj is null)
@@ -336,7 +300,7 @@ public struct StringValue
     }
 
     /// <inheritdoc/>
-    /// <nodocs/>
+    /// <exclude/>
     public override int GetHashCode()
     {
         return Value?.GetHashCode() ?? 0;
