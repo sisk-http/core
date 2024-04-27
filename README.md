@@ -4,7 +4,7 @@
   </p>
   <h1>Sisk Framework</h1>
 
-  [Discover Sisk](https://sisk.project-principium.dev/) | [Documentation](https://md.proj.pw/sisk-http/docs-v2/main) | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs) | [Benchmarks](https://github.com/sisk-http/benchmarks)
+  [Discover Sisk](https://www.sisk-framework.org/) | [Documentation](https://docs.sisk-framework.org/) | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs) | [Benchmarks](https://github.com/sisk-http/benchmarks)
 
   <div>
 
@@ -12,7 +12,7 @@
   <a href="">[![Nuget](https://img.shields.io/github/license/sisk-http/core)](https://github.com/sisk-http/core/blob/master/LICENSE.txt)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/.net%20version-%206%20|%207%20|%208-purple.svg?logo=dotnet)](#)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
-  
+
   </div>
 
   **Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
@@ -24,16 +24,16 @@
 
 ### Documentation
 
-You can get started with Sisk [here](https://md.proj.pw/sisk-http/docs-v2/main/) or build the documentation repository [here](https://github.com/sisk-http/docs-v2).
+You can get started with Sisk [here](https://docs.sisk-framework.org/) or build the documentation repository [here](https://github.com/sisk-http/docs).
 
-For information about release notes, changelogs and API breaking changes, see [docs/Changelog.md](https://github.com/sisk-http/docs/blob/master/Changelog.md).
+For information about release notes, changelogs and API breaking changes, please refer to [changelogs archive](https://github.com/sisk-http/archive/tree/master/changelogs).
 
 ### Installing
 
 You can install the latest release from [Nuget packages](https://www.nuget.org/packages/Sisk.HttpServer/):
 
 ```
-PM> NuGet\Install-Package Sisk.HttpServer
+dotnet add package Sisk.HttpServer
 ```
 
 ### Packages
@@ -41,8 +41,8 @@ PM> NuGet\Install-Package Sisk.HttpServer
 In this repository, you have the source code of:
 
   - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
-  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): (legacy) the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as 0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
   - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
+  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): (obsolete) the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as 0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
 
 ## Getting started
 
@@ -56,24 +56,23 @@ It can handle multiple requests asynchronously, provides useful tools to manage 
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
 
-namespace myProgram;
-
 class Program
 {
     static void Main(string[] args)
     {
-        var app = HttpServer.CreateBuilder();
+        var app = HttpServer.CreateBuilder(5000);
 
-        app.Router += new Route(RouteMethod.Get, "/", request =>
+        app.Router.SetRoute(RouteMethod.Get, "/", request =>
         {
-            return new HttpResponse(200)
-                .WithContent("Hello, world!");
+            return new HttpResponse("Hello, world!");
         });
 
-        app.Start();
+        app.Start(); // 🚀 app is listening on http://localhost:5000/
     }
 }
 ```
+
+You can learn more about Sisk on it's [website](https://www.sisk-framework.org/).
 
 ## Main features
 
@@ -83,12 +82,6 @@ Sisk can do web development the way you want. Create MVC, MVVC, SOLID applicatio
 - **Open-source:** the entire Sisk ecosystem is open source, and all the libraries and technologies we use must be open source as well. Sisk is entirely distributed under the MIT License, which allows the commercial development.
 - **Sustainable:** you are the one who makes the project, Sisk gives you the tools. Because it is open source, the community (including you) can maintain, fix bugs and improve Sisk over time.
 
-## Why use Sisk?
-
-Sisk is a highly modular and sustainable framework designed for creating a variety of applications, including Restful applications, gRPC, Websockets, file servers, GraphQL, Entity Framework, and more. Its development is ongoing, with a focus on simplicity, easy maintenance, and an enjoyable experience for developers. Sisk is known for its efficiency, even in low-performance environments, and it can handle over twenty thousand requests per second. The framework is compatible with any machine supporting .NET, including those that do not require Native AOT. Sisk also offers additional implementations and packages for extended functionality.
-
-While Sisk draws inspiration from ASP.NET, it aims for simpler and more performant development without the need for installing additional components. It provides a straightforward and robust development model, allowing developers to handle requests efficiently and explicitly. Sisk simplifies HTTP-related tasks and offers comprehensive documentation and open-source access to its source code, making it accessible and easy to learn for web developers.
-
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/sisk-http/core.svg?variant=light)](https://starchart.cc/sisk-http/core)
@@ -96,3 +89,17 @@ While Sisk draws inspiration from ASP.NET, it aims for simpler and more performa
 ## License
 
 The entire Sisk ecosystem is licensed under the [MIT License](https://sisk.project-principium.dev/license).
+
+## Donate
+
+This project has been alive since 2022 and has been actively built and maintained since date. This development involves time, which is an cost, and cost is money. If you want to contribute in addition to contributing to the source code, feel free to contribute a small amount transaction using one of the addresses below.
+
+Your contribution is very valuable. Thanks!
+
+```
+Monero (XMR)
+    4441KuSQzwpeHvN1rznuVD39CLYpLCvcmPaFwYtQ5r9Q25dWgv2YwyaDn48szTtWvwaJFKicpQUXNCtbPcw3Qvmn8GtgzDf
+
+Brazilian Pix
+    4d93aaa8-23ce-4f83-8cfd-1a1d7d44ecec
+```
