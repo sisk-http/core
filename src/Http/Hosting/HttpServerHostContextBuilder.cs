@@ -47,9 +47,9 @@ public sealed class HttpServerHostContextBuilder
     }
 
     /// <summary>
-    /// Gets or sets the Server Configuration object.
+    /// Gets the Server Configuration object.
     /// </summary>
-    public HttpServerConfiguration ServerConfiguration { get => _context.ServerConfiguration; set => value = _context.ServerConfiguration; }
+    public HttpServerConfiguration ServerConfiguration { get => _context.ServerConfiguration; }
 
     /// <summary>
     /// Builds an <see cref="HttpServerHostContext"/> with the specified parameters.
@@ -63,9 +63,10 @@ public sealed class HttpServerHostContextBuilder
     /// Defines a function that will be executed immediately before starting the Http server.
     /// </summary>
     /// <param name="bootstrapAction">The action which will be executed before the Http server start.</param>
-    public void UseBootstraper(Action bootstrapAction)
+    public HttpServerHostContextBuilder UseBootstraper(Action bootstrapAction)
     {
-        DefaultHttpServerHandler._serverBootstraping = bootstrapAction;
+        _context.HttpServer.handler._default._serverBootstraping = bootstrapAction;
+        return this;
     }
 
     /// <summary>
@@ -77,7 +78,7 @@ public sealed class HttpServerHostContextBuilder
     /// call this method at the beginning of your builder, as the first immediate method.
     /// </remarks>
     /// <param name="portableConfigHandler">The handler of <see cref="PortableConfigurationBuilder"/>.</param>
-    public void UsePortableConfiguration(Action<PortableConfigurationBuilder> portableConfigHandler)
+    public HttpServerHostContextBuilder UsePortableConfiguration(Action<PortableConfigurationBuilder> portableConfigHandler)
     {
         _portableConfiguration = new PortableConfigurationBuilder(_context);
         try
@@ -107,90 +108,120 @@ public sealed class HttpServerHostContextBuilder
             }
             Environment.Exit(2);
         }
+        return this;
     }
 
     /// <summary>
     /// Sets the main <see cref="ListeningPort"/> of this host builder.
     /// </summary>
     /// <param name="port">The port the server will listen on.</param>
-    public void UseListeningPort(ushort port)
+    public HttpServerHostContextBuilder UseListeningPort(ushort port)
     {
         _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(port);
+        return this;
     }
 
     /// <summary>
     /// Sets the main <see cref="ListeningPort"/> of this host builder.
     /// </summary>
     /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
-    public void UseListeningPort(string uri)
+    public HttpServerHostContextBuilder UseListeningPort(string uri)
     {
         _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(uri);
+        return this;
     }
 
     /// <summary>
     /// Sets the main <see cref="ListeningPort"/> of this host builder.
     /// </summary>
     /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the Http server will listen to.</param>
-    public void UseListeningPort(ListeningPort listeningPort)
+    public HttpServerHostContextBuilder UseListeningPort(ListeningPort listeningPort)
     {
         _context.ServerConfiguration.ListeningHosts[0].Ports[0] = listeningPort;
+        return this;
     }
 
     /// <summary>
     /// Overrides the <see cref="HttpServerConfiguration.DefaultCultureInfo"/> property in the HTTP server configuration.
     /// </summary>
     /// <param name="locale">The default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.</param>
-    public void UseLocale(CultureInfo locale)
+    public HttpServerHostContextBuilder UseLocale(CultureInfo locale)
     {
         _context.ServerConfiguration.DefaultCultureInfo = locale;
+        return this;
     }
 
     /// <summary>
     /// Overrides the HTTP server flags with the provided flags.
     /// </summary>
     /// <param name="flags">The flags that will be set on the HTTP server.</param>
-    public void UseFlags(HttpServerFlags flags)
+    public HttpServerHostContextBuilder UseFlags(HttpServerFlags flags)
     {
         _context.ServerConfiguration.Flags = flags;
+        return this;
     }
 
     /// <summary>
     /// Calls an action that has the HTTP server configuration as an argument.
     /// </summary>
     /// <param name="handler">An action where the first argument is an <see cref="HttpServerConfiguration"/>.</param>
-    public void UseConfiguration(Action<HttpServerConfiguration> handler)
+    public HttpServerHostContextBuilder UseConfiguration(Action<HttpServerConfiguration> handler)
     {
         handler(_context.ServerConfiguration);
+        return this;
     }
 
     /// <summary>
     /// Calls an action that has the HTTP server instance as an argument.
     /// </summary>
     /// <param name="handler">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
-    public void UseHttpServer(Action<HttpServer> handler)
+    public HttpServerHostContextBuilder UseHttpServer(Action<HttpServer> handler)
     {
         handler(_context.HttpServer);
+        return this;
     }
 
     /// <summary>
     /// Calls an action that has an <see cref="CrossOriginResourceSharingHeaders"/> instance from the main listening host as an argument.
     /// </summary>
     /// <param name="handler">An action where the first argument is the main <see cref="CrossOriginResourceSharingHeaders"/> object.</param>
-    public void UseCors(Action<CrossOriginResourceSharingHeaders> handler)
+    public HttpServerHostContextBuilder UseCors(Action<CrossOriginResourceSharingHeaders> handler)
     {
         if (_context.CrossOriginResourceSharingPolicy is null)
             _context.CrossOriginResourceSharingPolicy = CrossOriginResourceSharingHeaders.Empty;
 
         handler(_context.CrossOriginResourceSharingPolicy);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets an <see cref="CrossOriginResourceSharingHeaders"/> instance in the current listening host.
+    /// </summary>
+    /// <param name="cors">The <see cref="CrossOriginResourceSharingHeaders"/> to the current host builder.</param>
+    public HttpServerHostContextBuilder UseCors(CrossOriginResourceSharingHeaders cors)
+    {
+        _context.CrossOriginResourceSharingPolicy = cors;
+        return this;
     }
 
     /// <summary>
     /// Calls an action that has an <see cref="Router"/> instance from the host HTTP server.
     /// </summary>
     /// <param name="handler">An action where the first argument is the main <see cref="Router"/> object.</param>
-    public void UseRouter(Action<Router> handler)
+    public HttpServerHostContextBuilder UseRouter(Action<Router> handler)
     {
-        DefaultHttpServerHandler._routerSetup = handler;
+        _context.HttpServer.handler._default._routerSetup = handler;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets an <see cref="Router"/> instance in the current listening host.
+    /// </summary>
+    /// <param name="r">The <see cref="Router"/> to the current host builder.</param>
+    public HttpServerHostContextBuilder UseRouter(Router r)
+    {
+        _context.Router = r;
+        return this;
     }
 
     /// <summary>
@@ -199,9 +230,10 @@ public sealed class HttpServerHostContextBuilder
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule
+    public HttpServerHostContextBuilder UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule
     {
         _context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly, activateInstances);
+        return this;
     }
 
     /// <summary>
@@ -211,26 +243,29 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="t">The assembly where the scanning types are.</param>
     /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule
+    public HttpServerHostContextBuilder UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule
     {
         _context.Router.AutoScanModules<TModule>(t, activateInstances);
+        return this;
     }
 
     /// <summary>
     /// This method is an shortcut for calling <see cref="HttpServer.RegisterHandler{T}"/>.
     /// </summary>
     /// <typeparam name="THandler">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
-    public void UseHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] THandler>() where THandler : HttpServerHandler, new()
+    public HttpServerHostContextBuilder UseHandler<THandler>() where THandler : HttpServerHandler, new()
     {
         _context.HttpServer.RegisterHandler<THandler>();
+        return this;
     }
 
     /// <summary>
     /// This method is an shortcut for calling <see cref="HttpServer.RegisterHandler"/>.
     /// </summary>
     /// <param name="handler">The instance of the server handler.</param>
-    public void UseHandler(HttpServerHandler handler)
+    public HttpServerHostContextBuilder UseHandler(HttpServerHandler handler)
     {
         _context.HttpServer.RegisterHandler(handler);
+        return this;
     }
 }

@@ -13,6 +13,7 @@ namespace Sisk.Core.Http.Hosting;
 /// Defines which sessions are mandatory in the portable configuration file.
 /// </summary>
 [Flags]
+[Obsolete("This enum is not used anymore and will be removed in later Sisk versions.")]
 public enum PortableConfigurationRequireSection
 {
     /// <summary>

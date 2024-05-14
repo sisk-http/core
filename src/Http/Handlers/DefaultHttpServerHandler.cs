@@ -13,8 +13,8 @@ namespace Sisk.Core.Http.Handlers;
 
 internal class DefaultHttpServerHandler : HttpServerHandler
 {
-    internal static Action<Router>? _routerSetup;
-    internal static Action? _serverBootstraping;
+    internal Action<Router>? _routerSetup;
+    internal Action? _serverBootstraping;
 
     protected override void OnServerStarting(HttpServer server)
     {

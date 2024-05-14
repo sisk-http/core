@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -17,10 +18,12 @@ internal class HttpServerHandlerRepository
 {
     private readonly HttpServer parent;
     private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>();
+    internal readonly DefaultHttpServerHandler _default = new DefaultHttpServerHandler();
 
     public HttpServerHandlerRepository(HttpServer parent)
     {
         this.parent = parent;
+        this.RegisterHandler(_default);
     }
 
     public void RegisterHandler(HttpServerHandler handler)

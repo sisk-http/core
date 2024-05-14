@@ -56,30 +56,30 @@ namespace Sisk.Core.Http
         /// Builds an <see cref="HttpServerHostContext"/> context invoking the handler on it.
         /// </summary>
         /// <param name="handler">The action which will configure the host context.</param>
-        public static HttpServerHostContext CreateBuilder(Action<HttpServerHostContextBuilder> handler)
+        public static HttpServerHostContextBuilder CreateBuilder(Action<HttpServerHostContextBuilder> handler)
         {
             var builder = new HttpServerHostContextBuilder();
             handler(builder);
-            return builder.Build();
+            return builder;
         }
 
         /// <summary>
         /// Builds an empty <see cref="HttpServerHostContext"/> context with predefined listening port.
         /// </summary>
-        public static HttpServerHostContext CreateBuilder(ushort port)
+        public static HttpServerHostContextBuilder CreateBuilder(ushort port)
         {
             var builder = new HttpServerHostContextBuilder();
             builder.UseListeningPort(port);
-            return builder.Build();
+            return builder;
         }
 
         /// <summary>
         /// Builds an empty <see cref="HttpServerHostContext"/> context.
         /// </summary>
-        public static HttpServerHostContext CreateBuilder()
+        public static HttpServerHostContextBuilder CreateBuilder()
         {
             var builder = new HttpServerHostContextBuilder();
-            return builder.Build();
+            return builder;
         }
 
         /// <summary>
@@ -161,15 +161,14 @@ namespace Sisk.Core.Http
         {
             _listenerCallback = new AsyncCallback(ListenerCallback);
             ServerConfiguration = configuration;
-            handler = new HttpServerHandlerRepository(this);
-            handler.RegisterHandler(new DefaultHttpServerHandler());
+            handler = new HttpServerHandlerRepository(this);    
         }
 
         /// <summary>
         /// Associate an <see cref="HttpServerHandler"/> in this HttpServer to handle functions such as requests, routers and contexts.
         /// </summary>
         /// <typeparam name="T">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
-        public void RegisterHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() where T : HttpServerHandler, new()
+        public void RegisterHandler<T>() where T : HttpServerHandler, new()
         {
             handler.RegisterHandler(new T());
         }

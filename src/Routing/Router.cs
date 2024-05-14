@@ -10,6 +10,7 @@
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -103,6 +104,55 @@ namespace Sisk.Core.Routing
         public Route[] GetDefinedRoutes() => _routesList.ToArray();
 
         /// <summary>
+        /// Tries to resolve the specified object into an valid <see cref="HttpResponse"/> using the defined
+        /// value handlers.
+        /// </summary>
+        /// <param name="result">The object that will be converted to an valid <see cref="HttpResponse"/>.</param>
+        /// <param name="response">When this method returns, the response object. This parameter is not initialized.</param>
+        /// <returns>When this method returns, the <see cref="HttpResponse"/> object.</returns>
+        public bool TryResolveActionResult(object? result, [NotNullWhen(true)] out HttpResponse? response)
+        {
+            bool wasLocked = false;
+            if (!IsReadOnly)
+            {
+                wasLocked = true;
+                Monitor.Enter(_actionHandlersList);
+            }
+            try
+            {
+                if (result is null)
+                {
+                    response = null;
+                    return false;
+                }
+
+                Type actionType = result.GetType();
+
+                Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(_actionHandlersList);
+                ref RouteDictItem pointer = ref MemoryMarshal.GetReference(hspan);
+                for (int i = 0; i < hspan.Length; i++)
+                {
+                    ref RouteDictItem current = ref Unsafe.Add(ref pointer, i);
+                    if (actionType.IsAssignableTo(current.type))
+                    {
+                        response = (HttpResponse)current.lambda.DynamicInvoke(result)!;
+                        return true;
+                    }
+                }
+
+                response = null;
+                return false;
+            }
+            finally
+            {
+                if (wasLocked)
+                {
+                    Monitor.Exit(_actionHandlersList);
+                }
+            }
+        }
+
+        /// <summary>
         /// Register an type handling association to converting it to an <see cref="HttpResponse"/> object.
         /// </summary>
         /// <param name="actionHandler">The function that receives an object of the T and returns an <see cref="HttpResponse"/> response from the informed object.</param>
@@ -134,21 +184,14 @@ namespace Sisk.Core.Routing
             {
                 throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
             }
-
-            Type actionType = routeResult.GetType();
-
-            Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(_actionHandlersList);
-            ref RouteDictItem pointer = ref MemoryMarshal.GetReference(hspan);
-            for (int i = 0; i < hspan.Length; i++)
+            else if (TryResolveActionResult(routeResult, out HttpResponse? result))
             {
-                ref RouteDictItem current = ref Unsafe.Add(ref pointer, i);
-                if (actionType.IsAssignableTo(current.type))
-                {
-                    return (HttpResponse)current.lambda.DynamicInvoke(routeResult)!;
-                }
+                return result;
             }
-
-            throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, actionType.FullName));
+            else
+            {
+                throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, routeResult.GetType().FullName));
+            }
         }
 
         /// <inheritdoc/>

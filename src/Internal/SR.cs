@@ -76,7 +76,7 @@ static partial class SR
     public const string Provider_ConfigParser_ConfigFileInvalid = "Couldn't read the configuration file.";
     public const string Provider_ConfigParser_NoListeningHost = "When defined the ListeningHost, the configuration file must define at least one listening host port.";
     public const string Provider_ConfigParser_SectionRequired = "The \"{0}\" section in the configuration file is required.";
-    public const string Provider_ConfigParser_CaughtException = "Unable to configure the Http server. See details below:";
+    public const string Provider_ConfigParser_CaughtException = "Unable to configure the HTTP server. See details below:";
 
     public const string InitializationParameterCollection_NullOrEmptyParameter = "The required parameter \"{0}\" is either empty or not present in the configuration file.";
     public const string InitializationParameterCollection_NullParameter = "The required parameter \"{0}\" is not present in the configuration file.";

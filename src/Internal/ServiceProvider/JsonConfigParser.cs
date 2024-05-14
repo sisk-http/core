@@ -8,23 +8,20 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using Sisk.Core.Http.Hosting;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Sisk.Core.Internal.ServiceProvider
 {
-    internal class ConfigParser
+    internal class JsonConfigParser : IConfigurationReader
     {
-        internal static void ParseConfiguration(ProviderContext prov)
+        public void ReadConfiguration(ConfigurationContext prov)
         {
             string filename = Path.GetFullPath(prov.ConfigurationFile);
             if (!File.Exists(filename))
             {
-                if (prov.CreateConfigurationFileIfDoenstExists)
-                {
-                    File.Create(filename).Close();
-                }
                 throw new ArgumentException(string.Format(SR.Provider_ConfigParser_ConfigFileNotFound, prov.ConfigurationFile));
             }
 
@@ -35,20 +32,13 @@ namespace Sisk.Core.Internal.ServiceProvider
                     AllowTrailingCommas = true,
                     PropertyNameCaseInsensitive = true,
                     ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    //DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 })) as ConfigStructureFile;
 
             if (config is null)
             {
                 throw new Exception(SR.Provider_ConfigParser_ConfigFileInvalid);
             }
-
-            if (config.Server == null && prov._requiredSections.HasFlag(Http.Hosting.PortableConfigurationRequireSection.ServerConfiguration))
-                throw new Exception(string.Format(SR.Provider_ConfigParser_SectionRequired, nameof(config.Server)));
-            if (config.ListeningHost == null && prov._requiredSections.HasFlag(Http.Hosting.PortableConfigurationRequireSection.ListeningHost))
-                throw new Exception(string.Format(SR.Provider_ConfigParser_SectionRequired, nameof(config.ListeningHost)));
-            if (config.Parameters == null && prov._requiredSections.HasFlag(Http.Hosting.PortableConfigurationRequireSection.Parameters))
-                throw new Exception(string.Format(SR.Provider_ConfigParser_SectionRequired, nameof(config.Parameters)));
 
             if (config.Server != null)
             {
