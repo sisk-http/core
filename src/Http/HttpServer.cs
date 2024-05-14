@@ -11,7 +11,6 @@ using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 namespace Sisk.Core.Http
@@ -161,7 +160,7 @@ namespace Sisk.Core.Http
         {
             _listenerCallback = new AsyncCallback(ListenerCallback);
             ServerConfiguration = configuration;
-            handler = new HttpServerHandlerRepository(this);    
+            handler = new HttpServerHandlerRepository(this);
         }
 
         /// <summary>
