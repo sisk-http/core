@@ -45,6 +45,11 @@ namespace Sisk.Core.Http
         private NameValueCollection? cookies = null;
         private StringValueCollection? query = null;
         private StringValueCollection? form = null;
+
+        private IPAddress? remoteAddr;
+        private string? remoteHost;
+        private bool isSsl;
+
         private int currentFrame = 0;
 
         internal HttpRequest(
@@ -70,7 +75,7 @@ namespace Sisk.Core.Http
 
         void ReadRequestStreamContents()
         {
-            if (contentBytes == null)
+            if (contentBytes is null)
             {
                 using (var memoryStream = new MemoryStream((int)ContentLength))
                 {
@@ -86,9 +91,39 @@ namespace Sisk.Core.Http
         public Guid RequestId { get => listenerRequest.RequestTraceIdentifier; }
 
         /// <summary>
-        /// Gets a boolean indicating whether this request was made by an secure transport context (SSL/TLS) or not.
+        /// Gets a boolean indicating whether this request was made by an secure
+        /// transport context (SSL/TLS) or not.
         /// </summary>
-        public bool IsSecure { get => listenerRequest.IsSecureConnection; }
+        public bool IsSecure
+        {
+            get
+            {
+                if (contextServerConfiguration.ResolveForwardedProtocol)
+                {
+                    string? fwdProtocol = listenerRequest.Headers["X-Forwarded-Proto"] ??
+                                          listenerRequest.Headers["X-Forwarded-Protocol"] ??
+                                          listenerRequest.Headers["X-Url-Scheme"];
+
+                    if (fwdProtocol is not null)
+                    {
+                        isSsl = string.Compare(fwdProtocol, "https", true) == 0;
+                    }
+                    else
+                    {
+                        string? fwdSsl = listenerRequest.Headers["X-Forwarded-Ssl"] ??
+                                         listenerRequest.Headers["Front-End-Https"];
+
+                        isSsl = string.Compare(fwdSsl, "on", true) == 0;
+                    }
+                }
+                else
+                {
+                    isSsl = listenerRequest.IsSecureConnection;
+                }
+
+                return isSsl;
+            }
+        }
 
         /// <summary>
         /// Gets a boolean indicating whether the content of this request has been processed by the server.
@@ -175,7 +210,27 @@ namespace Sisk.Core.Http
         /// </summary>
         public string Host
         {
-            get => listenerRequest.Url!.Host;
+            get
+            {
+                if (contextServerConfiguration.ResolveForwardedOriginHost)
+                {
+                    string? forwardedHost = listenerRequest.Headers[HttpKnownHeaderNames.XForwardedHost];
+                    if (forwardedHost != null)
+                    {
+                        remoteHost = forwardedHost;
+                    }
+                    else
+                    {
+                        remoteHost = listenerRequest.Url!.Host;
+                    }
+                }
+                else
+                {
+                    remoteHost = listenerRequest.Url!.Host;
+                }
+
+                return remoteHost;
+            }
         }
 
         /// <summary>
@@ -234,7 +289,6 @@ namespace Sisk.Core.Http
             get => new HttpMethod(listenerRequest.HttpMethod);
         }
 
-
         /// <summary>
         /// Gets the HTTP request body as string, decoded by the request content encoding.
         /// </summary>
@@ -283,13 +337,6 @@ namespace Sisk.Core.Http
         /// </summary>
         public string? QueryString { get => listenerRequest.Url?.Query; }
 
-
-        /// <summary>
-        /// Gets the incoming IP address from the request.
-        /// </summary>
-        [Obsolete("This property is deprecated. Use HttpRequest.RemoteAddress instead.")]
-        public IPAddress Origin { get => RemoteAddress; }
-
         /// <summary>
         /// Gets the incoming IP address from the request.
         /// </summary>
@@ -310,12 +357,20 @@ namespace Sisk.Core.Http
                         }
                         else
                         {
-                            return forwardedAddress;
+                            remoteAddr = forwardedAddress;
                         }
                     }
+                    else
+                    {
+                        remoteAddr = listenerRequest.RemoteEndPoint.Address;
+                    }
+                }
+                else
+                {
+                    remoteAddr = listenerRequest.RemoteEndPoint.Address;
                 }
 
-                return listenerRequest.RemoteEndPoint.Address;
+                return remoteAddr;
             }
         }
 
@@ -384,6 +439,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
         /// <returns>Returns the stored object.</returns>
+        [Obsolete("This method is deprecated and should be removed in future Sisk versions. Please, use Bag property instead.")]
         public T SetContextBag<T>() where T : notnull, new()
         {
             return Context.RequestBag.Set<T>();
@@ -395,6 +451,7 @@ namespace Sisk.Core.Http
         /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
         /// <param name="contextObject">The object which will be stored.</param>
         /// <returns>Returns the stored object.</returns>
+        [Obsolete("This method is deprecated and should be removed in future Sisk versions. Please, use Bag property instead.")]
         public T SetContextBag<T>(T contextObject) where T : notnull
         {
             return Context.RequestBag.Set<T>(contextObject);
@@ -404,6 +461,7 @@ namespace Sisk.Core.Http
         /// Gets an managed object from the HTTP context bag through it's type.
         /// </summary>
         /// <typeparam name="T">The type of object which is stored in the HTTP context bag.</typeparam>
+        [Obsolete("This method is deprecated and should be removed in future Sisk versions. Please, use Bag property instead.")]
         public T GetContextBag<T>() where T : notnull
         {
             return Context.RequestBag.Get<T>();
@@ -437,13 +495,6 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a header value using a case-insensitive search.
-        /// </summary>
-        /// <param name="headerName">The header name.</param>
-        [Obsolete("This method is deprecated and will be removed in later versions. Use Headers[headerName] instead.")]
-        public string? GetHeader(string headerName) => Headers[headerName];
-
-        /// <summary>
         /// Calls another handler for this request, preserving the current call-stack frame, and then returns the response from
         /// it. This method manages to prevent possible stack overflows.
         /// </summary>
@@ -473,7 +524,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public Stream GetRequestStream()
         {
-            if (contentBytes != null)
+            if (contentBytes is not null)
             {
                 throw new InvalidOperationException(SR.HttpRequest_InputStreamAlreadyLoaded);
             }
@@ -529,7 +580,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an string representation of this <see cref="HttpRequest"/> object.
         /// </summary>
-        public override String ToString()
+        public override string ToString()
         {
             return $"{Method} {FullPath}";
         }

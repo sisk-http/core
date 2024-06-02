@@ -43,7 +43,8 @@ namespace Sisk.Core.Http
         public LogStream? ErrorsLogsStream { get; set; } = LogStream.ConsoleOutput;
 
         /// <summary>
-        /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using Sisk through a reverse proxy.
+        /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using
+        /// Sisk through a reverse proxy or load balancer.
         /// </summary>
         public bool ResolveForwardedOriginAddress { get; set; } = false;
 
@@ -51,6 +52,12 @@ namespace Sisk.Core.Http
         /// Gets or sets whether the HTTP server should resolve remote forwarded hosts by the header X-Forwarded-Host.
         /// </summary>
         public bool ResolveForwardedOriginHost { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should resolve the protocol (HTTP or HTTPS) used by the
+        /// client to reach the current HTTP server through an proxy or load balancer.
+        /// </summary>
+        public bool ResolveForwardedProtocol { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the default encoding for sending and decoding messages.

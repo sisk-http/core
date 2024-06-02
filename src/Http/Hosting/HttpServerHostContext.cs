@@ -90,9 +90,9 @@ public class HttpServerHostContext : IDisposable
     /// </summary>
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
-    public async Task StartAsync(bool verbose = true, bool preventHault = true)
+    public Task StartAsync(bool verbose = true, bool preventHault = true)
     {
-        await Task.Run(() => Start(verbose, preventHault));
+        return Task.Run(() => Start(verbose, preventHault));
     }
 
     /// <summary>

@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -23,7 +22,7 @@ internal class HttpServerHandlerRepository
     public HttpServerHandlerRepository(HttpServer parent)
     {
         this.parent = parent;
-        this.RegisterHandler(_default);
+        RegisterHandler(_default);
     }
 
     public void RegisterHandler(HttpServerHandler handler)
@@ -33,7 +32,7 @@ internal class HttpServerHandlerRepository
 
     private void CallEvery(Action<HttpServerHandler> action)
     {
-        Span<HttpServerHandler> hspan = CollectionsMarshal.AsSpan<HttpServerHandler>(handlers);
+        Span<HttpServerHandler> hspan = CollectionsMarshal.AsSpan(handlers);
         ref HttpServerHandler hpointer = ref MemoryMarshal.GetReference(hspan);
         for (int i = 0; i < hspan.Length; i++)
         {

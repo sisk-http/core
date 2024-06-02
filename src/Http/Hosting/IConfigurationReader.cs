@@ -4,15 +4,10 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   IConfigurationReadPipeline.cs
+// File name:   IConfigurationReader.cs
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Internal.ServiceProvider;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Http.Hosting;
 

@@ -127,20 +127,6 @@ namespace Sisk.Core.Http
         public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds(120);
 
         /// <summary>
-        /// Determines the maximum amount of time an route can process an request, including running request handlers,
-        /// reading body and executing the route action. Specify zero for no limit. When the route action running time
-        /// reaches it's timeout, an RequestTimeoutException is thrown.
-        ///     <para>
-        ///         Default value: <c>TimeSpan.Zero</c>
-        ///     </para>
-        /// </summary>
-        /// <remarks>
-        /// Note: this property was deprecated and will do nothing. It will be removed in later Sisk versions.
-        /// </remarks>
-        [Obsolete("This property was deprecated and will do nothing. It will be removed in later Sisk versions.", true)]
-        public TimeSpan RouteActionTimeout = TimeSpan.Zero;
-
-        /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
         public HttpServerFlags()

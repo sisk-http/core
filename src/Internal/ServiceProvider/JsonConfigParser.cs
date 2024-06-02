@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   ConfigParser.cs
+// File name:   JsonConfigParser.cs
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
@@ -31,8 +31,7 @@ namespace Sisk.Core.Internal.ServiceProvider
                 {
                     AllowTrailingCommas = true,
                     PropertyNameCaseInsensitive = true,
-                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
-                    //DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
                 })) as ConfigStructureFile;
 
             if (config is null)

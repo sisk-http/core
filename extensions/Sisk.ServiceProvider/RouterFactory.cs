@@ -9,8 +9,6 @@
 
 using Sisk.Core.Http;
 using System.Collections.Specialized;
-using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 
 namespace Sisk.Core.Routing
 {

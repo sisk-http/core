@@ -7,61 +7,8 @@
 // File name:   HttpHeaderCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
-
-
-/* Unmerged change from project 'Sisk.Core (net7.0)'
-Before:
-using System;
-After:
 using Sisk.Core.Http;
-using System;
-*/
-
-/* Unmerged change from project 'Sisk.Core (net6.0)'
-Before:
-using System;
-After:
-using Sisk.Core.Http;
-using System;
-*/
-using
-/* Unmerged change from project 'Sisk.Core (net7.0)'
-Before:
-using Sisk.Core.Http;
-using System.Linq;
-After:
-using System.Linq;
-*/
-
-/* Unmerged change from project 'Sisk.Core (net6.0)'
-Before:
-using Sisk.Core.Http;
-using System.Linq;
-After:
-using System.Linq;
-*/
-Sisk.Core.Http;
 using System.Collections.Specialized;
-
-/* Unmerged change from project 'Sisk.Core (net7.0)'
-Before:
-using System.Threading.Tasks;
-
-using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
-After:
-using System.Threading.Tasks;
-using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
-*/
-
-/* Unmerged change from project 'Sisk.Core (net6.0)'
-Before:
-using System.Threading.Tasks;
-
-using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
-After:
-using System.Threading.Tasks;
-using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
-*/
 using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
 
 namespace Sisk.Core.Entity;
@@ -69,7 +16,7 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an collection of HTTP headers with their name and values.
 /// </summary>
-public class HttpHeaderCollection : NameValueCollection
+public sealed class HttpHeaderCollection : NameValueCollection
 {
     /// <summary>
     /// Create an new instance of the <see cref="HttpHeaderCollection"/> class.
@@ -175,12 +122,6 @@ public class HttpHeaderCollection : NameValueCollection
     /// <summary>
     /// Gets or sets the value of the HTTP Alt-Svc header.
     /// </summary>
-    /// <definition>
-    /// public string? AltSvc { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public string? AltSvc { get => base[Header.AltSvc]; set => base[Header.AltSvc] = value; }
 
     /// <summary>
@@ -191,12 +132,6 @@ public class HttpHeaderCollection : NameValueCollection
     /// <summary>
     /// Gets or sets the value of the HTTP Cache-Control header.
     /// </summary>
-    /// <definition>
-    /// public string? CacheControl { get; set; }
-    /// </definition>
-    /// <type>
-    /// Property
-    /// </type>
     public string? CacheControl { get => base[Header.CacheControl]; set => base[Header.CacheControl] = value; }
 
     /// <summary>
@@ -270,6 +205,61 @@ public class HttpHeaderCollection : NameValueCollection
     /// Gets or sets the value of the HTTP Retry-After header.
     /// </summary>
     public string? RetryAfter { get => base[Header.RetryAfter]; set => base[Header.RetryAfter] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP If-Match header.
+    /// </summary>
+    public string? IfMatch { get => base[Header.IfMatch]; set => base[Header.IfMatch] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP If-None-Match header.
+    /// </summary>
+    public string? IfNoneMatch { get => base[Header.IfNoneMatch]; set => base[Header.IfNoneMatch] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP If-Range header.
+    /// </summary>
+    public string? IfRange { get => base[Header.IfRange]; set => base[Header.IfRange] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP If-Modified-Since header.
+    /// </summary>
+    public string? IfModifiedSince { get => base[Header.IfModifiedSince]; set => base[Header.IfModifiedSince] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP If-Unmodified-Since header.
+    /// </summary>
+    public string? IfUnmodifiedSince { get => base[Header.IfUnmodifiedSince]; set => base[Header.IfUnmodifiedSince] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP Max-Forwards header.
+    /// </summary>
+    public string? MaxForwards { get => base[Header.MaxForwards]; set => base[Header.MaxForwards] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP Pragma header.
+    /// </summary>
+    public string? Pragma { get => base[Header.Pragma]; set => base[Header.Pragma] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP Proxy-Authorization header.
+    /// </summary>
+    public string? ProxyAuthorization { get => base[Header.ProxyAuthorization]; set => base[Header.ProxyAuthorization] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP TE header.
+    /// </summary>
+    public string? TE { get => base[Header.TE]; set => base[Header.TE] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP Trailer header.
+    /// </summary>
+    public string? Trailer { get => base[Header.Trailer]; set => base[Header.Trailer] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP Via header.
+    /// </summary>
+    public string? Via { get => base[Header.Via]; set => base[Header.Via] = value; }
 
     /// <summary>
     /// Gets or sets the value of the HTTP Set-Cookie header.

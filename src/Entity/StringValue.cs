@@ -14,7 +14,7 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an instance that hosts a string value and allows conversion to common types.
 /// </summary>
-public struct StringValue
+public struct StringValue : ICloneable, IEquatable<StringValue>, IComparable<StringValue>
 {
     private readonly string? _ref;
     private readonly string argName;
@@ -48,11 +48,23 @@ public struct StringValue
     public bool IsNull { get => _ref is null; }
 
     /// <summary>
-    /// Returns a self-reference to this object when its value is not null.
+    /// Returns a self-reference to this object when it's value is not null.
     /// </summary>
     public StringValue? MaybeNull()
     {
         if (IsNull)
+        {
+            return null;
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Returns a self-reference to this object when it's value is not null or an empty string.
+    /// </summary>
+    public StringValue? MaybeNullOrEmpty()
+    {
+        if (IsNullOrEmpty)
         {
             return null;
         }
@@ -145,15 +157,16 @@ public struct StringValue
     /// <summary>
     /// Gets a <see cref="Int16"/> from this <see cref="StringValue"/>.
     /// </summary>
+    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
     /// <returns>An non-null short value.</returns>
     /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public short GetShort()
+    public short GetShort(IFormatProvider? fmtProvider = null)
     {
         ThrowIfNull();
         try
         {
-            return short.Parse(_ref!);
+            return short.Parse(_ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
@@ -164,15 +177,16 @@ public struct StringValue
     /// <summary>
     /// Gets a <see cref="double"/> from this <see cref="StringValue"/>.
     /// </summary>
+    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
     /// <returns>An non-null double value.</returns>
     /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public double GetDouble()
+    public double GetDouble(IFormatProvider? fmtProvider = null)
     {
         ThrowIfNull();
         try
         {
-            return double.Parse(_ref!);
+            return double.Parse(_ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
@@ -202,15 +216,16 @@ public struct StringValue
     /// <summary>
     /// Gets a <see cref="DateTime"/> from this <see cref="StringValue"/>.
     /// </summary>
+    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
     /// <returns>An non-null DateTime value.</returns>
     /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public DateTime GetDateTime()
+    public DateTime GetDateTime(IFormatProvider? fmtProvider = null)
     {
         ThrowIfNull();
         try
         {
-            return DateTime.Parse(_ref!);
+            return DateTime.Parse(_ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
@@ -258,21 +273,18 @@ public struct StringValue
 
     /// <inheritdoc/>
     /// <exclude/>
-    public static implicit operator string?(StringValue i)
-    {
-        return i.Value;
-    }
+    public static implicit operator string?(StringValue i) => i._ref;
 
     /// <inheritdoc/>
     /// <exclude/>
-    public static bool operator ==(StringValue i, string? other)
+    public static bool operator ==(StringValue i, object? other)
     {
         return i.Equals(other);
     }
 
     /// <inheritdoc/>
     /// <exclude/>
-    public static bool operator !=(StringValue i, string? other)
+    public static bool operator !=(StringValue i, object? other)
     {
         return !i.Equals(other);
     }
@@ -287,11 +299,11 @@ public struct StringValue
         }
         else if (obj is StringValue sv)
         {
-            return Value?.Equals(sv.Value) == true;
+            return _ref?.Equals(sv._ref) == true;
         }
         else if (obj is string ss)
         {
-            return Value?.Equals(ss) == true;
+            return _ref?.Equals(ss) == true;
         }
         else
         {
@@ -303,6 +315,33 @@ public struct StringValue
     /// <exclude/>
     public override int GetHashCode()
     {
-        return Value?.GetHashCode() ?? 0;
+        return _ref?.GetHashCode() ?? 0;
+    }
+
+    /// <inheritdoc/>
+    public object Clone()
+    {
+        return new StringValue((string)argName.Clone(), (string)argType.Clone(), (string?)_ref?.Clone());
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public override string? ToString()
+    {
+        return _ref?.ToString();
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public bool Equals(StringValue other)
+    {
+        return Equals(other);
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public int CompareTo(StringValue other)
+    {
+        return string.Compare(this._ref, other._ref);
     }
 }
