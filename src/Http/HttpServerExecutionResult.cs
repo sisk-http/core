@@ -126,11 +126,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Indicates that the server cannot or will not process the request due to something that is perceived to be a client error.
         /// </summary>
-        MalformedRequest,
-
-        /// <summary>
-        /// Indicates that the HTTP request exceeded the maximum running time defined on <see cref="HttpServerFlags.RouteActionTimeout"/>.
-        /// </summary>
-        RequestTimeout
+        MalformedRequest
     }
 }

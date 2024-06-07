@@ -65,9 +65,9 @@ public partial class Router
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
     {
-        if (!RuntimeFeature.IsDynamicCodeSupported)
+        if (typeof(TModule) == typeof(RouterModule))
         {
-            throw new NotSupportedException(SR.Router_AutoScanModules_RequiresUnreferencedCode);
+            throw new InvalidOperationException(SR.Router_AutoScanModules_TModuleSameAssembly);
         }
         Type tType = typeof(TModule);
         var types = assembly.GetTypes();
@@ -110,10 +110,6 @@ public partial class Router
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>() where TModule : RouterModule
     {
-        if (typeof(TModule) == typeof(RouterModule))
-        {
-            throw new InvalidOperationException(SR.Router_AutoScanModules_TModuleSameAssembly);
-        }
         AutoScanModules<TModule>(typeof(TModule).Assembly);
     }
 

@@ -13,7 +13,7 @@ namespace Sisk.Core.Routing;
 /// Indicates that extended class supports router modules, which allows the management of routes,
 /// request handlers and prefixes.
 /// </summary>
-public class RouterModule
+public abstract class RouterModule
 {
     /// <summary>
     /// Gets or sets the request handlers this class has implemented.

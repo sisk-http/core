@@ -252,6 +252,20 @@ public struct StringValue : ICloneable, IEquatable<StringValue>, IComparable<Str
         }
     }
 
+#if NET7_0_OR_GREATER
+    /// <summary>
+    /// Gets the current value parsed by the provided <see cref="IParsable{TSelf}"/> at <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The type where the conversion will result into.</typeparam>
+    /// <param name="fmtProvider">Optional. An object that provides culture-specific formatting information about the current value.</param>
+    /// <returns>The result of parsing the current string value.</returns>
+    public T GetParsable<T>(IFormatProvider? fmtProvider = null) where T : IParsable<T>
+    {
+        ThrowIfNull();
+        return T.Parse(_ref!, fmtProvider);
+    }
+#endif
+
     /// <summary>
     /// Gets an not null value from the specified <typeparamref name="T"/>.
     /// </summary>

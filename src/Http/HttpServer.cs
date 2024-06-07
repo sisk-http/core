@@ -52,6 +52,17 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Gets an <see cref="bool"/> indicating if Sisk can be used with the current environment.
+        /// </summary>
+        public static bool IsSupported { get => HttpListener.IsSupported; }
+
+        /// <summary>
+        /// Gets an <see cref="bool"/> indicating if the current environment supports dynamic code or it's running in
+        /// an AOT assembly.
+        /// </summary>
+        public static bool IsDynamicCodeSupported { get => System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported; }
+
+        /// <summary>
         /// Builds an <see cref="HttpServerHostContext"/> context invoking the handler on it.
         /// </summary>
         /// <param name="handler">The action which will configure the host context.</param>

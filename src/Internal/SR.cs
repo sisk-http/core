@@ -53,7 +53,7 @@ static partial class SR
     public const string HttpRequestEventSource_KeepAliveDisposed = "Cannot keep alive an instance that has it's connection disposed.";
 
     public const string Router_AutoScanModules_RequiresUnreferencedCode = "This method needs to search for types in your assembly, which can be trimmed in an AOT compilation.";
-    public const string Router_AutoScanModules_TModuleSameAssembly = "When T is RouterModule and an input assembly is not specified, no routes will be added to the router.";
+    public const string Router_AutoScanModules_TModuleSameAssembly = "The TModule generic type must be a type that implements RouterModule and not RouterModule itself.";
     public const string Router_Set_Collision = "A possible route collision could happen between route {0} and route {1}. Please review the methods and paths of these routes.";
     public const string Router_Set_Exception = "Couldn't set method {0}.{1} as an route. See inner exception.";
     public const string Router_Set_InvalidRouteStart = "Route paths must start with /.";
