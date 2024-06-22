@@ -17,6 +17,8 @@ namespace Sisk.Core.Http
     /// </summary>
     public class HttpServerConfiguration : IDisposable
     {
+        private int _maximumContentLength = 0;
+
         /// <summary>
         /// Gets or sets advanced flags and configuration settings for the HTTP server.
         /// </summary>
@@ -41,6 +43,15 @@ namespace Sisk.Core.Http
         /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server error transcriptions to.
         /// </summary>
         public LogStream? ErrorsLogsStream { get; set; } = LogStream.ConsoleOutput;
+
+        /// <summary>
+        /// Gets or sets the server's action when it receives an HTTP request outside the localhost.
+        /// </summary>
+        /// <remarks>
+        /// It is recommended to use <see cref="RequestListenAction.Drop"/> in this property when working
+        /// with a reverse proxy or in environments where the service is not directly exposed to the internet.
+        /// </remarks>
+        public RequestListenAction RemoteRequestsAction { get; set; } = RequestListenAction.Accept;
 
         /// <summary>
         /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using
@@ -70,7 +81,21 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// Leave it as "0" to set the maximum content length to unlimited.
         /// </remarks> 
-        public long MaximumContentLength { get; set; } = 0;
+        public int MaximumContentLength
+        {
+            get
+            {
+                return _maximumContentLength;
+            }
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(SR.Httpserver_MaxContentLengthZero);
+                }
+                _maximumContentLength = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets whether the server should include the "X-Request-Id" header in response headers.
@@ -109,5 +134,21 @@ namespace Sisk.Core.Http
             AccessLogsStream?.Close();
             ErrorsLogsStream?.Close();
         }
+    }
+
+    /// <summary>
+    /// Represents the HTTP server action when receiving an request.
+    /// </summary>
+    public enum RequestListenAction
+    {
+        /// <summary>
+        /// The server must accept and route the request.
+        /// </summary>
+        Accept = 1,
+
+        /// <summary>
+        /// The server must reject the request and close the connection with the client.
+        /// </summary>
+        Drop = 2
     }
 }

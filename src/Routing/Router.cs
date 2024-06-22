@@ -21,7 +21,7 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Represents a collection of <see cref="Route"/> and main executor of actions in the <see cref="HttpServer"/>.
     /// </summary>
-    public sealed partial class Router : IEnumerable<Route>
+    public sealed partial class Router
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
         internal HttpServer? ParentServer { get; private set; }
@@ -90,13 +90,13 @@ namespace Sisk.Core.Routing
         /// Gets or sets the Router "404 Not Found" handler.
         /// </summary>
         public RoutingErrorCallback? NotFoundErrorHandler { get; set; } = new RoutingErrorCallback(
-                            (c) => new HttpResponse(System.Net.HttpStatusCode.NotFound));
+            (c) => new HttpResponse(System.Net.HttpStatusCode.NotFound));
 
         /// <summary>
         /// Gets or sets the Router "405 Method Not Allowed" handler.
         /// </summary>
         public RoutingErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new RoutingErrorCallback(
-                            (c) => new HttpResponse(System.Net.HttpStatusCode.MethodNotAllowed));
+            (c) => new HttpResponse(System.Net.HttpStatusCode.MethodNotAllowed));
 
         /// <summary>
         /// Gets all routes defined on this router instance.
@@ -192,20 +192,6 @@ namespace Sisk.Core.Routing
             {
                 throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, routeResult.GetType().FullName));
             }
-        }
-
-        /// <inheritdoc/>
-        /// <exclude/>
-        public IEnumerator<Route> GetEnumerator()
-        {
-            return ((IEnumerable<Route>)_routesList).GetEnumerator();
-        }
-
-        /// <inheritdoc/>
-        /// <exclude/>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _routesList.GetEnumerator();
         }
 
         internal void FreeHttpServer()

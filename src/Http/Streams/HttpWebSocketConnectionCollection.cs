@@ -12,7 +12,7 @@ namespace Sisk.Core.Http.Streams
     /// <summary>
     /// Provides a managed object to manage <see cref="HttpWebSocket"/> connections.
     /// </summary>
-    public class HttpWebSocketConnectionCollection
+    public sealed class HttpWebSocketConnectionCollection
     {
         internal List<HttpWebSocket> _ws = new List<HttpWebSocket>();
 

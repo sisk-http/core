@@ -44,7 +44,7 @@ internal class HttpServerHandlerRepository
             }
             catch (Exception ex)
             {
-                if (parent.ServerConfiguration.ThrowExceptions)
+                if (!parent.ServerConfiguration.ThrowExceptions)
                 {
                     parent.ServerConfiguration.ErrorsLogsStream?.WriteException(ex);
                 }

@@ -131,7 +131,7 @@ namespace Sisk.Core.Internal.ServiceProvider
         public bool ResolveForwardedOriginAddress { get; set; } = false;
         public bool ResolveForwardedOriginHost { get; set; } = false;
         public string DefaultEncoding { get; set; } = "UTF-8";
-        public long MaximumContentLength { get; set; } = 0;
+        public int MaximumContentLength { get; set; } = 0;
         public bool IncludeRequestIdHeader { get; set; } = false;
         public bool ThrowExceptions { get; set; } = true;
     }

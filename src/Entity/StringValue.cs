@@ -195,6 +195,26 @@ public struct StringValue : ICloneable, IEquatable<StringValue>, IComparable<Str
     }
 
     /// <summary>
+    /// Gets a <see cref="float"/> from this <see cref="StringValue"/>.
+    /// </summary>
+    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
+    /// <returns>An non-null double value.</returns>
+    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
+    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
+    public double GetSingle(IFormatProvider? fmtProvider = null)
+    {
+        ThrowIfNull();
+        try
+        {
+            return float.Parse(_ref!, fmtProvider);
+        }
+        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
+        {
+            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "float"));
+        }
+    }
+
+    /// <summary>
     /// Gets a <see cref="bool"/> from this <see cref="StringValue"/>.
     /// </summary>
     /// <returns>An non-null boolean value.</returns>

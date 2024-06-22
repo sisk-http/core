@@ -9,6 +9,7 @@
 
 using Sisk.Core.Internal;
 using System.Collections;
+using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http
 {
@@ -114,18 +115,27 @@ namespace Sisk.Core.Http
         /// <param name="index">The Listening Host index</param>
         public ListeningHost this[int index] { get => _hosts[index]; set => _hosts[index] = value; }
 
-        internal ListeningHost? GetRequestMatchingListeningHost(string dnsSafeHost, int port)
+        internal ListeningHost? GetRequestMatchingListeningHost(string incomingHost, int incomingPort)
         {
-            foreach (ListeningHost h in _hosts)
+            lock (_hosts)
             {
-                foreach (ListeningPort p in h.Ports)
+                Span<ListeningHost> hosts = CollectionsMarshal.AsSpan(_hosts);
+                for (int H = 0; H < hosts.Length; H++)
                 {
-                    if (p.Port == port && HttpStringInternals.IsDnsMatch(p.Hostname, dnsSafeHost))
+                    ListeningHost h = hosts[H];
+
+                    Span<ListeningPort> ports = h.Ports.AsSpan();
+                    for (int P = 0; P < ports.Length; P++)
                     {
-                        return h;
+                        ref ListeningPort p = ref ports[P];
+
+                        if (p.Port == incomingPort && HttpStringInternals.IsDnsMatch(p.Hostname, incomingHost))
+                        {
+                            return h;
+                        }
                     }
                 }
-            }
+            }          
             return null;
         }
     }

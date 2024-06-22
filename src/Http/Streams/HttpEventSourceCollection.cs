@@ -111,7 +111,8 @@ namespace Sisk.Core.Http.Streams
         {
             lock (_eventSources)
             {
-                foreach (HttpRequestEventSource es in _eventSources) es.Dispose();
+                foreach (HttpRequestEventSource es in _eventSources)
+                    es.Dispose();
             }
         }
     }

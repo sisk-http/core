@@ -169,6 +169,13 @@ public partial class HttpServer
                 return;
             }
 
+            if (!baseRequest.IsLocal && ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop)
+            {
+                executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
+                baseResponse.Abort();
+                return;
+            }
+
             string dnsSafeHost = connectingUri.DnsSafeHost;
             string? forwardedHost = baseRequest.Headers[HttpKnownHeaderNames.XForwardedHost];
             if (ServerConfiguration.ResolveForwardedOriginHost && forwardedHost != null)
@@ -177,8 +184,8 @@ public partial class HttpServer
             }
 
             // detect the listening host for this listener
-            ListeningHost? matchedListeningHost = _onlyListeningHost ?? ServerConfiguration.ListeningHosts
-                    .GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
+            ListeningHost? matchedListeningHost = _onlyListeningHost
+                    ?? ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
 
             if (matchedListeningHost is null)
             {
@@ -218,8 +225,11 @@ public partial class HttpServer
             if (flag.SendSiskHeader)
                 baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, PoweredBy);
 
-            long requestMaxSize = ServerConfiguration.MaximumContentLength;
-            if (requestMaxSize > 0 && baseRequest.ContentLength64 > requestMaxSize)
+            int userMaxContentLength = ServerConfiguration.MaximumContentLength;
+            bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && baseRequest.ContentLength64 > userMaxContentLength;
+            bool isContentLenOutsideSystemBounds = baseRequest.ContentLength64 > Int32.MaxValue;
+
+            if (isContentLenOutsideUserBounds || isContentLenOutsideSystemBounds)
             {
                 executionResult.Status = HttpServerExecutionStatus.ContentTooLarge;
                 baseResponse.StatusCode = 413;

@@ -77,10 +77,22 @@ namespace Sisk.Core.Http
         {
             if (contentBytes is null)
             {
-                using (var memoryStream = new MemoryStream((int)ContentLength))
+                if (ContentLength > 0)
                 {
-                    listenerRequest.InputStream.CopyTo(memoryStream);
-                    contentBytes = memoryStream.ToArray();
+                    using (var memoryStream = new MemoryStream(ContentLength))
+                    {
+                        listenerRequest.InputStream.CopyTo(memoryStream);
+                        contentBytes = memoryStream.ToArray();
+                    }
+                }
+                else if (ContentLength < 0)
+                {
+                    contentBytes = Array.Empty<byte>();
+                    throw new HttpRequestException(SR.HttpRequest_NoContentLength);
+                }
+                else
+                {
+                    contentBytes = Array.Empty<byte>();
                 }
             }
         }
@@ -126,12 +138,12 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a boolean indicating whether the content of this request has been processed by the server.
+        /// Gets a boolean indicating whether the body content of this request has been processed by the server.
         /// </summary>
-        public bool IsContentAvailable { get => contentBytes != null; }
+        public bool IsContentAvailable { get => contentBytes is not null; }
 
         /// <summary>
-        /// Gets a boolean indicating whether this request has contents.
+        /// Gets a boolean indicating whether this request has body contents.
         /// </summary>
         public bool HasContents { get => ContentLength > 0; }
 
@@ -142,7 +154,7 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (headers == null)
+                if (headers is null)
                 {
                     if (contextServerConfiguration.Flags.NormalizeHeadersEncodings)
                     {
@@ -174,7 +186,7 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (cookies == null)
+                if (cookies is null)
                 {
                     cookies = new NameValueCollection();
                     string? cookieHeader = listenerRequest.Headers[HttpKnownHeaderNames.Cookie];
@@ -239,7 +251,7 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is an shortcut for <see cref="HttpContext.RequestBag"/> property.
         /// </remarks>
-        public HttpContextBagRepository Bag { get => Context.RequestBag; }
+        public HttpContextBagRepository Bag => Context.RequestBag;
 
         /// <summary>
         /// Get the requested host header with the port from this HTTP request.
@@ -266,7 +278,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the full URL for this request, with scheme, host, port (if any), path and query.
+        /// Gets the full URL for this request, with scheme, host, port, path and query.
         /// </summary>
         public string FullUrl
         {
@@ -274,7 +286,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the Encoding used in the request.
+        /// Gets an string <see cref="Encoding"/> that can be used to decode text in this HTTP request.
         /// </summary>
         public Encoding RequestEncoding
         {
@@ -310,11 +322,14 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the content length in bytes.
+        /// Gets the content length in bytes count.
         /// </summary>
-        public long ContentLength
+        /// <remarks>
+        /// The value can be negative if the content length is unknown.
+        /// </remarks>
+        public int ContentLength
         {
-            get => listenerRequest.ContentLength64;
+            get => (int)listenerRequest.ContentLength64;
         }
 
         /// <summary>
@@ -324,7 +339,7 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (query == null)
+                if (query is null)
                 {
                     query = StringValueCollection.FromNameValueCollection("query parameter", listenerRequest.QueryString);
                 }
@@ -351,7 +366,7 @@ namespace Sisk.Core.Http
                     {
                         string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
                         bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
-                        if (!ok || forwardedAddress == null)
+                        if (!ok || forwardedAddress is null)
                         {
                             throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
                         }
@@ -362,12 +377,12 @@ namespace Sisk.Core.Http
                     }
                     else
                     {
-                        remoteAddr = listenerRequest.RemoteEndPoint.Address;
+                        remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
                     }
                 }
                 else
                 {
-                    remoteAddr = listenerRequest.RemoteEndPoint.Address;
+                    remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
                 }
 
                 return remoteAddr;
@@ -397,7 +412,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public StringValueCollection GetFormContent()
         {
-            if (form == null)
+            if (form is null)
             {
                 form = StringValueCollection.FromNameValueCollection("form", HttpUtility.ParseQueryString(Body));
             }

@@ -84,7 +84,7 @@ namespace Sisk.Core.Http
         ContentServedOnIllegalMethod,
 
         /// <summary>
-        /// Represents that the content of the request is too large than what was configured on the server.
+        /// Represents that the content of the request is too large than what was configured on the server, or it's bigger than the max supported size (2GB).
         /// </summary>
         ContentTooLarge,
 
@@ -126,6 +126,11 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Indicates that the server cannot or will not process the request due to something that is perceived to be a client error.
         /// </summary>
-        MalformedRequest
+        MalformedRequest,
+
+        /// <summary>
+        /// Indicates that the HTTP server closed an unwanted remote connection.
+        /// </summary>
+        RemoteRequestDropped
     }
 }

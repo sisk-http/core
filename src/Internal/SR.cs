@@ -17,6 +17,7 @@ static partial class SR
 
     public const string HttpRequest_InvalidForwardedIpAddress = "The forwarded IP address is invalid.";
     public const string HttpRequest_InvalidCookieSyntax = "The cookie header is invalid or is it has an malformed syntax.";
+    public const string HttpRequest_NoContentLength = "The Content-Length header is missing.";
     public const string HttpRequest_GetQueryValue_CastException = "Cannot cast the query item {0} value into an {1}.";
     public const string HttpRequest_SendTo_MaxRedirects = "Too many internal route redirections.";
     public const string HttpRequest_InputStreamAlreadyLoaded = "Unable to read InputStream as it has already been read.";
@@ -29,6 +30,7 @@ static partial class SR
     public const string Httpserver_Commons_HeaderAfterContents = "Cannot send headers or status code after sending response contents.";
     public const string Httpserver_Commons_RouterTimeout = "Request maximum execution time exceeded it's limit.";
     public const string Httpserver_WaitNext_Race_Condition = "This HTTP server is already waiting for the next request in another call of this method.";
+    public const string Httpserver_MaxContentLengthZero = "The maximum content size must not be a negative number.";
 
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";
     public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters.";

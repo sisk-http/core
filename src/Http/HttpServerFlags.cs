@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
+using System.Net;
 
 namespace Sisk.Core.Http
 {

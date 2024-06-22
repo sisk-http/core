@@ -38,7 +38,7 @@ namespace Sisk.Core.Http
     ///         http://182.32.112.223:5251/
     ///     </code>
     /// </example>
-    public struct ListeningPort
+    public struct ListeningPort : IEquatable<ListeningPort>
     {
         /// <summary>
         /// Gets or sets the DNS hostname pattern where this listening port will refer.
@@ -143,9 +143,20 @@ namespace Sisk.Core.Http
         /// <param name="obj">The another object which will be used to compare.</param>
         public override bool Equals(object? obj)
         {
-            if (obj == null) return false;
-            ListeningPort p = (ListeningPort)obj;
-            return p.Secure == Secure && p.Port == Port && p.Hostname == Hostname;
+            if (obj is ListeningPort p)
+            {
+                return Equals(p);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determines if this <see cref="ListeningPort"/> is equals to another <see cref="ListeningPort"/>.
+        /// </summary>
+        /// <param name="other">The another object which will be used to compare.</param>
+        public bool Equals(ListeningPort other)
+        {
+            return other.Secure == Secure && other.Port == Port && string.Compare(this.Hostname, other.Hostname, true) == 0;
         }
 
         /// <summary>
@@ -157,7 +168,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets an <see cref="ListeningPort"/> object with an random insecure port.
+        /// Gets an <see cref="ListeningPort"/> object with an random insecure port at the default loopback address.
         /// </summary>
         public static ListeningPort GetRandomPort()
         {
