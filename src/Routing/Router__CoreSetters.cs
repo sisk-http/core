@@ -10,7 +10,6 @@
 using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Routing;
 

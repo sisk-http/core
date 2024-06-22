@@ -176,16 +176,17 @@ public partial class HttpServer
                 return;
             }
 
-            string dnsSafeHost = connectingUri.DnsSafeHost;
-            string? forwardedHost = baseRequest.Headers[HttpKnownHeaderNames.XForwardedHost];
-            if (ServerConfiguration.ResolveForwardedOriginHost && forwardedHost != null)
+            request = new HttpRequest(this, context);
+            string dnsSafeHost = baseRequest.UserHostName;
+
+            if (ServerConfiguration.ForwardingResolver is ForwardingResolver fr)
             {
-                dnsSafeHost = forwardedHost;
+                dnsSafeHost = fr.OnResolveRequestHost(request, dnsSafeHost);
             }
 
             // detect the listening host for this listener
             ListeningHost? matchedListeningHost = _onlyListeningHost
-                    ?? ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
+                ?? ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
 
             if (matchedListeningHost is null)
             {
@@ -194,16 +195,12 @@ public partial class HttpServer
                 return;
             }
 
-            request = new HttpRequest(this, matchedListeningHost, context);
             srContext = new HttpContext(this, request, null, matchedListeningHost);
 
+            request.Host = dnsSafeHost;
             request.Context = srContext;
             executionResult.Request = request;
-
-            if (ServerConfiguration.ResolveForwardedOriginAddress)
-            {
-                otherParty = request.RemoteAddress;
-            }
+            otherParty = request.RemoteAddress;
 
             if (!matchedListeningHost.CanListen)
             {

@@ -41,8 +41,6 @@ namespace Sisk.Core.Internal.ServiceProvider
 
             if (config.Server != null)
             {
-                prov.Host.ServerConfiguration.ResolveForwardedOriginAddress = config.Server.ResolveForwardedOriginAddress;
-                prov.Host.ServerConfiguration.ResolveForwardedOriginHost = config.Server.ResolveForwardedOriginHost;
                 prov.Host.ServerConfiguration.DefaultEncoding = Encoding.GetEncoding(config.Server.DefaultEncoding);
                 prov.Host.ServerConfiguration.MaximumContentLength = config.Server.MaximumContentLength;
                 prov.Host.ServerConfiguration.IncludeRequestIdHeader = config.Server.IncludeRequestIdHeader;
@@ -128,8 +126,6 @@ namespace Sisk.Core.Internal.ServiceProvider
     {
         public string? AccessLogsStream { get; set; } = "console";
         public string? ErrorsLogsStream { get; set; }
-        public bool ResolveForwardedOriginAddress { get; set; } = false;
-        public bool ResolveForwardedOriginHost { get; set; } = false;
         public string DefaultEncoding { get; set; } = "UTF-8";
         public int MaximumContentLength { get; set; } = 0;
         public bool IncludeRequestIdHeader { get; set; } = false;

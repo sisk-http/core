@@ -31,7 +31,7 @@
 
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 		<FileVersion>1.0.0.0</FileVersion>
-		<Version>1.0.0.0-rc1</Version>
+		<Version>1.0.0.0-rc2</Version>
 
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
@@ -51,7 +51,7 @@
 
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		
+
 		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
 		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
 	</PropertyGroup>

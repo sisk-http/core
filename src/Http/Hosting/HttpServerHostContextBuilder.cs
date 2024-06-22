@@ -162,6 +162,25 @@ public sealed class HttpServerHostContextBuilder
     }
 
     /// <summary>
+    /// This method is a shortcut for setting <see cref="HttpServerConfiguration.ForwardingResolver"/>.
+    /// </summary>
+    /// <param name="resolver">The <see cref="ForwardingResolver"/> object.</param>
+    public HttpServerHostContextBuilder UseForwardingResolver(ForwardingResolver resolver)
+    {
+        _context.ServerConfiguration.ForwardingResolver = resolver;
+        return this;
+    }
+
+    /// <summary>
+    /// This method is a shortcut for setting <see cref="HttpServerConfiguration.ForwardingResolver"/>.
+    /// </summary>
+    /// <typeparam name="TForwardingResolver">The type which implements <see cref="ForwardingResolver"/>.</typeparam>
+    public HttpServerHostContextBuilder UseForwardingResolver<TForwardingResolver>() where TForwardingResolver : ForwardingResolver, new()
+    {
+        return UseForwardingResolver(new TForwardingResolver());
+    }
+
+    /// <summary>
     /// Calls an action that has the HTTP server configuration as an argument.
     /// </summary>
     /// <param name="handler">An action where the first argument is an <see cref="HttpServerConfiguration"/>.</param>

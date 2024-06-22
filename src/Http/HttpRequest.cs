@@ -33,7 +33,6 @@ namespace Sisk.Core.Http
     public sealed class HttpRequest
     {
         internal HttpServer baseServer;
-        internal ListeningHost hostContext;
         private readonly HttpServerConfiguration contextServerConfiguration;
         private readonly HttpListenerResponse listenerResponse;
         private readonly HttpListenerRequest listenerRequest;
@@ -47,14 +46,11 @@ namespace Sisk.Core.Http
         private StringValueCollection? form = null;
 
         private IPAddress? remoteAddr;
-        private string? remoteHost;
-        private bool isSsl;
 
         private int currentFrame = 0;
 
         internal HttpRequest(
             HttpServer server,
-            ListeningHost host,
             HttpListenerContext context)
         {
             this.context = context;
@@ -63,7 +59,6 @@ namespace Sisk.Core.Http
             listenerResponse = context.Response;
             listenerRequest = context.Request;
             RequestedAt = DateTime.Now;
-            hostContext = host;
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
@@ -110,30 +105,14 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (contextServerConfiguration.ResolveForwardedProtocol)
+                if (contextServerConfiguration.ForwardingResolver is { } fr)
                 {
-                    string? fwdProtocol = listenerRequest.Headers["X-Forwarded-Proto"] ??
-                                          listenerRequest.Headers["X-Forwarded-Protocol"] ??
-                                          listenerRequest.Headers["X-Url-Scheme"];
-
-                    if (fwdProtocol is not null)
-                    {
-                        isSsl = string.Compare(fwdProtocol, "https", true) == 0;
-                    }
-                    else
-                    {
-                        string? fwdSsl = listenerRequest.Headers["X-Forwarded-Ssl"] ??
-                                         listenerRequest.Headers["Front-End-Https"];
-
-                        isSsl = string.Compare(fwdSsl, "on", true) == 0;
-                    }
+                    return fr.OnResolveSecureConnection(this, listenerRequest.IsSecureConnection);
                 }
                 else
                 {
-                    isSsl = listenerRequest.IsSecureConnection;
+                    return listenerRequest.IsSecureConnection;
                 }
-
-                return isSsl;
             }
         }
 
@@ -220,30 +199,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Get the requested host header (without port) from this HTTP request.
         /// </summary>
-        public string Host
-        {
-            get
-            {
-                if (contextServerConfiguration.ResolveForwardedOriginHost)
-                {
-                    string? forwardedHost = listenerRequest.Headers[HttpKnownHeaderNames.XForwardedHost];
-                    if (forwardedHost != null)
-                    {
-                        remoteHost = forwardedHost;
-                    }
-                    else
-                    {
-                        remoteHost = listenerRequest.Url!.Host;
-                    }
-                }
-                else
-                {
-                    remoteHost = listenerRequest.Url!.Host;
-                }
-
-                return remoteHost;
-            }
-        }
+        public string? Host { get; internal set; }
 
         /// <summary>
         /// Gets the managed object which holds data for an entire HTTP session.
@@ -359,26 +315,9 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (contextServerConfiguration.ResolveForwardedOriginAddress)
+                if (contextServerConfiguration.ForwardingResolver is { } fr)
                 {
-                    string? forwardedIp = listenerRequest.Headers[HttpKnownHeaderNames.XForwardedFor];
-                    if (forwardedIp != null)
-                    {
-                        string forwardedIpLiteralStr = forwardedIp.Contains(',') ? forwardedIp.Substring(forwardedIp.IndexOf(',') + 1) : forwardedIp;
-                        bool ok = IPAddress.TryParse(forwardedIpLiteralStr, out IPAddress? forwardedAddress);
-                        if (!ok || forwardedAddress is null)
-                        {
-                            throw new HttpRequestException(SR.HttpRequest_InvalidForwardedIpAddress);
-                        }
-                        else
-                        {
-                            remoteAddr = forwardedAddress;
-                        }
-                    }
-                    else
-                    {
-                        remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
-                    }
+                    remoteAddr = fr.OnResolveClientAddress(this, listenerRequest.RemoteEndPoint);
                 }
                 else
                 {
@@ -422,7 +361,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the raw HTTP request message from the socket.
         /// </summary>
-        public string GetRawHttpRequest(bool includeBody = true)
+        public string GetRawHttpRequest(bool includeBody = true, bool appendExtraInfo = false)
         {
             StringBuilder sb = new StringBuilder();
             // Method and path
@@ -433,6 +372,14 @@ namespace Sisk.Core.Http
             sb.Append(listenerRequest.ProtocolVersion.Minor + "\n");
 
             // Headers
+            if (appendExtraInfo)
+            {
+                sb.AppendLine($":remote-ip: {RemoteAddress} (was {listenerRequest.RemoteEndPoint})");
+                sb.AppendLine($":host: {Host} (was {listenerRequest.UserHostName})");
+                sb.AppendLine($":date: {RequestedAt:s}");
+                sb.AppendLine($":request-id: {RequestId}");
+                sb.AppendLine($":request-proto: {(IsSecure ? "https" : "http")}");
+            }
             foreach (string hName in Headers)
             {
                 string hValue = Headers[hName]!;

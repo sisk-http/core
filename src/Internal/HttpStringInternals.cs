@@ -204,20 +204,20 @@ namespace Sisk.Core.Internal
         public static bool IsDnsMatch(string wildcardPattern, string subject)
         {
             StringComparison comparer = StringComparison.OrdinalIgnoreCase;
-            wildcardPattern = wildcardPattern.Trim();
-            subject = subject.Trim();
 
-            if (string.IsNullOrWhiteSpace(wildcardPattern))
+            int portSeparatorPosition = subject.IndexOf(':');
+            if (portSeparatorPosition > 0)
             {
-                return false;
+                subject = subject[0..portSeparatorPosition];
             }
 
-            if (subject.StartsWith(wildcardPattern.Replace("*.", "")))
+            int wildcardCount = wildcardPattern.Count(x => x == '*');
+            if (wildcardPattern.StartsWith("*.") && wildcardCount == 1)
             {
-                return true;
+                if (string.Compare(subject, wildcardPattern[2..], comparer) == 0)
+                    return true;
             }
 
-            int wildcardCount = wildcardPattern.Count(x => x.Equals('*'));
             if (wildcardCount <= 0)
             {
                 return subject.Equals(wildcardPattern, comparer);

@@ -79,7 +79,7 @@ namespace Sisk.Core.Http.Streams
             res.AddHeader("Content-Type", "text/event-stream");
             res.AddHeader("X-Powered-By", HttpServer.PoweredBy);
 
-            HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, req, host.hostContext.CrossOriginResourceSharingPolicy, res);
+            HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, req, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, res);
         }
 
         private void keepAliveTask()
