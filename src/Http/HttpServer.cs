@@ -33,7 +33,6 @@ namespace Sisk.Core.Http
         private bool _isListening = false;
         private bool _isDisposing = false;
         private readonly HttpListener httpListener = new HttpListener();
-        private readonly AsyncCallback _listenerCallback;
         private ListeningHost? _onlyListeningHost;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
@@ -169,7 +168,6 @@ namespace Sisk.Core.Http
         /// <param name="configuration">The configuration object of the server.</param>
         public HttpServer(HttpServerConfiguration configuration)
         {
-            _listenerCallback = new AsyncCallback(ListenerCallback);
             ServerConfiguration = configuration;
             handler = new HttpServerHandlerRepository(this);
         }
@@ -276,7 +274,7 @@ namespace Sisk.Core.Http
             }
 
             httpListener.Start();
-            httpListener.BeginGetContext(_listenerCallback, httpListener);
+            httpListener.BeginGetContext(ListenerCallback, null);
 
             handler.ServerStarted(this);
         }

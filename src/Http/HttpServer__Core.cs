@@ -78,8 +78,9 @@ public partial class HttpServer
 
     private void UnbindRouters()
     {
-        foreach (var lh in ServerConfiguration.ListeningHosts)
+        for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++)
         {
+            var lh = ServerConfiguration.ListeningHosts[i];
             if (lh.Router is { } router && ReferenceEquals(this, router.ParentServer))
             {
                 router.FreeHttpServer();
@@ -89,8 +90,9 @@ public partial class HttpServer
 
     private void BindRouters()
     {
-        foreach (var lh in ServerConfiguration.ListeningHosts)
+        for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++)
         {
+            var lh = ServerConfiguration.ListeningHosts[i];
             if (lh.Router is { } router && router.ParentServer is null)
             {
                 router.BindServer(this);
@@ -103,10 +105,8 @@ public partial class HttpServer
         if (_isDisposing || !_isListening)
             return;
 
-        var listener = (HttpListener)result.AsyncState!;
-        listener.BeginGetContext(_listenerCallback, listener);
-
-        HttpListenerContext context = listener.EndGetContext(result);
+        httpListener.BeginGetContext(ListenerCallback, null);
+        HttpListenerContext context = httpListener.EndGetContext(result);
         ProcessRequest(context);
     }
 

@@ -169,25 +169,30 @@ namespace Sisk.Core.Http
                 {
                     cookies = new NameValueCollection();
                     string? cookieHeader = listenerRequest.Headers[HttpKnownHeaderNames.Cookie];
-                    if (cookieHeader != null)
+
+                    if (!string.IsNullOrWhiteSpace(cookieHeader))
                     {
-                        string[] cookieParts = cookieHeader.Split(';');
-                        foreach (string cookieExpression in cookieParts)
+                        string[] cookiePairs = cookieHeader.Split(';');
+
+                        for (int i = 0; i < cookiePairs.Length; i++)
                         {
-                            int eqPos = cookieExpression.IndexOf("=");
+                            string cookieExpression = cookiePairs[i];
+
+                            int eqPos = cookieExpression.IndexOf('=');
                             if (eqPos < 0)
                             {
                                 throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
                             }
-                            string key = cookieExpression.Substring(0, eqPos).Trim();
-                            string value = cookieExpression.Substring(eqPos + 1).Trim();
 
-                            if (string.IsNullOrEmpty(key))
+                            string cookieName = cookieExpression.Substring(0, eqPos).Trim();
+                            string cookieValue = cookieExpression.Substring(eqPos + 1).Trim();
+
+                            if (string.IsNullOrWhiteSpace(cookieName))
                             {
                                 throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
                             }
 
-                            cookies[key] = WebUtility.UrlDecode(value);
+                            cookies[cookieName] = WebUtility.UrlDecode(cookieValue);
                         }
                     }
                 }
