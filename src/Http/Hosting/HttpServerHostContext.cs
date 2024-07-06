@@ -15,7 +15,7 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Represents the class that hosts most of the components needed to run a Sisk application.
 /// </summary>
-public class HttpServerHostContext : IDisposable
+public sealed class HttpServerHostContext : IDisposable
 {
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
@@ -23,7 +23,7 @@ public class HttpServerHostContext : IDisposable
     public InitializationParameterCollection Parameters { get; } = new InitializationParameterCollection();
 
     /// <summary>
-    /// Gets the host Http server.
+    /// Gets the host HTTP server.
     /// </summary>
     public HttpServer HttpServer { get; private set; }
 
@@ -66,7 +66,7 @@ public class HttpServerHostContext : IDisposable
     }
 
     /// <summary>
-    /// Starts the Http server.
+    /// Starts the HTTP server.
     /// </summary>
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
@@ -86,7 +86,7 @@ public class HttpServerHostContext : IDisposable
     }
 
     /// <summary>
-    /// Asynchronously starts the Http server.
+    /// Asynchronously starts the HTTP server.
     /// </summary>
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>

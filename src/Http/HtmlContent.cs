@@ -15,7 +15,7 @@ namespace Sisk.Core.Http;
 /// <summary>
 /// Provides HTTP content based on HTML contents.
 /// </summary>
-public class HtmlContent : ByteArrayContent
+public class HtmlContent : StringContent
 {
     /// <summary>
     /// Gets or sets the default encoding which will be used on constructors.
@@ -27,10 +27,8 @@ public class HtmlContent : ByteArrayContent
     /// </summary>
     /// <param name="content">The HTML content string.</param>
     /// <param name="encoding">The encoding which will encode the HTML contents.</param>
-    public HtmlContent(string content, Encoding encoding) : base(GetContentBytes(content, encoding))
+    public HtmlContent(string content, Encoding encoding) : base(content, encoding, "text/html")
     {
-        Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/html");
-        Headers.ContentType.CharSet = encoding.HeaderName;
     }
 
     /// <summary>
@@ -38,11 +36,4 @@ public class HtmlContent : ByteArrayContent
     /// </summary>
     /// <param name="content">The HTML content string.</param>
     public HtmlContent(string content) : this(content, DefaultEncoding) { }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static byte[] GetContentBytes(string content, Encoding encoder)
-    {
-        ArgumentNullException.ThrowIfNull(content, nameof(content));
-        return (encoder ?? Encoding.UTF8).GetBytes(content);
-    }
 }

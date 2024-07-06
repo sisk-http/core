@@ -7,10 +7,7 @@
 // File name:   ConfigurationContext.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Core.Http.Hosting;
-
-namespace Sisk.Core.Internal.ServiceProvider;
+namespace Sisk.Core.Http.Hosting;
 
 /// <summary>
 /// Represents a reading context for a portable configuration file.

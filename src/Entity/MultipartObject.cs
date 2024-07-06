@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Text;
 
@@ -16,7 +17,7 @@ namespace Sisk.Core.Entity
     /// <summary>
     /// Represents an multipart/form-data object.
     /// </summary>
-    public class MultipartObject
+    public sealed class MultipartObject
     {
         private readonly Encoding _baseEncoding;
 
@@ -56,7 +57,7 @@ namespace Sisk.Core.Entity
         }
 
         /// <summary>
-        /// Reads the content bytes using the Http request content-encoding.
+        /// Reads the content bytes using the HTTP request content-encoding.
         /// </summary>
         public string? ReadContentAsString()
         {
@@ -68,46 +69,57 @@ namespace Sisk.Core.Entity
         /// </summary>
         public MultipartObjectCommonFormat GetCommonFileFormat()
         {
-            IEnumerable<byte> len8 = ContentBytes.Take(8);
-            IEnumerable<byte> len4 = ContentBytes.Take(4);
-            IEnumerable<byte> len3 = ContentBytes.Take(3);
+            int byteLen = ContentBytes.Length;
 
-            if (len8.SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+            if (byteLen >= 8)
             {
-                return MultipartObjectCommonFormat.PNG;
-            }
-            else if (len4.SequenceEqual(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F' }))
+                Span<byte> len8 = ContentBytes.AsSpan(0, 8);
+
+                if (len8.SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+                {
+                    return MultipartObjectCommonFormat.PNG;
+                }
+            }            
+            if (byteLen >= 4)
             {
-                return MultipartObjectCommonFormat.WEBP;
+                Span<byte> len4 = ContentBytes.AsSpan(0, 4);
+
+                if (len4.SequenceEqual(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F' }))
+                {
+                    return MultipartObjectCommonFormat.WEBP;
+                }
+                else if (len4.SequenceEqual(new byte[] { 0x25, 0x50, 0x44, 0x46 }))
+                {
+                    return MultipartObjectCommonFormat.PDF;
+                }
             }
-            else if (len4.SequenceEqual(new byte[] { 0x25, 0x50, 0x44, 0x46 }))
+            if (byteLen >= 3)
             {
-                return MultipartObjectCommonFormat.PDF;
+                Span<byte> len3 = ContentBytes.AsSpan(0, 3);
+
+                if (len3.SequenceEqual(new byte[] { 0xFF, 0xD8, 0xFF }))
+                {
+                    return MultipartObjectCommonFormat.JPEG;
+                }
+                else if (len3.SequenceEqual(new byte[] { 73, 73, 42 }))
+                {
+                    return MultipartObjectCommonFormat.TIFF;
+                }
+                else if (len3.SequenceEqual(new byte[] { 77, 77, 42 }))
+                {
+                    return MultipartObjectCommonFormat.TIFF;
+                }
+                else if (len3.SequenceEqual(new byte[] { 0x42, 0x4D }))
+                {
+                    return MultipartObjectCommonFormat.BMP;
+                }
+                else if (len3.SequenceEqual(new byte[] { 0x47, 0x46, 0x49 }))
+                {
+                    return MultipartObjectCommonFormat.GIF;
+                }
             }
-            else if (len3.SequenceEqual(new byte[] { 0xFF, 0xD8, 0xFF }))
-            {
-                return MultipartObjectCommonFormat.JPEG;
-            }
-            else if (len3.SequenceEqual(new byte[] { 73, 73, 42 }))
-            {
-                return MultipartObjectCommonFormat.TIFF;
-            }
-            else if (len3.SequenceEqual(new byte[] { 77, 77, 42 }))
-            {
-                return MultipartObjectCommonFormat.TIFF;
-            }
-            else if (len3.SequenceEqual(new byte[] { 0x42, 0x4D }))
-            {
-                return MultipartObjectCommonFormat.BMP;
-            }
-            else if (len3.SequenceEqual(new byte[] { 0x47, 0x46, 0x49 }))
-            {
-                return MultipartObjectCommonFormat.GIF;
-            }
-            else
-            {
-                return MultipartObjectCommonFormat.Unknown;
-            }
+
+            return MultipartObjectCommonFormat.Unknown;
         }
 
         internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
@@ -120,9 +132,12 @@ namespace Sisk.Core.Entity
             _baseEncoding = encoding;
         }
 
+        //
+        // we should rewrite it using Spans<>, but there are so many code and it would take
+        // days...
         internal static MultipartFormCollection ParseMultipartObjects(HttpRequest req)
         {
-            string? contentType = req.Headers["Content-Type"];
+            string? contentType = req.Headers[HttpKnownHeaderNames.ContentType];
             if (contentType is null)
             {
                 throw new InvalidOperationException(SR.MultipartObject_ContentTypeMissing);
@@ -252,7 +267,7 @@ namespace Sisk.Core.Entity
                 }
 
                 // parse field name
-                string[] val = headers["Content-Disposition"]?.Split(';') ?? Array.Empty<string>();
+                string[] val = headers[HttpKnownHeaderNames.ContentDisposition]?.Split(';') ?? Array.Empty<string>();
                 string? fieldName = null;
                 string? fieldFilename = null;
 

@@ -14,7 +14,7 @@ namespace Sisk.Core.Http.Streams
     /// <summary>
     /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
     /// </summary>
-    public class HttpRequestEventSource : IDisposable
+    public sealed class HttpRequestEventSource : IDisposable
     {
         readonly ManualResetEvent terminatingMutex = new ManualResetEvent(false);
         readonly HttpStreamPingPolicy pingPolicy;
@@ -32,7 +32,7 @@ namespace Sisk.Core.Http.Streams
         // 
         // isClosed determines if this instance has some connection or not
         // isDisposed determines if this object was removed from their collection but wasnt collected by gc yet
-        // 
+        //
 
         private bool isClosed = false;
         private bool isDisposed = false;

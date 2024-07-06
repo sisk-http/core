@@ -40,6 +40,7 @@ namespace Sisk.Core.Http
         /// Creates an new redirect <see cref="HttpResponse"/> with given location header.
         /// </summary>
         /// <param name="location">The absolute or relative URL path which the client must be redirected to.</param>
+        [Obsolete("This method is deprecated and should not be used.")]
         public static HttpResponse CreateRedirectResponse(string location)
         {
             HttpResponse res = new HttpResponse();
@@ -53,6 +54,7 @@ namespace Sisk.Core.Http
         /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a action. The provided method must have a valid RouteAttribute attribute.
         /// </summary>
         /// <param name="action">The receiving action contains a RouteAttribute attribute and its method is GET or ANY.</param>
+        [Obsolete("This method is deprecated and should not be used.")]
         public static HttpResponse CreateRedirectResponse(RouteAction action)
         {
             var definition = RouteDefinition.GetFromCallback(action);

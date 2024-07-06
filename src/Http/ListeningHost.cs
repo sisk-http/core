@@ -15,7 +15,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Provides a structure to contain the fields needed by an http server host.
     /// </summary>
-    public class ListeningHost
+    public sealed class ListeningHost
     {
         private ListeningPort[] _ports = null!;
         internal ushort[] _numericPorts = null!;

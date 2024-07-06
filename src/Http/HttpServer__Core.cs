@@ -81,7 +81,7 @@ public partial class HttpServer
         for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++)
         {
             var lh = ServerConfiguration.ListeningHosts[i];
-            if (lh.Router is { } router && ReferenceEquals(this, router.ParentServer))
+            if (lh.Router is { } router && ReferenceEquals(this, router.parentServer))
             {
                 router.FreeHttpServer();
             }
@@ -93,7 +93,7 @@ public partial class HttpServer
         for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++)
         {
             var lh = ServerConfiguration.ListeningHosts[i];
-            if (lh.Router is { } router && router.ParentServer is null)
+            if (lh.Router is { } router && router.parentServer is null)
             {
                 router.BindServer(this);
             }

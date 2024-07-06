@@ -15,7 +15,7 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Represents an HTTP route to be matched by an <see cref="Router"/> object.
     /// </summary>
-    public class Route
+    public sealed class Route
     {
         internal RouteAction? _callback { get; set; }
         internal bool isReturnTypeTask;

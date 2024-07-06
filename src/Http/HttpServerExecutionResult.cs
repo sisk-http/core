@@ -26,7 +26,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents the results of executing a request on the server.
     /// </summary>
-    public class HttpServerExecutionResult
+    public sealed class HttpServerExecutionResult
     {
         /// <summary>
         /// Represents the request received in this diagnosis.

@@ -8,14 +8,13 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Routing;
-using System.Net;
 
 namespace Sisk.Core.Http
 {
     /// <summary>
     /// Provides advanced fields for Sisk server behavior.
     /// </summary>
-    public class HttpServerFlags
+    public sealed class HttpServerFlags
     {
         /// <summary>
         /// Determines if the HTTP server should drop requests which has content body in GET, OPTIONS, HEAD and TRACE methods.

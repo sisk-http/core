@@ -14,6 +14,6 @@ namespace Sisk.Core.Http;
 /// <summary>
 /// Represents a repository of information stored over the lifetime of a request.
 /// </summary>
-public class HttpContextBagRepository : TypedValueDictionary
+public sealed class HttpContextBagRepository : TypedValueDictionary
 {
 }

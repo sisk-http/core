@@ -23,17 +23,17 @@ namespace Sisk.Core.Routing
     public sealed partial class Router
     {
         internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
-        internal HttpServer? ParentServer { get; private set; }
 
+        internal HttpServer? parentServer;
         internal List<Route> _routesList = new();
         internal List<RouteDictItem> _actionHandlersList = new();
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal void BindServer(HttpServer server)
         {
-            if (ParentServer is not null)
+            if (parentServer is not null)
             {
-                if (ReferenceEquals(server, ParentServer))
+                if (ReferenceEquals(server, parentServer))
                 {
                     return;
                 }
@@ -45,7 +45,7 @@ namespace Sisk.Core.Routing
             else
             {
                 server.handler.SetupRouter(this);
-                ParentServer = server;
+                parentServer = server;
             }
         }
 
@@ -61,7 +61,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating where this <see cref="Router"/> is read-only or not.
         /// </summary>
-        public bool IsReadOnly { get => ParentServer is not null; }
+        public bool IsReadOnly { get => parentServer is not null; }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
@@ -69,7 +69,7 @@ namespace Sisk.Core.Routing
         public bool MatchRoutesIgnoreCase { get; set; } = false;
 
         /// <summary>
-        /// Creates an new <see cref="Router"/> instance with default properties values.
+        /// Creates an new <see cref="Router"/> instance with default values.
         /// </summary>
         public Router()
         {
@@ -112,6 +112,10 @@ namespace Sisk.Core.Routing
         public bool TryResolveActionResult(object? result, [NotNullWhen(true)] out HttpResponse? response)
         {
             bool wasLocked = false;
+
+            // IsReadOnly garantes that _actionHandlersList and
+            // _routesList will be not modified during span reading
+            ;
             if (!IsReadOnly)
             {
                 wasLocked = true;
@@ -195,7 +199,7 @@ namespace Sisk.Core.Routing
 
         internal void FreeHttpServer()
         {
-            ParentServer = null;
+            parentServer = null;
         }
     }
 

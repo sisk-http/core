@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.IO.Compression;
+using System.Timers;
 
 namespace Sisk.Core.Http
 {
@@ -16,9 +17,10 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class RotatingLogPolicy : IDisposable
     {
-        private readonly Thread checkThread;
+        private System.Timers.Timer? checkTimer = null;
         private bool isTerminating = false;
         internal LogStream? _logStream;
+        private bool disposedValue;
 
         /// <summary>
         /// Gets the file size threshold in bytes for when the file will be compressed and then cleared.
@@ -41,8 +43,6 @@ namespace Sisk.Core.Http
             }
             _logStream = ls;
             _logStream.rotatingLogPolicy = this;
-            checkThread = new Thread(new ThreadStart(Check));
-            checkThread.IsBackground = true;
         }
 
         /// <summary>
@@ -55,68 +55,99 @@ namespace Sisk.Core.Http
         /// <param name="due">The time interval between checks.</param>
         public void Configure(long maximumSize, TimeSpan due)
         {
+            if (checkTimer?.Enabled == true)
+            {
+                return;
+            }
             if (string.IsNullOrEmpty(_logStream?.FilePath))
             {
                 throw new NotSupportedException(SR.LogStream_RotatingLogPolicy_NotLocalFile);
             }
-            if (checkThread.IsAlive)
+            if (due == TimeSpan.Zero)
             {
-                throw new NotSupportedException(SR.LogStream_RotatingLogPolicy_AlreadyRunning);
+                throw new ArgumentException(SR.LogStream_RotatingLogPolicy_IntervalZero);
             }
+
             MaximumSize = maximumSize;
             Due = due;
-            checkThread.Start();
+
+            if (checkTimer is null)
+                checkTimer = new System.Timers.Timer()
+                {
+                    AutoReset = false
+                };
+
+            checkTimer.Interval = Due.TotalMilliseconds;
+            checkTimer.Elapsed += Check;
+            checkTimer?.Start();
         }
 
-        private void Check()
+        private void Check(object? state, ElapsedEventArgs e)
         {
-            while (!isTerminating)
+            if (isTerminating) return;
+            if (_logStream is null) return;
+            if (checkTimer is null) return;
+
+            string file = _logStream.FilePath!;
+
+            if (File.Exists(file))
             {
-                if (_logStream == null) continue;
-                string file = _logStream.FilePath!;
+                FileInfo fileInfo = new FileInfo(file);
 
-                if (File.Exists(file))
+                if (fileInfo.Length > MaximumSize)
                 {
-                    FileInfo fileInfo = new FileInfo(file);
-                    if (fileInfo.Length > MaximumSize)
-                    {
-                        DateTime now = DateTime.Now;
-                        string ext = fileInfo.Extension;
-                        string safeDatetime = $"{now.Day:D2}-{now.Month:D2}-{now.Year}T{now.Hour:D2}-{now.Minute:D2}-{now.Second:D2}.{now.Millisecond:D4}";
-                        string gzippedFilename = $"{fileInfo.FullName}.{safeDatetime}{ext}.gz";
+                    DateTime now = DateTime.Now;
+                    string ext = fileInfo.Extension;
+                    string safeDatetime = $"{now.Day:D2}-{now.Month:D2}-{now.Year}T{now.Hour:D2}-{now.Minute:D2}-{now.Second:D2}.{now.Millisecond:D4}";
+                    string gzippedFilename = $"{fileInfo.FullName}.{safeDatetime}{ext}.gz";
 
-                        try
+                    try
+                    {
+                        _logStream.rotatingPolicyLocker.Reset();
+                        _logStream.Flush();
+
+                        using (FileStream logSs = fileInfo.Open(FileMode.OpenOrCreate))
+                        using (FileStream gzFileSs = new FileInfo(gzippedFilename).Create())
+                        using (GZipStream gzSs = new GZipStream(gzFileSs, CompressionMode.Compress))
                         {
-                            //  Console.WriteLine("{0,20}{1,20}", "wait queue", "");
-                            _logStream.Wait(true);
-                            //  Console.WriteLine("{0,20}{1,20}", "gz++", "");
-                            using (FileStream logSs = fileInfo.Open(FileMode.OpenOrCreate))
-                            using (FileStream gzFileSs = new FileInfo(gzippedFilename).Create())
-                            using (GZipStream gzSs = new GZipStream(gzFileSs, CompressionMode.Compress))
-                            {
-                                logSs.CopyTo(gzSs);
-                                logSs.SetLength(0);
-                            }
-                        }
-                        finally
-                        {
-                            //Console.WriteLine("{0,20}{1,20}", "gz--", "");
-                            _logStream.Set();
+                            logSs.CopyTo(gzSs);
+                            logSs.SetLength(0);
                         }
                     }
+                    catch
+                    {
+                        ;
+                    }
+                    finally
+                    {
+                        _logStream.rotatingPolicyLocker.Set();
+                    }
+                }
+            }
+
+            checkTimer.Interval = Due.TotalMilliseconds;
+            checkTimer.Start();
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _logStream?.Dispose();
                 }
 
-                Thread.Sleep(Due);
+                _logStream = null;
+                disposedValue = true;
             }
         }
 
-        /// <summary>
-        /// Waits for the last scheduled run and terminates this class and its resources.
-        /// </summary> 
+        /// <inheritdoc/>
         public void Dispose()
         {
-            isTerminating = true;
-            checkThread.Join();
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

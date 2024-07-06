@@ -16,7 +16,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents an fluent repository of <see cref="ListeningHost"/> that can add, modify, or remove listening hosts while an <see cref="HttpServer"/> is running.
     /// </summary>
-    public class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
+    public sealed class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
     {
         private readonly List<ListeningHost> _hosts = new List<ListeningHost>();
 
@@ -135,7 +135,7 @@ namespace Sisk.Core.Http
                         }
                     }
                 }
-            }          
+            }
             return null;
         }
     }

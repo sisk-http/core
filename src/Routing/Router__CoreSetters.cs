@@ -35,10 +35,10 @@ public partial class Router
     /// <param name="path">The route path.</param>
     public bool IsDefined(RouteMethod method, string path)
     {
-        return GetCollisionRoute(method, path) != null;
+        return GetCollisionRoute(method, path) is not null;
     }
 
-    /// <summary> 
+    /// <summary>
     /// Gets an route object by their name that is defined in this Router.
     /// </summary>
     /// <param name="name">The route name.</param>
@@ -205,7 +205,7 @@ public partial class Router
         RouterModule? rmodule = instance as RouterModule;
         string? prefix;
 
-        if (rmodule?.Prefix == null)
+        if (rmodule?.Prefix is null)
         {
             RoutePrefixAttribute? rPrefix = callerType.GetCustomAttribute<RoutePrefixAttribute>();
             prefix = rPrefix?.Prefix;
@@ -215,75 +215,84 @@ public partial class Router
             prefix = rmodule.Prefix;
         }
 
-        foreach (var method in methods)
+        for (int imethod = 0; imethod < methods.Length; imethod++)
         {
-            IEnumerable<RouteAttribute> routesAttributes = method.GetCustomAttributes<RouteAttribute>();
-            foreach (var atrInstance in routesAttributes)
+            MethodInfo? method = methods[imethod];
+
+            RouteAttribute? routeAttribute = null;
+            object[] methodAttributes = method.GetCustomAttributes(true);
+            List<IRequestHandler> methodAttrReqHandlers = new List<IRequestHandler>(methodAttributes.Length);
+
+            for (int imethodAttribute = 0; imethodAttribute < methodAttributes.Length; imethodAttribute++)
             {
-                IEnumerable<RequestHandlerAttribute> handlersInstances = method.GetCustomAttributes<RequestHandlerAttribute>();
-                if (atrInstance != null)
+                object attrInstance = methodAttributes[imethodAttribute];
+
+                if (attrInstance is RequestHandlerAttribute reqHandlerAttr)
                 {
-                    List<IRequestHandler> methodHandlers = new List<IRequestHandler>();
-                    if (handlersInstances.Count() > 0)
+                    IRequestHandler? rhandler = (IRequestHandler?)Activator.CreateInstance(reqHandlerAttr.RequestHandlerType, reqHandlerAttr.ConstructorArguments);
+                    if (rhandler is not null)
+                        methodAttrReqHandlers.Add(rhandler);
+                }
+                else if (attrInstance is RouteAttribute routeAttributeItem)
+                {
+                    routeAttribute = routeAttributeItem;                  
+                }
+            }
+
+            if (routeAttribute is not null)
+            {
+                if (rmodule?.RequestHandlers.Count > 0)
+                {
+                    for (int imodReqHandler = 0; imodReqHandler < rmodule.RequestHandlers.Count; imodReqHandler++)
                     {
-                        foreach (RequestHandlerAttribute atr in handlersInstances)
-                        {
-                            IRequestHandler rhandler = (IRequestHandler)Activator.CreateInstance(atr.RequestHandlerType, atr.ConstructorArguments)!;
-                            methodHandlers.Add(rhandler);
-                        }
+                        IRequestHandler handler = rmodule.RequestHandlers[imodReqHandler];
+                        methodAttrReqHandlers.Add(handler);
                     }
-                    if (rmodule?.RequestHandlers.Count() > 0)
+                }
+                try
+                {
+                    RouteAction r;
+
+                    if (instance == null)
                     {
-                        foreach (IRequestHandler handler in rmodule.RequestHandlers)
-                        {
-                            methodHandlers.Add(handler);
-                        }
+                        r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
                     }
-
-                    try
+                    else
                     {
-                        RouteAction r;
-
-                        if (instance == null)
-                        {
-                            r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
-                        }
-                        else
-                        {
-                            r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), instance, method);
-                        }
-
-                        string path = atrInstance.Path;
-                        if (prefix != null && !atrInstance.UseRegex)
-                        {
-                            path = PathUtility.CombinePaths(prefix, path);
-                        }
-
-                        Route route = new Route()
-                        {
-                            Method = atrInstance.Method,
-                            Path = path,
-                            Action = r,
-                            Name = atrInstance.Name,
-                            RequestHandlers = methodHandlers.ToArray(),
-                            LogMode = atrInstance.LogMode,
-                            UseCors = atrInstance.UseCors,
-                            UseRegex = atrInstance.UseRegex
-                        };
-
-                        Route? collisonRoute;
-                        if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
-                        {
-                            throw new ArgumentException(string.Format(SR.Router_Set_Collision, route, collisonRoute));
-                        }
-
-                        rmodule?.OnRouteCreating(route);
-                        SetRoute(route);
+                        r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), instance, method);
                     }
-                    catch (Exception ex)
+
+                    string path = routeAttribute.Path;
+
+                    if (prefix is not null && !routeAttribute.UseRegex)
                     {
-                        throw new Exception(string.Format(SR.Router_Set_Exception, method.DeclaringType?.FullName, method.Name), ex);
+                        path = PathUtility.CombinePaths(prefix, path);
                     }
+
+                    Route route = new Route()
+                    {
+                        Method = routeAttribute.Method,
+                        Path = path,
+                        Action = r,
+                        Name = routeAttribute.Name,
+                        RequestHandlers = methodAttrReqHandlers.ToArray(),
+                        LogMode = routeAttribute.LogMode,
+                        UseCors = routeAttribute.UseCors,
+                        UseRegex = routeAttribute.UseRegex
+                    };
+
+                    Route? collisonRoute;
+                    if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
+                    {
+                        throw new ArgumentException(string.Format(SR.Router_Set_Collision, route, collisonRoute));
+                    }
+
+                    rmodule?.OnRouteCreating(route);
+                    SetRoute(route);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(string.Format(SR.Router_Set_Exception, method.DeclaringType?.FullName, method.Name), ex);
                 }
             }
         }

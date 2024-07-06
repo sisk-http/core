@@ -7,8 +7,6 @@
 // File name:   IConfigurationReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal.ServiceProvider;
-
 namespace Sisk.Core.Http.Hosting;
 
 /// <summary>

@@ -13,9 +13,9 @@ using System.Collections.Specialized;
 namespace Sisk.Core.Http
 {
     /// <summary>
-    /// Represents an context for Http requests.
+    /// Represents an context that is shared in a entire HTTP session.
     /// </summary>
-    public class HttpContext
+    public sealed class HttpContext
     {
         /// <summary>
         /// Gets or sets an <see cref="NameValueCollection"/> indicating HTTP headers which
@@ -34,7 +34,7 @@ namespace Sisk.Core.Http
         public HttpContextBagRepository RequestBag { get; set; } = new HttpContextBagRepository();
 
         /// <summary>
-        /// Gets the context Http Server instance.
+        /// Gets the context HTTP Server instance.
         /// </summary>
         public HttpServer HttpServer { get; private set; }
 
@@ -49,7 +49,7 @@ namespace Sisk.Core.Http
         public HttpRequest Request { get; private set; }
 
         /// <summary>
-        /// Gets the matched Http Route object from the Router.
+        /// Gets the matched HTTP Route object from the Router.
         /// </summary>
         public Route? MatchedRoute { get; internal set; }
 

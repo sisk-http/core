@@ -60,9 +60,9 @@ public sealed class HttpServerHostContextBuilder
     }
 
     /// <summary>
-    /// Defines a function that will be executed immediately before starting the Http server.
+    /// Defines a function that will be executed immediately before starting the HTTP server.
     /// </summary>
-    /// <param name="bootstrapAction">The action which will be executed before the Http server start.</param>
+    /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
     public HttpServerHostContextBuilder UseBootstraper(Action bootstrapAction)
     {
         _context.HttpServer.handler._default._serverBootstraping = bootstrapAction;
@@ -134,7 +134,7 @@ public sealed class HttpServerHostContextBuilder
     /// <summary>
     /// Sets the main <see cref="ListeningPort"/> of this host builder.
     /// </summary>
-    /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the Http server will listen to.</param>
+    /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the HTTP server will listen to.</param>
     public HttpServerHostContextBuilder UseListeningPort(ListeningPort listeningPort)
     {
         _context.ServerConfiguration.ListeningHosts[0].Ports[0] = listeningPort;

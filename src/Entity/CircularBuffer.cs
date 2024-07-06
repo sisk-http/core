@@ -16,11 +16,12 @@ namespace Sisk.Core.Entity;
 /// </summary>
 /// <typeparam name="T">The type of elements stored in the buffer.</typeparam>
 /// <exclude/>
-public class CircularBuffer<T> : IEnumerable<T>
+public class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T>
 {
-    T[] items;
+    private T[] items;
 
-    int capacity = 0;
+    int capacity = 0,
+        addedItems = 0;
 
     /// <summary>
     /// Creates an new instance of the <see cref="CircularBuffer{T}"/> with the specified
@@ -29,6 +30,7 @@ public class CircularBuffer<T> : IEnumerable<T>
     /// <param name="capacity">The circular buffer capacity.</param>
     public CircularBuffer(int capacity)
     {
+        if (capacity <= 0) throw new ArgumentOutOfRangeException("Capacity cannot be less or equals to zero.");
         this.capacity = capacity;
         items = new T[capacity];
     }
@@ -47,6 +49,7 @@ public class CircularBuffer<T> : IEnumerable<T>
                 items[i] = items[i - 1];
             }
 
+            addedItems = Math.Min(Capacity, addedItems + 1);
             items[0] = item;
         }
     }
@@ -57,6 +60,7 @@ public class CircularBuffer<T> : IEnumerable<T>
     public void Clear()
     {
         items = new T[capacity];
+        addedItems = 0;
     }
 
     /// <summary>
@@ -65,7 +69,7 @@ public class CircularBuffer<T> : IEnumerable<T>
     /// <param name="capacity">The new size for this circular buffer.</param>
     public void Resize(int capacity)
     {
-        if (capacity <= 0) throw new ArgumentException("Capacity cannot be less or equals to zero.");
+        if (capacity <= 0) throw new ArgumentOutOfRangeException("Capacity cannot be less or equals to zero.");
         Array.Resize(ref items, capacity);
         this.capacity = capacity;
     }
@@ -85,6 +89,14 @@ public class CircularBuffer<T> : IEnumerable<T>
     /// Gets the current capacity of this <see cref="CircularBuffer{T}"/>.
     /// </summary>
     public int Capacity { get => capacity; }
+
+    /// <summary>
+    /// Gets the amount of added items in this circular buffer.
+    /// </summary>
+    public int Count => addedItems;
+
+    /// <inheritdoc/>
+    public T this[int index] => items[index];
 
     /// <inheritdoc/>
     /// <exclude/>

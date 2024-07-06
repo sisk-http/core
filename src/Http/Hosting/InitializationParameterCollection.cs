@@ -18,7 +18,7 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Provides a collection of HTTP server initialization variables.
 /// </summary>
-public class InitializationParameterCollection : IDictionary<string, string?>
+public sealed class InitializationParameterCollection : IDictionary<string, string?>
 {
     private readonly NameValueCollection _decorator = new NameValueCollection();
     private bool _isReadonly = false;

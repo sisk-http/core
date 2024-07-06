@@ -93,7 +93,7 @@ public partial class Router
         catch (Exception ex)
         {
             exception = ex;
-            if (!ParentServer!.ServerConfiguration.ThrowExceptions)
+            if (!parentServer!.ServerConfiguration.ThrowExceptions)
             {
                 if (CallbackErrorHandler is not null)
                 {
@@ -111,14 +111,14 @@ public partial class Router
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal RouterExecutionResult Execute(HttpContext context)
     {
-        if (ParentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
+        if (parentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
 
         context.Router = this;
         HttpRequest request = context.Request;
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
-        HttpServerFlags flag = ParentServer!.ServerConfiguration.Flags;
+        HttpServerFlags flag = parentServer!.ServerConfiguration.Flags;
 
         Span<Route> rspan = CollectionsMarshal.AsSpan(_routesList);
         ref Route rPointer = ref MemoryMarshal.GetReference(rspan);
@@ -224,7 +224,7 @@ public partial class Router
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 
-            ParentServer?.handler.ContextBagCreated(context.RequestBag);
+            parentServer?.handler.ContextBagCreated(context.RequestBag);
 
             #region Before-response handlers
             HttpResponse? rhResponse;
@@ -268,7 +268,7 @@ public partial class Router
             }
             catch (Exception ex)
             {
-                if (!ParentServer!.ServerConfiguration.ThrowExceptions && (ex is not HttpListenerException))
+                if (!parentServer!.ServerConfiguration.ThrowExceptions && (ex is not HttpListenerException))
                 {
                     if (CallbackErrorHandler is not null)
                     {

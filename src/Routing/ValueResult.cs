@@ -15,7 +15,7 @@ namespace Sisk.Core.Routing;
 /// Represents a mutable type for boxing objects by value or reference in a response from a router.
 /// </summary>
 /// <typeparam name="T">The type of object to be boxed.</typeparam>
-public class ValueResult<T>
+public sealed class ValueResult<T>
 {
     // <exclude />
     // <inheritdocs />

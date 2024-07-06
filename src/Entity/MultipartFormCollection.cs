@@ -16,7 +16,7 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an class which hosts an multipart form data contents.
 /// </summary>
-public class MultipartFormCollection : IEnumerable<MultipartObject>, IReadOnlyList<MultipartObject>, IReadOnlyCollection<MultipartObject>
+public sealed class MultipartFormCollection : IEnumerable<MultipartObject>, IReadOnlyList<MultipartObject>, IReadOnlyCollection<MultipartObject>
 {
     private readonly IList<MultipartObject> _items;
 

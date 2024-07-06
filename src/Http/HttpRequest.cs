@@ -178,21 +178,28 @@ namespace Sisk.Core.Http
                         {
                             string cookieExpression = cookiePairs[i];
 
+                            if (string.IsNullOrWhiteSpace(cookieExpression))
+                                continue;
+
                             int eqPos = cookieExpression.IndexOf('=');
                             if (eqPos < 0)
                             {
-                                throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
+                                cookies[cookieExpression] = "";
+                                continue;
                             }
-
-                            string cookieName = cookieExpression.Substring(0, eqPos).Trim();
-                            string cookieValue = cookieExpression.Substring(eqPos + 1).Trim();
-
-                            if (string.IsNullOrWhiteSpace(cookieName))
+                            else
                             {
-                                throw new HttpRequestException(SR.HttpRequest_InvalidCookieSyntax);
-                            }
+                                string cookieName = cookieExpression.Substring(0, eqPos).Trim();
+                                string cookieValue = cookieExpression.Substring(eqPos + 1).Trim();
 
-                            cookies[cookieName] = WebUtility.UrlDecode(cookieValue);
+                                if (string.IsNullOrWhiteSpace(cookieName))
+                                {
+                                    // provided an name/value pair, but no name
+                                    continue;
+                                }
+
+                                cookies[cookieName] = WebUtility.UrlDecode(cookieValue);
+                            }
                         }
                     }
                 }

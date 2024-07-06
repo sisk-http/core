@@ -17,10 +17,10 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents a structure that holds an HTTP response status information, with it's status code and description.
     /// </summary>
-    public struct HttpStatusInformation : IComparable, IEquatable<HttpStatusInformation>
+    public readonly struct HttpStatusInformation : IEquatable<HttpStatusInformation>, IEquatable<HttpStatusCode>
     {
-        private int __statusCode;
-        private string __description;
+        private readonly int __statusCode;
+        private readonly string __description;
 
         /// <summary>
         /// Gets or sets the short description of the HTTP message.
@@ -31,11 +31,6 @@ namespace Sisk.Core.Http
         public string Description
         {
             get => __description;
-            set
-            {
-                ValidateDescription(value);
-                __description = value;
-            }
         }
 
         /// <summary>
@@ -44,11 +39,6 @@ namespace Sisk.Core.Http
         public int StatusCode
         {
             get => __statusCode;
-            set
-            {
-                ValidateStatusCode(value);
-                __statusCode = value;
-            }
         }
 
         /// <summary>
@@ -157,19 +147,6 @@ namespace Sisk.Core.Http
 
         /// <inheritdoc/>
         /// <exclude/>
-        public int CompareTo(object? obj)
-        {
-            if (obj is HttpStatusInformation other)
-            {
-                if (other.__statusCode == this.__statusCode) return 0;
-                if (other.__statusCode > this.__statusCode) return 1;
-                if (other.__statusCode < this.__statusCode) return -1;
-            }
-            return -1;
-        }
-
-        /// <inheritdoc/>
-        /// <exclude/>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is HttpStatusInformation other)
@@ -183,7 +160,7 @@ namespace Sisk.Core.Http
         /// <exclude/>
         public override int GetHashCode()
         {
-            return this.__statusCode.GetHashCode() ^ this.__description.GetHashCode();
+            return HashCode.Combine(this.__statusCode, this.__description);
         }
 
         /// <summary>
@@ -192,6 +169,27 @@ namespace Sisk.Core.Http
         public override string ToString()
         {
             return $"{__statusCode} {__description}";
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public bool Equals(HttpStatusCode other)
+        {
+            return this.StatusCode == (int)other;
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static implicit operator HttpStatusInformation(HttpStatusCode statusCode)
+        {
+            return new HttpStatusInformation(statusCode);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static implicit operator HttpStatusInformation(int statusCode)
+        {
+            return new HttpStatusInformation(statusCode);
         }
     }
 }

@@ -38,22 +38,22 @@ namespace Sisk.Core.Http
     ///         http://182.32.112.223:5251/
     ///     </code>
     /// </example>
-    public struct ListeningPort : IEquatable<ListeningPort>
+    public readonly struct ListeningPort : IEquatable<ListeningPort>
     {
         /// <summary>
         /// Gets or sets the DNS hostname pattern where this listening port will refer.
         /// </summary>
-        public string Hostname { get; set; }
+        public string Hostname { get; }
 
         /// <summary>
         /// Gets or sets the port where this listening port will refer.
         /// </summary>
-        public ushort Port { get; set; }
+        public ushort Port { get; }
 
         /// <summary>
         /// Gets or sets whether the server should listen to this port securely (SSL).
         /// </summary>
-        public bool Secure { get; set; }
+        public bool Secure { get; }
 
         /// <summary>
         /// Creates an new <see cref="ListeningPort"/> instance with default parameters.
@@ -156,7 +156,7 @@ namespace Sisk.Core.Http
         /// <param name="other">The another object which will be used to compare.</param>
         public bool Equals(ListeningPort other)
         {
-            return other.Secure == Secure && other.Port == Port && string.Compare(this.Hostname, other.Hostname, true) == 0;
+            return this.GetHashCode().Equals(other.GetHashCode());
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public override int GetHashCode()
         {
-            return (Secure.GetHashCode()) ^ (Port.GetHashCode()) ^ (Hostname.GetHashCode());
+            return HashCode.Combine(this.Hostname, this.Port, this.Secure);
         }
 
         /// <summary>

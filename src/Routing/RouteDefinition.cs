@@ -11,6 +11,7 @@ using System.Reflection;
 
 namespace Sisk.Core.Routing;
 
+// TODO: remove this class in future
 internal class RouteDefinition
 {
     public RouteMethod Method { get; set; }

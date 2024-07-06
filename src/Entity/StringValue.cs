@@ -12,9 +12,9 @@ using System.Runtime.CompilerServices;
 namespace Sisk.Core.Entity;
 
 /// <summary>
-/// Represents an instance that hosts a string value and allows conversion to common types.
+/// Represents an option/monad item that wraps an string value and allows conversion to most common types.
 /// </summary>
-public struct StringValue : ICloneable, IEquatable<StringValue>, IComparable<StringValue>
+public readonly struct StringValue : ICloneable, IEquatable<StringValue>, IComparable<StringValue>
 {
     private readonly string? _ref;
     private readonly string argName;
@@ -33,7 +33,7 @@ public struct StringValue : ICloneable, IEquatable<StringValue>, IComparable<Str
     public string Name { get => argName; }
 
     /// <summary>
-    /// Gets the value slot of this <see cref="StringValue"/>.
+    /// Gets the value of the current <see cref="StringValue"/> string if it has been assigned a valid underlying value.
     /// </summary>
     public string? Value { get => _ref; }
 

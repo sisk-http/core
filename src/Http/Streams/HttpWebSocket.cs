@@ -222,7 +222,7 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
-        /// Closes the connection between the client and the server and returns an Http resposne indicating that the connection has been terminated.
+        /// Closes the connection between the client and the server and returns an HTTP resposne indicating that the connection has been terminated.
         /// This method will not throw an exception if the connection is already closed.
         /// </summary>
         public HttpResponse Close()

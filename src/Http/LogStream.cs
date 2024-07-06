@@ -8,23 +8,26 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace Sisk.Core.Http
 {
     /// <summary>
-    /// Provides a managed, asynchronous log writer which supports writing safe data to log files or streams.
+    /// Provides a managed, asynchronous log writer which supports writing safe data to log files or text streams.
     /// </summary>
     public class LogStream : IDisposable
     {
-        private readonly Queue<object?> logQueue = new Queue<object?>();
-        private readonly ManualResetEvent watcher = new ManualResetEvent(false);
-        private readonly ManualResetEvent waiter = new ManualResetEvent(false);
-        private readonly ManualResetEvent terminate = new ManualResetEvent(false);
-        private readonly Thread loggingThread;
-        private bool isBlocking = false;
+        readonly BlockingCollection<object?> logQueue = new BlockingCollection<object?>();
+        string? filePath;
+        private bool isDisposed;
+        Thread consumerThread;
+        AutoResetEvent logQueueEmptyEvent = new AutoResetEvent(true);
+        CircularBuffer<string>? _bufferingContent = null;
+
         internal RotatingLogPolicy? rotatingLogPolicy = null;
-        internal CircularBuffer<string>? _bufferingContent = null;
+        internal ManualResetEvent rotatingPolicyLocker = new ManualResetEvent(true);
+        internal SemaphoreSlim sm = new SemaphoreSlim(1);
 
         /// <summary>
         /// Represents a LogStream that writes its output to the <see cref="Console.Out"/> stream.
@@ -34,9 +37,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.
         /// </summary>
-        /// <remarks>
-        /// Internally, this property creates a new <see cref="RotatingLogPolicy"/> for this log stream if it is not defined before.
-        /// </remarks>
         public RotatingLogPolicy RotatingPolicy
         {
             get
@@ -79,7 +79,6 @@ namespace Sisk.Core.Http
                 }
             }
         }
-        string? filePath;
 
         /// <summary>
         /// Gets the <see cref="System.IO.TextWriter"/> object where the log is being written to.
@@ -97,9 +96,9 @@ namespace Sisk.Core.Http
         /// </summary>
         public LogStream()
         {
-            loggingThread = new Thread(new ThreadStart(ProcessQueue));
-            loggingThread.IsBackground = true;
-            loggingThread.Start();
+            consumerThread = new Thread(new ThreadStart(ProcessQueue));
+            consumerThread.IsBackground = true;
+            consumerThread.Start();
         }
 
         /// <summary>
@@ -121,14 +120,24 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Creates an new <see cref="LogStream"/> instance which writes text to an file and an <see cref="TextWriter"/>.
+        /// Creates an new <see cref="LogStream"/> instance which writes text to an file and an <see cref="System.IO.TextWriter"/>.
         /// </summary>
         /// <param name="filename">The file path where this instance will write log to.</param>
-        /// <param name="tw">Represents the text writer which this instance will write log to.</param>
+        /// <param name="tw">The text writer which this instance will write log to.</param>
         public LogStream(string? filename, TextWriter? tw) : this()
         {
             if (filename is not null) FilePath = Path.GetFullPath(filename);
             TextWriter = tw;
+        }
+
+        /// <summary>
+        /// Clears the current log queue and blocks the current thread until all content is written to the underlying streams.
+        /// </summary>
+        public void Flush()
+        {
+            logQueueEmptyEvent.Reset();
+            logQueueEmptyEvent.WaitOne();
+            ;
         }
 
         /// <summary>
@@ -151,29 +160,6 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Waits for the log to finish writing the current queue state.
-        /// </summary>
-        /// <param name="blocking">Block next writings until that instance is released by the <see cref="Set"/> method.</param>
-        public void Wait(bool blocking = false)
-        {
-            if (blocking)
-            {
-                watcher.Reset();
-                isBlocking = true;
-            }
-            waiter.WaitOne();
-        }
-
-        /// <summary>
-        /// Releases the execution of the queue.
-        /// </summary>
-        public void Set()
-        {
-            watcher.Set();
-            isBlocking = false;
-        }
-
-        /// <summary>
         /// Start buffering all output to an alternate stream in memory for readability with <see cref="Peek"/> later.
         /// </summary>
         /// <param name="lines">The amount of lines to store in the buffer.</param>
@@ -191,55 +177,38 @@ namespace Sisk.Core.Http
             _bufferingContent = null;
         }
 
-        private void setWatcher()
-        {
-            if (!isBlocking)
-                watcher.Set();
-        }
-
         private void ProcessQueue()
         {
-            while (true)
+            while (!isDisposed)
             {
-                waiter.Set();
-                int i = WaitHandle.WaitAny(new WaitHandle[] { watcher, terminate });
-                if (i == 1) return; // terminate
-
-                watcher.Reset();
-                waiter.Reset();
-
-                object?[] copy;
-                lock (logQueue)
+                if (!rotatingPolicyLocker.WaitOne(2500))
                 {
-                    copy = logQueue.ToArray();
-                    logQueue.Clear();
+                    continue;
+                }
+                if (!logQueue.TryTake(out object? data, 2500))
+                {
+                    continue;
                 }
 
-                StringBuilder exitBuffer = new StringBuilder();
-                foreach (object? line in copy)
-                {
-                    exitBuffer.AppendLine(line?.ToString());
-                }
+                string? dataStr = data?.ToString();
+                if (dataStr is null)
+                    continue;
 
-                if (FilePath is null && TextWriter is null)
-                {
-                    throw new InvalidOperationException(SR.LogStream_NoOutput);
-                }
-
-                if (_bufferingContent is not null)
-                {
-                    _bufferingContent.Add(exitBuffer.ToString());
-                }
-
-                // writes log to outputs
-                if (FilePath is not null)
-                {
-                    File.AppendAllText(FilePath, exitBuffer.ToString(), Encoding);
-                }
                 if (TextWriter is not null)
                 {
-                    TextWriter?.Write(exitBuffer.ToString());
-                    TextWriter?.Flush();
+                    TextWriter.WriteLine(dataStr);
+                    TextWriter.Flush();
+                }
+                if (filePath is not null)
+                {
+                    File.AppendAllLines(filePath, contents: new string[] { dataStr });
+                }
+
+                _bufferingContent?.Add(dataStr);
+
+                if (logQueue.Count == 0)
+                {
+                    logQueueEmptyEvent.Set();
                 }
             }
         }
@@ -306,18 +275,6 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Writes all pending logs from the queue and closes all resources used by this object.
-        /// </summary>
-        public void Dispose()
-        {
-            terminate.Set();
-            loggingThread.Join();
-            logQueue.Clear();
-            TextWriter?.Flush();
-            TextWriter?.Close();
-        }
-
-        /// <summary>
         /// Defines the time interval and size threshold for starting the task, and then starts the task. This method is an
         /// shortcut for calling <see cref="RotatingLogPolicy.Configure(long, TimeSpan)"/> of this defined <see cref="RotatingPolicy"/> method.
         /// </summary>
@@ -338,8 +295,7 @@ namespace Sisk.Core.Http
             ArgumentNullException.ThrowIfNull(message, nameof(message));
             lock (logQueue)
             {
-                logQueue.Enqueue(message);
-                setWatcher();
+                logQueue.Add(message);
             }
         }
 
@@ -360,6 +316,45 @@ namespace Sisk.Core.Http
                     exceptionSbuilder.AppendLine(SR.LogStream_ExceptionDump_TrimmedFooter);
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes all pending logs from the queue and closes all resources used by this object.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!isDisposed)
+            {
+                if (disposing)
+                {
+                    Flush();
+                    TextWriter?.Dispose();
+                    rotatingPolicyLocker?.Dispose();
+                    logQueueEmptyEvent?.Dispose();
+                    rotatingLogPolicy?.Dispose();
+                    consumerThread.Join();
+                }
+
+                _bufferingContent = null;
+                isDisposed = true;
+            }
+        }
+
+        /// <inheritdoc/>
+        ~LogStream()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+        /// <summary>
+        /// Writes all pending logs from the queue and closes all resources used by this object.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

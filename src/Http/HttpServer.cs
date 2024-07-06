@@ -18,7 +18,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Provides an lightweight HTTP server powered by Sisk.
     /// </summary>
-    public partial class HttpServer : IDisposable
+    public sealed partial class HttpServer : IDisposable
     {
         /// <summary>
         /// Gets the X-Powered-By Sisk header value.

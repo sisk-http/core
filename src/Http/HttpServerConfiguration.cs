@@ -15,7 +15,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Provides execution parameters for an <see cref="HttpServer"/>.
     /// </summary>
-    public class HttpServerConfiguration : IDisposable
+    public sealed class HttpServerConfiguration : IDisposable
     {
         private int _maximumContentLength = 0;
 
