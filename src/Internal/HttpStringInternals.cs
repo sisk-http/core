@@ -122,7 +122,7 @@ namespace Sisk.Core.Internal
             return new PathMatchResult(true, query);
         }
 #else
-        public static bool PathRouteMatch(string routeA, string routeB, bool ignoreCase)
+        public static bool PathRouteMatch(in string routeA, in string routeB, bool ignoreCase)
         {
             if (routeA == Route.AnyPath || routeB == Route.AnyPath)
             {
@@ -160,7 +160,7 @@ namespace Sisk.Core.Internal
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static PathMatchResult IsPathMatch(string pathPattern, string requestPath, bool ignoreCase)
+        public static PathMatchResult IsPathMatch(in string pathPattern, in string requestPath, bool ignoreCase)
         {
             if (pathPattern == Route.AnyPath)
             {
@@ -201,7 +201,7 @@ namespace Sisk.Core.Internal
         }
 #endif
 
-        public static bool IsDnsMatch(string wildcardPattern, string subject)
+        public static bool IsDnsMatch(in string wildcardPattern, string subject)
         {
             StringComparison comparer = StringComparison.OrdinalIgnoreCase;
 
@@ -245,7 +245,7 @@ namespace Sisk.Core.Internal
             }
         }
 
-        private static bool isWildcardMatchRgx(string pattern, string subject, StringComparison comparer)
+        private static bool isWildcardMatchRgx(in string pattern, in string subject, StringComparison comparer)
         {
             string[] parts = pattern.Split('*');
             if (parts.Length <= 1)

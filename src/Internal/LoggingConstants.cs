@@ -26,8 +26,8 @@ namespace Sisk.Core.Internal
         readonly int bResStatusCode;
         readonly string? bResStatusDescr;
         readonly string bReqMethod;
-        readonly float? incomingSize;
-        readonly float? outcomingSize;
+        readonly long incomingSize;
+        readonly long outcomingSize;
         readonly long execTime;
 
         public LoggingFormatter(
@@ -47,8 +47,8 @@ namespace Sisk.Core.Internal
             this.reqHeaders = reqHeaders;
             this.bResStatusCode = bResStatusCode;
             this.bResStatusDescr = bResStatusDescr;
-            incomingSize = res.RequestSize;
-            outcomingSize = res.ResponseSize;
+            this.incomingSize = res.RequestSize;
+            this.outcomingSize = res.ResponseSize;
             this.execTime = execTime;
             this.bReqMethod = bReqMethod;
         }

@@ -72,6 +72,18 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     }
 
     /// <summary>
+    /// Gets an <see cref="Enum"/> object representation from this <see cref="StringValue"/>, parsing the current string expression into an value of
+    /// <typeparamref name="TEnum"/>. This method will throw an <see cref="NullReferenceException"/> if
+    /// the value stored in this instance is null.
+    /// </summary>
+    /// <typeparam name="TEnum">The <see cref="Enum"/> type.</typeparam>
+    public TEnum GetEnum<TEnum>() where TEnum : struct, Enum
+    {
+        ThrowIfNull();
+        return Enum.Parse<TEnum>(_ref!, true);
+    }
+
+    /// <summary>
     /// Gets a non-null string from this <see cref="StringValue"/>. This method will throw an <see cref="NullReferenceException"/> if
     /// the value stored in this instance is null.
     /// </summary>

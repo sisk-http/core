@@ -1,0 +1,78 @@
+﻿// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   CookieParser.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Sisk.Core.Internal;
+
+internal static class CookieParser
+{
+    public static string? RemoveValueQuotes(string? value)
+    {
+        if (value is null)
+            return null;
+
+        const char QUOTE = '"';
+
+        if (value.StartsWith(QUOTE))
+        {
+            value = value[1..];
+        }
+        if (value.EndsWith(QUOTE))
+        {
+            value = value[..^1];
+        }
+        return value;
+    }
+
+    public static NameValueCollection ParseCookieString(string? cookieHeader)
+    {
+        NameValueCollection cookies = new NameValueCollection();
+        if (!string.IsNullOrWhiteSpace(cookieHeader))
+        {
+            string[] cookiePairs = cookieHeader.Split(';');
+
+            for (int i = 0; i < cookiePairs.Length; i++)
+            {
+                string cookieExpression = cookiePairs[i];
+
+                if (string.IsNullOrWhiteSpace(cookieExpression))
+                    continue;
+
+                int eqPos = cookieExpression.IndexOf('=');
+                if (eqPos < 0)
+                {
+                    cookies[cookieExpression] = "";
+                    continue;
+                }
+                else
+                {
+                    string cookieName = cookieExpression.Substring(0, eqPos).Trim();
+                    string cookieValue = cookieExpression.Substring(eqPos + 1).Trim();
+
+                    if (string.IsNullOrWhiteSpace(cookieName))
+                    {
+                        // provided an name/value pair, but no name
+                        continue;
+                    }
+
+                    cookies[cookieName] = WebUtility.UrlDecode(cookieValue);
+                }
+            }
+        }
+
+        return cookies;
+    }
+}

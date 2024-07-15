@@ -56,7 +56,7 @@ public partial class Router
         }
     }
 
-    internal bool InvokeRequestHandlerGroup(RequestHandlerExecutionMode mode, IRequestHandler[] baseLists, IRequestHandler[]? bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception)
+    internal bool InvokeRequestHandlerGroup(in RequestHandlerExecutionMode mode, IRequestHandler[] baseLists, IRequestHandler[]? bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception)
     {
         ref IRequestHandler pointer = ref MemoryMarshal.GetArrayDataReference(baseLists);
         for (int i = 0; i < baseLists.Length; i++)
@@ -124,7 +124,7 @@ public partial class Router
         ref Route rPointer = ref MemoryMarshal.GetReference(rspan);
         for (int i = 0; i < rspan.Length; i++)
         {
-            Route route = Unsafe.Add(ref rPointer, i);
+            ref Route route = ref Unsafe.Add(ref rPointer, i);
 
             // test path
             HttpStringInternals.PathMatchResult pathTest;

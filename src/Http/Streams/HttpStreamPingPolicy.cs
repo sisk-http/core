@@ -26,7 +26,7 @@ public sealed class HttpStreamPingPolicy
     /// <summary>
     /// Gets or sets the sending interval for each ping message.
     /// </summary>
-    public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(1);
+    public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(5);
 
     internal HttpStreamPingPolicy(HttpRequestEventSource parent)
     {

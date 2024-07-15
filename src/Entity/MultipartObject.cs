@@ -22,50 +22,56 @@ namespace Sisk.Core.Entity
         private readonly Encoding _baseEncoding;
 
         /// <summary>
-        /// The multipart form data object headers.
+        /// Gets this <see cref="MultipartObject"/> headers.
         /// </summary>
-        public NameValueCollection Headers { get; private set; }
+        public HttpHeaderCollection Headers { get; private set; }
 
         /// <summary>
-        /// The name of the file provided by Multipart form data. Null is returned if the object is not a file.
+        /// Gets this <see cref="MultipartObject"/> provided file name. If this object ins't disposing a file,
+        /// nothing is returned.
         /// </summary>
         public string? Filename { get; private set; }
 
         /// <summary>
-        /// The multipart form data object field name.
+        /// Gets this <see cref="MultipartObject"/> field name.
         /// </summary>
         public string Name { get; private set; }
 
         /// <summary>
-        /// The multipart form data content bytes.
+        /// Gets this <see cref="MultipartObject"/> form data content in bytes.
         /// </summary>
         public byte[] ContentBytes { get; private set; }
 
         /// <summary>
-        /// The multipart form data content length.
+        /// Gets this <see cref="MultipartObject"/> form data content length in byte count.
         /// </summary>
         public int ContentLength { get; private set; }
 
         /// <summary>
+        /// Gets an booolean indicating if this <see cref="MultipartObject"/> has contents or not.
+        /// </summary>
+        public bool HasContents { get => ContentLength > 0; }
+
+        /// <summary>
         /// Reads the content bytes with the given encoder.
         /// </summary>
-        public string? ReadContentAsString(Encoding encoder)
+        public string ReadContentAsString(Encoding encoder)
         {
             if (ContentLength == 0)
-                return null;
+                return string.Empty;
             return encoder.GetString(ContentBytes);
         }
 
         /// <summary>
         /// Reads the content bytes using the HTTP request content-encoding.
         /// </summary>
-        public string? ReadContentAsString()
+        public string ReadContentAsString()
         {
             return ReadContentAsString(_baseEncoding);
         }
 
         /// <summary>
-        /// Determine the image format based in the file header for each image content type.
+        /// Determines the image format based in the file header for each image content type.
         /// </summary>
         public MultipartObjectCommonFormat GetCommonFileFormat()
         {
@@ -79,7 +85,7 @@ namespace Sisk.Core.Entity
                 {
                     return MultipartObjectCommonFormat.PNG;
                 }
-            }            
+            }
             if (byteLen >= 4)
             {
                 Span<byte> len4 = ContentBytes.AsSpan(0, 4);
@@ -124,7 +130,7 @@ namespace Sisk.Core.Entity
 
         internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
         {
-            Headers = headers;
+            Headers = new HttpHeaderCollection(headers);
             Filename = filename;
             Name = name;
             ContentBytes = body ?? Array.Empty<byte>();
@@ -145,8 +151,9 @@ namespace Sisk.Core.Entity
 
             string[] contentTypePieces = contentType.Split(';');
             string? boundary = null;
-            foreach (string obj in contentTypePieces)
+            for (int i = 0; i < contentTypePieces.Length; i++)
             {
+                string obj = contentTypePieces[i];
                 string[] kv = obj.Split("=");
                 if (kv.Length != 2)
                 { continue; }
@@ -162,6 +169,14 @@ namespace Sisk.Core.Entity
             }
 
             byte[] boundaryBytes = Encoding.UTF8.GetBytes(boundary);
+
+            if (req.baseServer.ServerConfiguration.Flags.EnableNewMultipartFormReader == true)
+            {
+                MultipartFormReader reader = new MultipartFormReader(req.RawBody, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions);
+                var objects = reader.Read();
+
+                return new MultipartFormCollection(objects);
+            }
 
             /////////
             // https://stackoverflow.com/questions/9755090/split-a-byte-array-at-a-delimiter
@@ -271,8 +286,9 @@ namespace Sisk.Core.Entity
                 string? fieldName = null;
                 string? fieldFilename = null;
 
-                foreach (string valueAttribute in val)
+                for (int k = 0; k < val.Length; k++)
                 {
+                    string valueAttribute = val[k];
                     string[] valAttributeParts = valueAttribute.Trim().Split("=");
                     if (valAttributeParts.Length != 2)
                         continue;

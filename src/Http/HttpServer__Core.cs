@@ -19,13 +19,13 @@ namespace Sisk.Core.Http;
 
 public partial class HttpServer
 {
-    const long UnitKb = 1024;
-    const long UnitMb = UnitKb * 1024;
-    const long UnitGb = UnitMb * 1024;
-    const long UnitTb = UnitGb * 1024;
+    internal const long UnitKb = 1024;
+    internal const long UnitMb = UnitKb * 1024;
+    internal const long UnitGb = UnitMb * 1024;
+    internal const long UnitTb = UnitGb * 1024;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static string HumanReadableSize(float? size)
+    internal static string HumanReadableSize(in float size)
     {
         if (size < UnitKb)
         {
@@ -202,7 +202,7 @@ public partial class HttpServer
             executionResult.Request = request;
             otherParty = request.RemoteAddress;
 
-            if (!matchedListeningHost.CanListen)
+            if (matchedListeningHost.Router is null)
             {
                 baseResponse.StatusCode = 503; // Service Unavailable
                 executionResult.Status = HttpServerExecutionStatus.ListeningHostNotReady;
@@ -210,7 +210,7 @@ public partial class HttpServer
             }
             else
             {
-                matchedListeningHost.Router!.BindServer(this);
+                matchedListeningHost.Router.BindServer(this);
             }
 
             #endregion // 27668
@@ -219,6 +219,7 @@ public partial class HttpServer
 
             if (ServerConfiguration.IncludeRequestIdHeader)
                 baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
+
             if (flag.SendSiskHeader)
                 baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, PoweredBy);
 
@@ -492,6 +493,7 @@ public partial class HttpServer
             {
                 ServerConfiguration.ErrorsLogsStream?.WriteException(executionResult.ServerException);
             }
+
             if (canAccessLog)
             {
                 var formatter = new LoggingFormatter(

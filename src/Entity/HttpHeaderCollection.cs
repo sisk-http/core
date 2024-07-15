@@ -9,6 +9,7 @@
 
 using Sisk.Core.Http;
 using System.Collections.Specialized;
+using System.Text;
 using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
 
 namespace Sisk.Core.Entity;
@@ -32,6 +33,17 @@ public sealed class HttpHeaderCollection : NameValueCollection
     /// <param name="headers">The header collection.</param>
     public HttpHeaderCollection(NameValueCollection headers) : base(headers)
     {
+    }
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+        foreach (string key in this.Keys)
+        {
+            sb.AppendLine($"{key}: {this[key]}");
+        }
+        return sb.ToString();
     }
 
     /// <summary>

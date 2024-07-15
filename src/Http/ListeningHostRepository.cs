@@ -115,7 +115,7 @@ namespace Sisk.Core.Http
         /// <param name="index">The Listening Host index</param>
         public ListeningHost this[int index] { get => _hosts[index]; set => _hosts[index] = value; }
 
-        internal ListeningHost? GetRequestMatchingListeningHost(string incomingHost, int incomingPort)
+        internal ListeningHost? GetRequestMatchingListeningHost(string incomingHost, in int incomingPort)
         {
             lock (_hosts)
             {

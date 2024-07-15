@@ -9,6 +9,7 @@
 
 using System.Collections;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Sisk.Core.Entity;
@@ -16,7 +17,7 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an class which hosts an multipart form data contents.
 /// </summary>
-public sealed class MultipartFormCollection : IEnumerable<MultipartObject>, IReadOnlyList<MultipartObject>, IReadOnlyCollection<MultipartObject>
+public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IReadOnlyDictionary<string, MultipartObject>
 {
     private readonly IList<MultipartObject> _items;
 
@@ -62,20 +63,80 @@ public sealed class MultipartFormCollection : IEnumerable<MultipartObject>, IRea
 
     /// <exclude/>
     /// <inheritdoc/>
+    public MultipartObject this[string name] => GetItem(name, false) ?? throw new KeyNotFoundException();
+
+    /// <inheritdoc/>
     public int Count => ((IReadOnlyCollection<MultipartObject>)_items).Count;
 
-    /// <exclude/>
+
+    /// <inheritdoc/>
+    public IEnumerable<string> Keys
+    {
+        get
+        {
+            for (int i = 0; i < _items.Count; i++)
+            {
+                MultipartObject? item = _items[i];
+                yield return item.Name;
+            }
+        }
+    }
+
+
+    /// <inheritdoc/>
+    public IEnumerable<MultipartObject> Values
+    {
+        get
+        {
+            for (int i = 0; i < _items.Count; i++)
+            {
+                MultipartObject? item = _items[i];
+                yield return item;
+            }
+        }
+    }
+
     /// <inheritdoc/>
     public IEnumerator<MultipartObject> GetEnumerator()
     {
         return ((IEnumerable<MultipartObject>)_items).GetEnumerator();
     }
 
-    /// <exclude/>
     /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((IEnumerable)_items).GetEnumerator();
+    }
+
+    /// <inheritdoc/>
+    public bool ContainsKey(string key)
+    {
+        return _items.Any(i => i.Name.CompareTo(key) == 0);
+    }
+
+    /// <inheritdoc/>
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out MultipartObject value)
+    {
+        var i = _items.FirstOrDefault(item => item.Name.CompareTo(key) == 0);
+        if (i is null)
+        {
+            value = default;
+            return false;
+        }
+        else
+        {
+            value = i;
+            return true;
+        }
+    }
+
+    IEnumerator<KeyValuePair<string, MultipartObject>> IEnumerable<KeyValuePair<string, MultipartObject>>.GetEnumerator()
+    {
+        for (int i = 0; i < _items.Count; i++)
+        {
+            MultipartObject? item = _items[i];
+            yield return new KeyValuePair<string, MultipartObject>(item.Name, item);
+        }
     }
 
     /// <exclude/>

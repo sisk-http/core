@@ -119,7 +119,19 @@ namespace Sisk.Core.Http
 
             if (includeBody && Content is not StreamContent)
             {
-                sb.Append(Content?.ReadAsStringAsync().Result);
+                string? s = Content?.ReadAsStringAsync().Result;
+
+                if (s is not null)
+                {
+                    if (s.Length < 8 * HttpServer.UnitKb)
+                    {
+                        sb.Append(s);
+                    }
+                    else
+                    {
+                        sb.Append($"| ({HttpServer.HumanReadableSize(s.Length)} bytes)");
+                    }
+                }                
             }
 
             return sb.ToString();

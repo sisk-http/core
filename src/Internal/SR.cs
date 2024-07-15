@@ -12,6 +12,8 @@ static partial class SR
     public const string MultipartObject_ContentTypeMissing = "Content-Type header cannot be null when retriving a multipart form content";
     public const string MultipartObject_BoundaryMissing = "No boundary was specified for this multipart form content.";
     public const string MultipartObject_EmptyFieldName = "Content-part object position {0} cannot have an empty field name.";
+    public const string MultipartFormReader_InvalidData = "Cannot read the specified multipart-form data request. At byte position {0}: {1}";
+    public const string MultipartFormReader_Exception = "Caught an exception while trying to read the multipart form request: {0}";
 
     public const string HttpContextBagRepository_UndefinedDynamicProperty = "The specified type {0} was not defined in this context bag repository.";
 

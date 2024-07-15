@@ -25,6 +25,7 @@ namespace Sisk.Core.Http
     public class HttpRequestException : Exception
     {
         internal HttpRequestException(string message) : base(message) { }
+        internal HttpRequestException(string message, Exception? innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -167,41 +168,8 @@ namespace Sisk.Core.Http
             {
                 if (cookies is null)
                 {
-                    cookies = new NameValueCollection();
                     string? cookieHeader = listenerRequest.Headers[HttpKnownHeaderNames.Cookie];
-
-                    if (!string.IsNullOrWhiteSpace(cookieHeader))
-                    {
-                        string[] cookiePairs = cookieHeader.Split(';');
-
-                        for (int i = 0; i < cookiePairs.Length; i++)
-                        {
-                            string cookieExpression = cookiePairs[i];
-
-                            if (string.IsNullOrWhiteSpace(cookieExpression))
-                                continue;
-
-                            int eqPos = cookieExpression.IndexOf('=');
-                            if (eqPos < 0)
-                            {
-                                cookies[cookieExpression] = "";
-                                continue;
-                            }
-                            else
-                            {
-                                string cookieName = cookieExpression.Substring(0, eqPos).Trim();
-                                string cookieValue = cookieExpression.Substring(eqPos + 1).Trim();
-
-                                if (string.IsNullOrWhiteSpace(cookieName))
-                                {
-                                    // provided an name/value pair, but no name
-                                    continue;
-                                }
-
-                                cookies[cookieName] = WebUtility.UrlDecode(cookieValue);
-                            }
-                        }
-                    }
+                    cookies = CookieParser.ParseCookieString(cookieHeader);
                 }
 
                 return cookies;
@@ -355,7 +323,14 @@ namespace Sisk.Core.Http
         /// </summary>
         public MultipartFormCollection GetMultipartFormContent()
         {
-            return MultipartObject.ParseMultipartObjects(this);
+            try
+            {
+                return MultipartObject.ParseMultipartObjects(this);
+            }
+            catch (Exception ex)
+            {
+                throw new HttpRequestException(SR.Format(SR.MultipartFormReader_Exception, ex.Message), ex);
+            }
         }
 
         /// <summary>
@@ -402,7 +377,14 @@ namespace Sisk.Core.Http
             // Content
             if (includeBody)
             {
-                sb.Append(Body);
+                if (Body.Length < 8 * HttpServer.UnitKb)
+                {
+                    sb.Append(Body);
+                }
+                else
+                {
+                    sb.Append($"| ({HttpServer.HumanReadableSize(Body.Length)} bytes)");
+                }
             }
 
             return sb.ToString();
