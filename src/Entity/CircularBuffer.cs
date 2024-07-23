@@ -16,7 +16,7 @@ namespace Sisk.Core.Entity;
 /// </summary>
 /// <typeparam name="T">The type of elements stored in the buffer.</typeparam>
 /// <exclude/>
-public class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T>
+public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T>
 {
     private T[] items;
 

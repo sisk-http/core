@@ -102,10 +102,9 @@ namespace Sisk.Core.Http
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"HTTP/1.1 {StatusInformation}");
-            foreach (string header in Headers)
+            foreach (var header in Headers)
             {
-                sb.Append(header + ": ");
-                sb.Append(Headers[header]);
+                sb.Append($"{header.Key}: {header.Value}");
                 sb.Append('\n');
             }
             if (Content?.Headers is not null)
@@ -167,7 +166,7 @@ namespace Sisk.Core.Http
         /// <returns>The self <see cref="HttpResponse"/> object.</returns>
         public HttpResponse WithHeader(string headerKey, string headerValue)
         {
-            Headers.Set(headerKey, headerValue);
+            Headers.Add(headerKey, headerValue);
             return this;
         }
 
@@ -179,7 +178,7 @@ namespace Sisk.Core.Http
         public HttpResponse WithHeader(NameValueCollection headers)
         {
             foreach (string key in headers.Keys)
-                Headers.Set(key, headers[key]);
+                Headers.Add(key, headers[key]);
             return this;
         }
 
@@ -286,7 +285,7 @@ namespace Sisk.Core.Http
         /// <inheritdoc/>
         protected override void SetCookieHeader(String name, String value)
         {
-            Headers.Set(name, value);
+            Headers.Add(name, value);
         }
     }
 }

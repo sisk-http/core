@@ -16,7 +16,7 @@ namespace Sisk.Core.Http.Handlers;
 internal class HttpServerHandlerRepository
 {
     private readonly HttpServer parent;
-    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>();
+    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>(20);
     internal readonly DefaultHttpServerHandler _default = new DefaultHttpServerHandler();
 
     public HttpServerHandlerRepository(HttpServer parent)

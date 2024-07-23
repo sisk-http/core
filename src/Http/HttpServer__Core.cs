@@ -10,7 +10,6 @@
 using Sisk.Core.Entity;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -308,23 +307,25 @@ public partial class HttpServer
             #endregion
 
             #region Step 4 - Response computing
-            NameValueCollection resHeaders = new NameValueCollection
-            {
-                response.Headers
-            };
+            HttpHeaderCollection resHeaders = response.Headers;
+            HttpHeaderCollection overrideHeaders = srContext.OverrideHeaders;
 
             long? responseContentLength = response.Content?.Headers.ContentLength;
-            if (srContext?.OverrideHeaders.Count > 0) resHeaders.Add(srContext.OverrideHeaders);
+            if (overrideHeaders.Count > 0)
+            {
+                for (int i = 0; i < overrideHeaders.Count; i++)
+                {
+                    var overridingHeader = overrideHeaders[i];
+                    resHeaders.Set(overridingHeader.Item1, overridingHeader.Item2);
+                }
+            }
 
             for (int i = 0; i < resHeaders.Count; i++)
             {
-                string? incameHeader = resHeaders.Keys[i];
-                if (string.IsNullOrEmpty(incameHeader)) continue;
+                (string, string) incameHeader = resHeaders[i];
+                if (string.IsNullOrEmpty(incameHeader.Item1)) continue;
 
-                string? value = resHeaders[incameHeader];
-                if (string.IsNullOrEmpty(value)) continue;
-
-                baseResponse.Headers[incameHeader] = value;
+                baseResponse.Headers.Add(incameHeader.Item1, incameHeader.Item2);
             }
 
             _debugState = "sent_headers";

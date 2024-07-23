@@ -151,8 +151,10 @@ namespace Sisk.Core.Http
                     }
                     else
                     {
-                        headers = new HttpHeaderCollection(listenerRequest.Headers);
+                        headers = new HttpHeaderCollection((WebHeaderCollection)listenerRequest.Headers);
                     }
+
+                    headers.isReadOnly = true;
                 }
 
                 return headers;
@@ -367,10 +369,9 @@ namespace Sisk.Core.Http
                 sb.AppendLine($":request-id: {RequestId}");
                 sb.AppendLine($":request-proto: {(IsSecure ? "https" : "http")}");
             }
-            foreach (string hName in Headers)
+            foreach (var header in Headers)
             {
-                string hValue = Headers[hName]!;
-                sb.AppendLine($"{hName}: {hValue}");
+                sb.AppendLine($"{header.Key}: {header.Value}");
             }
             sb.AppendLine();
 

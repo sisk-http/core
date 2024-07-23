@@ -22,7 +22,7 @@ namespace Sisk.Core.Internal
         readonly DateTime d;
         readonly Uri? bReqUri;
         readonly IPAddress? bReqIpAddr;
-        readonly NameValueCollection? reqHeaders;
+        readonly IDictionary<string, string?>? reqHeaders;
         readonly int bResStatusCode;
         readonly string? bResStatusDescr;
         readonly string bReqMethod;
@@ -34,7 +34,7 @@ namespace Sisk.Core.Internal
             HttpServerExecutionResult res,
             DateTime d, Uri? bReqUri,
             IPAddress? bReqIpAddr,
-            NameValueCollection? reqHeaders,
+            IDictionary<string, string?>? reqHeaders,
             int bResStatusCode,
             string? bResStatusDescr,
             long execTime,

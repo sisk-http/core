@@ -81,7 +81,7 @@ namespace Sisk.Core.Entity
             {
                 Span<byte> len8 = ContentBytes.AsSpan(0, 8);
 
-                if (len8.SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+                if (len8.SequenceEqual(MultipartObjectCommonFormatByteMark.PNG))
                 {
                     return MultipartObjectCommonFormat.PNG;
                 }
@@ -90,38 +90,39 @@ namespace Sisk.Core.Entity
             {
                 Span<byte> len4 = ContentBytes.AsSpan(0, 4);
 
-                if (len4.SequenceEqual(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F' }))
+                if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.WEBP))
                 {
                     return MultipartObjectCommonFormat.WEBP;
                 }
-                else if (len4.SequenceEqual(new byte[] { 0x25, 0x50, 0x44, 0x46 }))
+                else if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.PDF))
                 {
                     return MultipartObjectCommonFormat.PDF;
+                }
+                else if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.TIFF))
+                {
+                    return MultipartObjectCommonFormat.TIFF;
                 }
             }
             if (byteLen >= 3)
             {
                 Span<byte> len3 = ContentBytes.AsSpan(0, 3);
 
-                if (len3.SequenceEqual(new byte[] { 0xFF, 0xD8, 0xFF }))
+                if (len3.SequenceEqual(MultipartObjectCommonFormatByteMark.JPEG))
                 {
                     return MultipartObjectCommonFormat.JPEG;
                 }
-                else if (len3.SequenceEqual(new byte[] { 73, 73, 42 }))
-                {
-                    return MultipartObjectCommonFormat.TIFF;
-                }
-                else if (len3.SequenceEqual(new byte[] { 77, 77, 42 }))
-                {
-                    return MultipartObjectCommonFormat.TIFF;
-                }
-                else if (len3.SequenceEqual(new byte[] { 0x42, 0x4D }))
-                {
-                    return MultipartObjectCommonFormat.BMP;
-                }
-                else if (len3.SequenceEqual(new byte[] { 0x47, 0x46, 0x49 }))
+                else if (len3.SequenceEqual(MultipartObjectCommonFormatByteMark.GIF))
                 {
                     return MultipartObjectCommonFormat.GIF;
+                }
+            }
+            if (byteLen >= 2)
+            {
+                Span<byte> len2 = ContentBytes.AsSpan(0, 2);
+
+                if (len2.SequenceEqual(MultipartObjectCommonFormatByteMark.BMP))
+                {
+                    return MultipartObjectCommonFormat.BMP;
                 }
             }
 
@@ -130,7 +131,7 @@ namespace Sisk.Core.Entity
 
         internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
         {
-            Headers = new HttpHeaderCollection(headers);
+            Headers = new HttpHeaderCollection(headers) { isReadOnly = true };
             Filename = filename;
             Name = name;
             ContentBytes = body ?? Array.Empty<byte>();
@@ -313,51 +314,5 @@ namespace Sisk.Core.Entity
 
             return new MultipartFormCollection(outputObjects);
         }
-    }
-
-    /// <summary>
-    /// Represents an image format for Multipart objects.
-    /// </summary>
-    public enum MultipartObjectCommonFormat
-    {
-        /// <summary>
-        /// Represents that the object is not a recognized image.
-        /// </summary>
-        Unknown = 0,
-
-        /// <summary>
-        /// Represents an JPEG/JPG image.
-        /// </summary>
-        JPEG = 100,
-
-        /// <summary>
-        /// Represents an GIF image.
-        /// </summary>
-        GIF = 101,
-
-        /// <summary>
-        /// Represents an PNG image.
-        /// </summary>
-        PNG = 102,
-
-        /// <summary>
-        /// Represents an TIFF image.
-        /// </summary>
-        TIFF = 103,
-
-        /// <summary>
-        /// Represents an bitmap image.
-        /// </summary>
-        BMP = 104,
-
-        /// <summary>
-        /// Represents an WebP image.
-        /// </summary>
-        WEBP = 105,
-
-        /// <summary>
-        /// Represents an PDF file.
-        /// </summary>
-        PDF = 200
     }
 }

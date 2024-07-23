@@ -74,9 +74,9 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     {
         NameValueCollection n = new NameValueCollection();
 
-        foreach (string key in items.Keys)
+        foreach (var item in items)
         {
-            n.Add(key, items[key]);
+            n.Add(item.Key, item.Value);
         }
 
         return n;

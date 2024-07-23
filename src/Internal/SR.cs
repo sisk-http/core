@@ -89,6 +89,8 @@ static partial class SR
     public const string ValueItem_ValueNull = "The value \"{0}\" contained at this {1} is null or it's undefined.";
     public const string ValueItem_CastException = "Cannot cast the value \"{0}\" at parameter {1} into an {2}.";
 
+    public const string Collection_ReadOnly = "Cannot insert items to this collection as it is read-only.";
+
     public static string Format(string format, params object?[] items)
     {
         return String.Format(format, items);
