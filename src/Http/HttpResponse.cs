@@ -130,107 +130,10 @@ namespace Sisk.Core.Http
                     {
                         sb.Append($"| ({HttpServer.HumanReadableSize(s.Length)} bytes)");
                     }
-                }                
+                }
             }
 
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// Sets an UTF-8 string in this <see cref="HttpResponse"/> content.
-        /// </summary>
-        /// <param name="content">The UTF-8 string containing the response body.</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithContent(string content)
-        {
-            Content = new StringContent(content);
-            return this;
-        }
-
-        /// <summary>
-        /// Sets an content in this <see cref="HttpResponse"/> object.
-        /// </summary>
-        /// <param name="content">The HTTP content which implements <see cref="HttpContent"/>.</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithContent(HttpContent content)
-        {
-            Content = content;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets an HTTP header in this <see cref="HttpResponse"/> object.
-        /// </summary>
-        /// <param name="headerKey">The name of the header.</param>
-        /// <param name="headerValue">The header value.</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithHeader(string headerKey, string headerValue)
-        {
-            Headers.Add(headerKey, headerValue);
-            return this;
-        }
-
-        /// <summary>
-        /// Sets an array of HTTP header in this <see cref="HttpResponse"/> object.
-        /// </summary>
-        /// <param name="headers">An collection of headers, described by their value (header names) and keys (header values).</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithHeader(NameValueCollection headers)
-        {
-            foreach (string key in headers.Keys)
-                Headers.Add(key, headers[key]);
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the HTTP response status code.
-        /// </summary>
-        /// <param name="status">The HTTP status code.</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithStatus(int status)
-        {
-            Status = (HttpStatusCode)status;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the HTTP response status information from an <see cref="HttpStatusInformation"/> object.
-        /// </summary>
-        /// <param name="statusInformation">The status information.</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithStatus(HttpStatusInformation statusInformation)
-        {
-            StatusInformation = statusInformation;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the HTTP response status code.
-        /// </summary>
-        /// <param name="status">The HTTP status code.</param>
-        /// <returns>The self <see cref="HttpResponse"/> object.</returns>
-        public HttpResponse WithStatus(HttpStatusCode status)
-        {
-            Status = status;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets a cookie and sends it in the response to be set by the client.
-        /// </summary>
-        /// <param name="name">The cookie name.</param>
-        /// <param name="value">The cookie value.</param>
-        /// <param name="expires">The cookie expirity date.</param>
-        /// <param name="maxAge">The cookie max duration after being set.</param>
-        /// <param name="domain">The domain where the cookie will be valid.</param>
-        /// <param name="path">The path where the cookie will be valid.</param>
-        /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
-        /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
-        /// <param name="sameSite">The cookie SameSite parameter.</param>
-        public HttpResponse WithCookie(string name, string value, DateTime? expires = null, TimeSpan? maxAge = null, string? domain = null, string? path = null, bool? secure = null, bool? httpOnly = null, string? sameSite = null)
-        {
-            SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
-            return this;
         }
 
         /// <summary>
@@ -283,7 +186,7 @@ namespace Sisk.Core.Http
         }
 
         /// <inheritdoc/>
-        protected override void SetCookieHeader(String name, String value)
+        protected sealed override void SetCookieHeader(String name, String value)
         {
             Headers.Add(name, value);
         }

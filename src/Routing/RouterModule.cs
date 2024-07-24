@@ -16,9 +16,9 @@ namespace Sisk.Core.Routing;
 public abstract class RouterModule
 {
     /// <summary>
-    /// Gets or sets the request handlers this class has implemented.
+    /// Gets or sets an list of <see cref="IRequestHandler"/> this <see cref="RouterModule"/> runs.
     /// </summary>
-    public List<IRequestHandler> RequestHandlers { get; set; } = new List<IRequestHandler>();
+    public IList<IRequestHandler> RequestHandlers { get; set; } = new List<IRequestHandler>();
 
     /// <summary>
     /// Gets or sets the router prefix for this class. This property overrides any
@@ -27,7 +27,7 @@ public abstract class RouterModule
     public string? Prefix { get; set; }
 
     /// <summary>
-    /// Registers an <see cref="IRequestHandler"/> on all routes of this class.
+    /// Registers an <see cref="IRequestHandler"/> on all routes defined by this module.
     /// </summary>
     /// <param name="handler">The <see cref="IRequestHandler"/> instance which will be applied to all registered routes
     /// of this class.</param>

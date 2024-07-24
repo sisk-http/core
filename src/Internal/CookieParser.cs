@@ -19,30 +19,12 @@ namespace Sisk.Core.Internal;
 
 internal static class CookieParser
 {
-    public static string? RemoveValueQuotes(string? value)
-    {
-        if (value is null)
-            return null;
-
-        const char QUOTE = '"';
-
-        if (value.StartsWith(QUOTE))
-        {
-            value = value[1..];
-        }
-        if (value.EndsWith(QUOTE))
-        {
-            value = value[..^1];
-        }
-        return value;
-    }
-
     public static NameValueCollection ParseCookieString(string? cookieHeader)
     {
         NameValueCollection cookies = new NameValueCollection();
         if (!string.IsNullOrWhiteSpace(cookieHeader))
         {
-            string[] cookiePairs = cookieHeader.Split(';');
+            string[] cookiePairs = cookieHeader.Split(SharedChars.Semicolon);
 
             for (int i = 0; i < cookiePairs.Length; i++)
             {
@@ -51,7 +33,7 @@ internal static class CookieParser
                 if (string.IsNullOrWhiteSpace(cookieExpression))
                     continue;
 
-                int eqPos = cookieExpression.IndexOf('=');
+                int eqPos = cookieExpression.IndexOf(SharedChars.Equal);
                 if (eqPos < 0)
                 {
                     cookies[cookieExpression] = "";

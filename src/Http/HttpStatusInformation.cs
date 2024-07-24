@@ -17,7 +17,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents a structure that holds an HTTP response status information, with it's status code and description.
     /// </summary>
-    public readonly struct HttpStatusInformation : IEquatable<HttpStatusInformation>, IEquatable<HttpStatusCode>
+    public readonly struct HttpStatusInformation : IEquatable<HttpStatusInformation>, IEquatable<HttpStatusCode>, IEquatable<int>
     {
         private readonly int __statusCode;
         private readonly string __description;
@@ -176,6 +176,13 @@ namespace Sisk.Core.Http
         public bool Equals(HttpStatusCode other)
         {
             return this.StatusCode == (int)other;
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public bool Equals(int other)
+        {
+            return this.__statusCode.Equals(other);
         }
 
         /// <inheritdoc/>

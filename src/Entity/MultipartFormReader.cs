@@ -96,8 +96,9 @@ internal sealed class MultipartFormReader
             }
 
             NameValueCollection cdispositionValues = CookieParser.ParseCookieString(contentDisposition);
-            string? formItemName = CookieParser.RemoveValueQuotes(cdispositionValues["name"]);
-            string? formFilename = CookieParser.RemoveValueQuotes(cdispositionValues["filename"]);
+
+            string? formItemName = cdispositionValues["name"]?.Trim(SharedChars.DoubleQuote);
+            string? formFilename = cdispositionValues["filename"]?.Trim(SharedChars.DoubleQuote);
 
             if (string.IsNullOrEmpty(formItemName))
             {
