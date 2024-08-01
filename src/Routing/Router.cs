@@ -112,6 +112,11 @@ namespace Sisk.Core.Routing
         public bool TryResolveActionResult(object? result, [NotNullWhen(true)] out HttpResponse? response)
         {
             bool wasLocked = false;
+            if (result is null)
+            {
+                response = null;
+                return false;
+            }
 
             // IsReadOnly garantes that _actionHandlersList and
             // _routesList will be not modified during span reading
@@ -123,12 +128,6 @@ namespace Sisk.Core.Routing
             }
             try
             {
-                if (result is null)
-                {
-                    response = null;
-                    return false;
-                }
-
                 Type actionType = result.GetType();
 
                 Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(_actionHandlersList);
@@ -138,7 +137,12 @@ namespace Sisk.Core.Routing
                     ref RouteDictItem current = ref Unsafe.Add(ref pointer, i);
                     if (actionType.IsAssignableTo(current.type))
                     {
-                        response = (HttpResponse)current.lambda.DynamicInvoke(result)!;
+                        var resultObj = current.lambda.DynamicInvoke(result) as HttpResponse;
+                        if (resultObj is null)
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.Router_Handler_HandlerNotHttpResponse, current.type.Name));
+                        }
+                        response = resultObj;
                         return true;
                     }
                 }
@@ -158,8 +162,8 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Register an type handling association to converting it to an <see cref="HttpResponse"/> object.
         /// </summary>
-        /// <param name="actionHandler">The function that receives an object of the T and returns an <see cref="HttpResponse"/> response from the informed object.</param>
-        public void RegisterValueHandler<T>(Func<T, HttpResponse> actionHandler)
+        /// <param name="actionHandler">The function that receives an object of the <typeparamref name="T"/> and returns an <see cref="HttpResponse"/> response from the informed object.</param>
+        public void RegisterValueHandler<T>(RouterActionHandlerCallback<T> actionHandler) where T : notnull
         {
             if (IsReadOnly)
             {

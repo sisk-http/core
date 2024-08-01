@@ -46,7 +46,7 @@ namespace Sisk.Core.Http
         private StringValueCollection? query = null;
         private StringValueCollection? form = null;
 
-        private IPAddress? remoteAddr;
+        private IPAddress remoteAddr;
 
         private int currentFrame = 0;
 
@@ -60,6 +60,18 @@ namespace Sisk.Core.Http
             listenerResponse = context.Response;
             listenerRequest = context.Request;
             RequestedAt = DateTime.Now;
+
+            // the listenerRequest.RemoteEndPoint property is disposed after the
+            // response is sent to the server, resulting in an null exception when
+            // getting it in an OnConnectionClose handler
+            if (contextServerConfiguration.ForwardingResolver is { } fr)
+            {
+                remoteAddr = fr.OnResolveClientAddress(this, listenerRequest.RemoteEndPoint);
+            }
+            else
+            {
+                remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
+            }
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
@@ -295,19 +307,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public IPAddress RemoteAddress
         {
-            get
-            {
-                if (contextServerConfiguration.ForwardingResolver is { } fr)
-                {
-                    remoteAddr = fr.OnResolveClientAddress(this, listenerRequest.RemoteEndPoint);
-                }
-                else
-                {
-                    remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
-                }
-
-                return remoteAddr;
-            }
+            get => remoteAddr;
         }
 
         /// <summary>

@@ -27,4 +27,11 @@ namespace Sisk.Core.Routing
     /// Represents the function that is called after the route action threw an exception.
     /// </summary>
     public delegate HttpResponse ExceptionErrorCallback(Exception ex, HttpContext context);
+
+    /// <summary>
+    /// Represents the function that receives an object of the <typeparamref name="T"/> and returns an <see cref="HttpResponse"/> response from the informed object.
+    /// </summary>
+    /// <typeparam name="T">The input object type. Cannot be nullable.</typeparam>
+    /// <param name="input">The result router object.</param>
+    public delegate HttpResponse RouterActionHandlerCallback<T>(T input) where T : notnull;
 }

@@ -64,7 +64,8 @@ static partial class SR
     public const string Router_RouteDefinitionNotFound = "No route definition was found for the given action. It may be possible that the informed method does not implement the RouteAttribute attribute.";
     public const string Router_Handler_HttpResponseRegister = "Cannot register HttpResponse as an valid type to the action handler.";
     public const string Router_Handler_Duplicate = "The specified type is already defined in this router instance.";
-    public const string Router_Handler_ActionNullValue = "Action result values cannot be null values.";
+    public const string Router_Handler_ActionNullValue = "Action result values cannot be null.";
+    public const string Router_Handler_HandlerNotHttpResponse = "The result of the action handler \"{0}\" resulted in an object that is not a valid, non-null HttpResponse.";
     public const string Router_Handler_UnrecognizedAction = "Action of type \"{0}\" doens't have an action handler registered on the router that issued it.";
     public const string Router_NotBinded = "No HTTP server instance is binded to this Router.";
     public const string Router_BindException = "This router is binded to another HTTP Server instance.";

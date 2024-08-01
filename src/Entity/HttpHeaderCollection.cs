@@ -80,7 +80,13 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     {
         get
         {
-            return string.Join(", ", GetValues(headerName));
+            var values = GetValues(headerName).ToArray();
+            return values.Length switch
+            {
+                0 => null,
+                1 => values[0],
+                _ => string.Join(", ", values)
+            };
         }
         set
         {
