@@ -45,7 +45,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
             string? value = _decorator[property.Name];
             Type propType = property.PropertyType;
 
-            if (value == null) continue;
+            if (value is null) continue;
             if (propType.IsEnum)
             {
                 mappingValue = Enum.Parse(propType, value, true);

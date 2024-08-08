@@ -23,7 +23,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the X-Powered-By Sisk header value.
         /// </summary>
-        public static string PoweredBy { get; private set; } = "";
+        public static string PoweredBy { get; private set; } = string.Empty;
 
         /// <summary>
         /// Gets the current Sisk version.

@@ -303,7 +303,7 @@ namespace Sisk.Core.Entity
                     }
                 }
 
-                if (fieldName == null)
+                if (fieldName is null)
                 {
                     throw new InvalidOperationException(string.Format(SR.MultipartObject_EmptyFieldName, i));
                 }

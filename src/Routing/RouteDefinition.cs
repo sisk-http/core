@@ -26,7 +26,7 @@ internal class RouteDefinition
     public static RouteDefinition GetFromCallback(RouteAction action)
     {
         RouteAttribute? callbackType = action.GetMethodInfo().GetCustomAttribute<RouteAttribute>(true);
-        if (callbackType == null)
+        if (callbackType is null)
         {
             throw new InvalidOperationException(SR.Router_RouteDefinitionNotFound);
         }

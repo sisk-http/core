@@ -28,7 +28,7 @@ namespace Sisk.Core.Http
         {
             if (obj is ListeningHost other)
             {
-                if (other == null) return false;
+                if (other is null) return false;
                 if (other._ports.Length != _ports.Length) return false;
 
                 for (int i = 0; i < _ports.Length; i++)

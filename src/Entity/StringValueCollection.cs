@@ -39,7 +39,7 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
             {
                 value = col[i];
                 if (value is null) continue;
-                vcol.items.Add(value, "");
+                vcol.items.Add(value, string.Empty);
             }
             else
             {

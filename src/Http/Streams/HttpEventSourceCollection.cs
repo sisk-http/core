@@ -87,7 +87,7 @@ namespace Sisk.Core.Http.Streams
             {
                 return _eventSources.Where(e =>
                 {
-                    if (!e.IsActive || e.Identifier == null) return false;
+                    if (!e.IsActive || e.Identifier is null) return false;
                     return predicate(e.Identifier);
                 }).ToArray();
             }

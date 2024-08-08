@@ -8,8 +8,8 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
-using System.Collections.Concurrent;
 using System.Text;
+using System.Threading.Channels;
 
 namespace Sisk.Core.Http
 {
@@ -18,19 +18,18 @@ namespace Sisk.Core.Http
     /// </summary>
     public class LogStream : IDisposable
     {
-        readonly BlockingCollection<object?> logQueue = new BlockingCollection<object?>();
-        string? filePath;
-        private bool isDisposed;
-        Thread consumerThread;
-        AutoResetEvent logQueueEmptyEvent = new AutoResetEvent(true);
-        CircularBuffer<string>? _bufferingContent = null;
-
+        private readonly Channel<object?> channel = Channel.CreateUnbounded<object?>(new UnboundedChannelOptions() { SingleReader = true });
+        private readonly Thread consumerThread;
+        internal readonly ManualResetEvent writeEvent = new ManualResetEvent(false);
+        internal readonly ManualResetEvent rotatingPolicyLocker = new ManualResetEvent(true);
         internal RotatingLogPolicy? rotatingLogPolicy = null;
-        internal ManualResetEvent rotatingPolicyLocker = new ManualResetEvent(true);
-        internal SemaphoreSlim sm = new SemaphoreSlim(1);
+
+        private string? filePath;
+        private bool isDisposed;
+        private CircularBuffer<string>? _bufferingContent = null;
 
         /// <summary>
-        /// Represents a LogStream that writes its output to the <see cref="Console.Out"/> stream.
+        /// Represents a <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
         /// </summary>
         public static readonly LogStream ConsoleOutput = new LogStream(Console.Out);
 
@@ -41,7 +40,7 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (rotatingLogPolicy == null)
+                if (rotatingLogPolicy is null)
                 {
                     rotatingLogPolicy = new RotatingLogPolicy(this);
                 }
@@ -54,6 +53,18 @@ namespace Sisk.Core.Http
         /// to their internal message buffer.
         /// </summary>
         public bool IsBuffering { get => _bufferingContent is not null; }
+
+
+        /// <summary>
+        /// Gets an boolean indicating if this <see cref="LogStream"/> was disposed.
+        /// </summary>
+        public bool Disposed { get => isDisposed; }
+
+        /// <summary>
+        /// Gets or sets a boolean that indicates that every input must be trimmed and normalized before
+        /// being written to some output stream.
+        /// </summary>
+        public bool NormalizeEntries { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the absolute path to the file where the log is being written to.
@@ -97,7 +108,6 @@ namespace Sisk.Core.Http
         public LogStream()
         {
             consumerThread = new Thread(new ThreadStart(ProcessQueue));
-            consumerThread.IsBackground = true;
             consumerThread.Start();
         }
 
@@ -135,9 +145,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public void Flush()
         {
-            logQueueEmptyEvent.Reset();
-            logQueueEmptyEvent.WaitOne();
-            ;
+            writeEvent.WaitOne();
         }
 
         /// <summary>
@@ -155,7 +163,7 @@ namespace Sisk.Core.Http
             lock (_bufferingContent)
             {
                 string[] lines = _bufferingContent.ToArray();
-                return string.Join("", lines);
+                return string.Join(Environment.NewLine, lines);
             }
         }
 
@@ -177,39 +185,65 @@ namespace Sisk.Core.Http
             _bufferingContent = null;
         }
 
-        private void ProcessQueue()
+        private async void ProcessQueue()
         {
-            while (!isDisposed)
+            var reader = channel.Reader;
+            while (!isDisposed && await reader.WaitToReadAsync())
             {
-                if (!rotatingPolicyLocker.WaitOne(2500))
+                writeEvent.Reset();
+
+                while (reader.TryRead(out var item))
                 {
-                    continue;
-                }
-                if (!logQueue.TryTake(out object? data, 2500))
-                {
-                    continue;
+                    rotatingPolicyLocker.WaitOne();
+
+                    bool gotAnyError = false;
+                    string? dataStr = item?.ToString();
+
+                    if (dataStr is null)
+                        continue;
+
+                    try
+                    {
+                        TextWriter?.WriteLine(dataStr);
+                    }
+                    catch
+                    {
+                        if (!gotAnyError)
+                        {
+                            await channel.Writer.WriteAsync(item);
+                            gotAnyError = true;
+                        }
+                    }
+
+                    try
+                    {
+                        if (filePath is not null)
+                            File.AppendAllText(filePath, dataStr + Environment.NewLine, Encoding);
+                    }
+                    catch
+                    {
+                        if (!gotAnyError)
+                        {
+                            await channel.Writer.WriteAsync(item);
+                            gotAnyError = true;
+                        }
+                    }
+
+                    try
+                    {
+                        _bufferingContent?.Add(dataStr);
+                    }
+                    catch
+                    {
+                        if (!gotAnyError)
+                        {
+                            await channel.Writer.WriteAsync(item);
+                            gotAnyError = true;
+                        }
+                    }
                 }
 
-                string? dataStr = data?.ToString();
-                if (dataStr is null)
-                    continue;
-
-                if (TextWriter is not null)
-                {
-                    TextWriter.WriteLine(dataStr);
-                    TextWriter.Flush();
-                }
-                if (filePath is not null)
-                {
-                    File.AppendAllLines(filePath, contents: new string[] { dataStr });
-                }
-
-                _bufferingContent?.Add(dataStr);
-
-                if (logQueue.Count == 0)
-                {
-                    logQueueEmptyEvent.Set();
-                }
+                writeEvent.Set();
             }
         }
 
@@ -234,7 +268,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public void WriteLine()
         {
-            WriteLineInternal("");
+            WriteLineInternal(string.Empty);
         }
 
         /// <summary>
@@ -243,7 +277,7 @@ namespace Sisk.Core.Http
         /// <param name="message">The text that will be written in the output.</param>
         public void WriteLine(object? message)
         {
-            WriteLineInternal(message?.ToString() ?? "");
+            WriteLineInternal(message?.ToString() ?? string.Empty);
         }
 
         /// <summary>
@@ -271,7 +305,14 @@ namespace Sisk.Core.Http
         /// <param name="line">The line which will be written to the log stream.</param>
         protected virtual void WriteLineInternal(string line)
         {
-            EnqueueMessageLine(line.Normalize());
+            if (NormalizeEntries)
+            {
+                EnqueueMessageLine(line.Normalize().Trim().ReplaceLineEndings());
+            }
+            else
+            {
+                EnqueueMessageLine(line);
+            }
         }
 
         /// <summary>
@@ -293,10 +334,7 @@ namespace Sisk.Core.Http
         void EnqueueMessageLine(string message)
         {
             ArgumentNullException.ThrowIfNull(message, nameof(message));
-            lock (logQueue)
-            {
-                logQueue.Add(message);
-            }
+            _ = channel.Writer.WriteAsync(message);
         }
 
         void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, int currentDepth = 0)
@@ -328,9 +366,8 @@ namespace Sisk.Core.Http
                 if (disposing)
                 {
                     Flush();
+                    channel.Writer.Complete();
                     TextWriter?.Dispose();
-                    rotatingPolicyLocker?.Dispose();
-                    logQueueEmptyEvent?.Dispose();
                     rotatingLogPolicy?.Dispose();
                     consumerThread.Join();
                 }

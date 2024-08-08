@@ -7,6 +7,7 @@
 // File name:   ListeningPort.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 
@@ -39,6 +40,9 @@ namespace Sisk.Core.Http
     ///     </code>
     /// </example>
     public readonly struct ListeningPort : IEquatable<ListeningPort>
+#if NET7_0_OR_GREATER
+        , IParsable<ListeningPort>
+#endif
     {
         /// <summary>
         /// Gets or sets the DNS hostname pattern where this listening port will refer.
@@ -185,6 +189,41 @@ namespace Sisk.Core.Http
         public override string ToString()
         {
             return $"{(Secure ? "https" : "http")}://{Hostname}:{Port}/";
+        }
+
+        /// <summary>
+        /// Parses a string into a <see cref="ListeningPort"/>.
+        /// </summary>
+        /// <param name="s">The string to parse.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
+        public static ListeningPort Parse(string s, IFormatProvider? provider)
+        {
+            return new ListeningPort(s);
+        }
+
+        /// <summary>
+        /// Tries to parse a string into a <see cref="ListeningPort"/>.
+        /// </summary>
+        /// <param name="s">The string to parse.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
+        /// <param name="result">When this method returns, contains the result of successfully parsing s or an undefined value on failure.</param>
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out ListeningPort result)
+        {
+            if (s is null)
+            {
+                result = default;
+                return false;
+            }
+            try
+            {
+                result = Parse(s, provider);
+                return true;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
         }
     }
 }

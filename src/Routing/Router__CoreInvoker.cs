@@ -111,7 +111,7 @@ public partial class Router
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal RouterExecutionResult Execute(HttpContext context)
     {
-        if (parentServer == null) throw new InvalidOperationException(SR.Router_NotBinded);
+        if (parentServer is null) throw new InvalidOperationException(SR.Router_NotBinded);
 
         context.Router = this;
         HttpRequest request = context.Request;
@@ -220,7 +220,7 @@ public partial class Router
             {
                 HttpResponse res = new HttpResponse();
                 res.Status = HttpStatusCode.TemporaryRedirect;
-                res.Headers.Add("Location", request.Path + "/" + (request.QueryString ?? ""));
+                res.Headers.Add("Location", request.Path + "/" + (request.QueryString ?? string.Empty));
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 

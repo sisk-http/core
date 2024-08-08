@@ -106,7 +106,7 @@ namespace Sisk.Core.Internal
 
                 if (pathPtt.StartsWith(ROUTE_GROUP_START) && pathPtt.EndsWith(ROUTE_GROUP_END))
                 {
-                    if (query == null) query = new NameValueCollection();
+                    if (query is null) query = new NameValueCollection();
                     string queryValueName = new string(pathPtt[new Range(1, pathPtt.Length - 1)]);
                     query.Add(queryValueName, new string(reqsPtt));
                 }
@@ -184,7 +184,7 @@ namespace Sisk.Core.Internal
 
                 if (pathPtt.StartsWith('<') && pathPtt.EndsWith('>'))
                 {
-                    if (query == null) query = new NameValueCollection();
+                    if (query is null) query = new NameValueCollection();
                     string queryValueName = pathPtt.Substring(1, pathPtt.Length - 2);
                     query.Add(queryValueName, reqsPtt);
                 }
@@ -224,7 +224,7 @@ namespace Sisk.Core.Internal
             }
             else if (wildcardCount == 1)
             {
-                string newWildcardPattern = wildcardPattern.Replace("*", "");
+                string newWildcardPattern = wildcardPattern.Replace("*", string.Empty);
 
                 if (wildcardPattern.StartsWith("*"))
                 {

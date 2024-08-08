@@ -18,7 +18,6 @@ namespace Sisk.Core.Http
     public sealed class RotatingLogPolicy : IDisposable
     {
         private System.Timers.Timer? checkTimer = null;
-        private bool isTerminating = false;
         internal LogStream? _logStream;
         private bool disposedValue;
 
@@ -79,13 +78,13 @@ namespace Sisk.Core.Http
 
             checkTimer.Interval = Due.TotalMilliseconds;
             checkTimer.Elapsed += Check;
-            checkTimer?.Start();
+            checkTimer.Start();
         }
 
         private void Check(object? state, ElapsedEventArgs e)
         {
-            if (isTerminating) return;
-            if (_logStream is null) return;
+            if (disposedValue) return;
+            if (_logStream is null || _logStream.Disposed) return;
             if (checkTimer is null) return;
 
             string file = _logStream.FilePath!;
@@ -104,14 +103,16 @@ namespace Sisk.Core.Http
                     try
                     {
                         _logStream.rotatingPolicyLocker.Reset();
-                        _logStream.Flush();
 
                         using (FileStream logSs = fileInfo.Open(FileMode.OpenOrCreate))
                         using (FileStream gzFileSs = new FileInfo(gzippedFilename).Create())
                         using (GZipStream gzSs = new GZipStream(gzFileSs, CompressionMode.Compress))
                         {
-                            logSs.CopyTo(gzSs);
-                            logSs.SetLength(0);
+                            if (logSs.CanRead)
+                                logSs.CopyTo(gzSs);
+
+                            if (logSs.CanWrite)
+                                logSs.SetLength(0);
                         }
                     }
                     catch

@@ -36,7 +36,7 @@ internal static class CookieParser
                 int eqPos = cookieExpression.IndexOf(SharedChars.Equal);
                 if (eqPos < 0)
                 {
-                    cookies[cookieExpression] = "";
+                    cookies[cookieExpression] = string.Empty;
                     continue;
                 }
                 else

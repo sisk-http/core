@@ -7,9 +7,12 @@
 // File name:   Router__CoreSetters.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
+using Sisk.Core.Http;
 using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Web;
 
 namespace Sisk.Core.Routing;
 
@@ -187,6 +190,17 @@ public partial class Router
         => SetRoute(RouteMethod.Any, path, action);
 
     /// <summary>
+    /// Maps a rewrite route, which redirects all requests that match the given path to another path,
+    /// keeping the body and headers of the original request.
+    /// </summary>
+    /// <param name="rewritePath">The incoming HTTP request path.</param>
+    /// <param name="rewriteInto">The rewrited URL.</param>
+    public void Rewrite(string rewritePath, string rewriteInto)
+    {
+        SetRoute(RouteMethod.Any, rewritePath, request => RewriteHandler(rewriteInto, request));
+    }
+
+    /// <summary>
     /// Defines an route with their method, path and action function.
     /// </summary>
     /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
@@ -327,7 +341,7 @@ public partial class Router
                 {
                     RouteAction r;
 
-                    if (instance == null)
+                    if (instance is null)
                     {
                         r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
                     }
@@ -372,6 +386,19 @@ public partial class Router
         }
     }
     #endregion
+
+    private HttpResponse RewriteHandler(string rewriteInto, HttpRequest request)
+    {
+        string newPath = rewriteInto;
+        foreach (StringValue item in request.Query)
+        {
+            newPath = newPath.Replace($"<{item.Name}>", HttpUtility.UrlEncode(item.Value));
+        }
+
+        return new HttpResponse()
+            .WithStatus(System.Net.HttpStatusCode.Found)
+            .WithHeader("Location", newPath);
+    }
 
     private Route? GetCollisionRoute(RouteMethod method, string path)
     {
