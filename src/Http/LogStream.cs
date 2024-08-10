@@ -29,9 +29,9 @@ namespace Sisk.Core.Http
         private CircularBuffer<string>? _bufferingContent = null;
 
         /// <summary>
-        /// Represents a <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
+        /// Gets a <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
         /// </summary>
-        public static readonly LogStream ConsoleOutput = new LogStream(Console.Out);
+        public static LogStream ConsoleOutput { get => new LogStream(Console.Out); }
 
         /// <summary>
         /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.

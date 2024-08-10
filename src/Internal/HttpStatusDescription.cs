@@ -13,6 +13,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net;
+using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Internal;
 
@@ -21,6 +22,7 @@ static class HttpStatusDescription
     internal static string? Get(HttpStatusCode code) =>
         Get((int)code);
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal static string Get(int code) =>
         code switch
         {
