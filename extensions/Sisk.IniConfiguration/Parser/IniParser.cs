@@ -33,6 +33,9 @@ public sealed class IniParser : IDisposable
     const char STRING_QUOTE_2 = '\"';
     const char PROPERTY_DELIMITER = '=';
     const char NEW_LINE = '\n';
+    const char RETURN = '\r';
+    const char TAB = '\t';
+    const char SPACE = ' ';
 
     /// <summary>
     /// Reads the INI document from the input stream.
@@ -51,7 +54,7 @@ public sealed class IniParser : IDisposable
         {
             char c = (char)read;
 
-            if (c == SECTION_START)
+            if (c is SECTION_START)
             {
                 reader.Read();
                 string? sectionName = ReadUntil(new char[] { SECTION_END })?.Trim();
@@ -65,9 +68,9 @@ public sealed class IniParser : IDisposable
                 items.Clear();
                 lastSectionName = sectionName;
 
-                SkipWhiteSpace();
+                SkipUntilNewLine();
             }
-            else if (c == COMMENT_1 || c == COMMENT_2)
+            else if (c is COMMENT_1 or COMMENT_2)
             {
                 SkipUntilNewLine();
             }
@@ -122,19 +125,19 @@ public sealed class IniParser : IDisposable
         int read = reader.Read();
         if (read < 0)
         {
-            return "";
+            return string.Empty;
         }
         else
         {
             char c = (char)read;
 
-            if (c == ' ' || c == '\t')
+            if (c is SPACE or TAB)
             {
                 goto readNext;
             }
-            else if (c == '\r' || c == '\n')
+            else if (c is RETURN or NEW_LINE)
             {
-                return "";
+                return string.Empty;
             }
             if (c == STRING_QUOTE_1)
             {
@@ -163,7 +166,7 @@ public sealed class IniParser : IDisposable
             {
                 return sb.ToString();
             }
-            else if (breakOnComment && (c == COMMENT_1 || c == COMMENT_2))
+            else if (breakOnComment && (c is COMMENT_1 or COMMENT_2))
             {
                 var s = sb.ToString();
                 SkipUntilNewLine();
@@ -204,6 +207,7 @@ public sealed class IniParser : IDisposable
         }
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         Dispose(disposing: true);
