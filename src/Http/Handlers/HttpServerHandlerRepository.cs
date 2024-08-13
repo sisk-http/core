@@ -7,6 +7,7 @@
 // File name:   HttpServerHandlerRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -56,7 +57,7 @@ internal class HttpServerHandlerRepository
     internal void ServerStarting(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStarting(val));
     internal void ServerStarted(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStarted(val));
     internal void SetupRouter(Router val) => CallEvery(handler => handler.InvokeOnSetupRouter(val));
-    internal void ContextBagCreated(HttpContextBagRepository val) => CallEvery(handler => handler.InvokeOnContextBagCreated(val));
+    internal void ContextBagCreated(TypedValueDictionary val) => CallEvery(handler => handler.InvokeOnContextBagCreated(val));
     internal void HttpRequestOpen(HttpRequest val) => CallEvery(handler => handler.InvokeOnHttpRequestOpen(val));
     internal void HttpRequestClose(HttpServerExecutionResult val) => CallEvery(handler => handler.InvokeOnHttpRequestClose(val));
     internal void Exception(Exception val) => CallEvery(handler => handler.InvokeOnException(val));

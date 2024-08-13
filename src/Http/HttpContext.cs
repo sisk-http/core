@@ -32,7 +32,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets a managed object that is accessed and modified by request handlers.
         /// </summary>
-        public HttpContextBagRepository RequestBag { get; set; } = new HttpContextBagRepository();
+        public TypedValueDictionary RequestBag { get; set; } = new TypedValueDictionary();
 
         /// <summary>
         /// Gets the context HTTP Server instance.

@@ -7,7 +7,6 @@
 // File name:   CookieHelpers.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Web;
 
 namespace Sisk.Core.Http;

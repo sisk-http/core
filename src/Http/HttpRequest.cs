@@ -45,8 +45,7 @@ namespace Sisk.Core.Http
         private NameValueCollection? cookies = null;
         private StringValueCollection? query = null;
         private StringValueCollection? form = null;
-
-        private IPAddress remoteAddr;
+        private IPAddress? remoteAddr;
 
         private int currentFrame = 0;
 
@@ -60,18 +59,6 @@ namespace Sisk.Core.Http
             listenerResponse = context.Response;
             listenerRequest = context.Request;
             RequestedAt = DateTime.Now;
-
-            // the listenerRequest.RemoteEndPoint property is disposed after the
-            // response is sent to the server, resulting in an null exception when
-            // getting it in an OnConnectionClose handler
-            if (contextServerConfiguration.ForwardingResolver is { } fr)
-            {
-                remoteAddr = fr.OnResolveClientAddress(this, listenerRequest.RemoteEndPoint);
-            }
-            else
-            {
-                remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
-            }
         }
 
         internal string mbConvertCodepage(string input, Encoding inEnc, Encoding outEnc)
@@ -201,7 +188,7 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is an shortcut for <see cref="HttpContext.RequestBag"/> property.
         /// </remarks>
-        public HttpContextBagRepository Bag => Context.RequestBag;
+        public TypedValueDictionary Bag => Context.RequestBag;
 
         /// <summary>
         /// Get the requested host header with the port from this HTTP request.
@@ -216,11 +203,11 @@ namespace Sisk.Core.Http
         /// </summary>
         public string Path
         {
-            get => listenerRequest.Url?.AbsolutePath ?? "/";
+            get => HttpUtility.UrlDecode(listenerRequest.Url?.AbsolutePath ?? "/");
         }
 
         /// <summary>
-        /// Gets the full HTTP request path with the query string.
+        /// Gets the raw, full HTTP request path with the query string.
         /// </summary>
         public string FullPath
         {
@@ -307,7 +294,21 @@ namespace Sisk.Core.Http
         /// </summary>
         public IPAddress RemoteAddress
         {
-            get => remoteAddr;
+            get
+            {
+                if (remoteAddr is null)
+                {
+                    if (contextServerConfiguration.ForwardingResolver is { } fr)
+                    {
+                        remoteAddr = fr.OnResolveClientAddress(this, listenerRequest.RemoteEndPoint);
+                    }
+                    else
+                    {
+                        remoteAddr = new IPAddress(listenerRequest.RemoteEndPoint.Address.GetAddressBytes());
+                    }
+                }
+                return remoteAddr;
+            }
         }
 
         /// <summary>

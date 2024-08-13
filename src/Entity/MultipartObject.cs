@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
-using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Text;
 

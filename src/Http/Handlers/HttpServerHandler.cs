@@ -7,6 +7,7 @@
 // File name:   HttpServerHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http.Handlers;
@@ -52,16 +53,15 @@ public abstract class HttpServerHandler
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>
     protected virtual void OnSetupRouter(Router router) { }
-
     internal void InvokeOnSetupRouter(Router router) => OnSetupRouter(router);
 
     /// <summary>
-    /// Method that is called when an <see cref="HttpContextBagRepository"/> is created within an
+    /// Method that is called when an HTTP context is created within an
     /// <see cref="HttpRequest"/> object.
     /// </summary>
     /// <param name="contextBag">The creating context bag.</param>
-    protected virtual void OnContextBagCreated(HttpContextBagRepository contextBag) { }
-    internal void InvokeOnContextBagCreated(HttpContextBagRepository contextBag) => OnContextBagCreated(contextBag);
+    protected virtual void OnContextBagCreated(TypedValueDictionary contextBag) { }
+    internal void InvokeOnContextBagCreated(TypedValueDictionary contextBag) => OnContextBagCreated(contextBag);
 
     /// <summary>
     /// Method that is called when an <see cref="HttpRequest"/> is received in the

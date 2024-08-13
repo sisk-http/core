@@ -7,7 +7,6 @@
 // File name:   HttpResponseStream.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Net;
 
 namespace Sisk.Core.Http.Streams;
@@ -73,20 +72,25 @@ public sealed class HttpResponseStream : CookieHelper
     /// </remarks>
     /// <param name="headerName">The HTTP header name.</param>
     /// <param name="value">The HTTP header value.</param>
-    public void SetHeader(string headerName, string value)
+    public void SetHeader(string headerName, object? value)
     {
+        string? _value = value?.ToString();
+        if (_value is null)
+        {
+            return;
+        }
         if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
         if (string.Compare(headerName, HttpKnownHeaderNames.ContentLength, true) == 0)
         {
-            SetContentLength(long.Parse(value));
+            SetContentLength(long.Parse(_value));
         }
         else if (string.Compare(headerName, HttpKnownHeaderNames.ContentType, true) == 0)
         {
-            listenerResponse.ContentType = value;
+            listenerResponse.ContentType = _value;
         }
         else
         {
-            listenerResponse.AddHeader(headerName, value);
+            listenerResponse.AddHeader(headerName, _value);
         }
     }
 

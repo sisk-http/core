@@ -59,6 +59,40 @@ namespace Sisk.Core.Routing
         }
 
         /// <summary>
+        /// Normalizes and combines the specified file-system paths into one.
+        /// </summary>
+        /// <param name="allowRelativeReturn">Specifies if relative paths should be merged and ".." returns should be respected.</param>
+        /// <param name="separator">Specifies the path separator character.</param>
+        /// <param name="paths">Specifies the array of paths to combine.</param>
+        public static string FilesystemCombinePaths(bool allowRelativeReturn, char separator, ReadOnlySpan<string> paths)
+        {
+            return PathUtility.NormalizedCombine(allowRelativeReturn, separator, paths);
+        }
+
+        /// <summary>
+        /// Normalizes and combines the specified file-system paths into one, using the default environment directory separator char.
+        /// </summary>
+        /// <param name="paths">Specifies the array of paths to combine.</param>
+        public static string FilesystemCombinePaths(params string[] paths)
+        {
+            return PathUtility.NormalizedCombine(false, Path.DirectorySeparatorChar, paths);
+        }
+
+        /// <summary>
+        /// Normalize the given path to use the specified directory separator, trim the last separator and
+        /// remove empty entries.
+        /// </summary>
+        /// <param name="path">The path to normalize.</param>
+        /// <param name="directorySeparator">The directory separator.</param>
+        public static string NormalizePath(string path, char directorySeparator = '/')
+        {
+            string[] parts = path.Split(new char[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            string result = string.Join(directorySeparator, parts);
+            if (path.StartsWith('/') || path.StartsWith('\\')) result = directorySeparator + result;
+            return result;
+        }
+
+        /// <summary>
         /// Gets an boolean indicating where this <see cref="Router"/> is read-only or not.
         /// </summary>
         public bool IsReadOnly { get => parentServer is not null; }

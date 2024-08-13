@@ -89,8 +89,4 @@
 		<Using Include="System.Net.Http" />
 		<Using Include="System.Linq" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Http\Extensions\" />
-	</ItemGroup>
 </Project>

@@ -39,11 +39,7 @@ static partial class SR
 
     public const string ListeningHostRepository_Duplicate = "This ListeningHost has already been defined in this collection with identical definitions.";
 
-    public const string ListeningPort_Parser_UndefinedScheme = "Scheme was not defined in the URI.";
-    public const string ListeningPort_Parser_UndefinedPort = "The URI port must be explicitly defined.";
-    public const string ListeningPort_Parser_UriNotTerminatedSlash = "The URI must terminate with /.";
-    public const string ListeningPort_Parser_InvalidScheme = "The URI scheme must be http or https.";
-    public const string ListeningPort_Parser_InvalidPort = "The URI port is invalid.";
+    public const string ListeningPort_Parser_InvalidInput = "Invalid ListeningPort syntax.";
 
     public const string LogStream_NotBuffering = "This LogStream is not buffering. To peek lines, call StartBuffering() first.";
     public const string LogStream_NoOutput = "No output writter was set up for this LogStream.";

@@ -111,34 +111,22 @@ namespace Sisk.Core.Http
         /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
         public ListeningPort(string uri)
         {
-            int schemeIndex = uri.IndexOf(":");
-            if (schemeIndex == -1) throw new ArgumentException(SR.ListeningPort_Parser_UndefinedScheme);
-            int portIndex = uri.IndexOf(":", schemeIndex + 3);
-            if (portIndex == -1) throw new ArgumentException(SR.ListeningPort_Parser_UndefinedPort);
-            int endIndex = uri.IndexOf("/", schemeIndex + 3);
-            if (endIndex == -1 || !uri.EndsWith('/')) throw new ArgumentException(SR.ListeningPort_Parser_UriNotTerminatedSlash);
-
-            string schemePart = uri.Substring(0, schemeIndex);
-            string hostnamePart = uri.Substring(schemeIndex + 3, portIndex - (schemeIndex + 3));
-            string portPart = uri.Substring(portIndex + 1, endIndex - (portIndex + 1));
-
-            if (schemePart == "http")
+            if (ushort.TryParse(uri, out ushort port))
             {
-                Secure = false;
+                Hostname = "localhost";
+                Port = port;
+                Secure = port == 443;
             }
-            else if (schemePart == "https")
+            else if (Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var uriResult))
             {
-                Secure = true;
+                Hostname = uriResult.Host;
+                Port = (ushort)uriResult.Port;
+                Secure = string.Compare(uriResult.Scheme, "https", true) == 0;
             }
             else
             {
-                throw new ArgumentException(SR.ListeningPort_Parser_InvalidScheme);
+                throw new ArgumentException(SR.ListeningPort_Parser_InvalidInput);
             }
-
-            if (!ushort.TryParse(portPart, out ushort port)) throw new ArgumentException(SR.ListeningPort_Parser_InvalidPort);
-
-            Port = port;
-            Hostname = hostnamePart;
         }
 
         /// <summary>

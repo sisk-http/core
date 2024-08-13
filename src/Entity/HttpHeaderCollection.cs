@@ -13,7 +13,7 @@ using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.PortableExecutable;
 using System.Text;
-using Header = Sisk.Core.Internal.HttpKnownHeaderNames;
+using Header = Sisk.Core.Http.HttpKnownHeaderNames;
 
 namespace Sisk.Core.Entity;
 
