@@ -33,7 +33,7 @@ public class BasicAuthenticateRequestHandler : IRequestHandler
     /// <type>
     /// Property
     /// </type>
-    public RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeContents;
+    public RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeResponse;
 
     /// <summary>
     /// Gets or sets a message to show the client which protection scope it needs to authenticate to.
