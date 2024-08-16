@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sisk.IniConfiguration.Parser;
+namespace Sisk.IniConfiguration.Serializer;
 
 /// <summary>
-/// Provides an INI-document parser.
+/// Provides an INI-document reader and parser.
 /// </summary>
-public sealed class IniParser : IDisposable
+public sealed class IniReader : IDisposable
 {
     internal static readonly StringComparer IniNamingComparer = StringComparer.InvariantCultureIgnoreCase;
 
@@ -17,35 +17,28 @@ public sealed class IniParser : IDisposable
     private bool disposedValue;
 
     /// <summary>
-    /// Creates an new <see cref="IniParser"/> with the specified text reader.
+    /// Gets the <see cref="TextReader"/> which is providing data to this INI reader.
+    /// </summary>
+    public TextReader Reader { get => reader; }
+
+    /// <summary>
+    /// Creates an new <see cref="IniReader"/> with the specified text reader.
     /// </summary>
     /// <param name="reader">The <see cref="TextReader"/> instace to read the INI document.</param>
-    public IniParser(TextReader reader)
+    public IniReader(TextReader reader)
     {
         this.reader = reader;
     }
-
-    const char SECTION_START = '[';
-    const char SECTION_END = ']';
-    const char COMMENT_1 = '#';
-    const char COMMENT_2 = ';';
-    const char STRING_QUOTE_1 = '\'';
-    const char STRING_QUOTE_2 = '\"';
-    const char PROPERTY_DELIMITER = '=';
-    const char NEW_LINE = '\n';
-    const char RETURN = '\r';
-    const char TAB = '\t';
-    const char SPACE = ' ';
 
     /// <summary>
     /// Reads the INI document from the input stream.
     /// </summary>
     /// <returns>An <see cref="IniDocument"/> file containing all properties and data from the input stream.</returns>
-    public IniDocument Parse()
+    public IniDocument Read()
     {
         ThrowIfDisposed();
 
-        string lastSectionName = "__GLOBAL__";
+        string lastSectionName = "__SISKINIGLOBAL__";
         List<(string, string)> items = new List<(string, string)>();
         List<IniSection> creatingSections = new List<IniSection>();
 
@@ -54,10 +47,10 @@ public sealed class IniParser : IDisposable
         {
             char c = (char)read;
 
-            if (c is SECTION_START)
+            if (c is Token.SECTION_START)
             {
                 reader.Read();
-                string? sectionName = ReadUntil(new char[] { SECTION_END })?.Trim();
+                string? sectionName = ReadUntil(new char[] { Token.SECTION_END })?.Trim();
 
                 if (sectionName is null)
                     break;
@@ -70,13 +63,13 @@ public sealed class IniParser : IDisposable
 
                 SkipUntilNewLine();
             }
-            else if (c is COMMENT_1 or COMMENT_2)
+            else if (c is Token.COMMENT_1 or Token.COMMENT_2)
             {
                 SkipUntilNewLine();
             }
             else
             {
-                string? propertyName = ReadUntil(new char[] { PROPERTY_DELIMITER }, true);
+                string? propertyName = ReadUntil(new char[] { Token.PROPERTY_DELIMITER, Token.NEW_LINE, Token.RETURN }, true);
                 if (propertyName is null)
                     break;
 
@@ -102,7 +95,7 @@ public sealed class IniParser : IDisposable
 
     void SkipUntilNewLine()
     {
-        ReadUntil(new char[] { NEW_LINE }, false);
+        ReadUntil(new char[] { Token.NEW_LINE }, false);
     }
 
     void SkipWhiteSpace()
@@ -131,25 +124,25 @@ public sealed class IniParser : IDisposable
         {
             char c = (char)read;
 
-            if (c is SPACE or TAB)
+            if (c is Token.SPACE or Token.TAB)
             {
                 goto readNext;
             }
-            else if (c is RETURN or NEW_LINE)
+            else if (c is Token.RETURN or Token.NEW_LINE)
             {
                 return string.Empty;
             }
-            if (c == STRING_QUOTE_1)
+            if (c == Token.STRING_QUOTE_1)
             {
-                return ReadUntil(new char[] { STRING_QUOTE_1 }, false);
+                return ReadUntil(new char[] { Token.STRING_QUOTE_1 }, false);
             }
-            else if (c == STRING_QUOTE_2)
+            else if (c == Token.STRING_QUOTE_2)
             {
-                return ReadUntil(new char[] { STRING_QUOTE_2 }, false);
+                return ReadUntil(new char[] { Token.STRING_QUOTE_2 }, false);
             }
             else
             {
-                return (c + ReadUntil(new char[] { NEW_LINE }, true, true)).Trim();
+                return (c + ReadUntil(new char[] { Token.NEW_LINE }, true, true)).Trim();
             }
         }
     }
@@ -166,7 +159,7 @@ public sealed class IniParser : IDisposable
             {
                 return sb.ToString();
             }
-            else if (breakOnComment && (c is COMMENT_1 or COMMENT_2))
+            else if (breakOnComment && (c is Token.COMMENT_1 or Token.COMMENT_2))
             {
                 var s = sb.ToString();
                 SkipUntilNewLine();
@@ -191,7 +184,7 @@ public sealed class IniParser : IDisposable
     void ThrowIfDisposed()
     {
         if (disposedValue)
-            throw new ObjectDisposedException(nameof(IniParser));
+            throw new ObjectDisposedException(nameof(IniReader));
     }
 
     void Dispose(bool disposing)

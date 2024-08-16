@@ -1,6 +1,6 @@
 ﻿using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
-using Sisk.IniConfiguration.Parser;
+using Sisk.IniConfiguration.Serializer;
 using System.Text;
 
 namespace Sisk.IniConfiguration;
@@ -35,11 +35,11 @@ public sealed class IniConfigurationPipeline : IConfigurationReader
 
                 parsingNode = "Server.IncludeRequestIdHeader";
                 if (serverSection.GetOne("IncludeRequestIdHeader") is { } IncludeRequestIdHeader)
-                    context.Host.ServerConfiguration.IncludeRequestIdHeader = IniParser.IniNamingComparer.Compare(IncludeRequestIdHeader, "true") == 0;
+                    context.Host.ServerConfiguration.IncludeRequestIdHeader = IniReader.IniNamingComparer.Compare(IncludeRequestIdHeader, "true") == 0;
 
                 parsingNode = "Server.ThrowExceptions";
                 if (serverSection.GetOne("ThrowExceptions") is { } ThrowExceptions)
-                    context.Host.ServerConfiguration.ThrowExceptions = IniParser.IniNamingComparer.Compare(ThrowExceptions, "true") == 0;
+                    context.Host.ServerConfiguration.ThrowExceptions = IniReader.IniNamingComparer.Compare(ThrowExceptions, "true") == 0;
 
                 parsingNode = "Server.AccessLogsStream";
                 if (serverSection.GetOne("AccessLogsStream") is { } AccessLogsStream)

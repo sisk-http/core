@@ -1,4 +1,4 @@
-﻿using Sisk.IniConfiguration.Parser;
+﻿using Sisk.IniConfiguration.Serializer;
 using System.Text;
 
 namespace Sisk.IniConfiguration;
@@ -11,7 +11,7 @@ public sealed class IniDocument
     /// <summary>
     /// Gets all INI sections defined in this INI document.
     /// </summary>
-    public IniSection[] Sections { get; }
+    public IList<IniSection> Sections { get; }
 
     /// <summary>
     /// Gets the global INI section, which is the primary section in the document.
@@ -26,8 +26,8 @@ public sealed class IniDocument
     public static IniDocument FromString(string iniConfiguration)
     {
         using TextReader reader = new StringReader(iniConfiguration);
-        using IniParser parser = new IniParser(reader);
-        return parser.Parse();
+        using IniReader parser = new IniReader(reader);
+        return parser.Read();
     }
 
     /// <summary>
@@ -39,8 +39,8 @@ public sealed class IniDocument
     public static IniDocument FromFile(string filePath, Encoding? encoding = null)
     {
         using TextReader reader = new StreamReader(filePath, encoding ?? Encoding.UTF8);
-        using IniParser parser = new IniParser(reader);
-        return parser.Parse();
+        using IniReader parser = new IniReader(reader);
+        return parser.Read();
     }
 
     /// <summary>
@@ -52,8 +52,8 @@ public sealed class IniDocument
     public static IniDocument FromStream(Stream stream, Encoding? encoding = null)
     {
         using TextReader reader = new StreamReader(stream, encoding ?? Encoding.UTF8);
-        using IniParser parser = new IniParser(reader);
-        return parser.Parse();
+        using IniReader parser = new IniReader(reader);
+        return parser.Read();
     }
 
     /// <summary>
@@ -63,8 +63,8 @@ public sealed class IniDocument
     /// <param name="reader">The <see cref="TextReader"/> instance.</param>
     public static IniDocument FromStream(TextReader reader)
     {
-        using IniParser parser = new IniParser(reader);
-        return parser.Parse();
+        using IniReader parser = new IniReader(reader);
+        return parser.Read();
     }
 
     internal IniDocument(IniSection[] sections)
@@ -79,10 +79,10 @@ public sealed class IniDocument
     /// <returns>The <see cref="IniSection"/> object if found, or null if not defined.</returns>
     public IniSection? GetSection(string sectionName)
     {
-        for (int i = 0; i < Sections.Length; i++)
+        for (int i = 0; i < Sections.Count; i++)
         {
             IniSection section = Sections[i];
-            if (IniParser.IniNamingComparer.Compare(section.Name, sectionName) == 0)
+            if (IniReader.IniNamingComparer.Compare(section.Name, sectionName) == 0)
                 return section;
         }
         return null;

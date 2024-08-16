@@ -1,4 +1,4 @@
-﻿using Sisk.IniConfiguration.Parser;
+﻿using Sisk.IniConfiguration.Serializer;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
@@ -31,7 +31,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
         get
         {
             return items
-                .Where(k => IniParser.IniNamingComparer.Compare(key, k.Item1) == 0)
+                .Where(k => IniReader.IniNamingComparer.Compare(key, k.Item1) == 0)
                 .Select(k => k.Item2)
                 .ToArray();
         }
@@ -78,7 +78,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     public string? GetOne(string key)
     {
         return items
-            .Where(k => IniParser.IniNamingComparer.Compare(key, k.Item1) == 0)
+            .Where(k => IniReader.IniNamingComparer.Compare(key, k.Item1) == 0)
             .Select(k => k.Item2)
             .LastOrDefault();
     }
@@ -105,7 +105,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
         {
             (string, string?) item = items[i];
 
-            if (IniParser.IniNamingComparer.Compare(item.Item1, key) == 0)
+            if (IniReader.IniNamingComparer.Compare(item.Item1, key) == 0)
                 return true;
         }
         return false;
