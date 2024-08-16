@@ -50,10 +50,10 @@ public sealed class PortableConfigurationBuilder
     /// <summary>
     /// Defines an custom <see cref="IConfigurationReader"/> configuration pipeline to the builder.
     /// </summary>
-    /// <param name="pipeline">The <see cref="IConfigurationReader"/> object.</param>
-    public PortableConfigurationBuilder WithConfigurationPipeline(IConfigurationReader pipeline)
+    /// <param name="reader">The <see cref="IConfigurationReader"/> object.</param>
+    public PortableConfigurationBuilder WithConfigurationReader(IConfigurationReader reader)
     {
-        _pipeline = pipeline;
+        _pipeline = reader;
         return this;
     }
 

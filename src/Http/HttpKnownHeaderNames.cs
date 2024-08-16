@@ -470,12 +470,6 @@ public static class HttpKnownHeaderNames
     public const string Warning = "Warning";
 
     /// <summary>
-    /// The HTTP X-AspNet-Version header.
-    /// <para>Indicates the version of ASP.NET that the server is using to process the request.</para>
-    /// </summary>
-    public const string XAspNetVersion = "X-AspNet-Version";
-
-    /// <summary>
     /// The HTTP X-Content-Duration header.
     /// <para>Specifies the duration of the content in seconds, often used for media files.</para>
     /// </summary>
@@ -492,12 +486,6 @@ public static class HttpKnownHeaderNames
     /// <para>Used to control whether a browser should be allowed to render a page in a iframe, frame, embed or object tag, helping to prevent clickjacking attacks.</para>
     /// </summary>
     public const string XFrameOptions = "X-Frame-Options";
-
-    /// <summary>
-    /// The HTTP X-MSEdge-Ref header.
-    /// <para>Used by Microsoft Edge to provide information about the request context, often for analytics and debugging purposes.</para>
-    /// </summary>
-    public const string XMSEdgeRef = "X-MSEdge-Ref";
 
     /// <summary>
     /// The HTTP X-Powered-By header.
