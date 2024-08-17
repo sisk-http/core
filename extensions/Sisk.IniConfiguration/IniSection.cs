@@ -16,6 +16,34 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     /// </summary>
     public string Name { get; }
 
+    internal static IniSection[] MergeIniSections(IniSection[] sections)
+    {
+        var sectionNames = sections
+            .DistinctBy(s => s.Name, IniReader.IniNamingComparer)
+            .Select(s => s.Name)
+            .ToArray();
+
+        List<IniSection> result = new List<IniSection>(sectionNames.Length);
+        for (int i = 0; i < sectionNames.Length; i++)
+        {
+            string currentName = sectionNames[i];
+            List<(string, string)> allProperties = new();
+
+            for (int j = 0; j < sections.Length; j++)
+            {
+                IniSection s = sections[j];
+                if (IniReader.IniNamingComparer.Compare(s.Name, currentName) == 0)
+                {
+                    allProperties.AddRange(s.items);
+                }
+            }
+
+            result.Add(new IniSection(currentName, allProperties.ToArray()));
+        }
+
+        return result.ToArray();
+    }
+
     internal IniSection(string name, (string, string)[] items)
     {
         this.items = items;

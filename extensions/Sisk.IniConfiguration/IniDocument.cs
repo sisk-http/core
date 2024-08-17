@@ -69,7 +69,7 @@ public sealed class IniDocument
 
     internal IniDocument(IniSection[] sections)
     {
-        Sections = sections;
+        Sections = IniSection.MergeIniSections(sections);
     }
 
     /// <summary>
