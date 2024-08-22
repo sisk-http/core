@@ -188,61 +188,68 @@ namespace Sisk.Core.Http
         private async void ProcessQueue()
         {
             var reader = channel.Reader;
-            while (!isDisposed && await reader.WaitToReadAsync())
+            try
             {
-                writeEvent.Reset();
-
-                while (reader.TryRead(out var item))
+                while (!isDisposed && await reader.WaitToReadAsync())
                 {
-                    rotatingPolicyLocker.WaitOne();
+                    writeEvent.Reset();
 
-                    bool gotAnyError = false;
-                    string? dataStr = item?.ToString();
-
-                    if (dataStr is null)
-                        continue;
-
-                    try
+                    while (reader.TryRead(out var item))
                     {
-                        TextWriter?.WriteLine(dataStr);
-                    }
-                    catch
-                    {
-                        if (!gotAnyError)
+                        rotatingPolicyLocker.WaitOne();
+
+                        bool gotAnyError = false;
+                        string? dataStr = item?.ToString();
+
+                        if (dataStr is null)
+                            continue;
+
+                        try
                         {
-                            await channel.Writer.WriteAsync(item);
-                            gotAnyError = true;
+                            TextWriter?.WriteLine(dataStr);
+                        }
+                        catch
+                        {
+                            if (!gotAnyError)
+                            {
+                                await channel.Writer.WriteAsync(item);
+                                gotAnyError = true;
+                            }
+                        }
+
+                        try
+                        {
+                            if (filePath is not null)
+                                File.AppendAllText(filePath, dataStr + Environment.NewLine, Encoding);
+                        }
+                        catch
+                        {
+                            if (!gotAnyError)
+                            {
+                                await channel.Writer.WriteAsync(item);
+                                gotAnyError = true;
+                            }
+                        }
+
+                        try
+                        {
+                            _bufferingContent?.Add(dataStr);
+                        }
+                        catch
+                        {
+                            if (!gotAnyError)
+                            {
+                                await channel.Writer.WriteAsync(item);
+                                gotAnyError = true;
+                            }
                         }
                     }
 
-                    try
-                    {
-                        if (filePath is not null)
-                            File.AppendAllText(filePath, dataStr + Environment.NewLine, Encoding);
-                    }
-                    catch
-                    {
-                        if (!gotAnyError)
-                        {
-                            await channel.Writer.WriteAsync(item);
-                            gotAnyError = true;
-                        }
-                    }
-
-                    try
-                    {
-                        _bufferingContent?.Add(dataStr);
-                    }
-                    catch
-                    {
-                        if (!gotAnyError)
-                        {
-                            await channel.Writer.WriteAsync(item);
-                            gotAnyError = true;
-                        }
-                    }
+                    writeEvent.Set();
                 }
-
+            }
+            finally
+            {
                 writeEvent.Set();
             }
         }
@@ -365,8 +372,8 @@ namespace Sisk.Core.Http
             {
                 if (disposing)
                 {
-                    Flush();
                     channel.Writer.Complete();
+                    Flush();
                     TextWriter?.Dispose();
                     rotatingLogPolicy?.Dispose();
                     consumerThread.Join();
