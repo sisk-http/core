@@ -92,15 +92,44 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Outputs an non-listening HTTP server with configuration, listening host, and router.
+        /// Gets an listening and running HTTP server in an random port.
         /// </summary>
-        /// <remarks>This method is not appropriate to running production servers.</remarks>
+        public static HttpServer CreateListener() => CreateListener(ListeningPort.GetRandomPort().Port, out _, out _, out _);
+
+        /// <summary>
+        /// Gets an listening and running HTTP server in the specified port.
+        /// </summary>
+        /// <param name="port">The listening port of the HTTP server.</param>
+        public static HttpServer CreateListener(ushort port) => CreateListener(port, out _, out _, out _);
+
+        /// <summary>
+        /// Gets an listening and running HTTP server in the specified port.
+        /// </summary>
+        /// <param name="insecureHttpPort">The insecure port where the HTTP server will listen.</param>
+        /// <param name="configuration">The <see cref="HttpServerConfiguration"/> object issued from this method.</param>
+        /// <param name="host">The <see cref="ListeningHost"/> object issued from this method.</param>
+        /// <param name="router">The <see cref="Router"/> object issued from this method.</param>
+        public static HttpServer CreateListener(
+            ushort insecureHttpPort,
+            out HttpServerConfiguration configuration,
+            out ListeningHost host,
+            out Router router
+        )
+        {
+            var s = Emit(insecureHttpPort, out configuration, out host, out router);
+            s.Start();
+            return s;
+        }
+
+        /// <summary>
+        /// Gets an non-listening HTTP server with configuration, listening host, and router.
+        /// </summary>
         /// <param name="insecureHttpPort">The insecure port where the HTTP server will listen.</param>
         /// <param name="configuration">The <see cref="HttpServerConfiguration"/> object issued from this method.</param>
         /// <param name="host">The <see cref="ListeningHost"/> object issued from this method.</param>
         /// <param name="router">The <see cref="Router"/> object issued from this method.</param>
         public static HttpServer Emit(
-            in ushort insecureHttpPort,
+            ushort insecureHttpPort,
             out HttpServerConfiguration configuration,
             out ListeningHost host,
             out Router router

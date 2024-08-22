@@ -56,12 +56,11 @@ public partial class Router
         }
     }
 
-    internal bool InvokeRequestHandlerGroup(in RequestHandlerExecutionMode mode, IRequestHandler[] baseLists, IRequestHandler[]? bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception)
+    internal bool InvokeRequestHandlerGroup(in RequestHandlerExecutionMode mode, Span<IRequestHandler> baseLists, Span<IRequestHandler> bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception)
     {
-        ref IRequestHandler pointer = ref MemoryMarshal.GetArrayDataReference(baseLists);
         for (int i = 0; i < baseLists.Length; i++)
         {
-            var rh = Unsafe.Add(ref pointer, i);
+            var rh = baseLists[i];
             if (rh.ExecutionMode == mode)
             {
                 HttpResponse? response = InvokeHandler(rh, request, context, bypassList, out exception);
@@ -77,12 +76,15 @@ public partial class Router
         return false;
     }
 
-    internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, IRequestHandler[]? bypass, out Exception? exception)
+    internal HttpResponse? InvokeHandler(IRequestHandler handler, HttpRequest request, HttpContext context, Span<IRequestHandler> bypass, out Exception? exception)
     {
-        if (bypass is not null && bypass.Contains(handler))
+        for (int i = 0; i < bypass.Length; i++)
         {
-            exception = null;
-            return null;
+            if (ReferenceEquals(handler, bypass[i]))
+            {
+                exception = null;
+                return null;
+            }
         }
 
         HttpResponse? result = null;
@@ -268,7 +270,7 @@ public partial class Router
             }
             catch (Exception ex)
             {
-                if (!parentServer!.ServerConfiguration.ThrowExceptions && (ex is not HttpListenerException))
+                if (parentServer!.ServerConfiguration.ThrowExceptions == false && (ex is not HttpListenerException))
                 {
                     if (CallbackErrorHandler is not null)
                     {
@@ -276,7 +278,7 @@ public partial class Router
                     }
                     else
                     {
-                        result = new HttpResponse(HttpResponse.HTTPRESPONSE_ERROR);
+                        result = new HttpResponse(HttpResponse.HTTPRESPONSE_UNHANDLED_EXCEPTION);
                         return new RouterExecutionResult(result, matchedRoute, matchResult, ex);
                     }
                 }

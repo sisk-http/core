@@ -13,6 +13,7 @@ using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Sisk.Core.Http;
 
@@ -50,29 +51,44 @@ public partial class HttpServer
 
     internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
     {
-        if (!serverFlags.SendCorsHeaders) return;
-        if (cors.AllowHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Headers", string.Join(", ", cors.AllowHeaders));
-        if (cors.AllowMethods.Length > 0) baseResponse.Headers.Set("Access-Control-Allow-Methods", string.Join(", ", cors.AllowMethods));
-        if (cors.AllowOrigin != null) baseResponse.Headers.Set("Access-Control-Allow-Origin", cors.AllowOrigin);
+        if (!serverFlags.SendCorsHeaders)
+            return;
+
+        if (cors.AllowHeaders.Length > 0)
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join(", ", cors.AllowHeaders));
+
+        if (cors.AllowMethods.Length > 0)
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowMethods, string.Join(", ", cors.AllowMethods));
+
+        if (cors.AllowOrigin is not null)
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin);
+
         if (cors.AllowOrigins?.Length > 0)
         {
-            string? origin = baseRequest.Headers["Origin"];
-            if (origin != null)
+            string? origin = baseRequest.Headers[HttpKnownHeaderNames.Origin];
+
+            if (origin is not null)
             {
                 for (int i = 0; i < cors.AllowOrigins.Length; i++)
                 {
                     string definedOrigin = cors.AllowOrigins[i];
                     if (string.Compare(definedOrigin, origin, true) == 0)
                     {
-                        baseResponse.Headers.Set("Access-Control-Allow-Origin", origin);
+                        baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowOrigin, origin);
                         break;
                     }
                 }
             }
         }
-        if (cors.AllowCredentials != null) baseResponse.Headers.Set("Access-Control-Allow-Credentials", cors.AllowCredentials.ToString()!.ToLower());
-        if (cors.ExposeHeaders.Length > 0) baseResponse.Headers.Set("Access-Control-Expose-Headers", string.Join(", ", cors.ExposeHeaders));
-        if (cors.MaxAge.TotalSeconds > 0) baseResponse.Headers.Set("Access-Control-Max-Age", cors.MaxAge.TotalSeconds.ToString());
+
+        if (cors.AllowCredentials == true)
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowCredentials, "true");
+
+        if (cors.ExposeHeaders.Length > 0)
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlExposeHeaders, string.Join(", ", cors.ExposeHeaders));
+
+        if (cors.MaxAge.TotalSeconds > 0)
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString());
     }
 
     private void UnbindRouters()
@@ -123,8 +139,8 @@ public partial class HttpServer
         long outcomingSize = 0;
         bool closeStream = true;
         bool useCors = false;
-        bool hasAccessLogging = ServerConfiguration.AccessLogsStream != null;
-        bool hasErrorLogging = ServerConfiguration.ErrorsLogsStream != null;
+        bool hasAccessLogging = ServerConfiguration.AccessLogsStream is not null;
+        bool hasErrorLogging = ServerConfiguration.ErrorsLogsStream is not null;
         IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
         Uri? connectingUri = baseRequest.Url;
         Router.RouterExecutionResult? routerResult = null;
@@ -134,7 +150,7 @@ public partial class HttpServer
         string _debugState = "begin";
 #pragma warning restore CS0219
 
-        if (ServerConfiguration.DefaultCultureInfo != null)
+        if (ServerConfiguration.DefaultCultureInfo is not null)
         {
             Thread.CurrentThread.CurrentCulture = ServerConfiguration.DefaultCultureInfo;
             Thread.CurrentThread.CurrentUICulture = ServerConfiguration.DefaultCultureInfo;
@@ -277,11 +293,11 @@ public partial class HttpServer
                 executionResult.Status = HttpServerExecutionStatus.NoResponse;
                 goto finishSending;
             }
-            else if (response.internalStatus == HttpResponse.HTTPRESPONSE_ERROR)
+            else if (response.internalStatus == HttpResponse.HTTPRESPONSE_UNHANDLED_EXCEPTION)
             {
                 executionResult.Status = HttpServerExecutionStatus.UncaughtExceptionThrown;
                 baseResponse.StatusCode = 500;
-                if (routerResult.Exception != null)
+                if (routerResult.Exception is not null)
                     throw routerResult.Exception;
                 goto finishSending;
             }
@@ -431,6 +447,7 @@ public partial class HttpServer
             executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
             executionResult.ServerException = netException;
             hasErrorLogging = false;
+            hasAccessLogging = false;
         }
         catch (HttpRequestException requestException)
         {
@@ -472,7 +489,7 @@ public partial class HttpServer
 
             handler.HttpRequestClose(executionResult);
 
-            if (executionResult.ServerException != null)
+            if (executionResult.ServerException is not null)
                 handler.Exception(executionResult.ServerException);
 
             LogOutput logMode;
@@ -490,9 +507,26 @@ public partial class HttpServer
             bool canAccessLog = logMode.HasFlag(LogOutput.AccessLog) && hasAccessLogging;
             bool canErrorLog = logMode.HasFlag(LogOutput.ErrorLog) && hasErrorLogging;
 
-            if (executionResult.ServerException != null && canErrorLog)
+            if (executionResult.ServerException is { } ex && canErrorLog)
             {
-                ServerConfiguration.ErrorsLogsStream?.WriteException(executionResult.ServerException);
+                StringBuilder errLineBuilder = new StringBuilder();
+                errLineBuilder.Append("[");
+                errLineBuilder.Append(DateTime.Now.ToString("G"));
+                errLineBuilder.Append("] ");
+                errLineBuilder.Append(baseRequest.HttpMethod);
+                errLineBuilder.Append(" ");
+                errLineBuilder.Append(baseRequest.RawUrl);
+                errLineBuilder.AppendLine(":");
+                errLineBuilder.AppendLine(ex.ToString());
+                if (ex.InnerException is { } iex)
+                {
+                    errLineBuilder.AppendLine("[inner exception]");
+                    errLineBuilder.AppendLine(iex.ToString());
+                }
+            
+                errLineBuilder.AppendLine();
+
+                ServerConfiguration.ErrorsLogsStream?.WriteLine(errLineBuilder);
             }
 
             if (canAccessLog)

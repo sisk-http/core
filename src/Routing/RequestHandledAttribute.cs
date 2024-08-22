@@ -45,7 +45,7 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
     public class RequestHandlerAttribute : Attribute
     {
         /// <summary>
@@ -83,7 +83,17 @@ namespace Sisk.Core.Routing
         )] Type handledBy)
         {
             RequestHandlerType = handledBy;
-            ConstructorArguments = new object?[] { };
+            ConstructorArguments = Array.Empty<object?>();
+        }
+
+        internal IRequestHandler Activate()
+        {
+            IRequestHandler? rhandler = Activator.CreateInstance(RequestHandlerType, ConstructorArguments) as IRequestHandler;
+            if (rhandler is null)
+            {
+                throw new ArgumentException(SR.Format(SR.RequestHandler_ActivationException, RequestHandlerType.FullName, ConstructorArguments.Length));
+            }
+            return rhandler;
         }
     }
 }

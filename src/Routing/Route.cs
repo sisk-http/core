@@ -123,12 +123,12 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the request handlers instances to run before the route's Action.
         /// </summary>
-        public IRequestHandler[]? RequestHandlers { get; set; }
+        public IRequestHandler[] RequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
 
         /// <summary>
         /// Gets or sets the global request handlers instances that will not run on this route.
         /// </summary>
-        public IRequestHandler[]? BypassGlobalRequestHandlers { get; set; }
+        public IRequestHandler[] BypassGlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
 
         /// <summary>
         /// Creates an new <see cref="Route"/> instance with given parameters.
@@ -157,7 +157,7 @@ namespace Sisk.Core.Routing
             this.path = path;
             Name = name;
             Action = action;
-            RequestHandlers = beforeCallback;
+            RequestHandlers = beforeCallback ?? Array.Empty<IRequestHandler>();
         }
 
         /// <summary>

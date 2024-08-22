@@ -1,4 +1,4 @@
-**Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
+﻿**Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
 
 - [Discover Sisk](https://www.sisk-framework.org/)
 - [Documentation](https://docs.sisk-framework.org/)
@@ -19,23 +19,19 @@ It can handle multiple requests asynchronously, provides useful tools to manage 
 
 ```c#
 using Sisk.Core.Http;
-using Sisk.Core.Routing;
-
-namespace myProgram;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
-        var app = HttpServer.CreateBuilder();
+        using var app = HttpServer.CreateBuilder(5555).Build();
 
-        app.Router += new Route(RouteMethod.Get, "/", request =>
+        app.Router.MapGet("/", request =>
         {
-            return new HttpResponse(200)
-                .WithContent("Hello, world!");
+            return new HttpResponse("Hello, world!");
         });
 
-        app.Start();
+        await app.StartAsync(); // 🚀 app is listening on http://localhost:5555/
     }
 }
 ```

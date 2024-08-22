@@ -470,6 +470,10 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Closes this HTTP request and their connection with the remote client without sending any response.
         /// </summary>
+        /// <remarks>
+        /// This method is now obsolete and will be removed in next Sisk versions. Please, use <see cref="HttpResponse.Refuse"/> instead.
+        /// </remarks>
+        [Obsolete("This method is now obsolete and will be removed in next Sisk versions. Please, use HttpResponse.Refuse() instead.")]
         public HttpResponse Close()
         {
             return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);

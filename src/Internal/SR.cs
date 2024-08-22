@@ -68,6 +68,8 @@ static partial class SR
     public const string Router_NoRouteActionDefined = "No route action was defined to the route {0}.";
     public const string Router_ReadOnlyException = "It's not possible to modify the routes or handlers for this router, as it is read-only.";
 
+    public const string RequestHandler_ActivationException = "Couldn't activate an instance of the IRequestHandler {0} with the {1} arguments.";
+
     public const string Route_Action_ValueTypeSet = "Defining actions which their return type is an value type is not supported. Encapsulate it with ValueResult<T>.";
     public const string Route_Action_AsyncMissingGenericType = "Async route {0} action must return an object in addition to Task.";
 

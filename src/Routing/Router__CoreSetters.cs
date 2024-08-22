@@ -291,25 +291,38 @@ public partial class Router
     private void SetInternal(MethodInfo[] methods, Type callerType, object? instance)
     {
         RouterModule? rmodule = instance as RouterModule;
-        string? prefix;
 
-        if (rmodule?.Prefix is null)
+        // get caller prefix from RoutePrefix first, or router module
+        object[] callerTypeLevelHandlers = callerType.GetCustomAttributes(true);
+        List<IRequestHandler> callerAttrReqHandlers = new List<IRequestHandler>(callerTypeLevelHandlers.Length);
+        string? prefix = rmodule?.Prefix;
+
+        // search for an RoutePrefix handler
+        for (int i = 0; i < callerTypeLevelHandlers.Length; i++)
         {
-            RoutePrefixAttribute? rPrefix = callerType.GetCustomAttribute<RoutePrefixAttribute>();
-            prefix = rPrefix?.Prefix;
-        }
-        else
-        {
-            prefix = rmodule.Prefix;
+            object attr = callerTypeLevelHandlers[i];
+
+            if (attr is RoutePrefixAttribute rprefix)
+            {
+                prefix = rprefix.Prefix;
+            }
+            else if (attr is RequestHandlerAttribute rhattr)
+            {
+                callerAttrReqHandlers.Add(rhattr.Activate());
+            }
         }
 
         for (int imethod = 0; imethod < methods.Length; imethod++)
         {
-            MethodInfo? method = methods[imethod];
+            MethodInfo method = methods[imethod];
 
             RouteAttribute? routeAttribute = null;
             object[] methodAttributes = method.GetCustomAttributes(true);
             List<IRequestHandler> methodAttrReqHandlers = new List<IRequestHandler>(methodAttributes.Length);
+
+            methodAttrReqHandlers.AddRange(callerAttrReqHandlers);
+            if (rmodule is not null)
+                methodAttrReqHandlers.AddRange(rmodule.RequestHandlers);
 
             for (int imethodAttribute = 0; imethodAttribute < methodAttributes.Length; imethodAttribute++)
             {
@@ -317,9 +330,7 @@ public partial class Router
 
                 if (attrInstance is RequestHandlerAttribute reqHandlerAttr)
                 {
-                    IRequestHandler? rhandler = (IRequestHandler?)Activator.CreateInstance(reqHandlerAttr.RequestHandlerType, reqHandlerAttr.ConstructorArguments);
-                    if (rhandler is not null)
-                        methodAttrReqHandlers.Add(rhandler);
+                    methodAttrReqHandlers.Add(reqHandlerAttr.Activate());
                 }
                 else if (attrInstance is RouteAttribute routeAttributeItem)
                 {
@@ -329,14 +340,6 @@ public partial class Router
 
             if (routeAttribute is not null)
             {
-                if (rmodule?.RequestHandlers.Count > 0)
-                {
-                    for (int imodReqHandler = 0; imodReqHandler < rmodule.RequestHandlers.Count; imodReqHandler++)
-                    {
-                        IRequestHandler handler = rmodule.RequestHandlers[imodReqHandler];
-                        methodAttrReqHandlers.Add(handler);
-                    }
-                }
                 try
                 {
                     RouteAction r;

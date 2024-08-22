@@ -9,7 +9,6 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
-using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 
@@ -20,17 +19,30 @@ namespace Sisk.Core.Http
     /// </summary>
     public class HttpResponse : CookieHelper
     {
-        internal const byte HTTPRESPONSE_EMPTY = 2;
+        internal const byte HTTPRESPONSE_EMPTY = 2;  // <- theres no reason for this to exist
         internal const byte HTTPRESPONSE_SERVER_REFUSE = 4;
         internal const byte HTTPRESPONSE_SERVER_CLOSE = 6;
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
-        internal const byte HTTPRESPONSE_ERROR = 8;
+        internal const byte HTTPRESPONSE_UNHANDLED_EXCEPTION = 8;
+
         internal long CalculedLength = -1;
 
         /// <summary>
-        /// Creates an new empty <see cref="HttpResponse"/> with no status code or contents. This will cause to the HTTP server to close the
-        /// connection between the server and the client and don't deliver any response.
+        /// Creates an <see cref="HttpResponse"/> object which closes the connection with the client immediately (ECONNRESET).
         /// </summary>
+        /// <returns></returns>
+        public static HttpResponse Refuse()
+        {
+            return new HttpResponse(HTTPRESPONSE_SERVER_REFUSE);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="HttpResponse"/> object which closes the connection with the client immediately (ECONNRESET).
+        /// </summary>
+        /// <remarks>
+        /// This method is obsolete and replaced by <see cref="Refuse"/>.
+        /// </remarks>
+        [Obsolete("This method should be avoided and will be removed in next Sisk versions.")]
         public static HttpResponse CreateEmptyResponse()
         {
             return new HttpResponse(HTTPRESPONSE_EMPTY);

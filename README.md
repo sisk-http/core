@@ -54,20 +54,19 @@ It can handle multiple requests asynchronously, provides useful tools to manage 
 
 ```c#
 using Sisk.Core.Http;
-using Sisk.Core.Routing;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
-        var app = HttpServer.CreateBuilder(5000);
+        using var app = HttpServer.CreateBuilder(5555).Build();
 
-        app.Router.SetRoute(RouteMethod.Get, "/", request =>
+        app.Router.MapGet("/", request =>
         {
             return new HttpResponse("Hello, world!");
         });
 
-        app.Start(); // 🚀 app is listening on http://localhost:5000/
+        await app.StartAsync(); // 🚀 app is listening on http://localhost:5555/
     }
 }
 ```
