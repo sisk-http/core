@@ -287,4 +287,14 @@ public sealed class HttpServerHostContextBuilder
         _context.HttpServer.RegisterHandler(handler);
         return this;
     }
+
+    /// <summary>
+    /// Add an optional message to the <see cref="HttpServerHostContext"/> output verbose.
+    /// </summary>
+    /// <param name="startupMessage">The startup message.</param>
+    public HttpServerHostContextBuilder UseStartupMessage(string startupMessage)
+    {
+        _context.startupMessages.AppendLine(startupMessage);
+        return this;
+    }
 }

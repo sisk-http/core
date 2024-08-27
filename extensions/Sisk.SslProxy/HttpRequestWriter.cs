@@ -28,10 +28,7 @@ static class HttpRequestWriter
                 (string, string) header = headers[i];
                 sw.WriteLine($"{header.Item1}: {header.Item2}");
             }
-            if (contentLength > 0)
-            {
-                sw.WriteLine();
-            }
+            sw.WriteLine();
 
             byte[] headerBytes = Encoding.UTF8.GetBytes(sw.ToString());
             outboundStream.Write(headerBytes);

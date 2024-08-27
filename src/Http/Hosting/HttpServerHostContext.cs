@@ -9,6 +9,7 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
+using System.Text;
 
 namespace Sisk.Core.Http.Hosting;
 
@@ -17,6 +18,8 @@ namespace Sisk.Core.Http.Hosting;
 /// </summary>
 public sealed class HttpServerHostContext : IDisposable
 {
+    internal StringBuilder startupMessages = new StringBuilder();
+
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
     /// </summary>
@@ -79,6 +82,9 @@ public sealed class HttpServerHostContext : IDisposable
             Console.WriteLine(SR.Httpserver_StartMessage);
             foreach (string prefix in HttpServer.ListeningPrefixes)
                 Console.WriteLine("- {0}", prefix);
+
+            if (startupMessages.Length > 0)
+                Console.WriteLine(startupMessages.ToString());
         }
 
         if (preventHault)

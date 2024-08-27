@@ -29,7 +29,10 @@ public static class SecureProxyExtensions
         var endpoint = DnsUtil.ResolveEndpoint(builder.ServerConfiguration.ListeningHosts[0].Ports[0]);
         var secureProxy = new SecureProxy(sslListeningPort, certificate, endpoint);
         var serverHandler = new SecureProxyServerHandler(secureProxy);
+
         builder.UseHandler(serverHandler);
+        builder.UseStartupMessage($"The SSL proxy is listening at:\n- https://localhost:{sslListeningPort}/");
+
         return builder;
     }
 }
