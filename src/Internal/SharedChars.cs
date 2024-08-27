@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   Char.cs
+// File name:   SharedChars.cs
 // Repository:  https://github.com/sisk-http/core
 
 

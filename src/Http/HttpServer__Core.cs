@@ -523,7 +523,7 @@ public partial class HttpServer
                     errLineBuilder.AppendLine("[inner exception]");
                     errLineBuilder.AppendLine(iex.ToString());
                 }
-            
+
                 errLineBuilder.AppendLine();
 
                 ServerConfiguration.ErrorsLogsStream?.WriteLine(errLineBuilder);

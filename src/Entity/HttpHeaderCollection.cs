@@ -11,7 +11,6 @@ using Sisk.Core.Http;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.PortableExecutable;
 using System.Text;
 using Header = Sisk.Core.Http.HttpKnownHeaderNames;
 

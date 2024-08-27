@@ -7,7 +7,6 @@
 // File name:   HtmlContent.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Core.Http;
