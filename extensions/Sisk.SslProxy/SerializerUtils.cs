@@ -56,8 +56,10 @@ static class SerializerUtils
         int read;
         while ((read = input.Read(buffer)) > 0)
         {
-            output.Write(buffer);
-            if (buffer.EndsWith(eof))
+            output.Write(buffer.ToArray(), 0, read);
+
+            ReadOnlySpan<byte> writtenSpan = buffer[0..read];
+            if (writtenSpan.EndsWith(eof))
             {
                 break;
             }
