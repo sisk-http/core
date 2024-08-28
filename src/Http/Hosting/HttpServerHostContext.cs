@@ -33,15 +33,15 @@ public sealed class HttpServerHostContext : IDisposable
     /// <summary>
     /// Gets the host server configuration.
     /// </summary>
-    public HttpServerConfiguration ServerConfiguration { get => HttpServer.ServerConfiguration; }
+    public HttpServerConfiguration ServerConfiguration { get => this.HttpServer.ServerConfiguration; }
 
     /// <summary>
     /// Gets the host <see cref="CrossOriginResourceSharingPolicy"/>.
     /// </summary>
     public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy
     {
-        get => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy;
-        set => HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy = value;
+        get => this.HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy;
+        set => this.HttpServer.ServerConfiguration.ListeningHosts[0].CrossOriginResourceSharingPolicy = value;
     }
 
     /// <summary>
@@ -49,23 +49,23 @@ public sealed class HttpServerHostContext : IDisposable
     /// </summary>
     public Router Router
     {
-        get => ServerConfiguration.ListeningHosts[0].Router!;
-        set => ServerConfiguration.ListeningHosts[0].Router = value;
+        get => this.ServerConfiguration.ListeningHosts[0].Router!;
+        set => this.ServerConfiguration.ListeningHosts[0].Router = value;
     }
 
     /// <summary>
     /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    public LogStream? AccessLogs { get => ServerConfiguration?.AccessLogsStream; }
+    public LogStream? AccessLogs { get => this.ServerConfiguration?.AccessLogsStream; }
 
     /// <summary>
     /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    public LogStream? ErrorLogs { get => ServerConfiguration?.ErrorsLogsStream; }
+    public LogStream? ErrorLogs { get => this.ServerConfiguration?.ErrorsLogsStream; }
 
     internal HttpServerHostContext(HttpServer httpServer)
     {
-        HttpServer = httpServer ?? throw new ArgumentNullException(nameof(httpServer));
+        this.HttpServer = httpServer ?? throw new ArgumentNullException(nameof(httpServer));
     }
 
     /// <summary>
@@ -75,16 +75,16 @@ public sealed class HttpServerHostContext : IDisposable
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
     public void Start(bool verbose = true, bool preventHault = true)
     {
-        HttpServer.Start();
+        this.HttpServer.Start();
 
         if (verbose)
         {
             Console.WriteLine(SR.Httpserver_StartMessage);
-            foreach (string prefix in HttpServer.ListeningPrefixes)
+            foreach (string prefix in this.HttpServer.ListeningPrefixes)
                 Console.WriteLine("- {0}", prefix);
 
-            if (startupMessages.Length > 0)
-                Console.WriteLine(startupMessages.ToString());
+            if (this.startupMessages.Length > 0)
+                Console.WriteLine(this.startupMessages.ToString());
         }
 
         if (preventHault)
@@ -98,7 +98,7 @@ public sealed class HttpServerHostContext : IDisposable
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
     public Task StartAsync(bool verbose = true, bool preventHault = true)
     {
-        return Task.Run(() => Start(verbose, preventHault));
+        return Task.Run(() => this.Start(verbose, preventHault));
     }
 
     /// <summary>
@@ -106,6 +106,6 @@ public sealed class HttpServerHostContext : IDisposable
     /// </summary>
     public void Dispose()
     {
-        HttpServer.Dispose();
+        this.HttpServer.Dispose();
     }
 }

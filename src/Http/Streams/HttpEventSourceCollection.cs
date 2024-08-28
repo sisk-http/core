@@ -32,9 +32,9 @@ namespace Sisk.Core.Http.Streams
 
         internal void UnregisterEventSource(HttpRequestEventSource eventSource)
         {
-            lock (_eventSources)
+            lock (this._eventSources)
             {
-                if (_eventSources.Remove(eventSource) && OnEventSourceUnregistration != null)
+                if (this._eventSources.Remove(eventSource) && OnEventSourceUnregistration != null)
                 {
                     OnEventSourceUnregistration(this, eventSource);
                 }
@@ -45,14 +45,14 @@ namespace Sisk.Core.Http.Streams
         {
             if (src.Identifier != null)
             {
-                lock (_eventSources)
+                lock (this._eventSources)
                 {
-                    HttpRequestEventSource[] toClose = Find(p => p == src.Identifier);
+                    HttpRequestEventSource[] toClose = this.Find(p => p == src.Identifier);
                     foreach (HttpRequestEventSource ev in toClose)
                     {
                         ev.Close();
                     }
-                    _eventSources.Add(src);
+                    this._eventSources.Add(src);
                 }
                 if (OnEventSourceRegistered != null)
                     OnEventSourceRegistered(this, src);
@@ -62,7 +62,7 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Gets an number indicating the amount of active event source connections.
         /// </summary>
-        public int ActiveConnections { get => _eventSources.Count(ev => ev.IsActive); }
+        public int ActiveConnections { get => this._eventSources.Count(ev => ev.IsActive); }
 
         /// <summary>
         /// Gets the event source connection for the specified identifier.
@@ -70,9 +70,9 @@ namespace Sisk.Core.Http.Streams
         /// <param name="identifier">The event source identifier.</param>
         public HttpRequestEventSource? GetByIdentifier(string identifier)
         {
-            lock (_eventSources)
+            lock (this._eventSources)
             {
-                HttpRequestEventSource? src = _eventSources.Where(es => es.Identifier == identifier).FirstOrDefault();
+                HttpRequestEventSource? src = this._eventSources.Where(es => es.Identifier == identifier).FirstOrDefault();
                 return src;
             }
         }
@@ -83,9 +83,9 @@ namespace Sisk.Core.Http.Streams
         /// <param name="predicate">The expression on the an non-empty event source identifier.</param>
         public HttpRequestEventSource[] Find(Func<string, bool> predicate)
         {
-            lock (_eventSources)
+            lock (this._eventSources)
             {
-                return _eventSources.Where(e =>
+                return this._eventSources.Where(e =>
                 {
                     if (!e.IsActive || e.Identifier is null) return false;
                     return predicate(e.Identifier);
@@ -98,9 +98,9 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         public HttpRequestEventSource[] All()
         {
-            lock (_eventSources)
+            lock (this._eventSources)
             {
-                return _eventSources.Where(e => e.IsActive).ToArray();
+                return this._eventSources.Where(e => e.IsActive).ToArray();
             }
         }
 
@@ -109,9 +109,9 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         public void DropAll()
         {
-            lock (_eventSources)
+            lock (this._eventSources)
             {
-                foreach (HttpRequestEventSource es in _eventSources)
+                foreach (HttpRequestEventSource es in this._eventSources)
                     es.Dispose();
             }
         }

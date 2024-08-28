@@ -30,7 +30,7 @@ namespace Sisk.Core.Http
         /// </remarks>
         public string Description
         {
-            get => __description;
+            get => this.__description;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public int StatusCode
         {
-            get => __statusCode;
+            get => this.__statusCode;
         }
 
         /// <summary>
@@ -46,8 +46,8 @@ namespace Sisk.Core.Http
         /// </summary>
         public HttpStatusInformation()
         {
-            __statusCode = 200;
-            __description = "OK";
+            this.__statusCode = 200;
+            this.__description = "OK";
         }
 
         /// <summary>
@@ -57,8 +57,8 @@ namespace Sisk.Core.Http
         public HttpStatusInformation(int statusCode)
         {
             ValidateStatusCode(statusCode);
-            __statusCode = statusCode;
-            __description = GetStatusCodeDescription(statusCode);
+            this.__statusCode = statusCode;
+            this.__description = GetStatusCodeDescription(statusCode);
         }
 
         /// <summary>
@@ -69,8 +69,8 @@ namespace Sisk.Core.Http
         {
             int s = (int)statusCode;
             ValidateStatusCode(s);
-            __statusCode = s;
-            __description = GetStatusCodeDescription(statusCode);
+            this.__statusCode = s;
+            this.__description = GetStatusCodeDescription(statusCode);
         }
 
         /// <summary>
@@ -86,8 +86,8 @@ namespace Sisk.Core.Http
         {
             ValidateStatusCode(statusCode);
             ValidateDescription(description);
-            __statusCode = statusCode;
-            __description = description;
+            this.__statusCode = statusCode;
+            this.__description = description;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -130,7 +130,7 @@ namespace Sisk.Core.Http
         /// </returns>
         public HttpStatusCode? GetHttpStatusCode()
         {
-            HttpStatusCode s = (HttpStatusCode)__statusCode;
+            HttpStatusCode s = (HttpStatusCode)this.__statusCode;
             if (Enum.IsDefined(s))
             {
                 return s;
@@ -151,7 +151,7 @@ namespace Sisk.Core.Http
         {
             if (obj is HttpStatusInformation other)
             {
-                return Equals(other);
+                return this.Equals(other);
             }
             return false;
         }
@@ -168,7 +168,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public override string ToString()
         {
-            return $"{__statusCode} {__description}";
+            return $"{this.__statusCode} {this.__description}";
         }
 
         /// <inheritdoc/>

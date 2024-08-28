@@ -50,7 +50,7 @@ static class SerializerUtils
             if (bytesRead > 0)
             {
                 output.Write(buffer, 0, bytesRead);
-                input.BeginRead(buffer, 0, buffer.Length, callback, null); 
+                input.BeginRead(buffer, 0, buffer.Length, callback, null);
             }
             else
             {

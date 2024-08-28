@@ -100,15 +100,15 @@ namespace Sisk.Core.Internal
             {
                 int end = format.IndexOf('}');
                 string headerName = format.Substring(pos + 2, end - pos - 2);
-                string? headerValue = reqHeaders?[headerName];
+                string? headerValue = this.reqHeaders?[headerName];
                 format = format.Replace($"%{{{headerName}}}", headerValue);
             }
         }
 
         public void Format(ref string format)
         {
-            replaceHeaders(ref format);
-            replaceEntities(ref format);
+            this.replaceHeaders(ref format);
+            this.replaceEntities(ref format);
         }
     }
 }

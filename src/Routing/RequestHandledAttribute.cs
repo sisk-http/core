@@ -37,7 +37,7 @@ namespace Sisk.Core.Routing
         /// <param name="constructorArguments">An optional array of objects which is passed to the request handler constructor.</param>
         public RequestHandlerAttribute(params object?[] constructorArguments) : base(typeof(T))
         {
-            ConstructorArguments = constructorArguments;
+            this.ConstructorArguments = constructorArguments;
         }
     }
 #endif
@@ -82,16 +82,16 @@ namespace Sisk.Core.Routing
             | DynamicallyAccessedMemberTypes.NonPublicConstructors
         )] Type handledBy)
         {
-            RequestHandlerType = handledBy;
-            ConstructorArguments = Array.Empty<object?>();
+            this.RequestHandlerType = handledBy;
+            this.ConstructorArguments = Array.Empty<object?>();
         }
 
         internal IRequestHandler Activate()
         {
-            IRequestHandler? rhandler = Activator.CreateInstance(RequestHandlerType, ConstructorArguments) as IRequestHandler;
+            IRequestHandler? rhandler = Activator.CreateInstance(this.RequestHandlerType, this.ConstructorArguments) as IRequestHandler;
             if (rhandler is null)
             {
-                throw new ArgumentException(SR.Format(SR.RequestHandler_ActivationException, RequestHandlerType.FullName, ConstructorArguments.Length));
+                throw new ArgumentException(SR.Format(SR.RequestHandler_ActivationException, this.RequestHandlerType.FullName, this.ConstructorArguments.Length));
             }
             return rhandler;
         }

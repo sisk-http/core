@@ -169,22 +169,22 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an boolean indicating if this HTTP server is running and listening.
         /// </summary>
-        public bool IsListening { get => _isListening && !_isDisposing; }
+        public bool IsListening { get => this._isListening && !this._isDisposing; }
 
         /// <summary>
         /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
         /// </summary>
-        public string[] ListeningPrefixes => listeningPrefixes?.ToArray() ?? Array.Empty<string>();
+        public string[] ListeningPrefixes => this.listeningPrefixes?.ToArray() ?? Array.Empty<string>();
 
         /// <summary>
         /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
         /// </summary>
-        public HttpEventSourceCollection EventSources { get => _eventCollection; }
+        public HttpEventSourceCollection EventSources { get => this._eventCollection; }
 
         /// <summary>
         /// Gets an <see cref="HttpWebSocketConnectionCollection"/> with active Web Sockets connections in this HTTP server.
         /// </summary>
-        public HttpWebSocketConnectionCollection WebSockets { get => _wsCollection; }
+        public HttpWebSocketConnectionCollection WebSockets { get => this._wsCollection; }
 
         /// <summary>
         /// Gets the Sisk version label.
@@ -197,8 +197,8 @@ namespace Sisk.Core.Http
         /// <param name="configuration">The configuration object of the server.</param>
         public HttpServer(HttpServerConfiguration configuration)
         {
-            ServerConfiguration = configuration;
-            handler = new HttpServerHandlerRepository(this);
+            this.ServerConfiguration = configuration;
+            this.handler = new HttpServerHandlerRepository(this);
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace Sisk.Core.Http
         /// <typeparam name="T">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
         public void RegisterHandler<T>() where T : HttpServerHandler, new()
         {
-            handler.RegisterHandler(new T());
+            this.handler.RegisterHandler(new T());
         }
 
         /// <summary>
@@ -216,7 +216,7 @@ namespace Sisk.Core.Http
         /// <param name="obj">The instance of the server handler.</param>
         public void RegisterHandler(HttpServerHandler obj)
         {
-            handler.RegisterHandler(obj);
+            this.handler.RegisterHandler(obj);
         }
 
         /// <summary>
@@ -228,16 +228,16 @@ namespace Sisk.Core.Http
         /// </remarks>
         public HttpServerExecutionResult WaitNext()
         {
-            if (!IsListening)
-                Start();
-            if (isWaitingNextEvent)
+            if (!this.IsListening)
+                this.Start();
+            if (this.isWaitingNextEvent)
                 throw new InvalidOperationException(SR.Httpserver_WaitNext_Race_Condition);
 
-            waitingExecutionResult = null;
-            isWaitingNextEvent = true;
-            waitNextEvent.WaitOne();
+            this.waitingExecutionResult = null;
+            this.isWaitingNextEvent = true;
+            this.waitNextEvent.WaitOne();
 
-            return waitingExecutionResult!;
+            return this.waitingExecutionResult!;
         }
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace Sisk.Core.Http
         /// </remarks>
         public async Task<HttpServerExecutionResult> WaitNextAsync()
         {
-            return await Task.Run(WaitNext);
+            return await Task.Run(this.WaitNext);
         }
 
 
@@ -258,8 +258,8 @@ namespace Sisk.Core.Http
         /// </summary>
         public void Restart()
         {
-            Stop();
-            Start();
+            this.Stop();
+            this.Start();
         }
 
         /// <summary>
@@ -267,45 +267,45 @@ namespace Sisk.Core.Http
         /// </summary>
         public void Start()
         {
-            if (ServerConfiguration.ListeningHosts is null)
+            if (this.ServerConfiguration.ListeningHosts is null)
             {
                 throw new InvalidOperationException(SR.Httpserver_NoListeningHost);
             }
 
-            listeningPrefixes = new List<string>();
-            foreach (ListeningHost listeningHost in ServerConfiguration.ListeningHosts)
+            this.listeningPrefixes = new List<string>();
+            foreach (ListeningHost listeningHost in this.ServerConfiguration.ListeningHosts)
             {
                 foreach (ListeningPort port in listeningHost.Ports)
                 {
                     string prefix = port.ToString();
-                    if (!listeningPrefixes.Contains(prefix)) listeningPrefixes.Add(prefix);
+                    if (!this.listeningPrefixes.Contains(prefix)) this.listeningPrefixes.Add(prefix);
                 }
             }
 
-            httpListener.Prefixes.Clear();
-            foreach (string prefix in listeningPrefixes)
-                httpListener.Prefixes.Add(prefix);
+            this.httpListener.Prefixes.Clear();
+            foreach (string prefix in this.listeningPrefixes)
+                this.httpListener.Prefixes.Add(prefix);
 
-            _isListening = true;
-            httpListener.IgnoreWriteExceptions = true;
-            httpListener.TimeoutManager.IdleConnection = ServerConfiguration.Flags.IdleConnectionTimeout;
+            this._isListening = true;
+            this.httpListener.IgnoreWriteExceptions = true;
+            this.httpListener.TimeoutManager.IdleConnection = this.ServerConfiguration.Flags.IdleConnectionTimeout;
 
-            handler.ServerStarting(this);
-            BindRouters();
+            this.handler.ServerStarting(this);
+            this.BindRouters();
 
-            if (ServerConfiguration.ListeningHosts.Count == 1)
+            if (this.ServerConfiguration.ListeningHosts.Count == 1)
             {
-                _onlyListeningHost = ServerConfiguration.ListeningHosts[0];
+                this._onlyListeningHost = this.ServerConfiguration.ListeningHosts[0];
             }
             else
             {
-                _onlyListeningHost = null;
+                this._onlyListeningHost = null;
             }
 
-            httpListener.Start();
-            httpListener.BeginGetContext(ListenerCallback, null);
+            this.httpListener.Start();
+            this.httpListener.BeginGetContext(this.ListenerCallback, null);
 
-            handler.ServerStarted(this);
+            this.handler.ServerStarted(this);
         }
 
         /// <summary>
@@ -313,12 +313,12 @@ namespace Sisk.Core.Http
         /// </summary>
         public void Stop()
         {
-            handler.Stopping(this);
-            _isListening = false;
-            httpListener.Stop();
+            this.handler.Stopping(this);
+            this._isListening = false;
+            this.httpListener.Stop();
 
-            UnbindRouters();
-            handler.Stopped(this);
+            this.UnbindRouters();
+            this.handler.Stopped(this);
         }
 
         /// <summary>
@@ -326,9 +326,9 @@ namespace Sisk.Core.Http
         /// </summary>
         public void Dispose()
         {
-            _isDisposing = true;
-            httpListener.Close();
-            ServerConfiguration.Dispose();
+            this._isDisposing = true;
+            this.httpListener.Close();
+            this.ServerConfiguration.Dispose();
         }
     }
 }

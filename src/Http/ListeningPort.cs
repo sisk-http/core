@@ -64,9 +64,9 @@ namespace Sisk.Core.Http
         /// </summary>
         public ListeningPort()
         {
-            Hostname = "localhost";
-            Port = 80;
-            Secure = false;
+            this.Hostname = "localhost";
+            this.Port = 80;
+            this.Secure = false;
         }
 
         /// <summary>
@@ -75,9 +75,9 @@ namespace Sisk.Core.Http
         /// <param name="port">The port the server will listen on. If this port is the default HTTPS port (443), the class will have the property <see cref="Secure"/> to true.</param>
         public ListeningPort(ushort port)
         {
-            Hostname = "localhost";
-            Port = port;
-            Secure = Port == 443;
+            this.Hostname = "localhost";
+            this.Port = port;
+            this.Secure = this.Port == 443;
         }
 
         /// <summary>
@@ -87,9 +87,9 @@ namespace Sisk.Core.Http
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
         public ListeningPort(ushort port, bool secure)
         {
-            Hostname = "localhost";
-            Port = port;
-            Secure = secure;
+            this.Hostname = "localhost";
+            this.Port = port;
+            this.Secure = secure;
         }
 
         /// <summary>
@@ -100,9 +100,9 @@ namespace Sisk.Core.Http
         /// <param name="hostname">The hostname DNS pattern the server will listen to.</param>
         public ListeningPort(bool secure, string hostname, ushort port)
         {
-            Hostname = hostname;
-            Port = port;
-            Secure = secure;
+            this.Hostname = hostname;
+            this.Port = port;
+            this.Secure = secure;
         }
 
         /// <summary>
@@ -113,15 +113,15 @@ namespace Sisk.Core.Http
         {
             if (ushort.TryParse(uri, out ushort port))
             {
-                Hostname = "localhost";
-                Port = port;
-                Secure = port == 443;
+                this.Hostname = "localhost";
+                this.Port = port;
+                this.Secure = port == 443;
             }
             else if (Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var uriResult))
             {
-                Hostname = uriResult.Host;
-                Port = (ushort)uriResult.Port;
-                Secure = string.Compare(uriResult.Scheme, "https", true) == 0;
+                this.Hostname = uriResult.Host;
+                this.Port = (ushort)uriResult.Port;
+                this.Secure = string.Compare(uriResult.Scheme, "https", true) == 0;
             }
             else
             {
@@ -137,7 +137,7 @@ namespace Sisk.Core.Http
         {
             if (obj is ListeningPort p)
             {
-                return Equals(p);
+                return this.Equals(p);
             }
             return false;
         }
@@ -176,7 +176,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public override string ToString()
         {
-            return $"{(Secure ? "https" : "http")}://{Hostname}:{Port}/";
+            return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}/";
         }
 
         /// <summary>

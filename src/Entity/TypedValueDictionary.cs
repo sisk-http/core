@@ -25,7 +25,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// </summary>
     public TypedValueDictionary()
     {
-        _values = new();
+        this._values = new();
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// </summary>
     public TypedValueDictionary(StringComparer keyComparer)
     {
-        _values = new Dictionary<string, object?>(keyComparer);
+        this._values = new Dictionary<string, object?>(keyComparer);
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <typeparam name="T">The singleton type.</typeparam>
     public bool IsSet<T>() where T : notnull
     {
-        return _values.ContainsKey(GetTypeKeyName(typeof(T)));
+        return this._values.ContainsKey(this.GetTypeKeyName(typeof(T)));
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <typeparam name="T">The singleton type.</typeparam>
     public bool IsSet<T>([NotNullWhen(true)] out T? value) where T : notnull
     {
-        return TryGetValue(GetTypeKeyName(typeof(T)), out value);
+        return this.TryGetValue(this.GetTypeKeyName(typeof(T)), out value);
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <typeparam name="T">The singleton type.</typeparam>
     public void Unset<T>() where T : notnull
     {
-        _values.Remove(GetTypeKeyName(typeof(T)));
+        this._values.Remove(this.GetTypeKeyName(typeof(T)));
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <typeparam name="T">The object that will be defined in this context bag.</typeparam>
     public T Set<T>() where T : notnull, new()
     {
-        return Set<T>(new T());
+        return this.Set(new T());
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     public T Set<T>(T value) where T : notnull
     {
         Type contextType = typeof(T);
-        _values[GetTypeKeyName(contextType)] = value;
+        this._values[this.GetTypeKeyName(contextType)] = value;
         return value;
     }
 
@@ -102,10 +102,10 @@ public class TypedValueDictionary : IDictionary<string, object?>
     public T Get<T>() where T : notnull
     {
         Type contextType = typeof(T);
-        string key = GetTypeKeyName(contextType);
-        if (ContainsKey(key))
+        string key = this.GetTypeKeyName(contextType);
+        if (this.ContainsKey(key))
         {
-            return (T)_values[key]!;
+            return (T)this._values[key]!;
         }
         else
         {
@@ -115,19 +115,19 @@ public class TypedValueDictionary : IDictionary<string, object?>
 
     /// <inheritdoc />
     /// <exclude />
-    public object? this[string key] { get => _values[key]; set => _values[key] = value; }
+    public object? this[string key] { get => this._values[key]; set => this._values[key] = value; }
 
     /// <inheritdoc />
     /// <exclude />
-    public ICollection<string> Keys => _values.Keys;
+    public ICollection<string> Keys => this._values.Keys;
 
     /// <inheritdoc />
     /// <exclude />
-    public ICollection<object?> Values => _values.Values;
+    public ICollection<object?> Values => this._values.Values;
 
     /// <inheritdoc />
     /// <exclude />
-    public int Count => _values.Count;
+    public int Count => this._values.Count;
 
     /// <inheritdoc />
     /// <exclude />
@@ -137,70 +137,70 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <exclude />
     public void Add(string key, object? value)
     {
-        _values.Add(key, value);
+        this._values.Add(key, value);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public void Add(KeyValuePair<string, object?> item)
     {
-        _values.Add(item.Key, item.Value);
+        this._values.Add(item.Key, item.Value);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public void Clear()
     {
-        _values.Clear();
+        this._values.Clear();
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool Contains(KeyValuePair<string, object?> item)
     {
-        return _values.Contains(item);
+        return this._values.Contains(item);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool ContainsKey(string key)
     {
-        return _values.ContainsKey(key);
+        return this._values.ContainsKey(key);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
     {
-        ((ICollection<KeyValuePair<string, object?>>)_values).CopyTo(array, arrayIndex);
+        ((ICollection<KeyValuePair<string, object?>>)this._values).CopyTo(array, arrayIndex);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
     {
-        return _values.GetEnumerator();
+        return this._values.GetEnumerator();
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool Remove(string key)
     {
-        return _values.Remove(key);
+        return this._values.Remove(key);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool Remove(KeyValuePair<string, object?> item)
     {
-        return ((ICollection<KeyValuePair<string, object?>>)_values).Remove(item);
+        return ((ICollection<KeyValuePair<string, object?>>)this._values).Remove(item);
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
     {
-        return _values.TryGetValue(key, out value);
+        return this._values.TryGetValue(key, out value);
     }
 
     /// <summary>
@@ -212,7 +212,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <returns>true if the object is find with the specified key; otherwise, false.</returns>
     public bool TryGetValue<TResult>(string key, [MaybeNullWhen(false)] out TResult? value)
     {
-        bool b = _values.TryGetValue(key, out var v);
+        bool b = this._values.TryGetValue(key, out var v);
         if (b)
         {
             value = (TResult?)v;
@@ -229,6 +229,6 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <exclude />
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return ((IEnumerable)_values).GetEnumerator();
+        return ((IEnumerable)this._values).GetEnumerator();
     }
 }

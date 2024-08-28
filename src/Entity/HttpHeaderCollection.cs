@@ -21,7 +21,7 @@ namespace Sisk.Core.Entity;
 /// </summary>
 public sealed class HttpHeaderCollection : IDictionary<string, string?>
 {
-    private List<(string headerName, string headerValue)> _headers = new();
+    private readonly List<(string headerName, string headerValue)> _headers = new();
     internal bool isReadOnly = false;
 
     /// <summary>
@@ -46,7 +46,7 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
                 for (int i = 0; i < values.Length; i++)
                 {
                     string value = values[i];
-                    Add(headerName, value);
+                    this.Add(headerName, value);
                 }
             }
         }
@@ -57,7 +57,7 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     public override string ToString()
     {
         StringBuilder sb = new StringBuilder();
-        foreach (var item in _headers)
+        foreach (var item in this._headers)
         {
             sb.AppendLine($"{item.headerName}: {item.headerValue}");
         }
@@ -69,7 +69,7 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     {
         get
         {
-            var h = _headers[index];
+            var h = this._headers[index];
             return (h.headerName, h.headerValue);
         }
     }
@@ -79,7 +79,7 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     {
         get
         {
-            var values = GetValues(headerName).ToArray();
+            var values = this.GetValues(headerName).ToArray();
             return values.Length switch
             {
                 0 => null,
@@ -89,7 +89,7 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
         }
         set
         {
-            Set(headerName, value);
+            this.Set(headerName, value);
         }
     }
 
@@ -97,11 +97,11 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <inheritdoc/>
     public void Add(string name, string? value)
     {
-        ThrowIfReadOnly();
+        this.ThrowIfReadOnly();
         if (value is null)
             return;
 
-        _headers.Add((name, value));
+        this._headers.Add((name, value));
     }
 
     /// <summary>
@@ -116,8 +116,8 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <param name="headerValue">The header value.</param>
     public void Set(string headerName, string? headerValue)
     {
-        Remove(headerName);
-        Add(headerName, headerValue);
+        this.Remove(headerName);
+        this.Add(headerName, headerValue);
     }
     #endregion
 
@@ -129,9 +129,9 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <param name="name">The header name.</param>
     public string? GetValue(string name)
     {
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            var item = _headers[i];
+            var item = this._headers[i];
             if (string.Compare(item.headerName, name, true) == 0)
             {
                 return item.headerValue;
@@ -146,9 +146,9 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <param name="name">The header name.</param>
     public IEnumerable<string> GetValues(string name)
     {
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            var item = _headers[i];
+            var item = this._headers[i];
             if (string.Compare(item.headerName, name, true) == 0)
             {
                 yield return item.headerValue;
@@ -162,9 +162,9 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <inheritdoc/>
     public bool ContainsKey(string key)
     {
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            if (string.Compare(_headers[i].headerName, key, true) == 0)
+            if (string.Compare(this._headers[i].headerName, key, true) == 0)
             {
                 return true;
             }
@@ -175,11 +175,11 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <inheritdoc/>
     public bool Remove(string key)
     {
-        ThrowIfReadOnly();
+        this.ThrowIfReadOnly();
         List<int> toRemove = new List<int>();
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            if (string.Compare(_headers[i].headerName, key, true) == 0)
+            if (string.Compare(this._headers[i].headerName, key, true) == 0)
             {
                 toRemove.Add(i);
             }
@@ -189,7 +189,7 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
             toRemove.Reverse();
             for (int i = 0; i < toRemove.Count; i++)
             {
-                _headers.RemoveAt(i);
+                this._headers.RemoveAt(i);
             }
             return true;
         }
@@ -199,9 +199,9 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <inheritdoc/>
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out string? value)
     {
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            var item = _headers[i];
+            var item = this._headers[i];
             if (string.Compare(item.headerName, key, true) == 0)
             {
                 value = item.headerValue;
@@ -215,22 +215,22 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <inheritdoc/>
     public void Add(KeyValuePair<string, string?> item)
     {
-        Add(item.Key, item.Value);
+        this.Add(item.Key, item.Value);
     }
 
     /// <inheritdoc/>
     public void Clear()
     {
-        ThrowIfReadOnly();
-        _headers.Clear();
+        this.ThrowIfReadOnly();
+        this._headers.Clear();
     }
 
     /// <inheritdoc/>
     public bool Contains(KeyValuePair<string, string?> item)
     {
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            var hitem = _headers[i];
+            var hitem = this._headers[i];
             if (string.Compare(hitem.headerName, item.Key, true) == 0 && hitem.headerValue.Equals(item.Value))
             {
                 return true;
@@ -251,22 +251,22 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     /// <inheritdoc/>
     public bool Remove(KeyValuePair<string, string?> item)
     {
-        return Remove(item.Key);
+        return this.Remove(item.Key);
     }
 
     /// <inheritdoc/>
     public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
     {
-        for (int i = 0; i < _headers.Count; i++)
+        for (int i = 0; i < this._headers.Count; i++)
         {
-            var item = _headers[i];
+            var item = this._headers[i];
             yield return new KeyValuePair<string, string?>(item.headerName, item.headerValue);
         }
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return GetEnumerator();
+        return this.GetEnumerator();
     }
     #endregion
 
@@ -539,10 +539,10 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     {
         get
         {
-            List<string> headerNames = new List<string>(_headers.Count);
-            for (int i = 0; i < _headers.Count; i++)
+            List<string> headerNames = new List<string>(this._headers.Count);
+            for (int i = 0; i < this._headers.Count; i++)
             {
-                headerNames.Add(_headers[i].headerName);
+                headerNames.Add(this._headers[i].headerName);
             }
             return headerNames;
         }
@@ -553,25 +553,25 @@ public sealed class HttpHeaderCollection : IDictionary<string, string?>
     {
         get
         {
-            List<string?> headerValues = new List<string?>(_headers.Count);
-            for (int i = 0; i < _headers.Count; i++)
+            List<string?> headerValues = new List<string?>(this._headers.Count);
+            for (int i = 0; i < this._headers.Count; i++)
             {
-                headerValues.Add(_headers[i].headerValue);
+                headerValues.Add(this._headers[i].headerValue);
             }
             return headerValues;
         }
     }
 
     /// <inheritdoc/>
-    public int Count => _headers.Count;
+    public int Count => this._headers.Count;
 
     /// <inheritdoc/>
-    public bool IsReadOnly => isReadOnly;
+    public bool IsReadOnly => this.isReadOnly;
     #endregion
 
     void ThrowIfReadOnly()
     {
-        if (isReadOnly)
+        if (this.isReadOnly)
             throw new InvalidOperationException(SR.Collection_ReadOnly);
     }
 }

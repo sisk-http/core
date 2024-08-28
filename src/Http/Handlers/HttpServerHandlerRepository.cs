@@ -23,17 +23,17 @@ internal class HttpServerHandlerRepository
     public HttpServerHandlerRepository(HttpServer parent)
     {
         this.parent = parent;
-        RegisterHandler(_default);
+        this.RegisterHandler(this._default);
     }
 
     public void RegisterHandler(HttpServerHandler handler)
     {
-        handlers.Add(handler);
+        this.handlers.Add(handler);
     }
 
     private void CallEvery(Action<HttpServerHandler> action)
     {
-        Span<HttpServerHandler> hspan = CollectionsMarshal.AsSpan(handlers);
+        Span<HttpServerHandler> hspan = CollectionsMarshal.AsSpan(this.handlers);
         ref HttpServerHandler hpointer = ref MemoryMarshal.GetReference(hspan);
         for (int i = 0; i < hspan.Length; i++)
         {
@@ -45,22 +45,22 @@ internal class HttpServerHandlerRepository
             }
             catch (Exception ex)
             {
-                if (!parent.ServerConfiguration.ThrowExceptions)
+                if (!this.parent.ServerConfiguration.ThrowExceptions)
                 {
-                    parent.ServerConfiguration.ErrorsLogsStream?.WriteException(ex);
+                    this.parent.ServerConfiguration.ErrorsLogsStream?.WriteException(ex);
                 }
                 else throw;
             }
         }
     }
 
-    internal void ServerStarting(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStarting(val));
-    internal void ServerStarted(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStarted(val));
-    internal void SetupRouter(Router val) => CallEvery(handler => handler.InvokeOnSetupRouter(val));
-    internal void ContextBagCreated(TypedValueDictionary val) => CallEvery(handler => handler.InvokeOnContextBagCreated(val));
-    internal void HttpRequestOpen(HttpRequest val) => CallEvery(handler => handler.InvokeOnHttpRequestOpen(val));
-    internal void HttpRequestClose(HttpServerExecutionResult val) => CallEvery(handler => handler.InvokeOnHttpRequestClose(val));
-    internal void Exception(Exception val) => CallEvery(handler => handler.InvokeOnException(val));
-    internal void Stopping(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStopping(val));
-    internal void Stopped(HttpServer val) => CallEvery(handler => handler.InvokeOnServerStopped(val));
+    internal void ServerStarting(HttpServer val) => this.CallEvery(handler => handler.InvokeOnServerStarting(val));
+    internal void ServerStarted(HttpServer val) => this.CallEvery(handler => handler.InvokeOnServerStarted(val));
+    internal void SetupRouter(Router val) => this.CallEvery(handler => handler.InvokeOnSetupRouter(val));
+    internal void ContextBagCreated(TypedValueDictionary val) => this.CallEvery(handler => handler.InvokeOnContextBagCreated(val));
+    internal void HttpRequestOpen(HttpRequest val) => this.CallEvery(handler => handler.InvokeOnHttpRequestOpen(val));
+    internal void HttpRequestClose(HttpServerExecutionResult val) => this.CallEvery(handler => handler.InvokeOnHttpRequestClose(val));
+    internal void Exception(Exception val) => this.CallEvery(handler => handler.InvokeOnException(val));
+    internal void Stopping(HttpServer val) => this.CallEvery(handler => handler.InvokeOnServerStopping(val));
+    internal void Stopped(HttpServer val) => this.CallEvery(handler => handler.InvokeOnServerStopped(val));
 }

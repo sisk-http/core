@@ -38,7 +38,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     public bool IsDefined(RouteMethod method, string path)
     {
-        return GetCollisionRoute(method, path) is not null;
+        return this.GetCollisionRoute(method, path) is not null;
     }
 
     /// <summary>
@@ -47,9 +47,9 @@ public partial class Router
     /// <param name="name">The route name.</param>
     public Route? GetRouteFromName(string name)
     {
-        for (int i = 0; i < _routesList.Count; i++)
+        for (int i = 0; i < this._routesList.Count; i++)
         {
-            Route r = _routesList[i];
+            Route r = this._routesList[i];
             if (string.Compare(name, r.Name) == 0)
             {
                 return r;
@@ -65,14 +65,14 @@ public partial class Router
     /// <param name="uri">The URL expression.</param>
     public Route? GetRouteFromPath(RouteMethod method, string uri)
     {
-        return GetCollisionRoute(method, uri);
+        return this.GetCollisionRoute(method, uri);
     }
 
     /// <summary>
     /// Gets the first matched <see cref="Route"/> by their URL path.
     /// </summary>
     /// <param name="uri">The URL expression.</param>
-    public Route? GetRouteFromPath(string uri) => GetRouteFromPath(RouteMethod.Any, uri);
+    public Route? GetRouteFromPath(string uri) => this.GetRouteFromPath(RouteMethod.Any, uri);
 
     /// <summary>
     /// Scans for all types that implements the specified module type and associates an instance of each type to the router.
@@ -109,11 +109,11 @@ public partial class Router
                     {
                         var instance = Activator.CreateInstance(type)!;
                         if (instance != null)
-                            SetObject(instance);
+                            this.SetObject(instance);
                     }
                     else
                     {
-                        SetObject(type);
+                        this.SetObject(type);
                     }
                 }
             }
@@ -129,7 +129,7 @@ public partial class Router
     /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
-        => AutoScanModules(typeof(TModule), assembly, activateInstances);
+        => this.AutoScanModules(typeof(TModule), assembly, activateInstances);
 
     /// <summary>
     /// Scans for all types that implements <typeparamref name="TModule"/> and associates an instance of each type to the router. Note
@@ -139,7 +139,7 @@ public partial class Router
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>() where TModule : RouterModule
-        => AutoScanModules<TModule>(typeof(TModule).Assembly);
+        => this.AutoScanModules<TModule>(typeof(TModule).Assembly);
 
     /// <summary>
     /// Maps an GET route using the specified path and action function.
@@ -147,7 +147,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void MapGet(string path, RouteAction action)
-        => SetRoute(RouteMethod.Get, path, action);
+        => this.SetRoute(RouteMethod.Get, path, action);
 
     /// <summary>
     /// Maps an POST route using the specified path and action function.
@@ -155,7 +155,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void MapPost(string path, RouteAction action)
-        => SetRoute(RouteMethod.Post, path, action);
+        => this.SetRoute(RouteMethod.Post, path, action);
 
     /// <summary>
     /// Maps an PUT route using the specified path and action function.
@@ -163,7 +163,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void MapPut(string path, RouteAction action)
-        => SetRoute(RouteMethod.Put, path, action);
+        => this.SetRoute(RouteMethod.Put, path, action);
 
     /// <summary>
     /// Maps an DELETE route using the specified path and action function.
@@ -171,7 +171,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void MapDelete(string path, RouteAction action)
-        => SetRoute(RouteMethod.Delete, path, action);
+        => this.SetRoute(RouteMethod.Delete, path, action);
 
     /// <summary>
     /// Maps an PATCH route using the specified path and action function.
@@ -179,7 +179,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void MapPatch(string path, RouteAction action)
-        => SetRoute(RouteMethod.Patch, path, action);
+        => this.SetRoute(RouteMethod.Patch, path, action);
 
     /// <summary>
     /// Maps an route which matches any HTTP method, using the specified path and action function.
@@ -187,7 +187,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void MapAny(string path, RouteAction action)
-        => SetRoute(RouteMethod.Any, path, action);
+        => this.SetRoute(RouteMethod.Any, path, action);
 
     /// <summary>
     /// Maps a rewrite route, which redirects all requests that match the given path to another path,
@@ -197,7 +197,7 @@ public partial class Router
     /// <param name="rewriteInto">The rewrited URL.</param>
     public void Rewrite(string rewritePath, string rewriteInto)
     {
-        SetRoute(RouteMethod.Any, rewritePath, request => RewriteHandler(rewriteInto, request));
+        this.SetRoute(RouteMethod.Any, rewritePath, request => this.RewriteHandler(rewriteInto, request));
     }
 
     /// <summary>
@@ -207,7 +207,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     public void SetRoute(RouteMethod method, string path, RouteAction action)
-        => SetRoute(new Route(method, path, action));
+        => this.SetRoute(new Route(method, path, action));
 
     /// <summary>
     /// Defines an route with their method, path, action function and name.
@@ -217,7 +217,7 @@ public partial class Router
     /// <param name="action">The route function to be called after matched.</param>
     /// <param name="name">The route name.</param>
     public void SetRoute(RouteMethod method, string path, RouteAction action, string? name)
-        => SetRoute(new Route(method, path, name, action, null));
+        => this.SetRoute(new Route(method, path, name, action, null));
 
     /// <summary>
     /// Defines an route with their method, path, action function, name and request handlers.
@@ -228,7 +228,7 @@ public partial class Router
     /// <param name="name">The route name.</param>
     /// <param name="middlewares">Handlers that run before calling your route action.</param>
     public void SetRoute(RouteMethod method, string path, RouteAction action, string? name, IRequestHandler[] middlewares)
-        => SetRoute(new Route(method, path, name, action, middlewares));
+        => this.SetRoute(new Route(method, path, name, action, middlewares));
 
     /// <summary>
     /// Defines an route in this Router instance.
@@ -236,17 +236,17 @@ public partial class Router
     /// <param name="r">The route to be defined in the Router.</param>
     public void SetRoute(Route r)
     {
-        if (IsReadOnly)
+        if (this.IsReadOnly)
         {
             throw new InvalidOperationException(SR.Router_ReadOnlyException);
         }
         Route? collisonRoute;
-        if (!r.UseRegex && (collisonRoute = GetCollisionRoute(r.Method, r.Path)) != null)
+        if (!r.UseRegex && (collisonRoute = this.GetCollisionRoute(r.Method, r.Path)) != null)
         {
             throw new ArgumentException(string.Format(SR.Router_Set_Collision, r, collisonRoute));
         }
 
-        _routesList!.Add(r);
+        this._routesList!.Add(r);
     }
 
     /// <summary>
@@ -259,7 +259,7 @@ public partial class Router
     {
         Type attrClassType = attrClassInstance.GetType();
         MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-        SetInternal(methods, attrClassType, attrClassInstance);
+        this.SetInternal(methods, attrClassType, attrClassInstance);
     }
 
     /// <summary>
@@ -271,7 +271,7 @@ public partial class Router
     public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
     {
         MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-        SetInternal(methods, attrClassType, null);
+        this.SetInternal(methods, attrClassType, null);
     }
 
     /// <summary>
@@ -285,7 +285,7 @@ public partial class Router
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
     public void SetObject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TObject>()
     {
-        SetObject(typeof(TObject));
+        this.SetObject(typeof(TObject));
     }
 
     private void SetInternal(MethodInfo[] methods, Type callerType, object? instance)
@@ -373,13 +373,13 @@ public partial class Router
                     };
 
                     Route? collisonRoute;
-                    if ((collisonRoute = GetCollisionRoute(route.Method, route.Path)) != null)
+                    if ((collisonRoute = this.GetCollisionRoute(route.Method, route.Path)) != null)
                     {
                         throw new ArgumentException(string.Format(SR.Router_Set_Collision, route, collisonRoute));
                     }
 
                     rmodule?.OnRouteCreating(route);
-                    SetRoute(route);
+                    this.SetRoute(route);
                 }
                 catch (Exception ex)
                 {
@@ -410,13 +410,13 @@ public partial class Router
             throw new ArgumentException(SR.Router_Set_InvalidRouteStart);
         }
 
-        for (int i = 0; i < _routesList.Count; i++)
+        for (int i = 0; i < this._routesList.Count; i++)
         {
-            Route r = _routesList[i];
+            Route r = this._routesList[i];
             bool methodMatch =
                 (method == RouteMethod.Any || r.Method == RouteMethod.Any) ||
                 method == r.Method;
-            bool pathMatch = HttpStringInternals.PathRouteMatch(r.Path, path, MatchRoutesIgnoreCase);
+            bool pathMatch = HttpStringInternals.PathRouteMatch(r.Path, path, this.MatchRoutesIgnoreCase);
 
             if (methodMatch && pathMatch)
             {

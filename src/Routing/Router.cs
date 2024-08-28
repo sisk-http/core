@@ -32,9 +32,9 @@ namespace Sisk.Core.Routing
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal void BindServer(HttpServer server)
         {
-            if (parentServer is not null)
+            if (this.parentServer is not null)
             {
-                if (ReferenceEquals(server, parentServer))
+                if (ReferenceEquals(server, this.parentServer))
                 {
                     return;
                 }
@@ -46,7 +46,7 @@ namespace Sisk.Core.Routing
             else
             {
                 server.handler.SetupRouter(this);
-                parentServer = server;
+                this.parentServer = server;
             }
         }
 
@@ -96,7 +96,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating where this <see cref="Router"/> is read-only or not.
         /// </summary>
-        public bool IsReadOnly { get => parentServer is not null; }
+        public bool IsReadOnly { get => this.parentServer is not null; }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
@@ -135,7 +135,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets all routes defined on this router instance.
         /// </summary>
-        public Route[] GetDefinedRoutes() => _routesList.ToArray();
+        public Route[] GetDefinedRoutes() => this._routesList.ToArray();
 
         /// <summary>
         /// Tries to resolve the specified object into an valid <see cref="HttpResponse"/> using the defined
@@ -156,16 +156,16 @@ namespace Sisk.Core.Routing
             // IsReadOnly garantes that _actionHandlersList and
             // _routesList will be not modified during span reading
             ;
-            if (!IsReadOnly)
+            if (!this.IsReadOnly)
             {
                 wasLocked = true;
-                Monitor.Enter(_actionHandlersList);
+                Monitor.Enter(this._actionHandlersList);
             }
             try
             {
                 Type actionType = result.GetType();
 
-                Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(_actionHandlersList);
+                Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(this._actionHandlersList);
                 ref RouteDictItem pointer = ref MemoryMarshal.GetReference(hspan);
                 for (int i = 0; i < hspan.Length; i++)
                 {
@@ -189,7 +189,7 @@ namespace Sisk.Core.Routing
             {
                 if (wasLocked)
                 {
-                    Monitor.Exit(_actionHandlersList);
+                    Monitor.Exit(this._actionHandlersList);
                 }
             }
         }
@@ -200,7 +200,7 @@ namespace Sisk.Core.Routing
         /// <param name="actionHandler">The function that receives an object of the <typeparamref name="T"/> and returns an <see cref="HttpResponse"/> response from the informed object.</param>
         public void RegisterValueHandler<T>(RouterActionHandlerCallback<T> actionHandler) where T : notnull
         {
-            if (IsReadOnly)
+            if (this.IsReadOnly)
             {
                 throw new InvalidOperationException(SR.Router_ReadOnlyException);
             }
@@ -209,15 +209,15 @@ namespace Sisk.Core.Routing
             {
                 throw new ArgumentException(SR.Router_Handler_HttpResponseRegister);
             }
-            for (int i = 0; i < _actionHandlersList!.Count; i++)
+            for (int i = 0; i < this._actionHandlersList!.Count; i++)
             {
-                RouteDictItem item = _actionHandlersList[i];
+                RouteDictItem item = this._actionHandlersList[i];
                 if (item.type.Equals(type))
                 {
                     throw new ArgumentException(SR.Router_Handler_Duplicate);
                 }
             }
-            _actionHandlersList.Add(new RouteDictItem(type, actionHandler));
+            this._actionHandlersList.Add(new RouteDictItem(type, actionHandler));
         }
 
         HttpResponse ResolveAction(object routeResult)
@@ -226,7 +226,7 @@ namespace Sisk.Core.Routing
             {
                 throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
             }
-            else if (TryResolveActionResult(routeResult, out HttpResponse? result))
+            else if (this.TryResolveActionResult(routeResult, out HttpResponse? result))
             {
                 return result;
             }
@@ -238,7 +238,7 @@ namespace Sisk.Core.Routing
 
         internal void FreeHttpServer()
         {
-            parentServer = null;
+            this.parentServer = null;
         }
     }
 

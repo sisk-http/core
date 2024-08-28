@@ -33,7 +33,7 @@ public abstract class RouterModule
     /// of this class.</param>
     public void HasRequestHandler(IRequestHandler handler)
     {
-        RequestHandlers.Add(handler);
+        this.RequestHandlers.Add(handler);
     }
 
     /// <summary>

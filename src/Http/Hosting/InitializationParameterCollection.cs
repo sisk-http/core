@@ -26,7 +26,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <summary>
     /// Gets an instance of <see cref="NameValueCollection"/> with the values of this class.
     /// </summary>
-    public NameValueCollection AsNameValueCollection() => _decorator;
+    public NameValueCollection AsNameValueCollection() => this._decorator;
 
     /// <summary>
     /// Associates the parameters received in the service configuration to a managed object.
@@ -42,7 +42,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
         foreach (PropertyInfo property in properties)
         {
             object mappingValue;
-            string? value = _decorator[property.Name];
+            string? value = this._decorator[property.Name];
             Type propType = property.PropertyType;
 
             if (value is null) continue;
@@ -90,7 +90,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <param name="parameterName">The parameter name which will be evaluated.</param>
     public void EnsureNotNullOrEmpty(string parameterName)
     {
-        if (string.IsNullOrEmpty(_decorator[parameterName])) throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName));
+        if (string.IsNullOrEmpty(this._decorator[parameterName])) throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName));
     }
 
     /// <summary>
@@ -102,18 +102,18 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <param name="parameterName">The parameter name which will be evaluated.</param>
     public void EnsureNotNull(string parameterName)
     {
-        if (string.IsNullOrEmpty(_decorator[parameterName])) throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullParameter, parameterName));
+        if (string.IsNullOrEmpty(this._decorator[parameterName])) throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullParameter, parameterName));
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public string? this[string key]
     {
-        get => _decorator[key];
+        get => this._decorator[key];
         set
         {
-            ThrowIfReadonly();
-            _decorator[key] = value;
+            this.ThrowIfReadonly();
+            this._decorator[key] = value;
         }
     }
 
@@ -124,7 +124,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
         get
         {
             List<string> _keys = new List<string>();
-            foreach (string s in _decorator.Keys)
+            foreach (string s in this._decorator.Keys)
                 _keys.Add(s);
             return _keys.ToArray();
         }
@@ -137,56 +137,56 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
         get
         {
             List<string?> _keys = new List<string?>();
-            foreach (string s in _decorator.Keys)
-                _keys.Add(_decorator[s]);
+            foreach (string s in this._decorator.Keys)
+                _keys.Add(this._decorator[s]);
             return _keys.ToArray();
         }
     }
 
     /// <inheritdoc/>
     /// <exclude/>
-    public int Count => _decorator.Count;
+    public int Count => this._decorator.Count;
 
     /// <inheritdoc/>
     /// <exclude/>
-    public bool IsReadOnly => _isReadonly;
+    public bool IsReadOnly => this._isReadonly;
 
     /// <inheritdoc/>
     /// <exclude/>
     public void Add(string key, string? value)
     {
-        ThrowIfReadonly();
-        _decorator[key] = value;
+        this.ThrowIfReadonly();
+        this._decorator[key] = value;
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public void Add(KeyValuePair<string, string?> item)
     {
-        ThrowIfReadonly();
-        _decorator[item.Key] = item.Value;
+        this.ThrowIfReadonly();
+        this._decorator[item.Key] = item.Value;
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public void Clear()
     {
-        ThrowIfReadonly();
-        _decorator.Clear();
+        this.ThrowIfReadonly();
+        this._decorator.Clear();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool Contains(KeyValuePair<string, string?> item)
     {
-        return Keys.Contains(item.Key) && _decorator[item.Key] == item.Value;
+        return this.Keys.Contains(item.Key) && this._decorator[item.Key] == item.Value;
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool ContainsKey(string key)
     {
-        return Keys.Contains(key);
+        return this.Keys.Contains(key);
     }
 
     /// <inheritdoc/>
@@ -200,15 +200,15 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <exclude/>
     public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
     {
-        return (IEnumerator<KeyValuePair<string, string?>>)_decorator.GetEnumerator();
+        return (IEnumerator<KeyValuePair<string, string?>>)this._decorator.GetEnumerator();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool Remove(string key)
     {
-        ThrowIfReadonly();
-        _decorator.Remove(key);
+        this.ThrowIfReadonly();
+        this._decorator.Remove(key);
         return true;
     }
 
@@ -216,8 +216,8 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <exclude/>
     public bool Remove(KeyValuePair<string, string?> item)
     {
-        ThrowIfReadonly();
-        _decorator.Remove(item.Key);
+        this.ThrowIfReadonly();
+        this._decorator.Remove(item.Key);
         return true;
     }
 
@@ -225,9 +225,9 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <exclude/>
     public bool TryGetValue(string key, out string? value)
     {
-        if (ContainsKey(key))
+        if (this.ContainsKey(key))
         {
-            value = _decorator[key];
+            value = this._decorator[key];
             return true;
         }
         else
@@ -241,17 +241,17 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return _decorator.GetEnumerator();
+        return this._decorator.GetEnumerator();
     }
 
     internal void MakeReadonly()
     {
-        _isReadonly = true;
+        this._isReadonly = true;
     }
 
     void ThrowIfReadonly()
     {
-        if (_isReadonly)
+        if (this._isReadonly)
         {
             throw new InvalidOperationException("Cannot modify this collection: it is read-only.");
         }

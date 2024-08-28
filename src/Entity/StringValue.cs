@@ -22,37 +22,37 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
 
     internal StringValue(string name, string type, string? data)
     {
-        _ref = data;
-        argName = name;
-        argType = type;
+        this._ref = data;
+        this.argName = name;
+        this.argType = type;
     }
 
     /// <summary>
     /// Gets the name of the property that hosts this <see cref="StringValue"/>.
     /// </summary>
-    public string Name { get => argName; }
+    public string Name { get => this.argName; }
 
     /// <summary>
     /// Gets the value of the current <see cref="StringValue"/> string if it has been assigned a valid underlying value.
     /// </summary>
-    public string? Value { get => _ref; }
+    public string? Value { get => this._ref; }
 
     /// <summary>
     /// Gets an boolean indicating if this object value is null or an empty string.
     /// </summary>
-    public bool IsNullOrEmpty { get => string.IsNullOrEmpty(_ref); }
+    public bool IsNullOrEmpty { get => string.IsNullOrEmpty(this._ref); }
 
     /// <summary>
     /// Gets an boolean indicating if this object value is null.
     /// </summary>
-    public bool IsNull { get => _ref is null; }
+    public bool IsNull { get => this._ref is null; }
 
     /// <summary>
     /// Returns a self-reference to this object when it's value is not null.
     /// </summary>
     public StringValue? MaybeNull()
     {
-        if (IsNull)
+        if (this.IsNull)
         {
             return null;
         }
@@ -64,7 +64,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// </summary>
     public StringValue? MaybeNullOrEmpty()
     {
-        if (IsNullOrEmpty)
+        if (this.IsNullOrEmpty)
         {
             return null;
         }
@@ -79,8 +79,8 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <typeparam name="TEnum">The <see cref="Enum"/> type.</typeparam>
     public TEnum GetEnum<TEnum>() where TEnum : struct, Enum
     {
-        ThrowIfNull();
-        return Enum.Parse<TEnum>(_ref!, true);
+        this.ThrowIfNull();
+        return Enum.Parse<TEnum>(this._ref!, true);
     }
 
     /// <summary>
@@ -91,8 +91,8 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
     public string GetString()
     {
-        ThrowIfNull();
-        return _ref!;
+        this.ThrowIfNull();
+        return this._ref!;
     }
 
     /// <summary>
@@ -102,11 +102,11 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <returns>An non-null char value.</returns>
     public char GetChar()
     {
-        ThrowIfNull();
-        if (_ref!.Length != 1)
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "char"));
+        this.ThrowIfNull();
+        if (this._ref!.Length != 1)
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "char"));
 
-        return _ref[0];
+        return this._ref[0];
     }
 
     /// <summary>
@@ -117,14 +117,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public int GetInteger()
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return int.Parse(_ref!);
+            return int.Parse(this._ref!);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "integer"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "integer"));
         }
     }
 
@@ -136,14 +136,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public int GetByte()
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return byte.Parse(_ref!);
+            return byte.Parse(this._ref!);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "byte"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "byte"));
         }
     }
 
@@ -155,14 +155,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public long GetLong()
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return long.Parse(_ref!);
+            return long.Parse(this._ref!);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "long"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "long"));
         }
     }
 
@@ -175,14 +175,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public short GetShort(IFormatProvider? fmtProvider = null)
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return short.Parse(_ref!, fmtProvider);
+            return short.Parse(this._ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "short"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "short"));
         }
     }
 
@@ -195,14 +195,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public double GetDouble(IFormatProvider? fmtProvider = null)
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return double.Parse(_ref!, fmtProvider);
+            return double.Parse(this._ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "double"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "double"));
         }
     }
 
@@ -215,14 +215,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public double GetSingle(IFormatProvider? fmtProvider = null)
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return float.Parse(_ref!, fmtProvider);
+            return float.Parse(this._ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "float"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "float"));
         }
     }
 
@@ -234,14 +234,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public bool GetBoolean()
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return bool.Parse(_ref!);
+            return bool.Parse(this._ref!);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "boolean"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "boolean"));
         }
     }
 
@@ -254,14 +254,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public DateTime GetDateTime(IFormatProvider? fmtProvider = null)
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return DateTime.Parse(_ref!, fmtProvider);
+            return DateTime.Parse(this._ref!, fmtProvider);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "DateTime"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "DateTime"));
         }
     }
 
@@ -273,14 +273,14 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
     public Guid GetGuid()
     {
-        ThrowIfNull();
+        this.ThrowIfNull();
         try
         {
-            return Guid.Parse(_ref!);
+            return Guid.Parse(this._ref!);
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException)
         {
-            throw new FormatException(string.Format(SR.ValueItem_CastException, _ref, argName, "GUID"));
+            throw new FormatException(string.Format(SR.ValueItem_CastException, this._ref, this.argName, "GUID"));
         }
     }
 
@@ -293,8 +293,8 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <returns>The result of parsing the current string value.</returns>
     public T GetParsable<T>(IFormatProvider? fmtProvider = null) where T : IParsable<T>
     {
-        ThrowIfNull();
-        return T.Parse(_ref!, fmtProvider);
+        this.ThrowIfNull();
+        return T.Parse(this._ref!, fmtProvider);
     }
 #endif
 
@@ -304,16 +304,16 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <typeparam name="T">The type to convert the value to.</typeparam>
     public T Get<T>() where T : struct
     {
-        ThrowIfNull();
-        object result = Internal.Parseable.ParseInternal<T>(_ref!);
+        this.ThrowIfNull();
+        object result = Internal.Parseable.ParseInternal<T>(this._ref!);
         return Unsafe.Unbox<T>(result);
     }
 
     void ThrowIfNull()
     {
-        if (IsNull)
+        if (this.IsNull)
         {
-            throw new NullReferenceException(string.Format(SR.ValueItem_ValueNull, argName, argType));
+            throw new NullReferenceException(string.Format(SR.ValueItem_ValueNull, this.argName, this.argType));
         }
     }
 
@@ -341,15 +341,15 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     {
         if (obj is null)
         {
-            return IsNull;
+            return this.IsNull;
         }
         else if (obj is StringValue sv)
         {
-            return _ref?.Equals(sv._ref) == true;
+            return this._ref?.Equals(sv._ref) == true;
         }
         else if (obj is string ss)
         {
-            return _ref?.Equals(ss) == true;
+            return this._ref?.Equals(ss) == true;
         }
         else
         {
@@ -361,27 +361,27 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exclude/>
     public override int GetHashCode()
     {
-        return _ref?.GetHashCode() ?? 0;
+        return this._ref?.GetHashCode() ?? 0;
     }
 
     /// <inheritdoc/>
     public object Clone()
     {
-        return new StringValue((string)argName.Clone(), (string)argType.Clone(), (string?)_ref?.Clone());
+        return new StringValue((string)this.argName.Clone(), (string)this.argType.Clone(), (string?)this._ref?.Clone());
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public override string? ToString()
     {
-        return _ref?.ToString();
+        return this._ref?.ToString();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool Equals(StringValue other)
     {
-        return Equals(other);
+        return this.Equals(other);
     }
 
     /// <inheritdoc/>

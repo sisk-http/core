@@ -19,8 +19,8 @@ internal class RouteDefinition
 
     public RouteDefinition(RouteMethod method, String path)
     {
-        Method = method;
-        Path = path ?? throw new ArgumentNullException(nameof(path));
+        this.Method = method;
+        this.Path = path ?? throw new ArgumentNullException(nameof(path));
     }
 
     public static RouteDefinition GetFromCallback(RouteAction action)

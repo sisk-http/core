@@ -40,17 +40,17 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP event source connection.
         /// </summary>
-        public HttpStreamPingPolicy PingPolicy { get => pingPolicy; }
+        public HttpStreamPingPolicy PingPolicy { get => this.pingPolicy; }
 
         /// <summary>
         /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
         /// </summary>
-        public HttpRequest HttpRequest => reqObj;
+        public HttpRequest HttpRequest => this.reqObj;
 
         /// <summary>
         /// Gets an integer indicating the total bytes sent by this instance to the client.
         /// </summary>
-        public int SentContentLength { get => length; }
+        public int SentContentLength { get => this.length; }
 
         /// <summary>
         /// Gets an unique identifier label to this EventStream connection, useful for finding this connection's reference later.
@@ -66,14 +66,14 @@ namespace Sisk.Core.Http.Streams
         {
             this.res = res ?? throw new ArgumentNullException(nameof(res));
             this.req = req ?? throw new ArgumentNullException(nameof(req));
-            Identifier = identifier;
-            hostServer = host.baseServer;
-            reqObj = host;
-            pingPolicy = new HttpStreamPingPolicy(this);
+            this.Identifier = identifier;
+            this.hostServer = host.baseServer;
+            this.reqObj = host;
+            this.pingPolicy = new HttpStreamPingPolicy(this);
 
-            hostServer._eventCollection.RegisterEventSource(this);
+            this.hostServer._eventCollection.RegisterEventSource(this);
 
-            IsActive = true;
+            this.IsActive = true;
 
             res.AddHeader("Cache-Control", "no-store, no-cache");
             res.AddHeader("Content-Type", "text/event-stream");
@@ -84,11 +84,11 @@ namespace Sisk.Core.Http.Streams
 
         private void keepAliveTask()
         {
-            while (IsActive)
+            while (this.IsActive)
             {
-                if (lastSuccessfullMessage < DateTime.Now - keepAlive)
+                if (this.lastSuccessfullMessage < DateTime.Now - this.keepAlive)
                 {
-                    Dispose();
+                    this.Dispose();
                     break;
                 }
                 else
@@ -104,7 +104,7 @@ namespace Sisk.Core.Http.Streams
         /// <param name="act">The method that runs on the ping policy for this HTTP Event Source.</param>
         public void WithPing(Action<HttpStreamPingPolicy> act)
         {
-            act(pingPolicy);
+            act(this.pingPolicy);
         }
 
         /// <summary>
@@ -114,11 +114,11 @@ namespace Sisk.Core.Http.Streams
         /// <param name="value">The header value.</param>
         public void AppendHeader(string name, string value)
         {
-            if (hasSentData)
+            if (this.hasSentData)
             {
                 throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
             }
-            res.AddHeader(name, value);
+            this.res.AddHeader(name, value);
         }
 
         /// <summary>
@@ -127,13 +127,13 @@ namespace Sisk.Core.Http.Streams
         /// <param name="data">The message text.</param>
         public bool Send(string data)
         {
-            if (!IsActive)
+            if (!this.IsActive)
             {
                 return false;
             }
-            hasSentData = true;
-            sendQueue.Add($"data: {data}\n\n");
-            Flush();
+            this.hasSentData = true;
+            this.sendQueue.Add($"data: {data}\n\n");
+            this.Flush();
             return true;
         }
 
@@ -143,13 +143,13 @@ namespace Sisk.Core.Http.Streams
         /// <param name="data">The message object.</param>
         public bool Send(object? data)
         {
-            if (!IsActive)
+            if (!this.IsActive)
             {
                 return false;
             }
-            hasSentData = true;
-            sendQueue.Add($"data: {data?.ToString()}\n\n");
-            Flush();
+            this.hasSentData = true;
+            this.sendQueue.Add($"data: {data?.ToString()}\n\n");
+            this.Flush();
             return true;
         }
 
@@ -159,11 +159,11 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         public void KeepAlive()
         {
-            if (!IsActive)
+            if (!this.IsActive)
             {
                 throw new InvalidOperationException(SR.HttpRequestEventSource_KeepAliveDisposed);
             }
-            terminatingMutex.WaitOne();
+            this.terminatingMutex.WaitOne();
         }
 
         /// <summary>
@@ -173,13 +173,13 @@ namespace Sisk.Core.Http.Streams
         /// <param name="maximumIdleTolerance">The maximum timeout interval for an idle connection to automatically release this method.</param>
         public void WaitForFail(TimeSpan maximumIdleTolerance)
         {
-            if (!IsActive)
+            if (!this.IsActive)
             {
                 throw new InvalidOperationException(SR.HttpRequestEventSource_KeepAliveDisposed);
             }
-            keepAlive = maximumIdleTolerance;
-            new Task(keepAliveTask).Start();
-            terminatingMutex.WaitOne();
+            this.keepAlive = maximumIdleTolerance;
+            new Task(this.keepAliveTask).Start();
+            this.terminatingMutex.WaitOne();
         }
 
         /// <summary>
@@ -187,16 +187,16 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         public HttpResponse Close()
         {
-            if (!isClosed)
+            if (!this.isClosed)
             {
-                isClosed = true;
-                Flush();
-                Dispose();
-                hostServer._eventCollection.UnregisterEventSource(this);
+                this.isClosed = true;
+                this.Flush();
+                this.Dispose();
+                this.hostServer._eventCollection.UnregisterEventSource(this);
             }
             return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
-                CalculedLength = length
+                CalculedLength = this.length
             };
         }
 
@@ -205,29 +205,29 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         public void Cancel()
         {
-            sendQueue.Clear();
+            this.sendQueue.Clear();
         }
 
         internal void Flush()
         {
-            for (int i = 0; i < sendQueue.Count; i++)
+            for (int i = 0; i < this.sendQueue.Count; i++)
             {
-                if (isClosed)
+                if (this.isClosed)
                 {
                     return;
                 }
-                string item = sendQueue[i];
-                byte[] itemBytes = req.ContentEncoding.GetBytes(item);
+                string item = this.sendQueue[i];
+                byte[] itemBytes = this.req.ContentEncoding.GetBytes(item);
                 try
                 {
-                    res.OutputStream.Write(itemBytes);
-                    length += itemBytes.Length;
-                    sendQueue.RemoveAt(0);
-                    lastSuccessfullMessage = DateTime.Now;
+                    this.res.OutputStream.Write(itemBytes);
+                    this.length += itemBytes.Length;
+                    this.sendQueue.RemoveAt(0);
+                    this.lastSuccessfullMessage = DateTime.Now;
                 }
                 catch (Exception)
                 {
-                    Dispose();
+                    this.Dispose();
                 }
             }
         }
@@ -237,12 +237,12 @@ namespace Sisk.Core.Http.Streams
         /// </summary>
         public void Dispose()
         {
-            if (isDisposed) return;
-            Close();
-            sendQueue.Clear();
-            terminatingMutex.Set();
-            IsActive = false;
-            isDisposed = true;
+            if (this.isDisposed) return;
+            this.Close();
+            this.sendQueue.Clear();
+            this.terminatingMutex.Set();
+            this.IsActive = false;
+            this.isDisposed = true;
         }
     }
 }

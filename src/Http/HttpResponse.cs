@@ -82,7 +82,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the HTTP response status code.
         /// </summary>
-        public HttpStatusCode Status { get => (HttpStatusCode)StatusInformation.StatusCode; set => StatusInformation = new HttpStatusInformation(value); }
+        public HttpStatusCode Status { get => (HttpStatusCode)this.StatusInformation.StatusCode; set => this.StatusInformation = new HttpStatusInformation(value); }
 
         /// <summary>
         /// Gets a <see cref="HttpHeaderCollection"/> instance of the HTTP response headers.
@@ -113,14 +113,14 @@ namespace Sisk.Core.Http
         public string GetRawHttpResponse(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"HTTP/1.1 {StatusInformation}");
-            foreach (var header in Headers)
+            sb.AppendLine($"HTTP/1.1 {this.StatusInformation}");
+            foreach (var header in this.Headers)
             {
                 sb.Append($"{header.Key}: {header.Value}");
                 sb.Append('\n');
             }
-            if (Content?.Headers is not null)
-                foreach (var header in Content.Headers)
+            if (this.Content?.Headers is not null)
+                foreach (var header in this.Content.Headers)
                 {
                     sb.Append(header.Key + ": ");
                     sb.Append(string.Join(", ", header.Value));
@@ -128,9 +128,9 @@ namespace Sisk.Core.Http
                 }
             sb.Append('\n');
 
-            if (includeBody && Content is not StreamContent)
+            if (includeBody && this.Content is not StreamContent)
             {
-                string? s = Content?.ReadAsStringAsync().Result;
+                string? s = this.Content?.ReadAsStringAsync().Result;
 
                 if (s is not null)
                 {
@@ -193,14 +193,14 @@ namespace Sisk.Core.Http
         /// <param name="content">The response content, if any.</param>
         public HttpResponse(HttpStatusCode status, HttpContent? content)
         {
-            Status = status;
-            Content = content;
+            this.Status = status;
+            this.Content = content;
         }
 
         /// <inheritdoc/>
         protected sealed override void SetCookieHeader(String name, String value)
         {
-            Headers.Add(name, value);
+            this.Headers.Add(name, value);
         }
     }
 }

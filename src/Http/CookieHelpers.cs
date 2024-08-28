@@ -30,7 +30,7 @@ public abstract class CookieHelper
     /// <param name="value">The cookie value.</param>
     public void SetCookie(string name, string value)
     {
-        SetCookieHeader("Set-Cookie", $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
+        this.SetCookieHeader("Set-Cookie", $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public abstract class CookieHelper
             syntax.Add($"SameSite={sameSite}");
         }
 
-        SetCookieHeader(HttpKnownHeaderNames.SetCookie, String.Join("; ", syntax));
+        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, String.Join("; ", syntax));
     }
 
 }

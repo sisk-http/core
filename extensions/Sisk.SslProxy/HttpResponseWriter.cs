@@ -37,7 +37,7 @@ static class HttpResponseWriter
                 (string name, string value) header = headers[i];
                 if (string.Compare(header.name, HttpKnownHeaderNames.Server, true) == 0)
                 {
-                    sw.WriteLine($"Server: Sisk/{HttpServer.SiskVersion}");
+                    sw.WriteLine($"Server: {Constants.Server}");
                 }
                 else
                 {

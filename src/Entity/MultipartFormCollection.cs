@@ -23,7 +23,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
 
     internal MultipartFormCollection(IEnumerable<MultipartObject> items)
     {
-        _items = items.ToImmutableList() ?? throw new ArgumentNullException(nameof(items));
+        this._items = items.ToImmutableList() ?? throw new ArgumentNullException(nameof(items));
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
     public MultipartObject? GetItem(string name, bool ignoreCase = false)
     {
-        return _items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0);
+        return this._items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     public string? GetString(string name, bool ignoreCase = false, Encoding? encoding = null)
     {
         Encoding _enc = encoding ?? Encoding.UTF8;
-        return _items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0)?.ReadContentAsString(_enc);
+        return this._items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0)?.ReadContentAsString(_enc);
     }
 
     /// <summary>
@@ -54,19 +54,19 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// <param name="name">The form item name.</param>
     public StringValue GetStringValue(string name)
     {
-        return new StringValue(name, "multipart form", GetItem(name, true)?.ReadContentAsString());
+        return new StringValue(name, "multipart form", this.GetItem(name, true)?.ReadContentAsString());
     }
 
     /// <exclude/>
     /// <inheritdoc/>
-    public MultipartObject this[int index] => ((IReadOnlyList<MultipartObject>)_items)[index];
+    public MultipartObject this[int index] => ((IReadOnlyList<MultipartObject>)this._items)[index];
 
     /// <exclude/>
     /// <inheritdoc/>
-    public MultipartObject this[string name] => GetItem(name, false) ?? throw new KeyNotFoundException();
+    public MultipartObject this[string name] => this.GetItem(name, false) ?? throw new KeyNotFoundException();
 
     /// <inheritdoc/>
-    public int Count => ((IReadOnlyCollection<MultipartObject>)_items).Count;
+    public int Count => ((IReadOnlyCollection<MultipartObject>)this._items).Count;
 
 
     /// <inheritdoc/>
@@ -74,9 +74,9 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     {
         get
         {
-            for (int i = 0; i < _items.Count; i++)
+            for (int i = 0; i < this._items.Count; i++)
             {
-                MultipartObject? item = _items[i];
+                MultipartObject? item = this._items[i];
                 yield return item.Name;
             }
         }
@@ -88,9 +88,9 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     {
         get
         {
-            for (int i = 0; i < _items.Count; i++)
+            for (int i = 0; i < this._items.Count; i++)
             {
-                MultipartObject? item = _items[i];
+                MultipartObject? item = this._items[i];
                 yield return item;
             }
         }
@@ -99,25 +99,25 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// <inheritdoc/>
     public IEnumerator<MultipartObject> GetEnumerator()
     {
-        return ((IEnumerable<MultipartObject>)_items).GetEnumerator();
+        return ((IEnumerable<MultipartObject>)this._items).GetEnumerator();
     }
 
     /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return ((IEnumerable)_items).GetEnumerator();
+        return ((IEnumerable)this._items).GetEnumerator();
     }
 
     /// <inheritdoc/>
     public bool ContainsKey(string key)
     {
-        return _items.Any(i => i.Name.CompareTo(key) == 0);
+        return this._items.Any(i => i.Name.CompareTo(key) == 0);
     }
 
     /// <inheritdoc/>
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out MultipartObject value)
     {
-        var i = _items.FirstOrDefault(item => item.Name.CompareTo(key) == 0);
+        var i = this._items.FirstOrDefault(item => item.Name.CompareTo(key) == 0);
         if (i is null)
         {
             value = default;
@@ -132,9 +132,9 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
 
     IEnumerator<KeyValuePair<string, MultipartObject>> IEnumerable<KeyValuePair<string, MultipartObject>>.GetEnumerator()
     {
-        for (int i = 0; i < _items.Count; i++)
+        for (int i = 0; i < this._items.Count; i++)
         {
-            MultipartObject? item = _items[i];
+            MultipartObject? item = this._items[i];
             yield return new KeyValuePair<string, MultipartObject>(item.Name, item);
         }
     }

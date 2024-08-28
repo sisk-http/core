@@ -19,12 +19,12 @@ internal class DefaultHttpServerHandler : HttpServerHandler
     protected override void OnServerStarting(HttpServer server)
     {
         base.OnServerStarting(server);
-        if (_serverBootstraping != null) _serverBootstraping();
+        if (this._serverBootstraping != null) this._serverBootstraping();
     }
 
     protected override void OnSetupRouter(Router router)
     {
         base.OnSetupRouter(router);
-        if (_routerSetup != null) _routerSetup(router);
+        if (this._routerSetup != null) this._routerSetup(router);
     }
 }

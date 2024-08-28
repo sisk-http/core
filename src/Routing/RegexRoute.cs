@@ -26,7 +26,7 @@ public class RegexRoute : Route
 #endif
 
     {
-        UseRegex = true;
+        this.UseRegex = true;
     }
 
     /// <inheritdoc/>
@@ -37,6 +37,6 @@ public class RegexRoute : Route
     public RegexRoute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, string? name, RouteAction action, IRequestHandler[]? beforeCallback) : base(method, pattern, name, action, beforeCallback)
 #endif
     {
-        UseRegex = true;
+        this.UseRegex = true;
     }
 }

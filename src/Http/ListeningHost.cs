@@ -29,11 +29,11 @@ namespace Sisk.Core.Http
             if (obj is ListeningHost other)
             {
                 if (other is null) return false;
-                if (other._ports.Length != _ports.Length) return false;
+                if (other._ports.Length != this._ports.Length) return false;
 
-                for (int i = 0; i < _ports.Length; i++)
+                for (int i = 0; i < this._ports.Length; i++)
                 {
-                    ListeningPort A = _ports[i];
+                    ListeningPort A = this._ports[i];
                     ListeningPort B = other._ports[i];
                     if (!A.Equals(B)) return false;
                 }
@@ -51,7 +51,7 @@ namespace Sisk.Core.Http
         public override int GetHashCode()
         {
             int hashCode = 9999;
-            foreach (var port in _ports)
+            foreach (var port in this._ports)
             {
                 hashCode ^= port.GetHashCode();
             }
@@ -61,7 +61,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets whether this <see cref="ListeningHost"/> can be listened by it's host <see cref="HttpServer"/>.
         /// </summary>
-        public bool CanListen { get => Router is not null; }
+        public bool CanListen { get => this.Router is not null; }
 
         /// <summary>
         /// Gets or sets the CORS sharing policy object.
@@ -81,12 +81,12 @@ namespace Sisk.Core.Http
         {
             get
             {
-                return _ports;
+                return this._ports;
             }
             set
             {
-                _ports = value;
-                _numericPorts = value.Select(p => p.Port).ToArray();
+                this._ports = value;
+                this._numericPorts = value.Select(p => p.Port).ToArray();
             }
         }
 
@@ -109,8 +109,8 @@ namespace Sisk.Core.Http
         /// <param name="r">The router which will handle this listener requests.</param>
         public ListeningHost(string uri, Router r)
         {
-            Ports = new ListeningPort[] { new ListeningPort(uri) };
-            Router = r;
+            this.Ports = new ListeningPort[] { new ListeningPort(uri) };
+            this.Router = r;
         }
     }
 }

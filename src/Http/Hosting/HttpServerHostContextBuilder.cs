@@ -43,20 +43,20 @@ public sealed class HttpServerHostContextBuilder
 
         HttpServer server = new HttpServer(configuration);
 
-        _context = new HttpServerHostContext(server);
+        this._context = new HttpServerHostContext(server);
     }
 
     /// <summary>
     /// Gets the Server Configuration object.
     /// </summary>
-    public HttpServerConfiguration ServerConfiguration { get => _context.ServerConfiguration; }
+    public HttpServerConfiguration ServerConfiguration { get => this._context.ServerConfiguration; }
 
     /// <summary>
     /// Builds an <see cref="HttpServerHostContext"/> with the specified parameters.
     /// </summary>
     public HttpServerHostContext Build()
     {
-        return _context;
+        return this._context;
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
     public HttpServerHostContextBuilder UseBootstraper(Action bootstrapAction)
     {
-        _context.HttpServer.handler._default._serverBootstraping = bootstrapAction;
+        this._context.HttpServer.handler._default._serverBootstraping = bootstrapAction;
         return this;
     }
 
@@ -80,11 +80,11 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="portableConfigHandler">The handler of <see cref="PortableConfigurationBuilder"/>.</param>
     public HttpServerHostContextBuilder UsePortableConfiguration(Action<PortableConfigurationBuilder> portableConfigHandler)
     {
-        _portableConfiguration = new PortableConfigurationBuilder(_context);
+        this._portableConfiguration = new PortableConfigurationBuilder(this._context);
         try
         {
-            portableConfigHandler(_portableConfiguration);
-            _portableConfiguration.Build();
+            portableConfigHandler(this._portableConfiguration);
+            this._portableConfiguration.Build();
         }
         catch (Exception ex)
         {
@@ -117,7 +117,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="port">The port the server will listen on.</param>
     public HttpServerHostContextBuilder UseListeningPort(ushort port)
     {
-        _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(port);
+        this._context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(port);
         return this;
     }
 
@@ -127,7 +127,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
     public HttpServerHostContextBuilder UseListeningPort(string uri)
     {
-        _context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(uri);
+        this._context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(uri);
         return this;
     }
 
@@ -137,7 +137,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the HTTP server will listen to.</param>
     public HttpServerHostContextBuilder UseListeningPort(ListeningPort listeningPort)
     {
-        _context.ServerConfiguration.ListeningHosts[0].Ports[0] = listeningPort;
+        this._context.ServerConfiguration.ListeningHosts[0].Ports[0] = listeningPort;
         return this;
     }
 
@@ -147,7 +147,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="locale">The default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.</param>
     public HttpServerHostContextBuilder UseLocale(CultureInfo locale)
     {
-        _context.ServerConfiguration.DefaultCultureInfo = locale;
+        this._context.ServerConfiguration.DefaultCultureInfo = locale;
         return this;
     }
 
@@ -157,7 +157,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="flags">The flags that will be set on the HTTP server.</param>
     public HttpServerHostContextBuilder UseFlags(HttpServerFlags flags)
     {
-        _context.ServerConfiguration.Flags = flags;
+        this._context.ServerConfiguration.Flags = flags;
         return this;
     }
 
@@ -167,7 +167,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="resolver">The <see cref="ForwardingResolver"/> object.</param>
     public HttpServerHostContextBuilder UseForwardingResolver(ForwardingResolver resolver)
     {
-        _context.ServerConfiguration.ForwardingResolver = resolver;
+        this._context.ServerConfiguration.ForwardingResolver = resolver;
         return this;
     }
 
@@ -177,7 +177,7 @@ public sealed class HttpServerHostContextBuilder
     /// <typeparam name="TForwardingResolver">The type which implements <see cref="ForwardingResolver"/>.</typeparam>
     public HttpServerHostContextBuilder UseForwardingResolver<TForwardingResolver>() where TForwardingResolver : ForwardingResolver, new()
     {
-        return UseForwardingResolver(new TForwardingResolver());
+        return this.UseForwardingResolver(new TForwardingResolver());
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="handler">An action where the first argument is an <see cref="HttpServerConfiguration"/>.</param>
     public HttpServerHostContextBuilder UseConfiguration(Action<HttpServerConfiguration> handler)
     {
-        handler(_context.ServerConfiguration);
+        handler(this._context.ServerConfiguration);
         return this;
     }
 
@@ -196,7 +196,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="handler">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
     public HttpServerHostContextBuilder UseHttpServer(Action<HttpServer> handler)
     {
-        handler(_context.HttpServer);
+        handler(this._context.HttpServer);
         return this;
     }
 
@@ -206,10 +206,10 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="handler">An action where the first argument is the main <see cref="CrossOriginResourceSharingHeaders"/> object.</param>
     public HttpServerHostContextBuilder UseCors(Action<CrossOriginResourceSharingHeaders> handler)
     {
-        if (_context.CrossOriginResourceSharingPolicy is null)
-            _context.CrossOriginResourceSharingPolicy = CrossOriginResourceSharingHeaders.Empty;
+        if (this._context.CrossOriginResourceSharingPolicy is null)
+            this._context.CrossOriginResourceSharingPolicy = CrossOriginResourceSharingHeaders.Empty;
 
-        handler(_context.CrossOriginResourceSharingPolicy);
+        handler(this._context.CrossOriginResourceSharingPolicy);
         return this;
     }
 
@@ -219,7 +219,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="cors">The <see cref="CrossOriginResourceSharingHeaders"/> to the current host builder.</param>
     public HttpServerHostContextBuilder UseCors(CrossOriginResourceSharingHeaders cors)
     {
-        _context.CrossOriginResourceSharingPolicy = cors;
+        this._context.CrossOriginResourceSharingPolicy = cors;
         return this;
     }
 
@@ -229,7 +229,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="handler">An action where the first argument is the main <see cref="Router"/> object.</param>
     public HttpServerHostContextBuilder UseRouter(Action<Router> handler)
     {
-        _context.HttpServer.handler._default._routerSetup = handler;
+        this._context.HttpServer.handler._default._routerSetup = handler;
         return this;
     }
 
@@ -239,7 +239,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="r">The <see cref="Router"/> to the current host builder.</param>
     public HttpServerHostContextBuilder UseRouter(Router r)
     {
-        _context.Router = r;
+        this._context.Router = r;
         return this;
     }
 
@@ -251,7 +251,7 @@ public sealed class HttpServerHostContextBuilder
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public HttpServerHostContextBuilder UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule
     {
-        _context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly, activateInstances);
+        this._context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly, activateInstances);
         return this;
     }
 
@@ -264,7 +264,7 @@ public sealed class HttpServerHostContextBuilder
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
     public HttpServerHostContextBuilder UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule
     {
-        _context.Router.AutoScanModules<TModule>(t, activateInstances);
+        this._context.Router.AutoScanModules<TModule>(t, activateInstances);
         return this;
     }
 
@@ -274,7 +274,7 @@ public sealed class HttpServerHostContextBuilder
     /// <typeparam name="THandler">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
     public HttpServerHostContextBuilder UseHandler<THandler>() where THandler : HttpServerHandler, new()
     {
-        _context.HttpServer.RegisterHandler<THandler>();
+        this._context.HttpServer.RegisterHandler<THandler>();
         return this;
     }
 
@@ -284,7 +284,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="handler">The instance of the server handler.</param>
     public HttpServerHostContextBuilder UseHandler(HttpServerHandler handler)
     {
-        _context.HttpServer.RegisterHandler(handler);
+        this._context.HttpServer.RegisterHandler(handler);
         return this;
     }
 
@@ -294,7 +294,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="startupMessage">The startup message.</param>
     public HttpServerHostContextBuilder UseStartupMessage(string startupMessage)
     {
-        _context.startupMessages.AppendLine(startupMessage);
+        this._context.startupMessages.AppendLine(startupMessage);
         return this;
     }
 }

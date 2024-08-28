@@ -25,7 +25,7 @@ public sealed class HttpResponseStream : CookieHelper
     internal HttpResponseStream(HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host)
     {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException(nameof(listenerResponse));
-        ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
+        this.ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
         HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, listenerRequest, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, listenerResponse);
     }
 
@@ -36,13 +36,13 @@ public sealed class HttpResponseStream : CookieHelper
     {
         get
         {
-            return listenerResponse.SendChunked;
+            return this.listenerResponse.SendChunked;
         }
         set
         {
-            listenerResponse.SendChunked = value;
-            if (listenerResponse.ContentLength64 > 0)
-                listenerResponse.ContentLength64 = 0;
+            this.listenerResponse.SendChunked = value;
+            if (this.listenerResponse.ContentLength64 > 0)
+                this.listenerResponse.ContentLength64 = 0;
         }
     }
 
@@ -58,10 +58,10 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="contentLength">The length in bytes of the content stream.</param>
     public void SetContentLength(long contentLength)
     {
-        if (SendChunked)
-            SendChunked = false;
+        if (this.SendChunked)
+            this.SendChunked = false;
 
-        listenerResponse.ContentLength64 = contentLength;
+        this.listenerResponse.ContentLength64 = contentLength;
     }
 
     /// <summary>
@@ -79,18 +79,18 @@ public sealed class HttpResponseStream : CookieHelper
         {
             return;
         }
-        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
+        if (this.hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
         if (string.Compare(headerName, HttpKnownHeaderNames.ContentLength, true) == 0)
         {
-            SetContentLength(long.Parse(_value));
+            this.SetContentLength(long.Parse(_value));
         }
         else if (string.Compare(headerName, HttpKnownHeaderNames.ContentType, true) == 0)
         {
-            listenerResponse.ContentType = _value;
+            this.listenerResponse.ContentType = _value;
         }
         else
         {
-            listenerResponse.AddHeader(headerName, _value);
+            this.listenerResponse.AddHeader(headerName, _value);
         }
     }
 
@@ -100,8 +100,8 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="httpStatusCode">The HTTP status code.</param>
     public void SetStatus(int httpStatusCode)
     {
-        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
-        listenerResponse.StatusCode = httpStatusCode;
+        if (this.hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
+        this.listenerResponse.StatusCode = httpStatusCode;
     }
 
     /// <summary>
@@ -110,8 +110,8 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="statusCode">The HTTP status code.</param>
     public void SetStatus(HttpStatusCode statusCode)
     {
-        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
-        listenerResponse.StatusCode = (int)statusCode;
+        if (this.hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
+        this.listenerResponse.StatusCode = (int)statusCode;
     }
 
     /// <summary>
@@ -120,9 +120,9 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="statusCode">The custom HTTP status code information.</param>
     public void SetStatus(HttpStatusInformation statusCode)
     {
-        if (hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
-        listenerResponse.StatusCode = statusCode.StatusCode;
-        listenerResponse.StatusDescription = statusCode.Description;
+        if (this.hasSentData) throw new InvalidOperationException(SR.Httpserver_Commons_HeaderAfterContents);
+        this.listenerResponse.StatusCode = statusCode.StatusCode;
+        this.listenerResponse.StatusDescription = statusCode.Description;
     }
 
     /// <summary>
@@ -131,8 +131,8 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="buffer">The read only memory that includes the buffer which will be written to the HTTP response.</param>
     public void Write(ReadOnlySpan<byte> buffer)
     {
-        hasSentData = true;
-        listenerResponse.OutputStream.Write(buffer);
+        this.hasSentData = true;
+        this.listenerResponse.OutputStream.Write(buffer);
     }
 
     /// <summary>
@@ -141,8 +141,8 @@ public sealed class HttpResponseStream : CookieHelper
     /// <param name="buffer">The byte array that includes the buffer which will be written to the HTTP response.</param>
     public void Write(byte[] buffer)
     {
-        hasSentData = true;
-        listenerResponse.OutputStream.Write(buffer);
+        this.hasSentData = true;
+        this.listenerResponse.OutputStream.Write(buffer);
     }
 
     /// <summary>
@@ -153,14 +153,14 @@ public sealed class HttpResponseStream : CookieHelper
     {
         return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
         {
-            CalculedLength = calculatedLength
+            CalculedLength = this.calculatedLength
         };
     }
 
     /// <inheritdoc/>
     protected override void SetCookieHeader(string name, string value)
     {
-        SetHeader(name, value);
+        this.SetHeader(name, value);
     }
 }
 
@@ -171,47 +171,47 @@ internal class ResponseStreamWriter : Stream
 
     public ResponseStreamWriter(Stream baseStream, HttpResponseStream parent)
     {
-        BaseStream = baseStream;
-        Parent = parent;
+        this.BaseStream = baseStream;
+        this.Parent = parent;
     }
 
-    public override Boolean CanRead => BaseStream.CanRead;
+    public override Boolean CanRead => this.BaseStream.CanRead;
 
-    public override Boolean CanSeek => BaseStream.CanSeek;
+    public override Boolean CanSeek => this.BaseStream.CanSeek;
 
-    public override Boolean CanWrite => BaseStream.CanWrite;
+    public override Boolean CanWrite => this.BaseStream.CanWrite;
 
-    public override Int64 Length => BaseStream.Length;
+    public override Int64 Length => this.BaseStream.Length;
 
-    public override Int64 Position { get => BaseStream.Position; set => BaseStream.Position = value; }
+    public override Int64 Position { get => this.BaseStream.Position; set => this.BaseStream.Position = value; }
 
     public override void Flush()
     {
-        BaseStream.Flush();
+        this.BaseStream.Flush();
     }
 
     public override Int32 Read(Byte[] buffer, Int32 offset, Int32 count)
     {
-        return BaseStream.Read(buffer, offset, count);
+        return this.BaseStream.Read(buffer, offset, count);
     }
 
     public override Int64 Seek(Int64 offset, SeekOrigin origin)
     {
-        return BaseStream.Seek(offset, origin);
+        return this.BaseStream.Seek(offset, origin);
     }
 
     public override void SetLength(Int64 value)
     {
-        BaseStream.SetLength(value);
+        this.BaseStream.SetLength(value);
     }
 
     public override void Write(Byte[] buffer, Int32 offset, Int32 count)
     {
-        if (Parent.listenerResponse.ContentLength64 == 0)
+        if (this.Parent.listenerResponse.ContentLength64 == 0)
         {
-            Parent.SendChunked = true;
+            this.Parent.SendChunked = true;
         }
-        BaseStream.Write(buffer, offset, count);
-        Interlocked.Add(ref Parent.calculatedLength, buffer.Length);
+        this.BaseStream.Write(buffer, offset, count);
+        Interlocked.Add(ref this.Parent.calculatedLength, buffer.Length);
     }
 }

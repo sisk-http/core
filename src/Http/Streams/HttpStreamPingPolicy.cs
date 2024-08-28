@@ -30,11 +30,11 @@ public sealed class HttpStreamPingPolicy
 
     internal HttpStreamPingPolicy(HttpRequestEventSource parent)
     {
-        __sse_parent = parent;
+        this.__sse_parent = parent;
     }
     internal HttpStreamPingPolicy(HttpWebSocket parent)
     {
-        __ws_parent = parent;
+        this.__ws_parent = parent;
     }
 
     /// <summary>
@@ -42,30 +42,30 @@ public sealed class HttpStreamPingPolicy
     /// </summary>
     public void Start()
     {
-        _timer = new Timer(new TimerCallback(OnCallback), null, 0, (int)Interval.TotalMilliseconds);
+        this._timer = new Timer(new TimerCallback(this.OnCallback), null, 0, (int)this.Interval.TotalMilliseconds);
     }
 
     private void OnCallback(object? state)
     {
-        if (__sse_parent != null)
+        if (this.__sse_parent != null)
         {
-            if (!__sse_parent.IsActive)
+            if (!this.__sse_parent.IsActive)
             {
-                _timer!.Dispose();
+                this._timer!.Dispose();
                 return;
             }
-            __sse_parent.hasSentData = true;
-            __sse_parent.sendQueue.Add($"event:ping\ndata: {DataMessage}\n\n");
-            __sse_parent.Flush();
+            this.__sse_parent.hasSentData = true;
+            this.__sse_parent.sendQueue.Add($"event:ping\ndata: {this.DataMessage}\n\n");
+            this.__sse_parent.Flush();
         }
-        else if (__ws_parent != null)
+        else if (this.__ws_parent != null)
         {
-            if (__ws_parent.IsClosed)
+            if (this.__ws_parent.IsClosed)
             {
-                _timer!.Dispose();
+                this._timer!.Dispose();
                 return;
             }
-            __ws_parent.Send(DataMessage);
+            this.__ws_parent.Send(this.DataMessage);
         }
     }
 }

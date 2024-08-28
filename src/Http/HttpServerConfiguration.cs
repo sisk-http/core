@@ -87,7 +87,7 @@ namespace Sisk.Core.Http
         {
             get
             {
-                return _maximumContentLength;
+                return this._maximumContentLength;
             }
             set
             {
@@ -95,7 +95,7 @@ namespace Sisk.Core.Http
                 {
                     throw new ArgumentOutOfRangeException(SR.Httpserver_MaxContentLengthZero);
                 }
-                _maximumContentLength = value;
+                this._maximumContentLength = value;
             }
         }
 
@@ -132,9 +132,9 @@ namespace Sisk.Core.Http
         /// </summary>
         public void Dispose()
         {
-            ListeningHosts.Clear();
-            AccessLogsStream?.Close();
-            ErrorsLogsStream?.Close();
+            this.ListeningHosts.Clear();
+            this.AccessLogsStream?.Close();
+            this.ErrorsLogsStream?.Close();
         }
     }
 

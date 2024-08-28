@@ -93,9 +93,9 @@ public partial class HttpServer
 
     private void UnbindRouters()
     {
-        for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++)
+        for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++)
         {
-            var lh = ServerConfiguration.ListeningHosts[i];
+            var lh = this.ServerConfiguration.ListeningHosts[i];
             if (lh.Router is { } router && ReferenceEquals(this, router.parentServer))
             {
                 router.FreeHttpServer();
@@ -105,9 +105,9 @@ public partial class HttpServer
 
     private void BindRouters()
     {
-        for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++)
+        for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++)
         {
-            var lh = ServerConfiguration.ListeningHosts[i];
+            var lh = this.ServerConfiguration.ListeningHosts[i];
             if (lh.Router is { } router && router.parentServer is null)
             {
                 router.BindServer(this);
@@ -117,12 +117,12 @@ public partial class HttpServer
 
     private void ListenerCallback(IAsyncResult result)
     {
-        if (_isDisposing || !_isListening)
+        if (this._isDisposing || !this._isListening)
             return;
 
-        httpListener.BeginGetContext(ListenerCallback, null);
-        HttpListenerContext context = httpListener.EndGetContext(result);
-        ProcessRequest(context);
+        this.httpListener.BeginGetContext(this.ListenerCallback, null);
+        HttpListenerContext context = this.httpListener.EndGetContext(result);
+        this.ProcessRequest(context);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -130,7 +130,7 @@ public partial class HttpServer
     {
         HttpRequest request = null!;
         HttpResponse? response = null;
-        HttpServerFlags flag = ServerConfiguration.Flags;
+        HttpServerFlags flag = this.ServerConfiguration.Flags;
         Stopwatch sw = new Stopwatch();
         HttpListenerResponse baseResponse = context.Response;
         HttpListenerRequest baseRequest = context.Request;
@@ -139,8 +139,8 @@ public partial class HttpServer
         long outcomingSize = 0;
         bool closeStream = true;
         bool useCors = false;
-        bool hasAccessLogging = ServerConfiguration.AccessLogsStream is not null;
-        bool hasErrorLogging = ServerConfiguration.ErrorsLogsStream is not null;
+        bool hasAccessLogging = this.ServerConfiguration.AccessLogsStream is not null;
+        bool hasErrorLogging = this.ServerConfiguration.ErrorsLogsStream is not null;
         IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
         Uri? connectingUri = baseRequest.Url;
         Router.RouterExecutionResult? routerResult = null;
@@ -150,10 +150,10 @@ public partial class HttpServer
         string _debugState = "begin";
 #pragma warning restore CS0219
 
-        if (ServerConfiguration.DefaultCultureInfo is not null)
+        if (this.ServerConfiguration.DefaultCultureInfo is not null)
         {
-            Thread.CurrentThread.CurrentCulture = ServerConfiguration.DefaultCultureInfo;
-            Thread.CurrentThread.CurrentUICulture = ServerConfiguration.DefaultCultureInfo;
+            Thread.CurrentThread.CurrentCulture = this.ServerConfiguration.DefaultCultureInfo;
+            Thread.CurrentThread.CurrentUICulture = this.ServerConfiguration.DefaultCultureInfo;
         }
 
         HttpServerExecutionResult executionResult = new HttpServerExecutionResult()
@@ -169,7 +169,7 @@ public partial class HttpServer
         {
             if (!flag.AsyncRequestProcessing)
             {
-                Monitor.Enter(httpListener);
+                Monitor.Enter(this.httpListener);
             }
 
             sw.Start();
@@ -184,7 +184,7 @@ public partial class HttpServer
                 return;
             }
 
-            if (!baseRequest.IsLocal && ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop)
+            if (!baseRequest.IsLocal && this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop)
             {
                 executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
                 baseResponse.Abort();
@@ -194,14 +194,14 @@ public partial class HttpServer
             request = new HttpRequest(this, context);
             string dnsSafeHost = baseRequest.UserHostName;
 
-            if (ServerConfiguration.ForwardingResolver is ForwardingResolver fr)
+            if (this.ServerConfiguration.ForwardingResolver is ForwardingResolver fr)
             {
                 dnsSafeHost = fr.OnResolveRequestHost(request, dnsSafeHost);
             }
 
             // detect the listening host for this listener
-            ListeningHost? matchedListeningHost = _onlyListeningHost
-                ?? ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
+            ListeningHost? matchedListeningHost = this._onlyListeningHost
+                ?? this.ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
 
             if (matchedListeningHost is null)
             {
@@ -232,13 +232,13 @@ public partial class HttpServer
 
             #region Step 2 - Request validation
 
-            if (ServerConfiguration.IncludeRequestIdHeader)
+            if (this.ServerConfiguration.IncludeRequestIdHeader)
                 baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
 
             if (flag.SendSiskHeader)
                 baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, PoweredBy);
 
-            int userMaxContentLength = ServerConfiguration.MaximumContentLength;
+            int userMaxContentLength = this.ServerConfiguration.MaximumContentLength;
             bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && baseRequest.ContentLength64 > userMaxContentLength;
             bool isContentLenOutsideSystemBounds = baseRequest.ContentLength64 > Int32.MaxValue;
 
@@ -268,7 +268,7 @@ public partial class HttpServer
             }
 
             _debugState = "request_create";
-            handler.HttpRequestOpen(request);
+            this.handler.HttpRequestOpen(request);
 
             #endregion
 
@@ -318,7 +318,7 @@ public partial class HttpServer
             _debugState = "send_status";
             baseResponse.StatusCode = response.StatusInformation.StatusCode;
             baseResponse.StatusDescription = response.StatusInformation.Description;
-            baseResponse.KeepAlive = ServerConfiguration.KeepAlive;
+            baseResponse.KeepAlive = this.ServerConfiguration.KeepAlive;
 
             #endregion
 
@@ -458,7 +458,7 @@ public partial class HttpServer
         }
         catch (Exception ex)
         {
-            if (!ServerConfiguration.ThrowExceptions)
+            if (!this.ServerConfiguration.ThrowExceptions)
             {
                 baseResponse.StatusCode = 500;
                 executionResult.ServerException = ex;
@@ -487,10 +487,10 @@ public partial class HttpServer
                 }
             }
 
-            handler.HttpRequestClose(executionResult);
+            this.handler.HttpRequestClose(executionResult);
 
             if (executionResult.ServerException is not null)
-                handler.Exception(executionResult.ServerException);
+                this.handler.Exception(executionResult.ServerException);
 
             LogOutput logMode;
 
@@ -526,7 +526,7 @@ public partial class HttpServer
 
                 errLineBuilder.AppendLine();
 
-                ServerConfiguration.ErrorsLogsStream?.WriteLine(errLineBuilder);
+                this.ServerConfiguration.ErrorsLogsStream?.WriteLine(errLineBuilder);
             }
 
             if (canAccessLog)
@@ -542,22 +542,22 @@ public partial class HttpServer
                     sw.ElapsedMilliseconds,
                     baseRequest.HttpMethod);
 
-                string line = ServerConfiguration.AccessLogsFormat;
+                string line = this.ServerConfiguration.AccessLogsFormat;
                 formatter.Format(ref line);
 
-                ServerConfiguration.AccessLogsStream?.WriteLine(line);
+                this.ServerConfiguration.AccessLogsStream?.WriteLine(line);
             }
 
-            if (isWaitingNextEvent)
+            if (this.isWaitingNextEvent)
             {
-                waitingExecutionResult = executionResult;
-                waitNextEvent.Set();
-                isWaitingNextEvent = false;
+                this.waitingExecutionResult = executionResult;
+                this.waitNextEvent.Set();
+                this.isWaitingNextEvent = false;
             }
 
             if (!flag.AsyncRequestProcessing)
             {
-                Monitor.Exit(httpListener);
+                Monitor.Exit(this.httpListener);
             }
             #endregion
         }

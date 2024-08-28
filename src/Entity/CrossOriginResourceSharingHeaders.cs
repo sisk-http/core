@@ -64,12 +64,12 @@ namespace Sisk.Core.Entity
         /// </summary>
         public CrossOriginResourceSharingHeaders()
         {
-            ExposeHeaders = Array.Empty<string>();
-            AllowOrigin = null;
-            AllowOrigins = Array.Empty<string>();
-            AllowMethods = Array.Empty<string>();
-            AllowHeaders = Array.Empty<string>();
-            MaxAge = TimeSpan.Zero;
+            this.ExposeHeaders = Array.Empty<string>();
+            this.AllowOrigin = null;
+            this.AllowOrigins = Array.Empty<string>();
+            this.AllowMethods = Array.Empty<string>();
+            this.AllowHeaders = Array.Empty<string>();
+            this.MaxAge = TimeSpan.Zero;
         }
 
         /// <summary>

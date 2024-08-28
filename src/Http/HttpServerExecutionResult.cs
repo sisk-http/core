@@ -51,7 +51,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets an boolean indicating if this execution status is an success status.
         /// </summary>
-        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.ConnectionClosed; }
+        public bool IsSuccessStatus { get => this.Status == HttpServerExecutionStatus.Executed || this.Status == HttpServerExecutionStatus.ConnectionClosed; }
 
         /// <summary>
         /// Gets the request size in bytes.

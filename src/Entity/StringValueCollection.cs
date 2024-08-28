@@ -52,20 +52,20 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
 
     internal StringValueCollection(string paramName)
     {
-        items = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        this.items = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         this.paramName = paramName;
     }
 
     internal void SetItem(string key, string? value)
     {
-        items[key] = value;
+        this.items[key] = value;
     }
 
     /// <summary>
     /// Gets an <see cref="IDictionary"/> object with the data of this <see cref="StringValueCollection"/>
     /// with their keys and values.
     /// </summary>
-    public IDictionary<string, string?> AsDictionary() => items;
+    public IDictionary<string, string?> AsDictionary() => this.items;
 
     /// <summary>
     /// Gets an <see cref="NameValueCollection"/> with the data of this <see cref="StringValueCollection"/>.
@@ -74,7 +74,7 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     {
         NameValueCollection n = new NameValueCollection();
 
-        foreach (var item in items)
+        foreach (var item in this.items)
         {
             n.Add(item.Key, item.Value);
         }
@@ -85,11 +85,11 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <summary>
     /// Gets the number of items defined in this <see cref="StringValueCollection"/>.
     /// </summary>
-    public int Count { get => items.Count; }
+    public int Count { get => this.items.Count; }
 
     /// <inheritdoc/>
     /// <exclude/>
-    public IEnumerable<string> Keys => items.Keys;
+    public IEnumerable<string> Keys => this.items.Keys;
 
     /// <inheritdoc/>
     /// <exclude/>
@@ -97,9 +97,9 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     {
         get
         {
-            foreach (var item in items)
+            foreach (var item in this.items)
             {
-                yield return new StringValue(item.Key, paramName, item.Value);
+                yield return new StringValue(item.Key, this.paramName, item.Value);
             }
         }
     }
@@ -107,7 +107,7 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <summary>
     /// Gets an <see cref="StringValue"/> item by their key name.
     /// </summary>
-    public StringValue this[string name] { get => GetItem(name); }
+    public StringValue this[string name] { get => this.GetItem(name); }
 
     /// <summary>
     /// Gets an <see cref="StringValue"/> from their key name. If the object was
@@ -116,17 +116,17 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// </summary>
     public StringValue GetItem(string name)
     {
-        items.TryGetValue(name, out string? value);
-        return new StringValue(name, paramName, value);
+        this.items.TryGetValue(name, out string? value);
+        return new StringValue(name, this.paramName, value);
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public IEnumerator<StringValue> GetEnumerator()
     {
-        foreach (string key in items.Keys)
+        foreach (string key in this.items.Keys)
         {
-            yield return new StringValue(key, paramName, items[key]);
+            yield return new StringValue(key, this.paramName, this.items[key]);
         }
     }
 
@@ -134,28 +134,28 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return GetEnumerator();
+        return this.GetEnumerator();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
     {
-        return items.GetEnumerator();
+        return this.items.GetEnumerator();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool ContainsKey(string key)
     {
-        return items.ContainsKey(key);
+        return this.items.ContainsKey(key);
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool TryGetValue(string key, [NotNull()] out StringValue value)
     {
-        var sv = GetItem(key);
+        var sv = this.GetItem(key);
         value = sv;
         return sv.IsNull;
     }
@@ -164,9 +164,9 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     /// <exclude/>
     IEnumerator<KeyValuePair<string, StringValue>> IEnumerable<KeyValuePair<string, StringValue>>.GetEnumerator()
     {
-        foreach (string key in items.Keys)
+        foreach (string key in this.items.Keys)
         {
-            yield return new KeyValuePair<string, StringValue>(key, new StringValue(key, paramName, items[key]));
+            yield return new KeyValuePair<string, StringValue>(key, new StringValue(key, this.paramName, this.items[key]));
         }
     }
 

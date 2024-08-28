@@ -26,25 +26,25 @@ public sealed class PortableConfigurationBuilder
 
     internal PortableConfigurationBuilder(HttpServerHostContext context)
     {
-        _context = context;
+        this._context = context;
     }
 
     internal void Build()
     {
-        if (_createIfDontExists && !File.Exists(_filename))
+        if (this._createIfDontExists && !File.Exists(this._filename))
         {
-            File.Create(_filename).Close();
+            File.Create(this._filename).Close();
         }
 
-        ConfigurationContext provider = new ConfigurationContext(_filename, _context, _context.ServerConfiguration.ListeningHosts[0]);
+        ConfigurationContext provider = new ConfigurationContext(this._filename, this._context, this._context.ServerConfiguration.ListeningHosts[0]);
 
-        var pipelineReader = _pipeline ?? new JsonConfigParser();
+        var pipelineReader = this._pipeline ?? new JsonConfigParser();
         pipelineReader.ReadConfiguration(provider);
 
-        if (_initializerHandler != null)
-            _initializerHandler(_context.Parameters);
+        if (this._initializerHandler != null)
+            this._initializerHandler(this._context.Parameters);
 
-        _context.Parameters.MakeReadonly();
+        this._context.Parameters.MakeReadonly();
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public sealed class PortableConfigurationBuilder
     /// <param name="reader">The <see cref="IConfigurationReader"/> object.</param>
     public PortableConfigurationBuilder WithConfigurationReader(IConfigurationReader reader)
     {
-        _pipeline = reader;
+        this._pipeline = reader;
         return this;
     }
 
@@ -63,7 +63,7 @@ public sealed class PortableConfigurationBuilder
     /// <typeparam name="TPipeline">The <see cref="IConfigurationReader"/> type.</typeparam>
     public PortableConfigurationBuilder WithConfigurationPipeline<TPipeline>() where TPipeline : IConfigurationReader, new()
     {
-        _pipeline = new TPipeline();
+        this._pipeline = new TPipeline();
         return this;
     }
 
@@ -74,8 +74,8 @@ public sealed class PortableConfigurationBuilder
     /// <param name="createIfDontExists">Optional. Determines if the configuration file should be created if it doens't exists.</param>
     public PortableConfigurationBuilder WithConfigFile(string filename, bool createIfDontExists = false)
     {
-        _filename = Path.GetFullPath(filename);
-        _createIfDontExists = createIfDontExists;
+        this._filename = Path.GetFullPath(filename);
+        this._createIfDontExists = createIfDontExists;
         return this;
     }
 
@@ -85,7 +85,7 @@ public sealed class PortableConfigurationBuilder
     /// <param name="handler">The handler of <see cref="InitializationParameterCollection"/>.</param>
     public PortableConfigurationBuilder WithParameters(Action<InitializationParameterCollection> handler)
     {
-        _initializerHandler = handler;
+        this._initializerHandler = handler;
         return this;
     }
 

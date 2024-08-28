@@ -28,6 +28,6 @@ public abstract class AsyncRequestHandler : RequestHandler
     /// <exclude/>
     public sealed override HttpResponse? Execute(HttpRequest request, HttpContext context)
     {
-        return ExecuteAsync(request, context).GetAwaiter().GetResult();
+        return this.ExecuteAsync(request, context).GetAwaiter().GetResult();
     }
 }

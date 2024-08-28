@@ -62,10 +62,10 @@ namespace Sisk.Core.Http
 
         internal HttpContext(HttpServer httpServer, HttpRequest request, Route? matchedRoute, ListeningHost host)
         {
-            Request = request;
-            HttpServer = httpServer;
-            MatchedRoute = matchedRoute;
-            ListeningHost = host;
+            this.Request = request;
+            this.HttpServer = httpServer;
+            this.MatchedRoute = matchedRoute;
+            this.ListeningHost = host;
         }
     }
 }

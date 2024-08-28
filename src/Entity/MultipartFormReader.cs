@@ -16,12 +16,12 @@ namespace Sisk.Core.Entity;
 
 internal sealed class MultipartFormReader
 {
-    byte[] boundaryBytes;
-    byte[] bytes;
-    byte[] nlbytes;
+    readonly byte[] boundaryBytes;
+    readonly byte[] bytes;
+    readonly byte[] nlbytes;
     int position = 0;
-    Encoding encoder;
-    bool debugEnabled;
+    readonly Encoding encoder;
+    readonly bool debugEnabled;
 
     public MultipartFormReader(byte[] inputBytes, byte[] boundaryBytes, Encoding baseEncoding, bool debugEnabled)
     {
@@ -35,25 +35,25 @@ internal sealed class MultipartFormReader
 
     void ThrowDataException(string message)
     {
-        if (debugEnabled)
+        if (this.debugEnabled)
         {
-            throw new InvalidDataException(SR.Format(SR.MultipartFormReader_InvalidData, position, message));
+            throw new InvalidDataException(SR.Format(SR.MultipartFormReader_InvalidData, this.position, message));
         }
     }
 
-    bool CanRead { get => position < bytes.Length; }
+    bool CanRead { get => this.position < this.bytes.Length; }
 
     int ReadByte()
     {
-        if (CanRead)
-            return bytes[position++];
+        if (this.CanRead)
+            return this.bytes[this.position++];
 
         return -1;
     }
 
     void ReadNewLine()
     {
-        position += nlbytes.Length;
+        this.position += this.nlbytes.Length;
     }
 
     int Read(Span<byte> buffer)
@@ -61,7 +61,7 @@ internal sealed class MultipartFormReader
         int read = 0;
         for (int i = 0; i < buffer.Length; i++)
         {
-            if (ReadByte() is > 0 and int b)
+            if (this.ReadByte() is > 0 and int b)
             {
                 buffer[read++] = (byte)b;
             }
@@ -75,20 +75,20 @@ internal sealed class MultipartFormReader
         List<MultipartObject> objects = new List<MultipartObject>();
         while (this.CanRead)
         {
-            ReadNextBoundary();
-            NameValueCollection headers = ReadHeaders();
+            this.ReadNextBoundary();
+            NameValueCollection headers = this.ReadHeaders();
 
-            if (!CanRead)
+            if (!this.CanRead)
                 break;
 
-            byte[] content = ReadContent().ToArray();
+            byte[] content = this.ReadContent().ToArray();
 
-            ReadNewLine();
+            this.ReadNewLine();
 
             string? contentDisposition = headers[HttpKnownHeaderNames.ContentDisposition];
             if (contentDisposition is null)
             {
-                ThrowDataException("The Content-Disposition header is empty or missing.");
+                this.ThrowDataException("The Content-Disposition header is empty or missing.");
                 continue;
             }
 
@@ -99,11 +99,11 @@ internal sealed class MultipartFormReader
 
             if (string.IsNullOrEmpty(formItemName))
             {
-                ThrowDataException("The Content-Disposition \"name\" parameter is empty or missing.");
+                this.ThrowDataException("The Content-Disposition \"name\" parameter is empty or missing.");
                 continue;
             }
 
-            MultipartObject resultObj = new MultipartObject(headers, formFilename, formItemName, content, encoder);
+            MultipartObject resultObj = new MultipartObject(headers, formFilename, formItemName, content, this.encoder);
 
             objects.Add(resultObj);
         }
@@ -116,13 +116,13 @@ internal sealed class MultipartFormReader
         Span<byte> line = stackalloc byte[2048];
         int read,
             n = 0,
-            lnbytelen = nlbytes.Length;
+            lnbytelen = this.nlbytes.Length;
 
-        while ((read = ReadByte()) > 0)
+        while ((read = this.ReadByte()) > 0)
         {
             if (n == line.Length)
             {
-                ThrowDataException($"Header line was too long (> {line.Length} bytes allocated).");
+                this.ThrowDataException($"Header line was too long (> {line.Length} bytes allocated).");
                 break;
             }
 
@@ -130,44 +130,44 @@ internal sealed class MultipartFormReader
 
             if (n >= lnbytelen)
             {
-                if (line[(n - lnbytelen)..n].SequenceEqual(nlbytes))
+                if (line[(n - lnbytelen)..n].SequenceEqual(this.nlbytes))
                 {
                     break;
                 }
             }
         }
 
-        return encoder.GetString(line[0..n]);
+        return this.encoder.GetString(line[0..n]);
     }
 
     Span<byte> ReadContent()
     {
-        int boundaryLen = boundaryBytes.Length;
-        int istart = position;
+        int boundaryLen = this.boundaryBytes.Length;
+        int istart = this.position;
 
-        while (CanRead)
+        while (this.CanRead)
         {
-            position++;
+            this.position++;
 
-            if ((position - istart) > boundaryLen)
+            if ((this.position - istart) > boundaryLen)
             {
-                if (bytes[(position - boundaryLen)..position].SequenceEqual(boundaryBytes))
+                if (this.bytes[(this.position - boundaryLen)..this.position].SequenceEqual(this.boundaryBytes))
                 {
                     break;
                 }
             }
         }
 
-        position -= boundaryLen + nlbytes.Length + 2 /* the boundary "--" construct */;
+        this.position -= boundaryLen + this.nlbytes.Length + 2 /* the boundary "--" construct */;
 
-        return bytes[istart..position];
+        return this.bytes[istart..this.position];
     }
 
     NameValueCollection ReadHeaders()
     {
         NameValueCollection headers = new NameValueCollection();
         string? line;
-        while (!string.IsNullOrEmpty(line = ReadLine()))
+        while (!string.IsNullOrEmpty(line = this.ReadLine()))
         {
             int sepIndex = line.IndexOf(':');
             if (sepIndex == -1)
@@ -184,18 +184,18 @@ internal sealed class MultipartFormReader
 
     unsafe void ReadNextBoundary()
     {
-        Span<byte> boundaryBlock = stackalloc byte[boundaryBytes.Length + 2];
-        int nextLine = Read(boundaryBlock);
+        Span<byte> boundaryBlock = stackalloc byte[this.boundaryBytes.Length + 2];
+        int nextLine = this.Read(boundaryBlock);
 
-        ReadNewLine();
+        this.ReadNewLine();
 
         if (nextLine != boundaryBlock.Length)
         {
-            ThrowDataException($"Boundary expected at byte {position}.");
+            this.ThrowDataException($"Boundary expected at byte {this.position}.");
         }
-        if (!boundaryBlock[2..].SequenceEqual(boundaryBytes))
+        if (!boundaryBlock[2..].SequenceEqual(this.boundaryBytes))
         {
-            ThrowDataException($"The provided boundary string does not match the request boundary string.");
+            this.ThrowDataException($"The provided boundary string does not match the request boundary string.");
         }
     }
 }

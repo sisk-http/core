@@ -49,16 +49,16 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// Gets an booolean indicating if this <see cref="MultipartObject"/> has contents or not.
         /// </summary>
-        public bool HasContents { get => ContentLength > 0; }
+        public bool HasContents { get => this.ContentLength > 0; }
 
         /// <summary>
         /// Reads the content bytes with the given encoder.
         /// </summary>
         public string ReadContentAsString(Encoding encoder)
         {
-            if (ContentLength == 0)
+            if (this.ContentLength == 0)
                 return string.Empty;
-            return encoder.GetString(ContentBytes);
+            return encoder.GetString(this.ContentBytes);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Sisk.Core.Entity
         /// </summary>
         public string ReadContentAsString()
         {
-            return ReadContentAsString(_baseEncoding);
+            return this.ReadContentAsString(this._baseEncoding);
         }
 
         /// <summary>
@@ -74,11 +74,11 @@ namespace Sisk.Core.Entity
         /// </summary>
         public MultipartObjectCommonFormat GetCommonFileFormat()
         {
-            int byteLen = ContentBytes.Length;
+            int byteLen = this.ContentBytes.Length;
 
             if (byteLen >= 8)
             {
-                Span<byte> len8 = ContentBytes.AsSpan(0, 8);
+                Span<byte> len8 = this.ContentBytes.AsSpan(0, 8);
 
                 if (len8.SequenceEqual(MultipartObjectCommonFormatByteMark.PNG))
                 {
@@ -87,7 +87,7 @@ namespace Sisk.Core.Entity
             }
             if (byteLen >= 4)
             {
-                Span<byte> len4 = ContentBytes.AsSpan(0, 4);
+                Span<byte> len4 = this.ContentBytes.AsSpan(0, 4);
 
                 if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.WEBP))
                 {
@@ -104,7 +104,7 @@ namespace Sisk.Core.Entity
             }
             if (byteLen >= 3)
             {
-                Span<byte> len3 = ContentBytes.AsSpan(0, 3);
+                Span<byte> len3 = this.ContentBytes.AsSpan(0, 3);
 
                 if (len3.SequenceEqual(MultipartObjectCommonFormatByteMark.JPEG))
                 {
@@ -117,7 +117,7 @@ namespace Sisk.Core.Entity
             }
             if (byteLen >= 2)
             {
-                Span<byte> len2 = ContentBytes.AsSpan(0, 2);
+                Span<byte> len2 = this.ContentBytes.AsSpan(0, 2);
 
                 if (len2.SequenceEqual(MultipartObjectCommonFormatByteMark.BMP))
                 {
@@ -130,12 +130,12 @@ namespace Sisk.Core.Entity
 
         internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
         {
-            Headers = new HttpHeaderCollection(headers) { isReadOnly = true };
-            Filename = filename;
-            Name = name;
-            ContentBytes = body ?? Array.Empty<byte>();
-            ContentLength = body?.Length ?? 0;
-            _baseEncoding = encoding;
+            this.Headers = new HttpHeaderCollection(headers) { isReadOnly = true };
+            this.Filename = filename;
+            this.Name = name;
+            this.ContentBytes = body ?? Array.Empty<byte>();
+            this.ContentLength = body?.Length ?? 0;
+            this._baseEncoding = encoding;
         }
 
         //
