@@ -113,7 +113,14 @@ public sealed class SecureProxy : IDisposable
                             SerializerUtils.CopyStream(sslStream, clientStream, reqContentLength);
                         }
 
-                        if (!HttpResponseReader.TryReadHttp1Response(clientStream, out var resStatusCode, out var resStatusDescr, out var resHeaders, out var resContentLength, out var isChunked, out var isConnectionKeepAlive))
+                        if (!HttpResponseReader.TryReadHttp1Response(clientStream,
+                            out var resStatusCode,
+                            out var resStatusDescr,
+                            out var resHeaders,
+                            out var resContentLength,
+                            out var isChunked,
+                            out var isConnectionKeepAlive,
+                            out var isWebSocket))
                         {
                             HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
                             sslStream.Flush();
@@ -131,13 +138,26 @@ public sealed class SecureProxy : IDisposable
                         }
 
                         HttpResponseWriter.TryWriteHttp1Response(sslStream, resStatusCode, resStatusDescr, resHeaders);
-                        if (resContentLength > 0)
+                        if (isWebSocket)
+                        {
+                            AutoResetEvent waitEvent = new AutoResetEvent(false);
+
+                            SerializerUtils.CopyBlocking(clientStream, sslStream, waitEvent);
+                            SerializerUtils.CopyBlocking(sslStream, clientStream, waitEvent);
+
+                            waitEvent.WaitOne();
+                        }
+                        else if (resContentLength > 0)
                         {
                             SerializerUtils.CopyStream(clientStream, sslStream, resContentLength);
                         }
                         else if (isChunked)
                         {
-                            SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
+                            // SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
+
+                            AutoResetEvent waitEvent = new AutoResetEvent(false);
+                            SerializerUtils.CopyUntilBlocking(clientStream, sslStream, Constants.CHUNKED_EOF, waitEvent);
+                            waitEvent.WaitOne();
                         }
 
                         tcpStream.Flush();

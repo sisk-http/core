@@ -21,11 +21,14 @@ static class HttpResponseReader
                             out List<(string, string)> headers,
                             out int contentLength,
                             out bool isChunkedEncoding,
-                            out bool isConnectionKeepAlive)
+                            out bool isConnectionKeepAlive,
+                            out bool isWebSocket)
     {
         contentLength = 0;
         isChunkedEncoding = false;
         isConnectionKeepAlive = true;
+        isWebSocket = false;
+
         try
         {
             byte[] _proto = SerializerUtils.ReadUntil(inboundStream, Constants.CH_SPACE, 16);
@@ -67,16 +70,18 @@ static class HttpResponseReader
                 {
                     contentLength = int.Parse(hValue);
                 }
-                else if (string.Compare(hName, HttpKnownHeaderNames.TransferEncoding, true) == 0
-                         && hValue == "chunked")
+                else if (string.Compare(hName, HttpKnownHeaderNames.TransferEncoding, true) == 0 && hValue == "chunked")
                 {
                     isChunkedEncoding = true;
                 }
-                else if (string.Compare(hName, HttpKnownHeaderNames.Connection, true) == 0
-                         && hValue == "close")
+                else if (string.Compare(hName, HttpKnownHeaderNames.Connection, true) == 0 && hValue == "close")
                 {
                     forwardHeader = false;
                     isConnectionKeepAlive = false;
+                }
+                else if (string.Compare(hName, HttpKnownHeaderNames.Upgrade, true) == 0 && hValue == "websocket")
+                {
+                    isWebSocket = true;
                 }
 
                 if (forwardHeader)

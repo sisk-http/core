@@ -39,6 +39,53 @@ static class SerializerUtils
         throw new InvalidDataException();
     }
 
+    public static void CopyBlocking(Stream input, Stream output, EventWaitHandle waitEvent)
+    {
+        byte[] buffer = new byte[8192];
+        AsyncCallback callback = null!;
+        callback = ar =>
+        {
+            int bytesRead = input.EndRead(ar);
+
+            if (bytesRead > 0)
+            {
+                output.Write(buffer, 0, bytesRead);
+                input.BeginRead(buffer, 0, buffer.Length, callback, null); 
+            }
+            else
+            {
+                output.Flush();
+                waitEvent.Set();
+            }
+        };
+
+        input.BeginRead(buffer, 0, buffer.Length, callback, null);
+    }
+
+    public static void CopyUntilBlocking(Stream input, Stream output, byte[] eof, EventWaitHandle waitEvent)
+    {
+        byte[] buffer = new byte[8192];
+        AsyncCallback callback = null!;
+        callback = ar =>
+        {
+            int bytesRead = input.EndRead(ar);
+
+            ReadOnlySpan<byte> writtenSpan = buffer[0..bytesRead];
+            if (bytesRead > 0 && !writtenSpan.EndsWith(eof))
+            {
+                output.Write(buffer, 0, bytesRead);
+                input.BeginRead(buffer, 0, buffer.Length, callback, null);
+            }
+            else
+            {
+                output.Flush();
+                waitEvent.Set();
+            }
+        };
+
+        input.BeginRead(buffer, 0, buffer.Length, callback, null);
+    }
+
     public static void CopyStream(Stream input, Stream output, int bytes)
     {
         byte[] buffer = new byte[81920];

@@ -222,7 +222,7 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
-        /// Closes the connection between the client and the server and returns an HTTP resposne indicating that the connection has been terminated.
+        /// Closes the connection between the client and the server and returns an HTTP response indicating that the connection has been terminated.
         /// This method will not throw an exception if the connection is already closed.
         /// </summary>
         public HttpResponse Close()
@@ -237,9 +237,13 @@ namespace Sisk.Core.Http.Streams
                     // the resources of this websocket
                     try
                     {
-                        ctx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).Wait();
+                        ctx.WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None)
+                            .Wait();
                     }
-                    catch (Exception) {; }
+                    catch (Exception)
+                    {
+                        ;
+                    }
                     finally
                     {
                         wasServerClosed = true;
