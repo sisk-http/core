@@ -28,13 +28,13 @@ public sealed class SecureProxy : IDisposable
     private IPEndPoint remoteEndpoint;
     private bool disposedValue;
 
-    public X509Certificate2 ServerCertificate { get; }
+    public X509Certificate ServerCertificate { get; }
     public bool ClientCertificateRequired { get; set; } = false;
     public SslProtocols AllowedProtocols { get; set; } = SslProtocols.Tls12 | SslProtocols.Tls13;
     public bool CheckCertificateRevocation { get; set; } = false;
     public TimeSpan ProxyTimeout { get; set; } = TimeSpan.FromSeconds(120);
 
-    public SecureProxy(int listenOn, X509Certificate2 certificate, IPEndPoint remoteEndpoint)
+    public SecureProxy(int listenOn, X509Certificate certificate, IPEndPoint remoteEndpoint)
     {
         this.listener = new TcpListener(IPAddress.Any, listenOn);
         this.remoteEndpoint = remoteEndpoint;
@@ -54,23 +54,30 @@ public sealed class SecureProxy : IDisposable
 
     void ReceiveClientAsync(IAsyncResult ar)
     {
-        var client = listener.EndAcceptTcpClient(ar);
         listener.BeginAcceptTcpClient(ReceiveClientAsync, null);
+        var client = listener.EndAcceptTcpClient(ar);
 
         client.NoDelay = true;
 
         if (disposedValue)
             return;
 
-        bool isKeepAliveEnabled = true;
-
         using (var tcpStream = client.GetStream())
         using (var sslStream = new SslStream(tcpStream, true))
         using (var httpClient = new TcpClient())
         {
-            httpClient.Connect(remoteEndpoint);
-            httpClient.SendTimeout = (int)(ProxyTimeout.TotalSeconds);
-            httpClient.ReceiveTimeout = (int)(ProxyTimeout.TotalSeconds);
+            try
+            {
+                httpClient.Connect(remoteEndpoint);
+                httpClient.SendTimeout = (int)(ProxyTimeout.TotalSeconds);
+                httpClient.ReceiveTimeout = (int)(ProxyTimeout.TotalSeconds);
+            }
+            catch
+            {
+                HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
+                sslStream.Flush();
+                return;
+            }
 
             using (var clientStream = httpClient.GetStream())
             {
@@ -78,53 +85,72 @@ public sealed class SecureProxy : IDisposable
                 {
                     sslStream.AuthenticateAsServer(ServerCertificate, ClientCertificateRequired, AllowedProtocols, CheckCertificateRevocation);
                 }
-                catch
+                catch (Exception)
                 {
                     return;
                 }
 
-                while (client.Connected && !disposedValue && isKeepAliveEnabled)
+                while (client.Connected && !disposedValue)
                 {
-                    if (!HttpRequestReader.TryReadHttp1Request(sslStream, out var method, out var path, out var proto, out var reqContentLength, out var headers))
+                    try
+                    {
+                        if (!HttpRequestReader.TryReadHttp1Request(sslStream, out var method, out var path, out var proto, out var reqContentLength, out var headers))
+                        {
+                            return;
+                        }
+
+                        headers.Add((Constants.XDigestHeaderName, ProxyDigest.ToString()));
+                        headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
+
+                        if (!HttpRequestWriter.TryWriteHttpV1Request(clientStream, method, path, headers, reqContentLength))
+                        {
+                            HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
+                            sslStream.Flush();
+                            return;
+                        }
+                        if (reqContentLength > 0)
+                        {
+                            SerializerUtils.CopyStream(sslStream, clientStream, reqContentLength);
+                        }
+
+                        if (!HttpResponseReader.TryReadHttp1Response(clientStream, out var resStatusCode, out var resStatusDescr, out var resHeaders, out var resContentLength, out var isChunked, out var isConnectionKeepAlive))
+                        {
+                            HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
+                            sslStream.Flush();
+                            return;
+                        }
+
+                        // TODO: check if client wants to keep alive
+                        if (isConnectionKeepAlive)
+                        {
+                            resHeaders.Add(("Connection", "keep-alive"));
+                        }
+                        else
+                        {
+                            resHeaders.Add(("Connection", "close"));
+                        }
+
+                        HttpResponseWriter.TryWriteHttp1Response(sslStream, resStatusCode, resStatusDescr, resHeaders);
+                        if (resContentLength > 0)
+                        {
+                            SerializerUtils.CopyStream(clientStream, sslStream, resContentLength);
+                        }
+                        else if (isChunked)
+                        {
+                            SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
+                        }
+
+                        tcpStream.Flush();
+
+                        if (!isConnectionKeepAlive)
+                        {
+                            break;
+                        }
+                    }
+                    catch
                     {
                         return;
                     }
-
-                    headers.Add((Constants.XDigestHeaderName, ProxyDigest.ToString()));
-                    headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
-
-                    if (!HttpRequestWriter.TryWriteHttpV1Request(clientStream, method, path, headers, reqContentLength))
-                    {
-                        HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
-                        sslStream.Flush();
-                        return;
-                    }
-                    if (reqContentLength > 0)
-                    {
-                        SerializerUtils.CopyStream(sslStream, clientStream, reqContentLength);
-                    }
-
-                    if (!HttpResponseReader.TryReadHttp1Response(clientStream, out var resStatusCode, out var resStatusDescr, out var resHeaders, out var resContentLength, out var isChunked))
-                    {
-                        HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
-                        sslStream.Flush();
-                        return;
-                    }
-
-                    // TODO: check if client wants to keep alive
-                    resHeaders.Add(("Connection", "keep-alive"));
-
-                    HttpResponseWriter.TryWriteHttp1Response(sslStream, resStatusCode, resStatusDescr, resHeaders);
-                    if (resContentLength > 0)
-                    {
-                        SerializerUtils.CopyStream(clientStream, sslStream, resContentLength);
-                    }
-                    else if (isChunked)
-                    {
-                        SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
-                    }
-
-                    tcpStream.Flush();
                 }
             }
         }

@@ -22,7 +22,7 @@ public static class SecureProxyExtensions
 {
     public static HttpServerHostContextBuilder UseSsl(this HttpServerHostContextBuilder builder,
         short sslListeningPort,
-        X509Certificate2 certificate,
+        X509Certificate certificate,
         SslProtocols allowedProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
         bool clientCertificateRequired = false)
     {

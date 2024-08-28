@@ -20,5 +20,9 @@ static class Constants
     public const string XDigestHeaderName = "X-Sisk-Proxy-Digest";
     public const string XClientIpHeaderName = "X-Sisk-Proxy-Client-Ip";
 
-    public static readonly byte[] CHUNKED_EOF = [CH_RETURN, CH_LINEFEED, CH_RETURN, CH_LINEFEED];
+    public static readonly byte[] CHUNKED_EOF = [
+        CH_RETURN, CH_LINEFEED,
+        0x30, // ascii 0
+        CH_RETURN, CH_LINEFEED,
+        CH_RETURN, CH_LINEFEED];
 }

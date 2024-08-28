@@ -20,10 +20,12 @@ static class HttpResponseReader
         [NotNullWhen(true)] out string? statusDescription,
                             out List<(string, string)> headers,
                             out int contentLength,
-                            out bool isChunkedEncoding)
+                            out bool isChunkedEncoding,
+                            out bool isConnectionKeepAlive)
     {
         contentLength = 0;
         isChunkedEncoding = false;
+        isConnectionKeepAlive = true;
         try
         {
             byte[] _proto = SerializerUtils.ReadUntil(inboundStream, Constants.CH_SPACE, 16);
@@ -57,6 +59,7 @@ static class HttpResponseReader
 
                 inboundStream.ReadByte(); // \n
 
+                bool forwardHeader = true;
                 string hName = firstReadChar + SerializerUtils.DecodeString(headerName).Trim();
                 string hValue = SerializerUtils.DecodeString(headerValue).TrimStart();
 
@@ -69,8 +72,15 @@ static class HttpResponseReader
                 {
                     isChunkedEncoding = true;
                 }
+                else if (string.Compare(hName, HttpKnownHeaderNames.Connection, true) == 0
+                         && hValue == "close")
+                {
+                    forwardHeader = false;
+                    isConnectionKeepAlive = false;
+                }
 
-                headerList.Add((hName, hValue));
+                if (forwardHeader)
+                    headerList.Add((hName, hValue));
             }
 
             headers = headerList;
