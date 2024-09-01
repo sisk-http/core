@@ -50,6 +50,16 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
         return vcol;
     }
 
+    /// <summary>
+    /// Creates an new <see cref="StringValueCollection"/> instance with values from another
+    /// <see cref="IDictionary"/> instance.
+    /// </summary>
+    public StringValueCollection(IDictionary<string, string?> values)
+    {
+        this.items = new Dictionary<string, string?>(values, StringComparer.OrdinalIgnoreCase);
+        this.paramName = "StringValue";
+    }
+
     internal StringValueCollection(string paramName)
     {
         this.items = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);

@@ -28,6 +28,29 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     }
 
     /// <summary>
+    /// Creates an new empty value of the <see cref="StringValue"/> with no predefined value.
+    /// </summary>
+    /// <param name="name">The <see cref="StringValue"/> name.</param>
+    public StringValue(string name)
+    {
+        this._ref = null;
+        this.argName = name;
+        this.argType = "StringValue";
+    }
+
+    /// <summary>
+    /// Creates an new value of the <see cref="StringValue"/>.
+    /// </summary>
+    /// <param name="name">The <see cref="StringValue"/> name.</param>
+    /// <param name="value">The <see cref="StringValue"/> value.</param>
+    public StringValue(string name, string? value)
+    {
+        this._ref = value;
+        this.argName = name;
+        this.argType = "StringValue";
+    }
+
+    /// <summary>
     /// Gets the name of the property that hosts this <see cref="StringValue"/>.
     /// </summary>
     public string Name { get => this.argName; }

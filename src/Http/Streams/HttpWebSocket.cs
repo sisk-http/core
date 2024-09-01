@@ -44,6 +44,11 @@ namespace Sisk.Core.Http.Streams
         public HttpStreamPingPolicy PingPolicy => this.pingPolicy;
 
         /// <summary>
+        /// Gets or sets the maximum wait time for synchronous listener methods like <see cref="WaitNext()"/>.
+        /// </summary>
+        public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds(60);
+
+        /// <summary>
         /// Gets or sets the maximum number of attempts to send a failed message before the server closes the connection. Set it to -1 to
         /// don't close the connection on failed attempts.
         /// </summary>
@@ -174,9 +179,33 @@ namespace Sisk.Core.Http.Streams
         /// Configures the ping policy for this instance of HTTP Web Socket.
         /// </summary>
         /// <param name="act">The method that runs on the ping policy for this HTTP Web Socket.</param>
-        public void WithPing(Action<HttpStreamPingPolicy> act)
+        public HttpWebSocket WithPing(Action<HttpStreamPingPolicy> act)
         {
             act(this.pingPolicy);
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the ping policy for this instance of HTTP Web Socket.
+        /// </summary>
+        /// <param name="probeMessage">The payload/probe message that is sent to the client.</param>
+        /// <param name="interval">The sending interval for each probe message.</param>
+        public HttpWebSocket WithPing(string probeMessage, TimeSpan interval)
+        {
+            this.PingPolicy.DataMessage = probeMessage;
+            this.PingPolicy.Interval = interval;
+            this.PingPolicy.Start();
+            return this;
+        }
+
+        /// <summary>
+        /// Sends an text message to the remote point.
+        /// </summary>
+        /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
+        public void Send(object? message)
+        {
+            string? t = message?.ToString();
+            this.Send(t ?? string.Empty);
         }
 
         /// <summary>
@@ -326,9 +355,24 @@ namespace Sisk.Core.Http.Streams
         /// </remarks>
         public WebSocketMessage? WaitNext()
         {
+            return this.WaitNext(this.WaitTimeout);
+        }
+
+        /// <summary>
+        /// Blocks the current thread and waits the next incoming message from this web socket instance within
+        /// the maximum defined timeout.
+        /// </summary>
+        /// <param name="timeout">The maximum time to wait until the next message.</param>
+        /// <remarks>
+        /// Null is returned if a connection error is thrown.
+        /// </remarks>
+        public WebSocketMessage? WaitNext(TimeSpan timeout)
+        {
             this.waitNextEvent.Reset();
             this.isWaitingNext = true;
-            this.waitNextEvent.WaitOne();
+
+            this.waitNextEvent.WaitOne(timeout);
+
             return this.lastMessage;
         }
     }

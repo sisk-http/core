@@ -7,8 +7,8 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
 using System.Text.RegularExpressions;
+using Sisk.Core.Entity;
 
 namespace Sisk.Core.Routing
 {
@@ -36,7 +36,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
-        public bool IsAsync { get => this.isReturnTypeTask; }
+        public bool IsAsync { get => isReturnTypeTask; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
@@ -65,15 +65,15 @@ namespace Sisk.Core.Routing
         {
             get
             {
-                return this.path;
+                return path;
             }
             set
             {
-                if (this.UseRegex && this.routeRegex != null)
+                if (UseRegex && routeRegex != null)
                 {
-                    this.routeRegex = null;
+                    routeRegex = null;
                 }
-                this.path = value;
+                path = value;
             }
         }
 
@@ -87,10 +87,10 @@ namespace Sisk.Core.Routing
         /// </summary>
         public RouteAction? Action
         {
-            get => this._callback;
+            get => _callback;
             set
             {
-                this._callback = value;
+                _callback = value;
                 if (value != null)
                 {
                     var memberInfo = value.Method;
@@ -102,7 +102,7 @@ namespace Sisk.Core.Routing
                     }
                     else if (retType.IsAssignableTo(typeof(Task)))
                     {
-                        this.isReturnTypeTask = true;
+                        isReturnTypeTask = true;
                         if (retType.GenericTypeArguments.Length == 0)
                         {
                             throw new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
@@ -138,9 +138,9 @@ namespace Sisk.Core.Routing
         /// <param name="action">The function that is called after the route is matched with the request.</param>
         public Route(RouteMethod method, string path, RouteAction action)
         {
-            this.Method = method;
+            Method = method;
             this.path = path;
-            this.Action = action;
+            Action = action;
         }
 
         /// <summary>
@@ -153,11 +153,11 @@ namespace Sisk.Core.Routing
         /// <param name="beforeCallback">The RequestHandlers to run before the route's Action.</param>
         public Route(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback)
         {
-            this.Method = method;
+            Method = method;
             this.path = path;
-            this.Name = name;
-            this.Action = action;
-            this.RequestHandlers = beforeCallback ?? Array.Empty<IRequestHandler>();
+            Name = name;
+            Action = action;
+            RequestHandlers = beforeCallback ?? Array.Empty<IRequestHandler>();
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         public Route()
         {
-            this.path = "/";
+            path = "/";
         }
 
         /// <summary>
@@ -173,14 +173,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         public override string ToString()
         {
-            if (string.IsNullOrEmpty(this.Name))
-            {
-                return $"{{Method = {this.Method}, Path = {this.Path}}}";
-            }
-            else
-            {
-                return $"{{Method = {this.Method}, Path = {this.Path}, Name={this.Name}}}";
-            }
+            return $"[{Method.ToString().ToUpper()} {path}] {Name ?? Action?.Method.Name}";
         }
     }
 

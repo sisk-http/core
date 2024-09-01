@@ -46,10 +46,10 @@ static class SerializerUtils
         callback = ar =>
         {
             int bytesRead = input.EndRead(ar);
+            output.Write(buffer, 0, bytesRead);
 
             if (bytesRead > 0)
             {
-                output.Write(buffer, 0, bytesRead);
                 input.BeginRead(buffer, 0, buffer.Length, callback, null);
             }
             else
@@ -69,11 +69,11 @@ static class SerializerUtils
         callback = ar =>
         {
             int bytesRead = input.EndRead(ar);
+            output.Write(buffer, 0, bytesRead);
 
             ReadOnlySpan<byte> writtenSpan = buffer[0..bytesRead];
             if (bytesRead > 0 && !writtenSpan.EndsWith(eof))
             {
-                output.Write(buffer, 0, bytesRead);
                 input.BeginRead(buffer, 0, buffer.Length, callback, null);
             }
             else

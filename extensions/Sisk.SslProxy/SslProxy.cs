@@ -165,7 +165,8 @@ public sealed class SslProxy : IDisposable
                         // TODO: check if client wants to keep alive
                         if (isConnectionKeepAlive)
                         {
-                            resHeaders.Add(("Connection", "keep-alive"));
+                            // not necessary in HTTP/1.1
+                            // resHeaders.Add(("Connection", "keep-alive"));
                         }
                         else
                         {

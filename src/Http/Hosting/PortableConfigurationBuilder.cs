@@ -7,8 +7,8 @@
 // File name:   PortableConfigurationBuilder.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal.ServiceProvider;
 using System.ComponentModel;
+using Sisk.Core.Internal.ServiceProvider;
 
 namespace Sisk.Core.Http.Hosting;
 
@@ -26,44 +26,44 @@ public sealed class PortableConfigurationBuilder
 
     internal PortableConfigurationBuilder(HttpServerHostContext context)
     {
-        this._context = context;
+        _context = context;
     }
 
     internal void Build()
     {
-        if (this._createIfDontExists && !File.Exists(this._filename))
+        if (_createIfDontExists && !File.Exists(_filename))
         {
-            File.Create(this._filename).Close();
+            File.Create(_filename).Close();
         }
 
-        ConfigurationContext provider = new ConfigurationContext(this._filename, this._context, this._context.ServerConfiguration.ListeningHosts[0]);
+        ConfigurationContext provider = new ConfigurationContext(_filename, _context, _context.ServerConfiguration.ListeningHosts[0]);
 
-        var pipelineReader = this._pipeline ?? new JsonConfigParser();
+        var pipelineReader = _pipeline ?? new JsonConfigParser();
         pipelineReader.ReadConfiguration(provider);
 
-        if (this._initializerHandler != null)
-            this._initializerHandler(this._context.Parameters);
+        if (_initializerHandler != null)
+            _initializerHandler(_context.Parameters);
 
-        this._context.Parameters.MakeReadonly();
+        _context.Parameters.MakeReadonly();
     }
 
     /// <summary>
     /// Defines an custom <see cref="IConfigurationReader"/> configuration pipeline to the builder.
     /// </summary>
     /// <param name="reader">The <see cref="IConfigurationReader"/> object.</param>
-    public PortableConfigurationBuilder WithConfigurationReader(IConfigurationReader reader)
+    public PortableConfigurationBuilder WithConfigReader(IConfigurationReader reader)
     {
-        this._pipeline = reader;
+        _pipeline = reader;
         return this;
     }
 
     /// <summary>
     /// Defines an custom <see cref="IConfigurationReader"/> configuration pipeline to the builder.
     /// </summary>
-    /// <typeparam name="TPipeline">The <see cref="IConfigurationReader"/> type.</typeparam>
-    public PortableConfigurationBuilder WithConfigurationPipeline<TPipeline>() where TPipeline : IConfigurationReader, new()
+    /// <typeparam name="TReader">The <see cref="IConfigurationReader"/> type.</typeparam>
+    public PortableConfigurationBuilder WithConfigReader<TReader>() where TReader : IConfigurationReader, new()
     {
-        this._pipeline = new TPipeline();
+        _pipeline = new TReader();
         return this;
     }
 
@@ -74,8 +74,8 @@ public sealed class PortableConfigurationBuilder
     /// <param name="createIfDontExists">Optional. Determines if the configuration file should be created if it doens't exists.</param>
     public PortableConfigurationBuilder WithConfigFile(string filename, bool createIfDontExists = false)
     {
-        this._filename = Path.GetFullPath(filename);
-        this._createIfDontExists = createIfDontExists;
+        _filename = Path.GetFullPath(filename);
+        _createIfDontExists = createIfDontExists;
         return this;
     }
 
@@ -85,7 +85,7 @@ public sealed class PortableConfigurationBuilder
     /// <param name="handler">The handler of <see cref="InitializationParameterCollection"/>.</param>
     public PortableConfigurationBuilder WithParameters(Action<InitializationParameterCollection> handler)
     {
-        this._initializerHandler = handler;
+        _initializerHandler = handler;
         return this;
     }
 
