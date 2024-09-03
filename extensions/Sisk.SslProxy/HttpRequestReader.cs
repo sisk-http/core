@@ -15,6 +15,7 @@ namespace Sisk.Ssl;
 static class HttpRequestReader
 {
     public static bool TryReadHttp1Request(Stream inboundStream,
+                            string? replaceHostName,
         [NotNullWhen(true)] out string? method,
         [NotNullWhen(true)] out string? path,
         [NotNullWhen(true)] out string? proto,
@@ -61,6 +62,10 @@ static class HttpRequestReader
                 if (string.Compare(hName, HttpKnownHeaderNames.ContentLength, true) == 0)
                 {
                     contentLength = int.Parse(hValue);
+                }
+                else if (string.Compare(hName, HttpKnownHeaderNames.Host, true) == 0 && replaceHostName is not null)
+                {
+                    hValue = replaceHostName;
                 }
 
                 headerList.Add((hName, hValue));

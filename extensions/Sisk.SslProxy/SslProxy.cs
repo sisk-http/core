@@ -17,7 +17,8 @@ using System.Security.Cryptography.X509Certificates;
 namespace Sisk.Ssl;
 
 /// <summary>
-/// Represents a proxy server that securely forwards traffic over SSL/HTTPS.
+/// Represents a HTTP/1.1 proxy server that forwards traffic over SSL/HTTPS into an insecure HTTP
+/// gateway.
 /// </summary>
 public sealed class SslProxy : IDisposable
 {
@@ -29,6 +30,11 @@ public sealed class SslProxy : IDisposable
     /// Gets a unique, static digest string used to verify trusted proxies.
     /// </summary>
     public static string ProxyDigest { get; } = Guid.NewGuid().ToString();
+
+    /// <summary>
+    /// Gets or sets whether keep-alive connections should be used.
+    /// </summary>
+    public bool KeepAliveEnabled { get; set; } = true;
 
     /// <summary>
     /// Gets the SSL certificate used by the proxy server.
@@ -51,19 +57,30 @@ public sealed class SslProxy : IDisposable
     public bool CheckCertificateRevocation { get; set; } = false;
 
     /// <summary>
-    /// Gets or sets the timeout duration for the proxy connection.
+    /// Gets or sets the maximum time that the gateway should take to
+    /// respond to a connection or message from the proxy.
     /// </summary>
-    public TimeSpan ProxyTimeout { get; set; } = TimeSpan.FromSeconds(120);
+    public TimeSpan GatewayTimeout { get; set; } = TimeSpan.FromSeconds(120);
+
+    /// <summary>
+    /// Gets or sets the proxy host header value for incoming requests.
+    /// </summary>
+    public string? GatewayHostname { get; set; }
+
+    /// <summary>
+    /// Gets the proxy endpoint.
+    /// </summary>
+    public IPEndPoint GatewayEndpoint { get => this.remoteEndpoint; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SslProxy"/> class.
     /// </summary>
-    /// <param name="listenOn">The port number on which the proxy server listens for incoming connections.</param>
+    /// <param name="sslListeningPort">The port number on which the proxy server listens for incoming connections.</param>
     /// <param name="certificate">The SSL/TLS certificate used by the proxy server.</param>
     /// <param name="remoteEndpoint">The remote endpoint to which the proxy server forwards traffic.</param>
-    public SslProxy(int listenOn, X509Certificate certificate, IPEndPoint remoteEndpoint)
+    public SslProxy(int sslListeningPort, X509Certificate certificate, IPEndPoint remoteEndpoint)
     {
-        this.listener = new TcpListener(IPAddress.Any, listenOn);
+        this.listener = new TcpListener(IPAddress.Any, sslListeningPort);
         this.remoteEndpoint = remoteEndpoint;
         this.ServerCertificate = certificate;
     }
@@ -76,10 +93,13 @@ public sealed class SslProxy : IDisposable
         this.listener.Start();
         this.listener.BeginAcceptTcpClient(this.ReceiveClientAsync, null);
 
-        this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
-        this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
-        this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 2);
-        this.listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+        if (this.KeepAliveEnabled)
+        {
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 2);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+        }
     }
 
     void ReceiveClientAsync(IAsyncResult ar)
@@ -94,13 +114,13 @@ public sealed class SslProxy : IDisposable
 
         using (var tcpStream = client.GetStream())
         using (var sslStream = new SslStream(tcpStream, true))
-        using (var httpClient = new TcpClient())
+        using (var gatewayClient = new TcpClient())
         {
             try
             {
-                httpClient.Connect(this.remoteEndpoint);
-                httpClient.SendTimeout = (int)(this.ProxyTimeout.TotalSeconds);
-                httpClient.ReceiveTimeout = (int)(this.ProxyTimeout.TotalSeconds);
+                gatewayClient.Connect(this.remoteEndpoint);
+                gatewayClient.SendTimeout = (int)(this.GatewayTimeout.TotalSeconds);
+                gatewayClient.ReceiveTimeout = (int)(this.GatewayTimeout.TotalSeconds);
             }
             catch
             {
@@ -109,7 +129,7 @@ public sealed class SslProxy : IDisposable
                 return;
             }
 
-            using (var clientStream = httpClient.GetStream())
+            using (var clientStream = gatewayClient.GetStream())
             {
                 try
                 {
@@ -125,6 +145,7 @@ public sealed class SslProxy : IDisposable
                     try
                     {
                         if (!HttpRequestReader.TryReadHttp1Request(sslStream,
+                                    this.GatewayHostname,
                             out var method,
                             out var path,
                             out var proto,
@@ -198,7 +219,7 @@ public sealed class SslProxy : IDisposable
 
                         tcpStream.Flush();
 
-                        if (!isConnectionKeepAlive)
+                        if (!isConnectionKeepAlive || !this.KeepAliveEnabled)
                         {
                             break;
                         }
