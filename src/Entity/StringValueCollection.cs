@@ -167,7 +167,7 @@ public sealed class StringValueCollection : IEnumerable<StringValue>, IEnumerabl
     {
         var sv = this.GetItem(key);
         value = sv;
-        return sv.IsNull;
+        return !sv.IsNull;
     }
 
     /// <inheritdoc/>
