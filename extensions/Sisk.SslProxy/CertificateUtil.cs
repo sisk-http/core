@@ -50,7 +50,6 @@ public static class CertificateUtil
         return Math.Abs(i);
     }
 
-
     static string GetIssuerName(string[] dnsNames)
     {
         int hash = ComputeArrayHash(dnsNames);

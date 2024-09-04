@@ -7,11 +7,10 @@
 // File name:   SecureProxyForwardingResolver.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Ssl;
 using System.Net;
+using Sisk.Core.Http;
 
-namespace Sisk.SslProxy;
+namespace Sisk.Ssl;
 
 /// <summary>
 /// A resolver that securely forwards the client's IP address through a trusted proxy

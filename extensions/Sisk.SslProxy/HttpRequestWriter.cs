@@ -9,7 +9,7 @@
 
 using System.Text;
 
-namespace Sisk.SslProxy;
+namespace Sisk.Ssl;
 
 static class HttpRequestWriter
 {

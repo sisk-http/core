@@ -7,7 +7,6 @@
 // File name:   SslProxy.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.SslProxy;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -70,7 +69,7 @@ public sealed class SslProxy : IDisposable
     /// <summary>
     /// Gets the proxy endpoint.
     /// </summary>
-    public IPEndPoint GatewayEndpoint { get => this.remoteEndpoint; }
+    public IPEndPoint GatewayEndpoint { get => remoteEndpoint; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SslProxy"/> class.
@@ -80,9 +79,9 @@ public sealed class SslProxy : IDisposable
     /// <param name="remoteEndpoint">The remote endpoint to which the proxy server forwards traffic.</param>
     public SslProxy(int sslListeningPort, X509Certificate certificate, IPEndPoint remoteEndpoint)
     {
-        this.listener = new TcpListener(IPAddress.Any, sslListeningPort);
+        listener = new TcpListener(IPAddress.Any, sslListeningPort);
         this.remoteEndpoint = remoteEndpoint;
-        this.ServerCertificate = certificate;
+        ServerCertificate = certificate;
     }
 
     /// <summary>
@@ -90,26 +89,26 @@ public sealed class SslProxy : IDisposable
     /// </summary>
     public void Start()
     {
-        this.listener.Start();
-        this.listener.BeginAcceptTcpClient(this.ReceiveClientAsync, null);
+        listener.Start();
+        listener.BeginAcceptTcpClient(ReceiveClientAsync, null);
 
-        if (this.KeepAliveEnabled)
+        if (KeepAliveEnabled)
         {
-            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
-            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
-            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 2);
-            this.listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
+            listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
+            listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 2);
+            listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         }
     }
 
     void ReceiveClientAsync(IAsyncResult ar)
     {
-        this.listener.BeginAcceptTcpClient(this.ReceiveClientAsync, null);
-        var client = this.listener.EndAcceptTcpClient(ar);
+        listener.BeginAcceptTcpClient(ReceiveClientAsync, null);
+        var client = listener.EndAcceptTcpClient(ar);
 
         client.NoDelay = true;
 
-        if (this.disposedValue)
+        if (disposedValue)
             return;
 
         using (var tcpStream = client.GetStream())
@@ -118,9 +117,9 @@ public sealed class SslProxy : IDisposable
         {
             try
             {
-                gatewayClient.Connect(this.remoteEndpoint);
-                gatewayClient.SendTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-                gatewayClient.ReceiveTimeout = (int)(this.GatewayTimeout.TotalSeconds);
+                gatewayClient.Connect(remoteEndpoint);
+                gatewayClient.SendTimeout = (int)(GatewayTimeout.TotalSeconds);
+                gatewayClient.ReceiveTimeout = (int)(GatewayTimeout.TotalSeconds);
             }
             catch
             {
@@ -133,19 +132,19 @@ public sealed class SslProxy : IDisposable
             {
                 try
                 {
-                    sslStream.AuthenticateAsServer(this.ServerCertificate, this.ClientCertificateRequired, this.AllowedProtocols, this.CheckCertificateRevocation);
+                    sslStream.AuthenticateAsServer(ServerCertificate, ClientCertificateRequired, AllowedProtocols, CheckCertificateRevocation);
                 }
                 catch (Exception)
                 {
                     return;
                 }
 
-                while (client.Connected && !this.disposedValue)
+                while (client.Connected && !disposedValue)
                 {
                     try
                     {
                         if (!HttpRequestReader.TryReadHttp1Request(sslStream,
-                                    this.GatewayHostname,
+                                    GatewayHostname,
                             out var method,
                             out var path,
                             out var proto,
@@ -219,7 +218,7 @@ public sealed class SslProxy : IDisposable
 
                         tcpStream.Flush();
 
-                        if (!isConnectionKeepAlive || !this.KeepAliveEnabled)
+                        if (!isConnectionKeepAlive || !KeepAliveEnabled)
                         {
                             break;
                         }
@@ -235,15 +234,15 @@ public sealed class SslProxy : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!this.disposedValue)
+        if (!disposedValue)
         {
             if (disposing)
             {
-                this.listener.Stop();
-                this.listener.Dispose();
+                listener.Stop();
+                listener.Dispose();
             }
 
-            this.disposedValue = true;
+            disposedValue = true;
         }
     }
 
@@ -251,7 +250,7 @@ public sealed class SslProxy : IDisposable
     public void Dispose()
     {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        this.Dispose(disposing: true);
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 }

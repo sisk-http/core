@@ -7,11 +7,10 @@
 // File name:   HttpResponseReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Ssl;
 using System.Diagnostics.CodeAnalysis;
+using Sisk.Core.Http;
 
-namespace Sisk.SslProxy;
+namespace Sisk.Ssl;
 
 static class HttpResponseReader
 {
