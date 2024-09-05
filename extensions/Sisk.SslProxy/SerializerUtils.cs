@@ -20,9 +20,8 @@ static class SerializerUtils
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static byte[] EncodeString(string data) => Encoding.UTF8.GetBytes(data);
 
-    public static byte[] ReadUntil(Stream inputStream, int intercept, int allocSize)
+    public static Span<byte> ReadUntil(Span<byte> buffer, Stream inputStream, int intercept)
     {
-        byte[] buffer = new byte[allocSize];
         int current, size = 0;
         while (inputStream.CanRead && ((current = inputStream.ReadByte()) >= 0))
         {

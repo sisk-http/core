@@ -14,9 +14,19 @@ using Sisk.Core.Http;
 
 namespace Sisk.Ssl;
 
+ref struct HttpRequestReaderSpan
+{
+    public required Span<byte> MethodBuffer;
+    public required Span<byte> PathBuffer;
+    public required Span<byte> ProtocolBuffer;
+    public required Span<byte> PsHeaderName;
+    public required Span<byte> PsHeaderValue;
+}
+
 static class HttpRequestReader
 {
     public static bool TryReadHttp1Request(Stream inboundStream,
+                      scoped HttpRequestReaderSpan readMemory,
                             string? replaceHostName,
                             TcpClient client,
         [NotNullWhen(true)] out string? method,
@@ -28,13 +38,13 @@ static class HttpRequestReader
         contentLength = 0;
         try
         {
-            byte[] _method = SerializerUtils.ReadUntil(inboundStream, Constants.CH_SPACE, 16);
+            Span<byte> _method = SerializerUtils.ReadUntil(readMemory.MethodBuffer, inboundStream, Constants.CH_SPACE);
             method = SerializerUtils.DecodeString(_method);
 
-            byte[] _path = SerializerUtils.ReadUntil(inboundStream, Constants.CH_SPACE, 2048);
+            Span<byte> _path = SerializerUtils.ReadUntil(readMemory.PathBuffer, inboundStream, Constants.CH_SPACE);
             path = SerializerUtils.DecodeString(_path);
 
-            byte[] _protocol = SerializerUtils.ReadUntil(inboundStream, Constants.CH_RETURN, 8);
+            Span<byte> _protocol = SerializerUtils.ReadUntil(readMemory.ProtocolBuffer, inboundStream, Constants.CH_RETURN);
             proto = SerializerUtils.DecodeString(_protocol);
 
             inboundStream.ReadByte(); // \n
@@ -54,8 +64,8 @@ static class HttpRequestReader
                     firstReadChar = (char)c;
                 }
 
-                byte[] headerName = SerializerUtils.ReadUntil(inboundStream, Constants.CH_HSEP, 256);
-                byte[] headerValue = SerializerUtils.ReadUntil(inboundStream, Constants.CH_RETURN, 2048);
+                Span<byte> headerName = SerializerUtils.ReadUntil(readMemory.PsHeaderName, inboundStream, Constants.CH_HSEP);
+                Span<byte> headerValue = SerializerUtils.ReadUntil(readMemory.PsHeaderValue, inboundStream, Constants.CH_RETURN);
 
                 inboundStream.ReadByte(); // \n
 

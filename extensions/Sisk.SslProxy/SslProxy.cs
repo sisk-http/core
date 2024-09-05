@@ -12,6 +12,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Channels;
 using Sisk.Core.Http;
 
 namespace Sisk.Ssl;
@@ -24,7 +25,16 @@ public sealed class SslProxy : IDisposable
 {
     private readonly TcpListener listener;
     private readonly IPEndPoint remoteEndpoint;
+    private readonly Channel<TcpClient> clientQueue = Channel.CreateBounded<TcpClient>(
+        new BoundedChannelOptions(MaxOpenConnections) { SingleReader = true, SingleWriter = false });
+    private Thread channelConsumerThread;
     private bool disposedValue;
+
+    /// <summary>
+    /// Gets or sets the maximum of open TCP connections this <see cref="SslProxy"/> can mantain
+    /// open at the same time.
+    /// </summary>
+    public static int MaxOpenConnections { get; set; } = Int32.MaxValue;
 
     /// <summary>
     /// Gets or sets the Proxy-Authorization header value for creating an trusted gateway between
@@ -71,7 +81,7 @@ public sealed class SslProxy : IDisposable
     /// <summary>
     /// Gets the proxy endpoint.
     /// </summary>
-    public IPEndPoint GatewayEndpoint { get => remoteEndpoint; }
+    public IPEndPoint GatewayEndpoint { get => this.remoteEndpoint; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SslProxy"/> class.
@@ -81,9 +91,10 @@ public sealed class SslProxy : IDisposable
     /// <param name="remoteEndpoint">The remote endpoint to which the proxy server forwards traffic.</param>
     public SslProxy(int sslListeningPort, X509Certificate certificate, IPEndPoint remoteEndpoint)
     {
-        listener = new TcpListener(IPAddress.Any, sslListeningPort);
+        this.listener = new TcpListener(IPAddress.Any, sslListeningPort);
         this.remoteEndpoint = remoteEndpoint;
-        ServerCertificate = certificate;
+        this.ServerCertificate = certificate;
+        this.channelConsumerThread = new Thread(this.ConsumerJobThread);
     }
 
     /// <summary>
@@ -91,26 +102,46 @@ public sealed class SslProxy : IDisposable
     /// </summary>
     public void Start()
     {
-        listener.Start();
-        listener.BeginAcceptTcpClient(ReceiveClientAsync, null);
-
-        if (KeepAliveEnabled)
+        if (this.KeepAliveEnabled)
         {
-            listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
-            listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
-            listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 2);
-            listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+        }
+
+        this.channelConsumerThread.Start();
+        this.listener.Start();
+        this.listener.BeginAcceptTcpClient(this.ReceiveClientAsync, null);
+    }
+
+    async void ReceiveClientAsync(IAsyncResult ar)
+    {
+        var client = this.listener.EndAcceptTcpClient(ar);
+        this.listener.BeginAcceptTcpClient(this.ReceiveClientAsync, null);
+
+        if (!this.disposedValue)
+            await this.clientQueue.Writer.WriteAsync(client);
+    }
+
+    async void ConsumerJobThread()
+    {
+        var reader = this.clientQueue.Reader;
+        while (!this.disposedValue && await reader.WaitToReadAsync())
+        {
+            while (reader.TryRead(out var client))
+            {
+                new Thread(() => this.HandleTcpClient(client))
+                    .Start();
+            }
         }
     }
 
-    void ReceiveClientAsync(IAsyncResult ar)
+    void HandleTcpClient(TcpClient client)
     {
-        listener.BeginAcceptTcpClient(ReceiveClientAsync, null);
-        var client = listener.EndAcceptTcpClient(ar);
-
         client.NoDelay = true;
 
-        if (disposedValue)
+        if (this.disposedValue)
             return;
 
         using (var tcpStream = client.GetStream())
@@ -119,9 +150,9 @@ public sealed class SslProxy : IDisposable
         {
             try
             {
-                gatewayClient.Connect(remoteEndpoint);
-                gatewayClient.SendTimeout = (int)(GatewayTimeout.TotalSeconds);
-                gatewayClient.ReceiveTimeout = (int)(GatewayTimeout.TotalSeconds);
+                gatewayClient.Connect(this.remoteEndpoint);
+                gatewayClient.SendTimeout = (int)(this.GatewayTimeout.TotalSeconds);
+                gatewayClient.ReceiveTimeout = (int)(this.GatewayTimeout.TotalSeconds);
             }
             catch
             {
@@ -130,23 +161,55 @@ public sealed class SslProxy : IDisposable
                 return;
             }
 
+            // used by header values
+            Span<byte> secHXl1 = stackalloc byte[4096];
+            // used by request path
+            Span<byte> secHXl2 = stackalloc byte[2048];
+            // used by header name
+            Span<byte> secHLg1 = stackalloc byte[512];
+            // used by response reason message
+            Span<byte> secHL21 = stackalloc byte[256];
+            // used by request method and response status code
+            Span<byte> secHSm1 = stackalloc byte[8];
+            // used by request and respones protocol
+            Span<byte> secHSm2 = stackalloc byte[8];
+
+            HttpRequestReaderSpan reqReaderMemory = new HttpRequestReaderSpan()
+            {
+                MethodBuffer = secHSm1,
+                PathBuffer = secHXl2,
+                ProtocolBuffer = secHSm2,
+                PsHeaderName = secHLg1,
+                PsHeaderValue = secHXl1
+            };
+
+            HttpResponseReaderSpan resReaderMemory = new HttpResponseReaderSpan()
+            {
+                ProtocolBuffer = secHSm2,
+                StatusCodeBuffer = secHSm1,
+                StatusReasonBuffer = secHL21,
+                PsHeaderName = secHLg1,
+                PsHeaderValue = secHXl1
+            };
+
             using (var clientStream = gatewayClient.GetStream())
             {
                 try
                 {
-                    sslStream.AuthenticateAsServer(ServerCertificate, ClientCertificateRequired, AllowedProtocols, CheckCertificateRevocation);
+                    sslStream.AuthenticateAsServer(this.ServerCertificate, this.ClientCertificateRequired, this.AllowedProtocols, this.CheckCertificateRevocation);
                 }
                 catch (Exception)
                 {
                     return;
                 }
 
-                while (client.Connected && !disposedValue)
+                while (client.Connected && !this.disposedValue)
                 {
                     try
                     {
                         if (!HttpRequestReader.TryReadHttp1Request(sslStream,
-                                    GatewayHostname,
+                                    reqReaderMemory,
+                                    this.GatewayHostname,
                                     client,
                             out var method,
                             out var path,
@@ -157,9 +220,9 @@ public sealed class SslProxy : IDisposable
                             return;
                         }
 
-                        if (ProxyAuthorization is not null)
+                        if (this.ProxyAuthorization is not null)
                         {
-                            headers.Add((HttpKnownHeaderNames.ProxyAuthorization, ProxyAuthorization.ToString()));
+                            headers.Add((HttpKnownHeaderNames.ProxyAuthorization, this.ProxyAuthorization.ToString()));
                         }
                         headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
 
@@ -175,6 +238,7 @@ public sealed class SslProxy : IDisposable
                         }
 
                         if (!HttpResponseReader.TryReadHttp1Response(clientStream,
+                                    resReaderMemory,
                             out var resStatusCode,
                             out var resStatusDescr,
                             out var resHeaders,
@@ -224,7 +288,7 @@ public sealed class SslProxy : IDisposable
 
                         tcpStream.Flush();
 
-                        if (!isConnectionKeepAlive || !KeepAliveEnabled)
+                        if (!isConnectionKeepAlive || !this.KeepAliveEnabled)
                         {
                             break;
                         }
@@ -236,19 +300,21 @@ public sealed class SslProxy : IDisposable
                 }
             }
         }
+        ;//connection closed
     }
 
     private void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!this.disposedValue)
         {
             if (disposing)
             {
-                listener.Stop();
-                listener.Dispose();
+                this.clientQueue.Writer.Complete();
+                this.listener.Stop();
+                this.listener.Dispose();
             }
 
-            disposedValue = true;
+            this.disposedValue = true;
         }
     }
 
@@ -256,7 +322,7 @@ public sealed class SslProxy : IDisposable
     public void Dispose()
     {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose(disposing: true);
+        this.Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 }
