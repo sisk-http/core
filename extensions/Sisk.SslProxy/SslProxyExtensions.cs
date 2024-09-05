@@ -7,10 +7,10 @@
 // File name:   SslProxyExtensions.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http.Hosting;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Sisk.Core.Http.Hosting;
 
 namespace Sisk.Ssl;
 
@@ -27,13 +27,16 @@ public static class SslProxyExtensions
     /// <param name="certificate">Optional. The SSL/HTTPS certificate to use for encrypting communications.</param>
     /// <param name="allowedProtocols">Optional. The SSL/HTTPS protocols allowed for the connection. Defaults to <see cref="SslProtocols.Tls12"/> and <see cref="SslProtocols.Tls13"/>.</param>
     /// <param name="clientCertificateRequired">Optional. Specifies whether a client certificate is required for authentication. Defaults to <c>false</c>.</param>
+    /// <param name="proxyAuthorization">Optional. Specifies the Proxy-Authorization header value for creating an trusted gateway between
+    /// the application and the proxy.</param>
     /// <returns>The configured <see cref="HttpServerHostContextBuilder"/> instance.</returns>
     public static HttpServerHostContextBuilder UseSsl(
         this HttpServerHostContextBuilder builder,
         short sslListeningPort,
         X509Certificate? certificate = null,
         SslProtocols allowedProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-        bool clientCertificateRequired = false)
+        bool clientCertificateRequired = false,
+        object? proxyAuthorization = null)
     {
         var primaryHost = builder.ServerConfiguration.ListeningHosts[0];
         var primaryPort = primaryHost.Ports[0];
@@ -47,6 +50,7 @@ public static class SslProxyExtensions
 
         var secureProxy = new SslProxy(sslListeningPort, certificate, endpoint);
         secureProxy.GatewayHostname = primaryPort.Hostname;
+        secureProxy.ProxyAuthorization = proxyAuthorization?.ToString();
 
         var serverHandler = new SslProxyServerHandler(secureProxy);
         builder.UseHandler(serverHandler);

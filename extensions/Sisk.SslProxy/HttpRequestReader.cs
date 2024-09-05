@@ -7,8 +7,10 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Net.Sockets;
+using Sisk.Core.Http;
 
 namespace Sisk.Ssl;
 
@@ -16,6 +18,7 @@ static class HttpRequestReader
 {
     public static bool TryReadHttp1Request(Stream inboundStream,
                             string? replaceHostName,
+                            TcpClient client,
         [NotNullWhen(true)] out string? method,
         [NotNullWhen(true)] out string? path,
         [NotNullWhen(true)] out string? proto,
@@ -66,6 +69,12 @@ static class HttpRequestReader
                 else if (string.Compare(hName, HttpKnownHeaderNames.Host, true) == 0 && replaceHostName is not null)
                 {
                     hValue = replaceHostName;
+                }
+                else if (string.Compare(hName, HttpKnownHeaderNames.XForwardedFor, true) == 0)
+                {
+                    string? remoteAddr = (client.Client.RemoteEndPoint as IPEndPoint)?.Address.ToString();
+                    if (remoteAddr is not null)
+                        hValue = hValue + ", " + remoteAddr;
                 }
 
                 headerList.Add((hName, hValue));

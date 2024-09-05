@@ -12,6 +12,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using Sisk.Core.Http;
 
 namespace Sisk.Ssl;
 
@@ -26,9 +27,10 @@ public sealed class SslProxy : IDisposable
     private bool disposedValue;
 
     /// <summary>
-    /// Gets a unique, static digest string used to verify trusted proxies.
+    /// Gets or sets the Proxy-Authorization header value for creating an trusted gateway between
+    /// the application and the proxy.
     /// </summary>
-    public static string ProxyDigest { get; } = Guid.NewGuid().ToString();
+    public string? ProxyAuthorization { get; set; }
 
     /// <summary>
     /// Gets or sets whether keep-alive connections should be used.
@@ -145,6 +147,7 @@ public sealed class SslProxy : IDisposable
                     {
                         if (!HttpRequestReader.TryReadHttp1Request(sslStream,
                                     GatewayHostname,
+                                    client,
                             out var method,
                             out var path,
                             out var proto,
@@ -154,7 +157,10 @@ public sealed class SslProxy : IDisposable
                             return;
                         }
 
-                        headers.Add((Constants.XDigestHeaderName, ProxyDigest.ToString()));
+                        if (ProxyAuthorization is not null)
+                        {
+                            headers.Add((HttpKnownHeaderNames.ProxyAuthorization, ProxyAuthorization.ToString()));
+                        }
                         headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
 
                         if (!HttpRequestWriter.TryWriteHttpV1Request(clientStream, method, path, headers, reqContentLength))
