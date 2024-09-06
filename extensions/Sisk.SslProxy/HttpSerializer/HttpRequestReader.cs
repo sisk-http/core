@@ -12,7 +12,7 @@ using System.Net;
 using System.Net.Sockets;
 using Sisk.Core.Http;
 
-namespace Sisk.Ssl;
+namespace Sisk.Ssl.HttpSerializer;
 
 ref struct HttpRequestReaderSpan
 {
@@ -25,7 +25,9 @@ ref struct HttpRequestReaderSpan
 
 static class HttpRequestReader
 {
-    public static bool TryReadHttp1Request(Stream inboundStream,
+    public static bool TryReadHttp1Request(
+                            int clientId,
+                            Stream inboundStream,
                       scoped HttpRequestReaderSpan readMemory,
                             string? replaceHostName,
                             TcpClient client,
@@ -93,8 +95,9 @@ static class HttpRequestReader
             headers = headerList;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogInformation($"#{clientId}: Couldn't read HTTP request from {inboundStream.GetType().Name}: {ex.Message}");
             method = null;
             path = null;
             proto = null;

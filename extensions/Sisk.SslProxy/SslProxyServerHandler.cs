@@ -34,7 +34,7 @@ public sealed class SslProxyServerHandler : HttpServerHandler
 
     /// <exclude/>
     /// <inheritdoc/>
-    protected override void OnServerStarting(HttpServer server)
+    protected override void OnServerStarted(HttpServer server)
     {
         this.SecureProxy.Start();
     }

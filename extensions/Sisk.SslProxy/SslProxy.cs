@@ -14,6 +14,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Channels;
 using Sisk.Core.Http;
+using Sisk.Ssl.HttpSerializer;
 
 namespace Sisk.Ssl;
 
@@ -23,18 +24,24 @@ namespace Sisk.Ssl;
 /// </summary>
 public sealed class SslProxy : IDisposable
 {
+    private readonly static Random clientIdGenerator = new Random();
     private readonly TcpListener listener;
     private readonly IPEndPoint remoteEndpoint;
-    private readonly Channel<TcpClient> clientQueue = Channel.CreateBounded<TcpClient>(
-        new BoundedChannelOptions(MaxOpenConnections) { SingleReader = true, SingleWriter = false });
+    private readonly Channel<TcpClient> clientQueue;
     private Thread channelConsumerThread;
     private bool disposedValue;
+
+    /// <summary>
+    /// Gets or sets an boolean indicating if the <see cref="SslProxy"/> should trace the
+    /// gateway client when starting the proxy.
+    /// </summary>
+    public bool CheckGatewayConnectionOnInit { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the maximum of open TCP connections this <see cref="SslProxy"/> can mantain
     /// open at the same time.
     /// </summary>
-    public static int MaxOpenConnections { get; set; } = Int32.MaxValue;
+    public int MaxOpenConnections { get; set; } = Int32.MaxValue;
 
     /// <summary>
     /// Gets or sets the Proxy-Authorization header value for creating an trusted gateway between
@@ -74,7 +81,7 @@ public sealed class SslProxy : IDisposable
     public TimeSpan GatewayTimeout { get; set; } = TimeSpan.FromSeconds(120);
 
     /// <summary>
-    /// Gets or sets the proxy host header value for incoming requests.
+    /// Gets or sets an fixed proxy host header value for incoming requests.
     /// </summary>
     public string? GatewayHostname { get; set; }
 
@@ -95,6 +102,8 @@ public sealed class SslProxy : IDisposable
         this.remoteEndpoint = remoteEndpoint;
         this.ServerCertificate = certificate;
         this.channelConsumerThread = new Thread(this.ConsumerJobThread);
+        this.clientQueue = Channel.CreateBounded<TcpClient>(
+            new BoundedChannelOptions(this.MaxOpenConnections) { SingleReader = true, SingleWriter = false });
     }
 
     /// <summary>
@@ -102,6 +111,26 @@ public sealed class SslProxy : IDisposable
     /// </summary>
     public void Start()
     {
+        if (this.CheckGatewayConnectionOnInit)
+        {
+            using (var gatewayClient = new TcpClient())
+            {
+                gatewayClient.Connect(this.remoteEndpoint);
+
+                using (var gatewayStream = gatewayClient.GetStream())
+                {
+                    bool sentRequest = HttpRequestWriter.TryWriteHttpV1Request(0, gatewayStream, "TRACE", "/", [
+                        ("Host", this.GatewayHostname ?? "localhost")
+                    ], 0);
+
+                    if (!sentRequest)
+                    {
+                        throw new Exception("Couldn't connect to the gateway address.");
+                    }
+                }
+            }
+        }
+
         if (this.KeepAliveEnabled)
         {
             this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
@@ -140,167 +169,225 @@ public sealed class SslProxy : IDisposable
     void HandleTcpClient(TcpClient client)
     {
         client.NoDelay = true;
+        int clientId = clientIdGenerator.Next();
+        int connectionCloseState = 0;
 
         if (this.disposedValue)
             return;
 
-        using (var tcpStream = client.GetStream())
-        using (var sslStream = new SslStream(tcpStream, true))
-        using (var gatewayClient = new TcpClient())
+        Logger.LogInformation($"#{clientId} open");
+
+        try
         {
-            try
-            {
-                gatewayClient.Connect(this.remoteEndpoint);
-                gatewayClient.SendTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-                gatewayClient.ReceiveTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-            }
-            catch
-            {
-                HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
-                sslStream.Flush();
-                return;
-            }
-
-            // used by header values
-            Span<byte> secHXl1 = stackalloc byte[4096];
-            // used by request path
-            Span<byte> secHXl2 = stackalloc byte[2048];
-            // used by header name
-            Span<byte> secHLg1 = stackalloc byte[512];
-            // used by response reason message
-            Span<byte> secHL21 = stackalloc byte[256];
-            // used by request method and response status code
-            Span<byte> secHSm1 = stackalloc byte[8];
-            // used by request and respones protocol
-            Span<byte> secHSm2 = stackalloc byte[8];
-
-            HttpRequestReaderSpan reqReaderMemory = new HttpRequestReaderSpan()
-            {
-                MethodBuffer = secHSm1,
-                PathBuffer = secHXl2,
-                ProtocolBuffer = secHSm2,
-                PsHeaderName = secHLg1,
-                PsHeaderValue = secHXl1
-            };
-
-            HttpResponseReaderSpan resReaderMemory = new HttpResponseReaderSpan()
-            {
-                ProtocolBuffer = secHSm2,
-                StatusCodeBuffer = secHSm1,
-                StatusReasonBuffer = secHL21,
-                PsHeaderName = secHLg1,
-                PsHeaderValue = secHXl1
-            };
-
-            using (var clientStream = gatewayClient.GetStream())
+            using (var tcpStream = client.GetStream())
+            using (var sslStream = new SslStream(tcpStream, true))
+            using (var gatewayClient = new TcpClient())
             {
                 try
                 {
-                    sslStream.AuthenticateAsServer(this.ServerCertificate, this.ClientCertificateRequired, this.AllowedProtocols, this.CheckCertificateRevocation);
+                    gatewayClient.Connect(this.remoteEndpoint);
+                    gatewayClient.NoDelay = true;
+                    gatewayClient.SendTimeout = (int)(this.GatewayTimeout.TotalSeconds);
+                    gatewayClient.ReceiveTimeout = (int)(this.GatewayTimeout.TotalSeconds);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    connectionCloseState = 1;
+                    Logger.LogInformation($"#{clientId}: Gateway connect exception: {ex.Message}");
+
+                    HttpResponseWriter.WriteHttp1DefaultResponse(
+                        new HttpStatusInformation(502),
+                        "The host service ins't working.",
+                        tcpStream);
+
                     return;
                 }
 
-                while (client.Connected && !this.disposedValue)
+                // used by header values
+                Span<byte> secHXl1 = stackalloc byte[4096];
+                // used by request path
+                Span<byte> secHXl2 = stackalloc byte[2048];
+                // used by header name
+                Span<byte> secHLg1 = stackalloc byte[512];
+                // used by response reason message
+                Span<byte> secHL21 = stackalloc byte[256];
+                // used by request method and response status code
+                Span<byte> secHSm1 = stackalloc byte[8];
+                // used by request and respones protocol
+                Span<byte> secHSm2 = stackalloc byte[8];
+
+                HttpRequestReaderSpan reqReaderMemory = new HttpRequestReaderSpan()
                 {
+                    MethodBuffer = secHSm1,
+                    PathBuffer = secHXl2,
+                    ProtocolBuffer = secHSm2,
+                    PsHeaderName = secHLg1,
+                    PsHeaderValue = secHXl1
+                };
+
+                HttpResponseReaderSpan resReaderMemory = new HttpResponseReaderSpan()
+                {
+                    ProtocolBuffer = secHSm2,
+                    StatusCodeBuffer = secHSm1,
+                    StatusReasonBuffer = secHL21,
+                    PsHeaderName = secHLg1,
+                    PsHeaderValue = secHXl1
+                };
+
+                using (var gatewayStream = gatewayClient.GetStream())
+                {
+                    gatewayStream.ReadTimeout = (int)(this.GatewayTimeout.TotalSeconds);
+                    gatewayStream.WriteTimeout = (int)(this.GatewayTimeout.TotalSeconds);
+
                     try
                     {
-                        if (!HttpRequestReader.TryReadHttp1Request(sslStream,
-                                    reqReaderMemory,
-                                    this.GatewayHostname,
-                                    client,
-                            out var method,
-                            out var path,
-                            out var proto,
-                            out var reqContentLength,
-                            out var headers))
-                        {
-                            return;
-                        }
-
-                        if (this.ProxyAuthorization is not null)
-                        {
-                            headers.Add((HttpKnownHeaderNames.ProxyAuthorization, this.ProxyAuthorization.ToString()));
-                        }
-                        headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
-
-                        if (!HttpRequestWriter.TryWriteHttpV1Request(clientStream, method, path, headers, reqContentLength))
-                        {
-                            HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
-                            sslStream.Flush();
-                            return;
-                        }
-                        if (reqContentLength > 0)
-                        {
-                            SerializerUtils.CopyStream(sslStream, clientStream, reqContentLength);
-                        }
-
-                        if (!HttpResponseReader.TryReadHttp1Response(clientStream,
-                                    resReaderMemory,
-                            out var resStatusCode,
-                            out var resStatusDescr,
-                            out var resHeaders,
-                            out var resContentLength,
-                            out var isChunked,
-                            out var isConnectionKeepAlive,
-                            out var isWebSocket))
-                        {
-                            HttpResponseWriter.TryWriteHttp1Response(sslStream, "502", "Bad Gateway", HttpResponseWriter.GetDefaultHeaders());
-                            sslStream.Flush();
-                            return;
-                        }
-
-                        // TODO: check if client wants to keep alive
-                        if (isConnectionKeepAlive)
-                        {
-                            // not necessary in HTTP/1.1
-                            // resHeaders.Add(("Connection", "keep-alive"));
-                        }
-                        else
-                        {
-                            resHeaders.Add(("Connection", "close"));
-                        }
-
-                        HttpResponseWriter.TryWriteHttp1Response(sslStream, resStatusCode, resStatusDescr, resHeaders);
-                        if (isWebSocket)
-                        {
-                            AutoResetEvent waitEvent = new AutoResetEvent(false);
-
-                            SerializerUtils.CopyBlocking(clientStream, sslStream, waitEvent);
-                            SerializerUtils.CopyBlocking(sslStream, clientStream, waitEvent);
-
-                            waitEvent.WaitOne();
-                        }
-                        else if (resContentLength > 0)
-                        {
-                            SerializerUtils.CopyStream(clientStream, sslStream, resContentLength);
-                        }
-                        else if (isChunked)
-                        {
-                            // SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
-
-                            AutoResetEvent waitEvent = new AutoResetEvent(false);
-                            SerializerUtils.CopyUntilBlocking(clientStream, sslStream, Constants.CHUNKED_EOF, waitEvent);
-                            waitEvent.WaitOne();
-                        }
-
-                        tcpStream.Flush();
-
-                        if (!isConnectionKeepAlive || !this.KeepAliveEnabled)
-                        {
-                            break;
-                        }
+                        sslStream.AuthenticateAsServer(this.ServerCertificate, this.ClientCertificateRequired, this.AllowedProtocols, this.CheckCertificateRevocation);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.LogInformation($"#{clientId}: SslAuthentication failed: {ex.Message}");
+                        connectionCloseState = 2;
+
+                        // write an error on the http stream
+                        HttpResponseWriter.WriteHttp1DefaultResponse(
+                            new HttpStatusInformation(400),
+                            "The plain HTTP request was sent to an HTTPS port.",
+                            tcpStream);
+
                         return;
+                    }
+
+                    while (client.Connected && !this.disposedValue)
+                    {
+                        try
+                        {
+                            if (!HttpRequestReader.TryReadHttp1Request(
+                                        clientId,
+                                        sslStream,
+                                        reqReaderMemory,
+                                        this.GatewayHostname,
+                                        client,
+                                out var method,
+                                out var path,
+                                out var proto,
+                                out var reqContentLength,
+                                out var headers))
+                            {
+                                Logger.LogInformation($"#{clientId}: couldn't read request");
+                                connectionCloseState = 9;
+
+                                HttpResponseWriter.WriteHttp1DefaultResponse(
+                                    new HttpStatusInformation(400),
+                                    "The server received an invalid HTTP message.",
+                                    tcpStream);
+
+                                return;
+                            }
+
+                            Logger.LogInformation($"#{clientId} >> {method} {path}");
+
+                            if (this.ProxyAuthorization is not null)
+                            {
+                                headers.Add((HttpKnownHeaderNames.ProxyAuthorization, this.ProxyAuthorization.ToString()));
+                            }
+                            headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
+
+                            if (!HttpRequestWriter.TryWriteHttpV1Request(clientId, gatewayStream, method, path, headers, reqContentLength))
+                            {
+                                HttpResponseWriter.WriteHttp1DefaultResponse(
+                                    new HttpStatusInformation(502),
+                                    "The host service ins't working.",
+                                    tcpStream);
+
+                                connectionCloseState = 3;
+                                return;
+                            }
+                            if (reqContentLength > 0)
+                            {
+                                SerializerUtils.CopyStream(sslStream, gatewayStream, reqContentLength);
+                            }
+
+                            if (!HttpResponseReader.TryReadHttp1Response(
+                                        clientId,
+                                        gatewayStream,
+                                        resReaderMemory,
+                                out var resStatusCode,
+                                out var resStatusDescr,
+                                out var resHeaders,
+                                out var resContentLength,
+                                out var isChunked,
+                                out var isConnectionKeepAlive,
+                                out var isWebSocket))
+                            {
+                                HttpResponseWriter.WriteHttp1DefaultResponse(
+                                      new HttpStatusInformation(502),
+                                      "The host service ins't working.",
+                                      tcpStream);
+
+                                connectionCloseState = 4;
+                                return;
+                            }
+
+                            Logger.LogInformation($"#{clientId} << {resStatusCode} {resStatusDescr}");
+
+                            // TODO: check if client wants to keep alive
+                            if (isConnectionKeepAlive)
+                            {
+                                // not necessary in HTTP/1.1
+                                // resHeaders.Add(("Connection", "keep-alive"));
+                            }
+                            else
+                            {
+                                resHeaders.Add(("Connection", "close"));
+                            }
+#if VERBOSE
+                            resHeaders.Add(("X-Debug-Connection-Id", clientId.ToString()));
+#endif
+
+                            HttpResponseWriter.TryWriteHttp1Response(clientId, sslStream, resStatusCode, resStatusDescr, resHeaders);
+                            if (isWebSocket)
+                            {
+                                AutoResetEvent waitEvent = new AutoResetEvent(false);
+
+                                SerializerUtils.CopyBlocking(gatewayStream, sslStream, waitEvent);
+                                SerializerUtils.CopyBlocking(sslStream, gatewayStream, waitEvent);
+
+                                waitEvent.WaitOne();
+                            }
+                            else if (resContentLength > 0)
+                            {
+                                SerializerUtils.CopyStream(gatewayStream, sslStream, resContentLength);
+                            }
+                            else if (isChunked)
+                            {
+                                // SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
+
+                                AutoResetEvent waitEvent = new AutoResetEvent(false);
+                                SerializerUtils.CopyUntilBlocking(gatewayStream, sslStream, Constants.CHUNKED_EOF, waitEvent);
+                                waitEvent.WaitOne();
+                            }
+
+                            tcpStream.Flush();
+
+                            if (!isConnectionKeepAlive || !this.KeepAliveEnabled)
+                            {
+                                connectionCloseState = 5;
+                                break;
+                            }
+                        }
+                        catch
+                        {
+                            connectionCloseState = 6;
+                            return;
+                        }
                     }
                 }
             }
         }
-        ;//connection closed
+        finally
+        {
+            Logger.LogInformation($"#{clientId} closed. State = {connectionCloseState}");
+        }
     }
 
     private void Dispose(bool disposing)

@@ -7,9 +7,20 @@
 // File name:   HttpResponseWriter.cs
 // Repository:  https://github.com/sisk-http/core
 
+
+// The Sisk Framework source code
+// Copyright (c) 2023 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpResponseWriter.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Text;
 using Sisk.Core.Http;
 
-namespace Sisk.Ssl;
+namespace Sisk.Ssl.HttpSerializer;
 
 static class HttpResponseWriter
 {
@@ -17,12 +28,13 @@ static class HttpResponseWriter
     {
         return [
             ("Server", $"Sisk/{HttpServer.SiskVersion.Major}.{HttpServer.SiskVersion.Minor}"),
-            ("Date", DateTime.Now.ToUniversalTime().ToString("r")),
-            ("Content-Length", "0"),
+            ("Date", DateTime.Now.ToUniversalTime().ToString("r"))
         ];
     }
 
-    public static bool TryWriteHttp1Response(Stream outgoingStream,
+    public static bool TryWriteHttp1Response(
+        int clientId,
+        Stream outgoingStream,
         string statusCode,
         string statusDescription,
         List<(string, string)> headers)
@@ -49,9 +61,25 @@ static class HttpResponseWriter
             outgoingStream.Write(SerializerUtils.EncodeString(sw.ToString()));
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogInformation($"#{clientId}: Couldn't write HTTP response to {outgoingStream.GetType().Name}: {ex.Message}");
             return false;
         }
+    }
+
+    public static void WriteHttp1DefaultResponse(HttpStatusInformation status, string statusDescription, Stream outgoingStream)
+    {
+        var html = DefaultMessagePage.CreateDefaultPageHtml(status.Description, statusDescription);
+        var htmlBytes = Encoding.UTF8.GetBytes(html);
+        var headers = GetDefaultHeaders();
+        headers.Add(("Content-Length", htmlBytes.Length.ToString()));
+        headers.Add(("Content-Type", "text/html; charset=utf-8"));
+
+        if (TryWriteHttp1Response(0, outgoingStream, status.StatusCode.ToString(), status.Description, headers))
+        {
+            outgoingStream.Write(htmlBytes);
+        }
+        outgoingStream.Flush();
     }
 }

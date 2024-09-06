@@ -10,7 +10,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Sisk.Core.Http;
 
-namespace Sisk.Ssl;
+namespace Sisk.Ssl.HttpSerializer;
 
 ref struct HttpResponseReaderSpan
 {
@@ -23,7 +23,9 @@ ref struct HttpResponseReaderSpan
 
 static class HttpResponseReader
 {
-    public static bool TryReadHttp1Response(Stream inboundStream,
+    public static bool TryReadHttp1Response(
+                            int clientId,
+                            Stream inboundStream,
                      scoped HttpResponseReaderSpan memory,
         [NotNullWhen(true)] out string? statusCode,
         [NotNullWhen(true)] out string? statusDescription,
@@ -100,8 +102,9 @@ static class HttpResponseReader
             headers = headerList;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogInformation($"#{clientId}: Couldn't read HTTP response from {inboundStream.GetType().Name}: {ex.Message}");
             statusCode = null;
             statusDescription = null;
             headers = new();

@@ -22,7 +22,7 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<Version>1.0-alpha2</Version>
+		<Version>1.0-alpha3</Version>
 		<AssemblyVersion>1.0</AssemblyVersion>
 		<FileVersion>1.0</FileVersion>
 
@@ -36,6 +36,10 @@
 
 		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
 		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+		<DefineConstants>$(DefineConstants)</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>

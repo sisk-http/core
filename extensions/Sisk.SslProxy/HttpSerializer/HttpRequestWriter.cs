@@ -9,11 +9,13 @@
 
 using System.Text;
 
-namespace Sisk.Ssl;
+namespace Sisk.Ssl.HttpSerializer;
 
 static class HttpRequestWriter
 {
-    public static bool TryWriteHttpV1Request(Stream outboundStream,
+    public static bool TryWriteHttpV1Request(
+        int clientId,
+        Stream outboundStream,
         string method,
         string path,
         List<(string, string)> headers,
@@ -32,11 +34,13 @@ static class HttpRequestWriter
 
             byte[] headerBytes = Encoding.UTF8.GetBytes(sw.ToString());
             outboundStream.Write(headerBytes);
+            outboundStream.Flush();
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogInformation($"#{clientId}: Couldn't write HTTP request to {outboundStream.GetType().Name}: {ex.Message}");
             return false;
         }
     }
