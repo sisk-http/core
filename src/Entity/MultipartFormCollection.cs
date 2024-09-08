@@ -27,10 +27,32 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     }
 
     /// <summary>
+    /// Gets the last form item by their name. The search is case-insensitive.
+    /// </summary>
+    /// <param name="name">The form item name.</param>
+    public MultipartObject? GetItem(string name)
+    {
+        return this._items.LastOrDefault(i => string.Compare(name, i.Name, true) == 0);
+    }
+
+    /// <summary>
+    /// Gets all form items that shares the specified name. The search is case-insensitive.
+    /// </summary>
+    /// <param name="name">The form item name.</param>
+    /// <returns>An array of <see cref="MultipartObject"/> with the specified name.</returns>
+    public MultipartObject[] GetItems(string name)
+    {
+        return this._items
+            .Where(i => string.Compare(name, i.Name, true) == 0)
+            .ToArray();
+    }
+
+    /// <summary>
     /// Reads an form item contents by it's name.
     /// </summary>
     /// <param name="name">The form item name.</param>
     /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
+    [Obsolete("This method is deprecated. Use GetItem(string) instead.")]
     public MultipartObject? GetItem(string name, bool ignoreCase = false)
     {
         return this._items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0);
@@ -42,6 +64,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// <param name="name">The form item name.</param>
     /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
     /// <param name="encoding">Optional. Specifies the <see cref="Encoding"/> used to read the content.</param>
+    [Obsolete("This method is deprecated. Use GetItem(string) instead.")]
     public string? GetString(string name, bool ignoreCase = false, Encoding? encoding = null)
     {
         Encoding _enc = encoding ?? Encoding.UTF8;
@@ -49,12 +72,14 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     }
 
     /// <summary>
-    /// Gets an <see cref="StringValue"/> object from the form item content string.
+    /// Gets an <see cref="StringValue"/> object from the form item
+    /// content string. This method reads the contents of the last matched last item with the
+    /// request encoding.
     /// </summary>
     /// <param name="name">The form item name.</param>
     public StringValue GetStringValue(string name)
     {
-        return new StringValue(name, "multipart form", this.GetItem(name, true)?.ReadContentAsString());
+        return new StringValue(name, "multipart form", this.GetItem(name)?.ReadContentAsString());
     }
 
     /// <exclude/>
@@ -63,11 +88,18 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
 
     /// <exclude/>
     /// <inheritdoc/>
-    public MultipartObject this[string name] => this.GetItem(name, false) ?? throw new KeyNotFoundException();
+    public MultipartObject this[string name] => this.GetItem(name) ?? throw new KeyNotFoundException();
 
     /// <inheritdoc/>
     public int Count => ((IReadOnlyCollection<MultipartObject>)this._items).Count;
 
+    /// <summary>
+    /// Creates an array with the <see cref="MultipartObject"/> in this collection.
+    /// </summary>
+    public MultipartObject[] ToArray()
+    {
+        return this._items.ToArray();
+    }
 
     /// <inheritdoc/>
     public IEnumerable<string> Keys
@@ -81,7 +113,6 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
             }
         }
     }
-
 
     /// <inheritdoc/>
     public IEnumerable<MultipartObject> Values

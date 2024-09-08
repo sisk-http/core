@@ -68,18 +68,26 @@ static class HttpResponseWriter
         }
     }
 
-    public static void WriteHttp1DefaultResponse(HttpStatusInformation status, string statusDescription, Stream outgoingStream)
+    public static bool TryWriteHttp1DefaultResponse(HttpStatusInformation status, string statusDescription, Stream outgoingStream)
     {
-        var html = DefaultMessagePage.CreateDefaultPageHtml(status.Description, statusDescription);
-        var htmlBytes = Encoding.UTF8.GetBytes(html);
-        var headers = GetDefaultHeaders();
-        headers.Add(("Content-Length", htmlBytes.Length.ToString()));
-        headers.Add(("Content-Type", "text/html; charset=utf-8"));
-
-        if (TryWriteHttp1Response(0, outgoingStream, status.StatusCode.ToString(), status.Description, headers))
+        try
         {
-            outgoingStream.Write(htmlBytes);
+            var html = DefaultMessagePage.CreateDefaultPageHtml(status.Description, statusDescription);
+            var htmlBytes = Encoding.UTF8.GetBytes(html);
+            var headers = GetDefaultHeaders();
+            headers.Add(("Content-Length", htmlBytes.Length.ToString()));
+            headers.Add(("Content-Type", "text/html; charset=utf-8"));
+
+            if (TryWriteHttp1Response(0, outgoingStream, status.StatusCode.ToString(), status.Description, headers))
+            {
+                outgoingStream.Write(htmlBytes);
+            }
+            outgoingStream.Flush();
+            return true;
         }
-        outgoingStream.Flush();
+        catch
+        {
+            return false;
+        }
     }
 }

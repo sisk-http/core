@@ -331,17 +331,18 @@ public partial class HttpServer
             {
                 for (int i = 0; i < overrideHeaders.Count; i++)
                 {
-                    var overridingHeader = overrideHeaders[i];
+                    var overridingHeader = overrideHeaders.items[i];
                     resHeaders.Set(overridingHeader.Item1, overridingHeader.Item2);
                 }
             }
 
             for (int i = 0; i < resHeaders.Count; i++)
             {
-                (string, string) incameHeader = resHeaders[i];
+                (string, List<string>) incameHeader = resHeaders.items[i];
                 if (string.IsNullOrEmpty(incameHeader.Item1)) continue;
 
-                baseResponse.Headers.Add(incameHeader.Item1, incameHeader.Item2);
+                for (int j = 0; j < incameHeader.Item2.Count; j++)
+                    baseResponse.Headers.Add(incameHeader.Item1, incameHeader.Item2[j]);
             }
 
             _debugState = "sent_headers";

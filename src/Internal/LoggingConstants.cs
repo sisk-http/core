@@ -7,6 +7,7 @@
 // File name:   LoggingConstants.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using System.Net;
 using System.Reflection;
@@ -21,7 +22,7 @@ namespace Sisk.Core.Internal
         readonly DateTime d;
         readonly Uri? bReqUri;
         readonly IPAddress? bReqIpAddr;
-        readonly IDictionary<string, string?>? reqHeaders;
+        readonly StringKeyStore? reqHeaders;
         readonly int bResStatusCode;
         readonly string? bResStatusDescr;
         readonly string bReqMethod;
@@ -33,7 +34,7 @@ namespace Sisk.Core.Internal
             HttpServerExecutionResult res,
             DateTime d, Uri? bReqUri,
             IPAddress? bReqIpAddr,
-            IDictionary<string, string?>? reqHeaders,
+            StringKeyStore? reqHeaders,
             int bResStatusCode,
             string? bResStatusDescr,
             long execTime,
@@ -82,8 +83,9 @@ namespace Sisk.Core.Internal
 
         private void replaceEntities(ref string format)
         {
-            foreach (var m in Callers)
+            for (int i = 0; i < Callers.Length; i++)
             {
+                MethodInfo? m = Callers[i];
                 string literal = "%" + m.Name;
                 if (format.Contains(literal))
                 {
@@ -100,7 +102,7 @@ namespace Sisk.Core.Internal
             {
                 int end = format.IndexOf('}');
                 string headerName = format.Substring(pos + 2, end - pos - 2);
-                string? headerValue = this.reqHeaders?[headerName];
+                string? headerValue = this.reqHeaders is not null ? string.Join(", ", this.reqHeaders.GetValues(headerName)) : null;
                 format = format.Replace($"%{{{headerName}}}", headerValue);
             }
         }

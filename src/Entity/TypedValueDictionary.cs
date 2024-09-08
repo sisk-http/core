@@ -13,8 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Sisk.Core.Entity;
 
 /// <summary>
-/// Represents the base class for storing and retriving data by their type fluent
-/// methods.
+/// Represents the base class for storing and retriving data by their type.
 /// </summary>
 public class TypedValueDictionary : IDictionary<string, object?>
 {

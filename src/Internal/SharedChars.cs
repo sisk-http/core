@@ -15,4 +15,5 @@ internal static class SharedChars
     public const char Semicolon = ';';
     public const char Equal = '=';
     public const char DoubleQuote = '"';
+    public const char Amp = '&';
 }

@@ -130,7 +130,10 @@ namespace Sisk.Core.Entity
 
         internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
         {
-            this.Headers = new HttpHeaderCollection(headers) { isReadOnly = true };
+            this.Headers = new HttpHeaderCollection();
+            this.Headers.ImportNameValueCollection(headers);
+            this.Headers.MakeReadOnly();
+
             this.Filename = filename;
             this.Name = name;
             this.ContentBytes = body ?? Array.Empty<byte>();

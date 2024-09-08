@@ -187,7 +187,7 @@ public partial class Router
                         string? value = pathTest.Query[queryItem];
                         if (string.IsNullOrEmpty(value)) continue;
 
-                        request.Query.SetItem(queryItem, HttpUtility.UrlDecode(pathTest.Query[queryItem]));
+                        request.Query.SetItemInternal(queryItem, HttpUtility.UrlDecode(pathTest.Query[queryItem]) ?? string.Empty);
                     }
                 }
 

@@ -195,7 +195,7 @@ public sealed class SslProxy : IDisposable
                     connectionCloseState = 1;
                     Logger.LogInformation($"#{clientId}: Gateway connect exception: {ex.Message}");
 
-                    HttpResponseWriter.WriteHttp1DefaultResponse(
+                    HttpResponseWriter.TryWriteHttp1DefaultResponse(
                         new HttpStatusInformation(502),
                         "The host service ins't working.",
                         tcpStream);
@@ -249,7 +249,7 @@ public sealed class SslProxy : IDisposable
                         connectionCloseState = 2;
 
                         // write an error on the http stream
-                        HttpResponseWriter.WriteHttp1DefaultResponse(
+                        HttpResponseWriter.TryWriteHttp1DefaultResponse(
                             new HttpStatusInformation(400),
                             "The plain HTTP request was sent to an HTTPS port.",
                             tcpStream);
@@ -276,7 +276,7 @@ public sealed class SslProxy : IDisposable
                                 Logger.LogInformation($"#{clientId}: couldn't read request");
                                 connectionCloseState = 9;
 
-                                HttpResponseWriter.WriteHttp1DefaultResponse(
+                                HttpResponseWriter.TryWriteHttp1DefaultResponse(
                                     new HttpStatusInformation(400),
                                     "The server received an invalid HTTP message.",
                                     tcpStream);
@@ -294,7 +294,7 @@ public sealed class SslProxy : IDisposable
 
                             if (!HttpRequestWriter.TryWriteHttpV1Request(clientId, gatewayStream, method, path, headers, reqContentLength))
                             {
-                                HttpResponseWriter.WriteHttp1DefaultResponse(
+                                HttpResponseWriter.TryWriteHttp1DefaultResponse(
                                     new HttpStatusInformation(502),
                                     "The host service ins't working.",
                                     tcpStream);
@@ -319,7 +319,7 @@ public sealed class SslProxy : IDisposable
                                 out var isConnectionKeepAlive,
                                 out var isWebSocket))
                             {
-                                HttpResponseWriter.WriteHttp1DefaultResponse(
+                                HttpResponseWriter.TryWriteHttp1DefaultResponse(
                                       new HttpStatusInformation(502),
                                       "The host service ins't working.",
                                       tcpStream);

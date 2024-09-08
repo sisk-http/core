@@ -9,9 +9,7 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
-using Sisk.Core.Internal;
 using Sisk.Core.Routing;
-using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -42,9 +40,8 @@ namespace Sisk.Core.Http
         internal bool isStreaming;
         private HttpRequestEventSource? activeEventSource;
         private HttpHeaderCollection? headers = null;
-        private NameValueCollection? cookies = null;
+        private StringKeyStore? cookies = null;
         private StringValueCollection? query = null;
-        private StringValueCollection? form = null;
         private IPAddress? remoteAddr;
 
         private int currentFrame = 0;
@@ -150,10 +147,11 @@ namespace Sisk.Core.Http
                     }
                     else
                     {
-                        this.headers = new HttpHeaderCollection((WebHeaderCollection)this.listenerRequest.Headers);
+                        this.headers = new HttpHeaderCollection();
+                        this.headers.ImportNameValueCollection((WebHeaderCollection)this.listenerRequest.Headers);
                     }
 
-                    this.headers.isReadOnly = true;
+                    this.headers.MakeReadOnly();
                 }
 
                 return this.headers;
@@ -161,16 +159,22 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets an <see cref="NameValueCollection"/> object with all cookies set in this request.
+        /// Gets an <see cref="StringKeyStore"/> object with all cookies set in this request.
         /// </summary>
-        public NameValueCollection Cookies
+        public StringKeyStore Cookies
         {
             get
             {
                 if (this.cookies is null)
                 {
                     string? cookieHeader = this.listenerRequest.Headers[HttpKnownHeaderNames.Cookie];
-                    this.cookies = CookieParser.ParseCookieString(cookieHeader);
+                    StringKeyStore store = new StringKeyStore();
+                    if (cookieHeader is not null)
+                    {
+                        store.ImportCookieString(cookieHeader);
+                    }
+                    store.MakeReadOnly();
+                    this.cookies = store;
                 }
 
                 return this.cookies;
@@ -278,16 +282,19 @@ namespace Sisk.Core.Http
             {
                 if (this.query is null)
                 {
-                    this.query = StringValueCollection.FromNameValueCollection("query parameter", this.listenerRequest.QueryString);
+                    var sv = new StringValueCollection("query parameter");
+                    sv.ImportNameValueCollection(this.listenerRequest.QueryString);
+                    sv.MakeReadOnly();
+                    this.query = sv;
                 }
                 return this.query;
             }
         }
 
         /// <summary>
-        /// Gets the HTTP request URL raw query string.
+        /// Gets the HTTP request URL raw query string, including the '?' char.
         /// </summary>
-        public string? QueryString { get => this.listenerRequest.Url?.Query; }
+        public string QueryString { get => this.listenerRequest.Url?.Query ?? string.Empty; }
 
         /// <summary>
         /// Gets the incoming IP address from the request.
@@ -339,13 +346,9 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the values sent by a form in this request.
         /// </summary>
-        public StringValueCollection GetFormContent()
+        public StringKeyStore GetFormContent()
         {
-            if (this.form is null)
-            {
-                this.form = StringValueCollection.FromNameValueCollection("form", HttpUtility.ParseQueryString(this.Body));
-            }
-            return this.form;
+            return StringKeyStore.FromQueryString(this.Body);
         }
 
         /// <summary>
