@@ -4,7 +4,11 @@
   </p>
   <h1>Sisk Framework</h1>
 
-  [Discover Sisk](https://www.sisk-framework.org/) | [Documentation](https://docs.sisk-framework.org/) | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs) | [Benchmarks](https://github.com/sisk-http/benchmarks)
+  [Discover Sisk](https://www.sisk-framework.org/) 
+  | [Documentation](https://docs.sisk-framework.org/) 
+  | [Blog](https://blog.sisk-framework.org/) 
+  | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs) 
+  | [Benchmarks](https://github.com/sisk-http/benchmarks)
 
   <div>
 
@@ -15,7 +19,7 @@
 
   </div>
 
-  **Sisk** is a **web development framework** that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
+  **Sisk** is a set of libraries for web development that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
 
 </div>
 
@@ -41,6 +45,7 @@ dotnet add package Sisk.HttpServer
 In this repository, you have the source code of:
 
   - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
+  - [Sisk.SslProxy](extensions/Sisk.SslProxy): the HTTPS provider for Sisk.
   - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
   - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): (obsolete) the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as 0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
 
@@ -71,7 +76,7 @@ class Program
 }
 ```
 
-You can learn more about Sisk on it's [website](https://www.sisk-framework.org/).
+You can learn more about Sisk on its [website](https://www.sisk-framework.org/).
 
 ## Main features
 
@@ -88,17 +93,3 @@ Sisk can do web development the way you want. Create MVC, MVVC, SOLID applicatio
 ## License
 
 The entire Sisk ecosystem is licensed under the [MIT License](https://sisk.project-principium.dev/license).
-
-## Donate
-
-This project has been alive since 2022 and has been actively built and maintained since date. This development involves time, which is an cost, and cost is money. If you want to contribute in addition to contributing to the source code, feel free to contribute a small amount transaction using one of the addresses below.
-
-Your contribution is very valuable. Thanks!
-
-```
-Monero (XMR)
-    4441KuSQzwpeHvN1rznuVD39CLYpLCvcmPaFwYtQ5r9Q25dWgv2YwyaDn48szTtWvwaJFKicpQUXNCtbPcw3Qvmn8GtgzDf
-
-Brazilian Pix
-    4d93aaa8-23ce-4f83-8cfd-1a1d7d44ecec
-```
