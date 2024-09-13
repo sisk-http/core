@@ -45,7 +45,16 @@ public abstract class CookieHelper
     /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
     /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
     /// <param name="sameSite">The cookie SameSite parameter.</param>
-    public void SetCookie(string name, string value, DateTime? expires, TimeSpan? maxAge, string? domain, string? path, bool? secure, bool? httpOnly, string? sameSite)
+    public void SetCookie(
+        string name,
+        string value,
+        DateTime? expires = null,
+        TimeSpan? maxAge = null,
+        string? domain = null,
+        string? path = null,
+        bool? secure = null,
+        bool? httpOnly = null,
+        string? sameSite = null)
     {
         List<string> syntax = new List<string>();
         syntax.Add($"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
