@@ -7,11 +7,11 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 
 record struct RouteDictItem(System.Type type, Delegate lambda);
 
@@ -138,6 +138,20 @@ namespace Sisk.Core.Routing
         public Route[] GetDefinedRoutes() => this._routesList.ToArray();
 
         /// <summary>
+        /// Resolves the specified object into an valid <see cref="HttpResponse"/> using the defined
+        /// value handlers or throws an exception if not possible.
+        /// </summary>
+        /// <param name="result">The object that will be converted to an valid <see cref="HttpResponse"/>.</param>
+        /// <remarks>
+        /// This method can throw exceptions. To avoid exceptions while trying to convert the specified object
+        /// into an <see cref="HttpResponse"/>, consider using <see cref="TryResolveActionResult(object?, out HttpResponse?)"/>.
+        /// </remarks>
+        public HttpResponse ResolveActionResult(object? result)
+        {
+            return this.ResolveAction(result);
+        }
+
+        /// <summary>
         /// Tries to resolve the specified object into an valid <see cref="HttpResponse"/> using the defined
         /// value handlers.
         /// </summary>
@@ -146,16 +160,21 @@ namespace Sisk.Core.Routing
         /// <returns>When this method returns, the <see cref="HttpResponse"/> object.</returns>
         public bool TryResolveActionResult(object? result, [NotNullWhen(true)] out HttpResponse? response)
         {
-            bool wasLocked = false;
             if (result is null)
             {
                 response = null;
                 return false;
             }
+            else if (result is HttpResponse httpres)
+            {
+                response = httpres;
+                return true;
+            }
 
             // IsReadOnly garantes that _actionHandlersList and
             // _routesList will be not modified during span reading
             ;
+            bool wasLocked = false;
             if (!this.IsReadOnly)
             {
                 wasLocked = true;
@@ -220,11 +239,15 @@ namespace Sisk.Core.Routing
             this._actionHandlersList.Add(new RouteDictItem(type, actionHandler));
         }
 
-        HttpResponse ResolveAction(object routeResult)
+        HttpResponse ResolveAction(object? routeResult)
         {
             if (routeResult is null)
             {
-                throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
+                throw new ArgumentNullException(nameof(routeResult), SR.Router_Handler_ActionNullValue);
+            }
+            else if (routeResult is HttpResponse rh)
+            {
+                return rh;
             }
             else if (this.TryResolveActionResult(routeResult, out HttpResponse? result))
             {

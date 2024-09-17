@@ -30,6 +30,7 @@ namespace Sisk.Core.Http
         ///         Default value: <c>true</c>
         ///     </para>
         /// </summary>
+        [Obsolete("This flag has expired and will be removed in future Sisk versions.")]
         public bool UnescapedRouteMatching = true;
 
         /// <summary>

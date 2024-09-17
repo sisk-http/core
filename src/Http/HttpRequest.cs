@@ -7,13 +7,12 @@
 // File name:   HttpRequest.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Http.Streams;
-using Sisk.Core.Routing;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Web;
+using Sisk.Core.Entity;
+using Sisk.Core.Http.Streams;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http
 {
@@ -207,7 +206,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public string Path
         {
-            get => HttpUtility.UrlDecode(this.listenerRequest.Url?.AbsolutePath ?? "/");
+            get => this.listenerRequest.Url?.AbsolutePath ?? "/";
         }
 
         /// <summary>
@@ -290,6 +289,12 @@ namespace Sisk.Core.Http
                 return this.query;
             }
         }
+
+        /// <summary>
+        /// Gets the <see cref="StringValueCollection"/> object which represents the current
+        /// route parameters.
+        /// </summary>
+        public StringValueCollection RouteParameters { get; } = new StringValueCollection("route parameter");
 
         /// <summary>
         /// Gets the HTTP request URL raw query string, including the '?' char.

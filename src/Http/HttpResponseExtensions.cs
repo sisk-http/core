@@ -83,7 +83,7 @@ public static class HttpResponseExtensions
     public static THttpResponse WithHeader<THttpResponse>(this THttpResponse response, NameValueCollection headers) where THttpResponse : HttpResponse
     {
         foreach (string key in headers.Keys)
-            response.Headers.Add(key, headers[key]);
+            response.Headers.Add(key, headers[key] ?? string.Empty);
         return response;
     }
 

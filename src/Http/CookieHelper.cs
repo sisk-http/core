@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   CookieHelpers.cs
+// File name:   CookieHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Web;
@@ -94,5 +94,4 @@ public abstract class CookieHelper
 
         this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, String.Join("; ", syntax));
     }
-
 }

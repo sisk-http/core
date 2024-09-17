@@ -7,11 +7,11 @@
 // File name:   StringKeyStore.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Entity;
 
@@ -61,7 +61,7 @@ public class StringKeyStore : IDictionary<string, string[]>
     internal void SetItemInternal(string key, string value)
     {
         this.RemoveItemInternal(key);
-        this.AddInternal(key, new string[1] { value });
+        this.items.Add((key, new List<string>() { value }));
     }
 
     internal bool RemoveItemInternal(string key)

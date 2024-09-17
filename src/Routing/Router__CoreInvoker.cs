@@ -7,14 +7,14 @@
 // File name:   Router__CoreInvoker.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Web;
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Routing;
 
@@ -130,16 +130,7 @@ public partial class Router
 
             // test path
             HttpStringInternals.PathMatchResult pathTest;
-            string reqUrlTest;
-
-            if (flag.UnescapedRouteMatching)
-            {
-                reqUrlTest = HttpUtility.UrlDecode(request.Path);
-            }
-            else
-            {
-                reqUrlTest = request.Path;
-            }
+            string reqUrlTest = request.Path;
 
             if (route.UseRegex)
             {
@@ -186,9 +177,13 @@ public partial class Router
 
                         string? value = pathTest.Query[queryItem];
                         if (string.IsNullOrEmpty(value)) continue;
+                        string valueDecoded = HttpUtility.UrlDecode(pathTest.Query[queryItem]) ?? string.Empty;
 
-                        request.Query.SetItemInternal(queryItem, HttpUtility.UrlDecode(pathTest.Query[queryItem]) ?? string.Empty);
+                        request.Query.SetItemInternal(queryItem, valueDecoded);
+                        request.RouteParameters.SetItemInternal(queryItem, valueDecoded);
                     }
+
+                    request.RouteParameters.MakeReadOnly();
                 }
 
                 matchResult = RouteMatchResult.FullyMatched;
@@ -251,22 +246,20 @@ public partial class Router
             try
             {
                 context.MatchedRoute = matchedRoute;
-                object actionResult = matchedRoute.Action(request);
+                object? actionResult = matchedRoute.Action(request);
 
                 if (matchedRoute.isReturnTypeTask)
                 {
+                    if (actionResult is null)
+                    {
+                        throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
+                    }
+
                     ref Task<object> actionTask = ref Unsafe.As<object, Task<object>>(ref actionResult);
                     actionResult = actionTask.GetAwaiter().GetResult();
                 }
 
-                if (actionResult is HttpResponse httpres)
-                {
-                    result = httpres;
-                }
-                else
-                {
-                    result = this.ResolveAction(actionResult);
-                }
+                result = this.ResolveAction(actionResult);
             }
             catch (Exception ex)
             {

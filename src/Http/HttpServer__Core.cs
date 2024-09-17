@@ -12,6 +12,7 @@ using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -47,6 +48,40 @@ public partial class HttpServer
         {
             return $"{size / UnitTb:n2} tb";
         }
+    }
+
+    internal static void ApplyHttpContentHeaders(HttpListenerResponse response, HttpContentHeaders contentHeaders)
+    {
+        if (contentHeaders.ContentType?.ToString() is { } ContentType)
+            response.ContentType = ContentType;
+
+        if (contentHeaders.ContentRange?.ToString() is { } ContentRange)
+            response.AppendHeader(HttpKnownHeaderNames.ContentRange, ContentRange);
+
+        if (contentHeaders.ContentMD5 is { } ContentMD5) // rfc1864#section-2
+            response.AppendHeader(HttpKnownHeaderNames.ContentMD5, Convert.ToBase64String(ContentMD5));
+
+        if (contentHeaders.ContentLocation?.ToString() is { } ContentLocation)
+            response.AppendHeader(HttpKnownHeaderNames.ContentLocation, ContentLocation);
+
+        if (contentHeaders.ContentDisposition?.ToString() is { } ContentDisposition)
+            response.AppendHeader(HttpKnownHeaderNames.ContentDisposition, ContentDisposition);
+
+        if (contentHeaders.LastModified is { } LastModified)
+            response.AppendHeader(HttpKnownHeaderNames.LastModified, LastModified.ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
+
+        if (contentHeaders.Expires is { } Expires)
+            response.AppendHeader(HttpKnownHeaderNames.Expires, Expires.ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
+
+        if (contentHeaders.ContentLanguage.Count > 0)
+            response.AppendHeader(HttpKnownHeaderNames.ContentLanguage, string.Join(", ", contentHeaders.ContentLanguage));
+
+        if (contentHeaders.ContentEncoding.Count > 0)
+            response.AppendHeader(HttpKnownHeaderNames.ContentEncoding, string.Join(", ", contentHeaders.ContentEncoding));
+
+        if (contentHeaders.ContentLength is { } ContentLength)
+            response.ContentLength64 = ContentLength;
+
     }
 
     internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
@@ -345,66 +380,73 @@ public partial class HttpServer
                     baseResponse.Headers.Add(incameHeader.Item1, incameHeader.Item2[j]);
             }
 
+            if (responseContentLength is null && resHeaders.TryGetValue(HttpKnownHeaderNames.ContentLength, out var contentLength))
+            {
+                responseContentLength = long.Parse(contentLength[0]);
+            }
+
             _debugState = "sent_headers";
             if (response.Content is not null)
             {
                 Stream? contentStream = null;
-                // determines the content type
-                baseResponse.ContentType = resHeaders[HttpKnownHeaderNames.ContentType] ?? response.Content.Headers.ContentType?.ToString();
+                try
+                {
+                    ApplyHttpContentHeaders(baseResponse, response.Content.Headers);
 
-                // determines if the response should be sent as chunked or normal
-                if (response.SendChunked)
-                {
-                    baseResponse.SendChunked = true;
-                }
-                else if (responseContentLength is long contentLength)
-                {
-                    baseResponse.ContentLength64 = contentLength;
-                }
-                else if (response.Content is StreamContent stmContent)
-                {
-                    contentStream = stmContent.ReadAsStream();
-                    if (!contentStream.CanSeek)
+                    // determines if the response should be sent as chunked or normal
+                    if (response.SendChunked)
                     {
                         baseResponse.SendChunked = true;
                     }
-                    else
+                    else if (response.Content is StreamContent stmContent)
                     {
-                        contentStream.Position = 0;
-                        baseResponse.ContentLength64 = contentStream.Length;
-                    }
-                }
-                else
-                {
-                    // the content-length wasn't informed and the user didn't set the request to
-                    // send as chunked. so the server will send the response by chunked encoding
-                    // mode by default
-                    baseResponse.SendChunked = true;
-                }
-
-                // write the output buffer
-                if (context.Request.HttpMethod != "HEAD")
-                {
-                    outcomingSize += responseContentLength ?? -1;
-
-                    bool isPayloadStreamable =
-                        response.Content is StreamContent ||
-                        responseContentLength > flag.RequestStreamCopyBufferSize;
-
-                    if (isPayloadStreamable)
-                    {
-                        if (contentStream is null)
-                            contentStream = response.Content.ReadAsStream();
-
-                        contentStream.CopyTo(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
-                        _debugState = "send_streamable_end_write";
+                        contentStream = stmContent.ReadAsStream();
+                        if (!contentStream.CanSeek)
+                        {
+                            baseResponse.SendChunked = true;
+                        }
+                        else
+                        {
+                            contentStream.Position = 0;
+                            baseResponse.ContentLength64 = contentStream.Length;
+                        }
                     }
                     else
                     {
-                        byte[] contents = response.Content.ReadAsByteArrayAsync().Result;
-                        baseResponse.OutputStream.Write(contents);
-                        _debugState = "send_payload_end_write";
+                        // the content-length wasn't informed and the user didn't set the request to
+                        // send as chunked. so the server will send the response by chunked encoding
+                        // mode by default
+                        baseResponse.SendChunked = true;
                     }
+
+                    // write the output buffer
+                    if (context.Request.HttpMethod != "HEAD")
+                    {
+                        outcomingSize += responseContentLength ?? -1;
+
+                        bool isPayloadStreamable =
+                            response.Content is StreamContent ||
+                            responseContentLength > flag.RequestStreamCopyBufferSize;
+
+                        if (isPayloadStreamable)
+                        {
+                            if (contentStream is null)
+                                contentStream = response.Content.ReadAsStream();
+
+                            contentStream.CopyTo(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
+                            _debugState = "send_streamable_end_write";
+                        }
+                        else
+                        {
+                            byte[] contents = response.Content.ReadAsByteArrayAsync().Result;
+                            baseResponse.OutputStream.Write(contents);
+                            _debugState = "send_payload_end_write";
+                        }
+                    }
+                }
+                finally
+                {
+                    contentStream?.Dispose();
                 }
             }
 
