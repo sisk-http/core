@@ -79,9 +79,6 @@ public partial class HttpServer
         if (contentHeaders.ContentEncoding.Count > 0)
             response.AppendHeader(HttpKnownHeaderNames.ContentEncoding, string.Join(", ", contentHeaders.ContentEncoding));
 
-        if (contentHeaders.ContentLength is { } ContentLength)
-            response.ContentLength64 = ContentLength;
-
     }
 
     internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
@@ -273,11 +270,10 @@ public partial class HttpServer
             if (flag.SendSiskHeader)
                 baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, PoweredBy);
 
-            int userMaxContentLength = this.ServerConfiguration.MaximumContentLength;
+            long userMaxContentLength = this.ServerConfiguration.MaximumContentLength;
             bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && baseRequest.ContentLength64 > userMaxContentLength;
-            bool isContentLenOutsideSystemBounds = baseRequest.ContentLength64 > Int32.MaxValue;
 
-            if (isContentLenOutsideUserBounds || isContentLenOutsideSystemBounds)
+            if (isContentLenOutsideUserBounds)
             {
                 executionResult.Status = HttpServerExecutionStatus.ContentTooLarge;
                 baseResponse.StatusCode = 413;
@@ -361,7 +357,6 @@ public partial class HttpServer
             HttpHeaderCollection resHeaders = response.Headers;
             HttpHeaderCollection overrideHeaders = srContext.OverrideHeaders;
 
-            long? responseContentLength = response.Content?.Headers.ContentLength;
             if (overrideHeaders.Count > 0)
             {
                 for (int i = 0; i < overrideHeaders.Count; i++)
@@ -380,23 +375,29 @@ public partial class HttpServer
                     baseResponse.Headers.Add(incameHeader.Item1, incameHeader.Item2[j]);
             }
 
-            if (responseContentLength is null && resHeaders.TryGetValue(HttpKnownHeaderNames.ContentLength, out var contentLength))
-            {
-                responseContentLength = long.Parse(contentLength[0]);
-            }
-
             _debugState = "sent_headers";
+
             if (response.Content is not null)
             {
                 Stream? contentStream = null;
+                long? responseContentLength = response.Content.Headers.ContentLength;
+                if (responseContentLength is null && resHeaders.TryGetValue(HttpKnownHeaderNames.ContentLength, out var contentLength))
+                {
+                    responseContentLength = long.Parse(contentLength[0]);
+                }
+
                 try
                 {
                     ApplyHttpContentHeaders(baseResponse, response.Content.Headers);
 
-                    // determines if the response should be sent as chunked or normal
+                    // determines if the response should be sent as chunked or content-length
                     if (response.SendChunked)
                     {
                         baseResponse.SendChunked = true;
+                    }
+                    else if (responseContentLength is long z)
+                    {
+                        baseResponse.ContentLength64 = z;
                     }
                     else if (response.Content is StreamContent stmContent)
                     {

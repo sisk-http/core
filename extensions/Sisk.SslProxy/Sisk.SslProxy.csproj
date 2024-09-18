@@ -42,6 +42,10 @@
 		<DefineConstants>$(DefineConstants)</DefineConstants>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
+	  <DefineConstants>$(DefineConstants);VERBOSE</DefineConstants>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<None Include="..\..\.github\Icon.png">
 			<Pack>True</Pack>

@@ -18,8 +18,7 @@ static class HttpRequestWriter
         Stream outboundStream,
         string method,
         string path,
-        List<(string, string)> headers,
-        int contentLength)
+        List<(string, string)> headers)
     {
         try
         {

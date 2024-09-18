@@ -20,6 +20,7 @@ static partial class SR
     public const string HttpRequest_InvalidForwardedIpAddress = "The forwarded IP address is invalid.";
     public const string HttpRequest_InvalidCookieSyntax = "The cookie header is invalid or is it has an malformed syntax.";
     public const string HttpRequest_NoContentLength = "The Content-Length header is missing.";
+    public const string HttpRequest_ContentAbove2G = "The content length sent is greater than 2GB, the maximum allowed for an allocation.";
     public const string HttpRequest_GetQueryValue_CastException = "Cannot cast the query item {0} value into an {1}.";
     public const string HttpRequest_SendTo_MaxRedirects = "Too many internal route redirections.";
     public const string HttpRequest_InputStreamAlreadyLoaded = "Unable to read InputStream as it has already been read.";

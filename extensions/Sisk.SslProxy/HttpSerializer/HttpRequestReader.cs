@@ -7,10 +7,10 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
-using Sisk.Core.Http;
 
 namespace Sisk.Ssl.HttpSerializer;
 
@@ -34,10 +34,12 @@ static class HttpRequestReader
         [NotNullWhen(true)] out string? method,
         [NotNullWhen(true)] out string? path,
         [NotNullWhen(true)] out string? proto,
-                            out int contentLength,
-                            out List<(string, string)> headers)
+                            out long contentLength,
+                            out List<(string, string)> headers,
+                            out bool expectContinue)
     {
         contentLength = 0;
+        expectContinue = false;
         try
         {
             Span<byte> _method = SerializerUtils.ReadUntil(readMemory.MethodBuffer, inboundStream, Constants.CH_SPACE);
@@ -76,11 +78,15 @@ static class HttpRequestReader
 
                 if (string.Compare(hName, HttpKnownHeaderNames.ContentLength, true) == 0)
                 {
-                    contentLength = int.Parse(hValue);
+                    contentLength = long.Parse(hValue);
                 }
                 else if (string.Compare(hName, HttpKnownHeaderNames.Host, true) == 0 && replaceHostName is not null)
                 {
                     hValue = replaceHostName;
+                }
+                else if (string.Compare(hName, HttpKnownHeaderNames.Expect, true) == 0 && hValue == "100-continue")
+                {
+                    expectContinue = true;
                 }
                 else if (string.Compare(hName, HttpKnownHeaderNames.XForwardedFor, true) == 0)
                 {
@@ -105,6 +111,4 @@ static class HttpRequestReader
             return false;
         }
     }
-
-
 }

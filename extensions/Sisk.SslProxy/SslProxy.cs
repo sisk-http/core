@@ -7,14 +7,14 @@
 // File name:   SslProxy.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
+using Sisk.Ssl.HttpSerializer;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Channels;
-using Sisk.Core.Http;
-using Sisk.Ssl.HttpSerializer;
 
 namespace Sisk.Ssl;
 
@@ -28,7 +28,7 @@ public sealed class SslProxy : IDisposable
     private readonly TcpListener listener;
     private readonly IPEndPoint remoteEndpoint;
     private readonly Channel<TcpClient> clientQueue;
-    private Thread channelConsumerThread;
+    private readonly Thread channelConsumerThread;
     private bool disposedValue;
 
     /// <summary>
@@ -121,7 +121,7 @@ public sealed class SslProxy : IDisposable
                 {
                     bool sentRequest = HttpRequestWriter.TryWriteHttpV1Request(0, gatewayStream, "TRACE", "/", [
                         ("Host", this.GatewayHostname ?? "localhost")
-                    ], 0);
+                    ]);
 
                     if (!sentRequest)
                     {
@@ -134,7 +134,7 @@ public sealed class SslProxy : IDisposable
         if (this.KeepAliveEnabled)
         {
             this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
-            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 2);
+            this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120);
             this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
             this.listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         }
@@ -169,8 +169,10 @@ public sealed class SslProxy : IDisposable
     void HandleTcpClient(TcpClient client)
     {
         client.NoDelay = true;
+        bool keepAliveEnabled = this.KeepAliveEnabled;
         int clientId = clientIdGenerator.Next();
         int connectionCloseState = 0;
+        int iteration = 0;
 
         if (this.disposedValue)
             return;
@@ -198,7 +200,7 @@ public sealed class SslProxy : IDisposable
                     HttpResponseWriter.TryWriteHttp1DefaultResponse(
                         new HttpStatusInformation(502),
                         "The host service ins't working.",
-                        tcpStream);
+                        sslStream);
 
                     return;
                 }
@@ -252,7 +254,7 @@ public sealed class SslProxy : IDisposable
                         HttpResponseWriter.TryWriteHttp1DefaultResponse(
                             new HttpStatusInformation(400),
                             "The plain HTTP request was sent to an HTTPS port.",
-                            tcpStream);
+                            sslStream);
 
                         return;
                     }
@@ -271,7 +273,8 @@ public sealed class SslProxy : IDisposable
                                 out var path,
                                 out var proto,
                                 out var reqContentLength,
-                                out var headers))
+                                out var headers,
+                                out var expectContinue))
                             {
                                 Logger.LogInformation($"#{clientId}: couldn't read request");
                                 connectionCloseState = 9;
@@ -279,7 +282,7 @@ public sealed class SslProxy : IDisposable
                                 HttpResponseWriter.TryWriteHttp1DefaultResponse(
                                     new HttpStatusInformation(400),
                                     "The server received an invalid HTTP message.",
-                                    tcpStream);
+                                    sslStream);
 
                                 return;
                             }
@@ -292,21 +295,33 @@ public sealed class SslProxy : IDisposable
                             }
                             headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
 
-                            if (!HttpRequestWriter.TryWriteHttpV1Request(clientId, gatewayStream, method, path, headers, reqContentLength))
+                            if (!HttpRequestWriter.TryWriteHttpV1Request(clientId, gatewayStream, method, path, headers))
                             {
                                 HttpResponseWriter.TryWriteHttp1DefaultResponse(
                                     new HttpStatusInformation(502),
                                     "The host service ins't working.",
-                                    tcpStream);
+                                    sslStream);
 
                                 connectionCloseState = 3;
                                 return;
                             }
-                            if (reqContentLength > 0)
+
+                            if (expectContinue)
                             {
-                                SerializerUtils.CopyStream(sslStream, gatewayStream, reqContentLength);
+                                goto readGatewayResponse;
                             }
 
+                        redirClientContent:
+                            if (reqContentLength > 0)
+                            {
+                                if (!SerializerUtils.CopyStream(sslStream, gatewayStream, reqContentLength, CancellationToken.None))
+                                {
+                                    // client couldn't send the full content
+                                    break;
+                                }
+                            }
+
+                        readGatewayResponse:
                             if (!HttpResponseReader.TryReadHttp1Response(
                                         clientId,
                                         gatewayStream,
@@ -316,13 +331,13 @@ public sealed class SslProxy : IDisposable
                                 out var resHeaders,
                                 out var resContentLength,
                                 out var isChunked,
-                                out var isConnectionKeepAlive,
+                                out var gatewayAllowsKeepAlive,
                                 out var isWebSocket))
                             {
                                 HttpResponseWriter.TryWriteHttp1DefaultResponse(
                                       new HttpStatusInformation(502),
                                       "The host service ins't working.",
-                                      tcpStream);
+                                      sslStream);
 
                                 connectionCloseState = 4;
                                 return;
@@ -331,20 +346,27 @@ public sealed class SslProxy : IDisposable
                             Logger.LogInformation($"#{clientId} << {resStatusCode} {resStatusDescr}");
 
                             // TODO: check if client wants to keep alive
-                            if (isConnectionKeepAlive)
+                            if (gatewayAllowsKeepAlive && keepAliveEnabled)
                             {
-                                // not necessary in HTTP/1.1
-                                // resHeaders.Add(("Connection", "keep-alive"));
+                                ;
                             }
                             else
                             {
                                 resHeaders.Add(("Connection", "close"));
                             }
 #if VERBOSE
-                            resHeaders.Add(("X-Debug-Connection-Id", clientId.ToString()));
+                            if (!expectContinue)
+                                resHeaders.Add(("X-Debug-Connection-Id", clientId.ToString()));
 #endif
 
                             HttpResponseWriter.TryWriteHttp1Response(clientId, sslStream, resStatusCode, resStatusDescr, resHeaders);
+
+                            if (expectContinue && resStatusCode == "100")
+                            {
+                                expectContinue = false;
+                                goto redirClientContent;
+                            }
+
                             if (isWebSocket)
                             {
                                 AutoResetEvent waitEvent = new AutoResetEvent(false);
@@ -356,7 +378,7 @@ public sealed class SslProxy : IDisposable
                             }
                             else if (resContentLength > 0)
                             {
-                                SerializerUtils.CopyStream(gatewayStream, sslStream, resContentLength);
+                                SerializerUtils.CopyStream(gatewayStream, sslStream, resContentLength, CancellationToken.None);
                             }
                             else if (isChunked)
                             {
@@ -369,7 +391,7 @@ public sealed class SslProxy : IDisposable
 
                             tcpStream.Flush();
 
-                            if (!isConnectionKeepAlive || !this.KeepAliveEnabled)
+                            if (!gatewayAllowsKeepAlive || !keepAliveEnabled)
                             {
                                 connectionCloseState = 5;
                                 break;
@@ -379,6 +401,10 @@ public sealed class SslProxy : IDisposable
                         {
                             connectionCloseState = 6;
                             return;
+                        }
+                        finally
+                        {
+                            iteration++;
                         }
                     }
                 }

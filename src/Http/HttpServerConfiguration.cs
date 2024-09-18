@@ -17,7 +17,7 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class HttpServerConfiguration : IDisposable
     {
-        private int _maximumContentLength = 0;
+        private long _maximumContentLength = 0;
 
         /// <summary>
         /// Gets or sets advanced flags and configuration settings for the HTTP server.
@@ -83,7 +83,7 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// Leave it as "0" to set the maximum content length to unlimited.
         /// </remarks> 
-        public int MaximumContentLength
+        public long MaximumContentLength
         {
             get
             {

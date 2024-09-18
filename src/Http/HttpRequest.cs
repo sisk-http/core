@@ -7,12 +7,13 @@
 // File name:   HttpRequest.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using System.Diagnostics;
+using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Sisk.Core.Http
 {
@@ -68,9 +69,13 @@ namespace Sisk.Core.Http
         {
             if (this.contentBytes is null)
             {
-                if (this.ContentLength > 0)
+                if (this.ContentLength > Int32.MaxValue)
                 {
-                    using (var memoryStream = new MemoryStream(this.ContentLength))
+                    throw new OutOfMemoryException(SR.HttpRequest_ContentAbove2G);
+                }
+                else if (this.ContentLength > 0)
+                {
+                    using (var memoryStream = new MemoryStream((int)this.ContentLength))
                     {
                         this.listenerRequest.InputStream.CopyTo(memoryStream);
                         this.contentBytes = memoryStream.ToArray();
@@ -244,6 +249,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request body as string, decoded by the request content encoding.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public string Body
         {
             get => this.listenerRequest.ContentEncoding.GetString(this.RawBody);
@@ -252,6 +258,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request body as a byte array.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public byte[] RawBody
         {
             get
@@ -267,9 +274,9 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// The value can be negative if the content length is unknown.
         /// </remarks>
-        public int ContentLength
+        public long ContentLength
         {
-            get => (int)this.listenerRequest.ContentLength64;
+            get => this.listenerRequest.ContentLength64;
         }
 
         /// <summary>

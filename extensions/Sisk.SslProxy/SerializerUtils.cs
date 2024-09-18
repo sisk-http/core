@@ -20,6 +20,15 @@ static class SerializerUtils
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static byte[] EncodeString(string data) => Encoding.UTF8.GetBytes(data);
 
+    public static bool WaitUntilHasData(Stream stream, TimeSpan timeout)
+    {
+        while (stream.ReadByte() == -1)
+        {
+            Thread.Sleep(1);
+        }
+        return true;
+    }
+
     public static Span<byte> ReadUntil(Span<byte> buffer, Stream inputStream, int intercept)
     {
         int current, size = 0;
@@ -29,6 +38,10 @@ static class SerializerUtils
             {
                 return buffer[0..size];
             }
+            else if (size > buffer.Length - 1)
+            {
+                throw new OutOfMemoryException();
+            }
             else
             {
                 buffer[size] = (byte)current;
@@ -36,6 +49,13 @@ static class SerializerUtils
             size++;
         }
         throw new InvalidDataException();
+    }
+
+    public static void CopyBlocking(Stream input, Stream output)
+    {
+        AutoResetEvent rs = new AutoResetEvent(false);
+        CopyBlocking(input, output, rs);
+        rs.WaitOne();
     }
 
     public static void CopyBlocking(Stream input, Stream output, EventWaitHandle waitEvent)
@@ -85,15 +105,18 @@ static class SerializerUtils
         input.BeginRead(buffer, 0, buffer.Length, callback, null);
     }
 
-    public static void CopyStream(Stream input, Stream output, int bytes)
+    public static bool CopyStream(Stream input, Stream output, long bytes, CancellationToken cancel)
     {
         byte[] buffer = new byte[81920];
+        long written = 0;
+        int inputReadAlloc = (int)Math.Min(Int32.MaxValue, bytes);
         int read;
-        while (bytes > 0 && (read = input.Read(buffer, 0, Math.Min(buffer.Length, bytes))) > 0)
+        while (written < bytes && (read = input.Read(buffer, 0, Math.Min(buffer.Length, inputReadAlloc))) > 0 && !cancel.IsCancellationRequested)
         {
             output.Write(buffer, 0, read);
-            bytes -= read;
+            written += read;
         }
+        return written == bytes;
     }
 
     public static void CopyUntil(Stream input, Stream output, byte[] eof)
