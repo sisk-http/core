@@ -272,6 +272,7 @@ public sealed class SslProxy : IDisposable
                                 out var method,
                                 out var path,
                                 out var proto,
+                                out var forwardedFor,
                                 out var reqContentLength,
                                 out var headers,
                                 out var expectContinue))
@@ -293,7 +294,16 @@ public sealed class SslProxy : IDisposable
                             {
                                 headers.Add((HttpKnownHeaderNames.ProxyAuthorization, this.ProxyAuthorization.ToString()));
                             }
-                            headers.Add((Constants.XClientIpHeaderName, ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString()));
+
+                            string clientIpAddress = ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString();
+                            if (forwardedFor is not null)
+                            {
+                                headers.Add((HttpKnownHeaderNames.XForwardedFor, forwardedFor + ", " + clientIpAddress));
+                            }
+                            else
+                            {
+                                headers.Add((HttpKnownHeaderNames.XForwardedFor, clientIpAddress));
+                            }
 
                             if (!HttpRequestWriter.TryWriteHttpV1Request(clientId, gatewayStream, method, path, headers))
                             {

@@ -17,7 +17,6 @@ static class Constants
     public const int CH_HSEP = 0x3A; // ':'
 
     public const string RESPONSE_PROTOCOL = "HTTP/1.1 ";
-    public const string XClientIpHeaderName = "X-Sisk-Proxy-Client-Ip";
 
     public const string Server = "siskproxy/0.1";
 

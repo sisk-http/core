@@ -7,14 +7,14 @@
 // File name:   HttpServer__Core.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Internal;
-using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Sisk.Core.Entity;
+using Sisk.Core.Internal;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
 
@@ -52,31 +52,40 @@ public partial class HttpServer
 
     internal static void ApplyHttpContentHeaders(HttpListenerResponse response, HttpContentHeaders contentHeaders)
     {
-        if (contentHeaders.ContentType?.ToString() is { } ContentType)
+        if (contentHeaders.ContentType?.ToString() is { } ContentType
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentType)?.Length is 0 or null)
             response.ContentType = ContentType;
 
-        if (contentHeaders.ContentRange?.ToString() is { } ContentRange)
+        if (contentHeaders.ContentRange?.ToString() is { } ContentRange
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentRange)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.ContentRange, ContentRange);
 
-        if (contentHeaders.ContentMD5 is { } ContentMD5) // rfc1864#section-2
+        if (contentHeaders.ContentMD5 is { } ContentMD5
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentMD5)?.Length is 0 or null) // rfc1864#section-2
             response.AppendHeader(HttpKnownHeaderNames.ContentMD5, Convert.ToBase64String(ContentMD5));
 
-        if (contentHeaders.ContentLocation?.ToString() is { } ContentLocation)
+        if (contentHeaders.ContentLocation?.ToString() is { } ContentLocation
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentLocation)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.ContentLocation, ContentLocation);
 
-        if (contentHeaders.ContentDisposition?.ToString() is { } ContentDisposition)
+        if (contentHeaders.ContentDisposition?.ToString() is { } ContentDisposition
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentDisposition)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.ContentDisposition, ContentDisposition);
 
-        if (contentHeaders.LastModified is { } LastModified)
+        if (contentHeaders.LastModified is { } LastModified
+            && response.Headers.GetValues(HttpKnownHeaderNames.LastModified)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.LastModified, LastModified.ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
 
-        if (contentHeaders.Expires is { } Expires)
+        if (contentHeaders.Expires is { } Expires
+            && response.Headers.GetValues(HttpKnownHeaderNames.Expires)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.Expires, Expires.ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
 
-        if (contentHeaders.ContentLanguage.Count > 0)
+        if (contentHeaders.ContentLanguage.Count > 0
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentLanguage)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.ContentLanguage, string.Join(", ", contentHeaders.ContentLanguage));
 
-        if (contentHeaders.ContentEncoding.Count > 0)
+        if (contentHeaders.ContentEncoding.Count > 0
+            && response.Headers.GetValues(HttpKnownHeaderNames.ContentEncoding)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.ContentEncoding, string.Join(", ", contentHeaders.ContentEncoding));
 
     }

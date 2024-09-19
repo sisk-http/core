@@ -43,17 +43,20 @@ static class HttpResponseReader
         try
         {
             Span<byte> _proto = SerializerUtils.ReadUntil(memory.ProtocolBuffer, inboundStream, Constants.CH_SPACE);
+            if (_proto.Length == 0) goto ret;
             _ = SerializerUtils.DecodeString(_proto); //protocol
 
             Span<byte> _statusCode = SerializerUtils.ReadUntil(memory.StatusCodeBuffer, inboundStream, Constants.CH_SPACE);
+            if (_statusCode.Length == 0) goto ret;
             statusCode = SerializerUtils.DecodeString(_statusCode);
 
             Span<byte> _reason = SerializerUtils.ReadUntil(memory.StatusReasonBuffer, inboundStream, Constants.CH_RETURN);
+            if (_reason.Length == 0) goto ret;
             statusDescription = SerializerUtils.DecodeString(_reason);
 
             inboundStream.ReadByte(); // \n
 
-            List<(string, string)> headerList = new List<(string, string)>();
+            List<(string, string)> headerList = new List<(string, string)>(32);
             while (inboundStream.CanRead)
             {
                 char? firstReadChar;
@@ -69,7 +72,9 @@ static class HttpResponseReader
                 }
 
                 Span<byte> headerName = SerializerUtils.ReadUntil(memory.PsHeaderName, inboundStream, Constants.CH_HSEP);
+                if (headerName.Length == 0) goto ret;
                 Span<byte> headerValue = SerializerUtils.ReadUntil(memory.PsHeaderValue, inboundStream, Constants.CH_RETURN);
+                if (headerValue.Length == 0) goto ret;
 
                 inboundStream.ReadByte(); // \n
 
@@ -105,10 +110,12 @@ static class HttpResponseReader
         catch (Exception ex)
         {
             Logger.LogInformation($"#{clientId}: Couldn't read HTTP response from {inboundStream.GetType().Name}: {ex.Message}");
-            statusCode = null;
-            statusDescription = null;
-            headers = new();
-            return false;
         }
+
+    ret:
+        statusCode = null;
+        statusDescription = null;
+        headers = new();
+        return false;
     }
 }

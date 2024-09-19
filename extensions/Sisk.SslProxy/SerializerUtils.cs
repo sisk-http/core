@@ -48,7 +48,7 @@ static class SerializerUtils
             }
             size++;
         }
-        throw new InvalidDataException();
+        return Array.Empty<byte>();
     }
 
     public static void CopyBlocking(Stream input, Stream output)

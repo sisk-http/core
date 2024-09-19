@@ -1,7 +1,7 @@
-﻿using Sisk.Core.Http;
+﻿using System.Text;
+using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.IniConfiguration.Serializer;
-using System.Text;
 
 namespace Sisk.IniConfiguration;
 
@@ -31,7 +31,7 @@ public sealed class IniConfigurationPipeline : IConfigurationReader
 
                 parsingNode = "Server.MaximumContentLength";
                 if (serverSection.GetOne("MaximumContentLength") is { } MaximumContentLength)
-                    context.Host.ServerConfiguration.MaximumContentLength = Int32.Parse(MaximumContentLength);
+                    context.Host.ServerConfiguration.MaximumContentLength = Int64.Parse(MaximumContentLength);
 
                 parsingNode = "Server.IncludeRequestIdHeader";
                 if (serverSection.GetOne("IncludeRequestIdHeader") is { } IncludeRequestIdHeader)
