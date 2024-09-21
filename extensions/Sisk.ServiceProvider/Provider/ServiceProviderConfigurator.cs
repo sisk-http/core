@@ -24,15 +24,15 @@ namespace Sisk.ServiceProvider;
 /// </type>
 public class ServiceProviderConfigurator
 {
-    private HttpServer _server;
-    private HttpServerConfiguration _config;
-    private ServiceProvider _provider;
+    private readonly HttpServer _server;
+    private readonly HttpServerConfiguration _config;
+    private readonly ServiceProvider _provider;
 
     internal ServiceProviderConfigurator(HttpServer server, HttpServerConfiguration config, ServiceProvider provider)
     {
-        _server = server ?? throw new ArgumentNullException(nameof(server));
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        this._server = server ?? throw new ArgumentNullException(nameof(server));
+        this._config = config ?? throw new ArgumentNullException(nameof(config));
+        this._provider = provider ?? throw new ArgumentNullException(nameof(provider));
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public class ServiceProviderConfigurator
     /// </type>
     public void UseHauting(bool preventHauting)
     {
-        _provider.__handleHault = preventHauting;
+        this._provider.__handleHault = preventHauting;
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public class ServiceProviderConfigurator
     /// </type>
     public void UseLocale(CultureInfo locale)
     {
-        _config.DefaultCultureInfo = locale;
+        this._config.DefaultCultureInfo = locale;
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class ServiceProviderConfigurator
     /// </type>
     public void UseFlags(HttpServerFlags flags)
     {
-        _config.Flags = flags;
+        this._config.Flags = flags;
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public class ServiceProviderConfigurator
     /// </type>
     public void UseConfiguration(Action<HttpServerConfiguration> overrideCallback)
     {
-        overrideCallback(_config);
+        overrideCallback(this._config);
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public class ServiceProviderConfigurator
     /// </type>
     public void UseHttpServer(Action<HttpServer> serverCallback)
     {
-        serverCallback(_server);
+        serverCallback(this._server);
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class ServiceProviderConfigurator
     /// </type>
     public void UseCors(Action<CrossOriginResourceSharingHeaders> corsCallback)
     {
-        corsCallback(_config.ListeningHosts[0].CrossOriginResourceSharingPolicy);
+        corsCallback(this._config.ListeningHosts[0].CrossOriginResourceSharingPolicy);
     }
 }
 

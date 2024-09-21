@@ -1,24 +1,34 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2023 PROJECT PRINCIPIUM
+// Copyright (c) 2024 PROJECT PRINCIPIUM
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   MimeTypeList.cs
+// File name:   MimeHelper.cs
 // Repository:  https://github.com/sisk-http/core
-
-// The following list was
-// forked from https://github.com/micnic/mime.json/blob/master/index.json
-// at the date 2024/08/08 21:25 UTC-03:00
 
 using System.Runtime.CompilerServices;
 
-namespace Sisk.Core.Internal;
+namespace Sisk.Core.Helpers;
 
-internal static class MimeTypeList
+/// <summary>
+/// Provides useful helper methods for resolving mime-types from common formats.
+/// </summary>
+public static class MimeHelper
 {
+    /// <summary>
+    /// Gets the content mime-type from the specified file extension.
+    /// </summary>
+    /// <param name="fileExtension">The file extension, with or without the initial dot.</param>
+    /// <param name="defaultMime">The default mime-type when the file is not found.</param>
+    /// <returns>The best matched mime-type, or the default if no mime-type was matched with the specified extension.</returns>
+    public static string GetMimeType(string fileExtension, string defaultMime = "application/octet-stream")
+    {
+        return ResolveMimeType(fileExtension.TrimStart('.').ToLower()) ?? defaultMime;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public static string? ResolveMimeType(in string extension)
+    static string? ResolveMimeType(in string extension)
     {
         return extension switch
         {

@@ -7,9 +7,9 @@
 // File name:   DefaultMessagePage.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
 using System.Text;
 using System.Web;
-using Sisk.Core.Http;
 
 namespace Sisk.Ssl;
 

@@ -42,7 +42,7 @@ namespace Sisk.ServiceProvider
         /// <namespace>
         /// Sisk.Provider
         /// </namespace>
-        public LogStream? AccessLogs { get => ServerConfiguration?.AccessLogsStream; }
+        public LogStream? AccessLogs { get => this.ServerConfiguration?.AccessLogsStream; }
 
         /// <summary>
         /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
@@ -56,7 +56,7 @@ namespace Sisk.ServiceProvider
         /// <namespace>
         /// Sisk.Provider
         /// </namespace>
-        public LogStream? ErrorLogs { get => ServerConfiguration?.ErrorsLogsStream; }
+        public LogStream? ErrorLogs { get => this.ServerConfiguration?.ErrorsLogsStream; }
 
         /// <summary>
         /// Gets or sets the Sisk server portable configuration file.
@@ -158,7 +158,7 @@ namespace Sisk.ServiceProvider
 
         internal void Throw(Exception exception)
         {
-            if (Verbose)
+            if (this.Verbose)
             {
                 Console.WriteLine($"error: {exception.Message}");
             }
@@ -238,7 +238,7 @@ namespace Sisk.ServiceProvider
         public void ConfigureInit(ServiceProviderConfiguratorHandler configurator)
         {
             this.__cfg = configurator;
-            Initialize();
+            this.Initialize();
         }
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace Sisk.ServiceProvider
         public void Initialize()
         {
             ConfigParser.ParseConfiguration(this, false);
-            if (__handleHault)
+            if (this.__handleHault)
             {
                 Thread.Sleep(-1);
             }

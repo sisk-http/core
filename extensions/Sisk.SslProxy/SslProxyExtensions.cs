@@ -7,10 +7,10 @@
 // File name:   SslProxyExtensions.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http.Hosting;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Sisk.Core.Http.Hosting;
 
 namespace Sisk.Ssl;
 

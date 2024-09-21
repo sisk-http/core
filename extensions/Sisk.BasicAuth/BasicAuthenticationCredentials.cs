@@ -44,7 +44,7 @@ public class BasicAuthenticationCredentials
 
     internal BasicAuthenticationCredentials(string username, string password)
     {
-        UserId = username;
-        Password = password;
+        this.UserId = username;
+        this.Password = password;
     }
 }

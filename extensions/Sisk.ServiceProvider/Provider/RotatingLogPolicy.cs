@@ -23,7 +23,7 @@ namespace Sisk.ServiceProvider
     /// </type>
     public class RotatingLogPolicy : IDisposable
     {
-        private Thread checkThread;
+        private readonly Thread checkThread;
         private bool isTerminating = false;
         internal LogStream? _logStream;
 
@@ -61,8 +61,8 @@ namespace Sisk.ServiceProvider
         public RotatingLogPolicy(LogStream? ls)
         {
             this._logStream = ls;
-            checkThread = new Thread(new ThreadStart(Check));
-            checkThread.IsBackground = true;
+            this.checkThread = new Thread(new ThreadStart(this.Check));
+            this.checkThread.IsBackground = true;
         }
 
         /// <summary>
@@ -81,26 +81,26 @@ namespace Sisk.ServiceProvider
         /// </type> 
         public void Configure(long maximumSize, TimeSpan due)
         {
-            if (string.IsNullOrEmpty(_logStream?.FilePath))
+            if (string.IsNullOrEmpty(this._logStream?.FilePath))
             {
                 throw new NotSupportedException("Cannot link an rotaging log policy to an log stream which ins't pointing to an local file.");
             }
-            MaximumSize = maximumSize;
-            Due = due;
-            checkThread.Start();
+            this.MaximumSize = maximumSize;
+            this.Due = due;
+            this.checkThread.Start();
         }
 
         private void Check()
         {
-            while (!isTerminating)
+            while (!this.isTerminating)
             {
-                if (_logStream == null) continue;
-                string file = _logStream.FilePath!;
+                if (this._logStream == null) continue;
+                string file = this._logStream.FilePath!;
 
                 if (File.Exists(file))
                 {
                     FileInfo fileInfo = new FileInfo(file);
-                    if (fileInfo.Length > MaximumSize)
+                    if (fileInfo.Length > this.MaximumSize)
                     {
                         DateTime now = DateTime.Now;
                         string ext = fileInfo.Extension;
@@ -110,7 +110,7 @@ namespace Sisk.ServiceProvider
                         try
                         {
                             //  Console.WriteLine("{0,20}{1,20}", "wait queue", "");
-                            _logStream.Wait(true);
+                            this._logStream.Wait(true);
                             //  Console.WriteLine("{0,20}{1,20}", "gz++", "");
                             using (FileStream logSs = fileInfo.Open(FileMode.OpenOrCreate))
                             using (FileStream gzFileSs = new FileInfo(gzippedFilename).Create())
@@ -123,12 +123,12 @@ namespace Sisk.ServiceProvider
                         finally
                         {
                             //Console.WriteLine("{0,20}{1,20}", "gz--", "");
-                            _logStream.Set();
+                            this._logStream.Set();
                         }
                     }
                 }
 
-                Thread.Sleep(Due);
+                Thread.Sleep(this.Due);
             }
         }
 
@@ -143,8 +143,8 @@ namespace Sisk.ServiceProvider
         /// </type> 
         public void Dispose()
         {
-            isTerminating = true;
-            checkThread.Join();
+            this.isTerminating = true;
+            this.checkThread.Join();
         }
     }
 }

@@ -1,5 +1,5 @@
 [*.cs]
-file_header_template = The Sisk Framework source code\nCopyright (c) 2023 PROJECT PRINCIPIUM\n\nThe code below is licensed under the MIT license as\nof the date of its publication, available at\n\nFile name:   {fileName}\nRepository:  https://github.com/sisk-http/core
+file_header_template = The Sisk Framework source code\nCopyright (c) 2024 PROJECT PRINCIPIUM\n\nThe code below is licensed under the MIT license as\nof the date of its publication, available at\n\nFile name:   {fileName}\nRepository:  https://github.com/sisk-http/core
 [*.cs]
 #### Estilos de nomenclatura ####
 
@@ -17,7 +17,7 @@ dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
 dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
 dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 
-# Especificações de símbolo
+# EspecificaÃ§Ãµes de sÃ­mbolo
 
 dotnet_naming_symbols.interface.applicable_kinds = interface
 dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
@@ -78,9 +78,9 @@ csharp_prefer_simple_using_statement = true:suggestion
 
 # Regras de nomenclatura
 
-dotnet_naming_rule.interface_should_be_começa_com_i.severity = suggestion
-dotnet_naming_rule.interface_should_be_começa_com_i.symbols = interface
-dotnet_naming_rule.interface_should_be_começa_com_i.style = começa_com_i
+dotnet_naming_rule.interface_should_be_comeÃ§a_com_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_comeÃ§a_com_i.symbols = interface
+dotnet_naming_rule.interface_should_be_comeÃ§a_com_i.style = comeÃ§a_com_i
 
 dotnet_naming_rule.tipos_should_be_pascal_case.severity = suggestion
 dotnet_naming_rule.tipos_should_be_pascal_case.symbols = tipos
@@ -90,7 +90,7 @@ dotnet_naming_rule.membros_sem_campo_should_be_pascal_case.severity = suggestion
 dotnet_naming_rule.membros_sem_campo_should_be_pascal_case.symbols = membros_sem_campo
 dotnet_naming_rule.membros_sem_campo_should_be_pascal_case.style = pascal_case
 
-# Especificações de símbolo
+# EspecificaÃ§Ãµes de sÃ­mbolo
 
 dotnet_naming_symbols.interface.applicable_kinds = interface
 dotnet_naming_symbols.interface.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
@@ -106,10 +106,10 @@ dotnet_naming_symbols.membros_sem_campo.required_modifiers =
 
 # Estilos de nomenclatura
 
-dotnet_naming_style.começa_com_i.required_prefix = I
-dotnet_naming_style.começa_com_i.required_suffix = 
-dotnet_naming_style.começa_com_i.word_separator = 
-dotnet_naming_style.começa_com_i.capitalization = pascal_case
+dotnet_naming_style.comeÃ§a_com_i.required_prefix = I
+dotnet_naming_style.comeÃ§a_com_i.required_suffix = 
+dotnet_naming_style.comeÃ§a_com_i.word_separator = 
+dotnet_naming_style.comeÃ§a_com_i.capitalization = pascal_case
 
 dotnet_naming_style.pascal_case.required_prefix = 
 dotnet_naming_style.pascal_case.required_suffix = 

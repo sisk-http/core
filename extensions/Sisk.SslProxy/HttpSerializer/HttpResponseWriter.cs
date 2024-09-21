@@ -17,8 +17,8 @@
 // File name:   HttpResponseWriter.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Text;
 using Sisk.Core.Http;
+using System.Text;
 
 namespace Sisk.Ssl.HttpSerializer;
 

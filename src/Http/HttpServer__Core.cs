@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2023 PROJECT PRINCIPIUM
+// Copyright (c) 2024 PROJECT PRINCIPIUM
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,49 +7,19 @@
 // File name:   HttpServer__Core.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
+using Sisk.Core.Internal;
+using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Sisk.Core.Entity;
-using Sisk.Core.Internal;
-using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
 
 public partial class HttpServer
 {
-    internal const long UnitKb = 1024;
-    internal const long UnitMb = UnitKb * 1024;
-    internal const long UnitGb = UnitMb * 1024;
-    internal const long UnitTb = UnitGb * 1024;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static string HumanReadableSize(in float size)
-    {
-        if (size < UnitKb)
-        {
-            return $"{size:n2} bytes";
-        }
-        else if (size > UnitKb && size <= UnitMb)
-        {
-            return $"{size / UnitKb:n2} kb";
-        }
-        else if (size > UnitMb && size <= UnitGb)
-        {
-            return $"{size / UnitMb:n2} mb";
-        }
-        else if (size > UnitGb && size <= UnitTb)
-        {
-            return $"{size / UnitGb:n2} gb";
-        }
-        else// if (size > UnitTb)
-        {
-            return $"{size / UnitTb:n2} tb";
-        }
-    }
-
     internal static void ApplyHttpContentHeaders(HttpListenerResponse response, HttpContentHeaders contentHeaders)
     {
         if (contentHeaders.ContentType?.ToString() is { } ContentType

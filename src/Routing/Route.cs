@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2023 PROJECT PRINCIPIUM
+// Copyright (c) 2024 PROJECT PRINCIPIUM
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,8 +7,8 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Text.RegularExpressions;
 using Sisk.Core.Entity;
+using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Routing
 {
@@ -36,7 +36,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
-        public bool IsAsync { get => isReturnTypeTask; }
+        public bool IsAsync { get => this.isReturnTypeTask; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
@@ -65,15 +65,15 @@ namespace Sisk.Core.Routing
         {
             get
             {
-                return path;
+                return this.path;
             }
             set
             {
-                if (UseRegex && routeRegex != null)
+                if (this.UseRegex && this.routeRegex != null)
                 {
-                    routeRegex = null;
+                    this.routeRegex = null;
                 }
-                path = value;
+                this.path = value;
             }
         }
 
@@ -87,10 +87,10 @@ namespace Sisk.Core.Routing
         /// </summary>
         public RouteAction? Action
         {
-            get => _callback;
+            get => this._callback;
             set
             {
-                _callback = value;
+                this._callback = value;
                 if (value != null)
                 {
                     var memberInfo = value.Method;
@@ -102,7 +102,7 @@ namespace Sisk.Core.Routing
                     }
                     else if (retType.IsAssignableTo(typeof(Task)))
                     {
-                        isReturnTypeTask = true;
+                        this.isReturnTypeTask = true;
                         if (retType.GenericTypeArguments.Length == 0)
                         {
                             throw new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
@@ -138,9 +138,9 @@ namespace Sisk.Core.Routing
         /// <param name="action">The function that is called after the route is matched with the request.</param>
         public Route(RouteMethod method, string path, RouteAction action)
         {
-            Method = method;
+            this.Method = method;
             this.path = path;
-            Action = action;
+            this.Action = action;
         }
 
         /// <summary>
@@ -153,11 +153,11 @@ namespace Sisk.Core.Routing
         /// <param name="beforeCallback">The RequestHandlers to run before the route's Action.</param>
         public Route(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback)
         {
-            Method = method;
+            this.Method = method;
             this.path = path;
-            Name = name;
-            Action = action;
-            RequestHandlers = beforeCallback ?? Array.Empty<IRequestHandler>();
+            this.Name = name;
+            this.Action = action;
+            this.RequestHandlers = beforeCallback ?? Array.Empty<IRequestHandler>();
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         public Route()
         {
-            path = "/";
+            this.path = "/";
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         public override string ToString()
         {
-            return $"[{Method.ToString().ToUpper()} {path}] {Name ?? Action?.Method.Name}";
+            return $"[{this.Method.ToString().ToUpper()} {this.path}] {this.Name ?? this.Action?.Method.Name}";
         }
     }
 
