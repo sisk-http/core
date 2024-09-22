@@ -17,7 +17,6 @@ namespace Sisk.Core.Internal
     {
         public record PathMatchResult(bool IsMatched, NameValueCollection? Query);
 
-#if NET8_0_OR_GREATER
         public static bool PathRouteMatch(ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase)
         {
             const char SEPARATOR = '/';
@@ -121,85 +120,6 @@ namespace Sisk.Core.Internal
 
             return new PathMatchResult(true, query);
         }
-#else
-        public static bool PathRouteMatch(in string routeA, in string routeB, bool ignoreCase)
-        {
-            if (routeA == Route.AnyPath || routeB == Route.AnyPath)
-            {
-                return true;
-            }
-
-            string[] routeAP = routeA.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] routeBP = routeB.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-            if (routeAP.Length != routeBP.Length)
-            {
-                return false;
-            }
-
-            int matchCount = 0;
-            for (int i = 0; i < routeAP.Length; i++)
-            {
-                string A = routeAP[i];
-                string B = routeBP[i];
-
-                bool isPathAQuery = A.StartsWith('<') && A.EndsWith('>');
-                bool isPathBQuery = B.StartsWith('<') && B.EndsWith('>');
-
-                if (isPathAQuery || isPathBQuery)
-                {
-                    matchCount++;
-                }
-                else if (string.Compare(A, B, ignoreCase) == 0)
-                {
-                    matchCount++;
-                }
-            }
-
-            return matchCount == routeAP.Length;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static PathMatchResult IsPathMatch(in string pathPattern, in string requestPath, bool ignoreCase)
-        {
-            if (pathPattern == Route.AnyPath)
-            {
-                return new PathMatchResult(true, null);
-            }
-
-            NameValueCollection? query = null;
-
-            string[] pathPatternParts = pathPattern.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] requestPathParts = requestPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-            if (pathPatternParts.Length != requestPathParts.Length)
-            {
-                return new PathMatchResult(false, query);
-            }
-
-            for (int i = 0; i < pathPatternParts.Length; i++)
-            {
-                string pathPtt = pathPatternParts[i];
-                string reqsPtt = requestPathParts[i];
-
-                if (pathPtt.StartsWith('<') && pathPtt.EndsWith('>'))
-                {
-                    if (query is null) query = new NameValueCollection();
-                    string queryValueName = pathPtt.Substring(1, pathPtt.Length - 2);
-                    query.Add(queryValueName, reqsPtt);
-                }
-                else
-                {
-                    if (string.Compare(pathPtt, reqsPtt, ignoreCase) != 0)
-                    {
-                        return new PathMatchResult(false, query);
-                    }
-                }
-            }
-
-            return new PathMatchResult(true, query);
-        }
-#endif
 
         public static bool IsDnsMatch(in string wildcardPattern, string subject)
         {

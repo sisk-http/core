@@ -267,9 +267,7 @@ public partial class HttpServer
                 || request.Method == HttpMethod.Options
                 || request.Method == HttpMethod.Head
                 || request.Method == HttpMethod.Trace
-#if NET7_0_OR_GREATER
                 || request.Method == HttpMethod.Connect
-#endif
                 ) && context.Request.ContentLength64 > 0)
             {
                 executionResult.Status = HttpServerExecutionStatus.ContentServedOnIllegalMethod;

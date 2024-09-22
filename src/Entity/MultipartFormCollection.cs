@@ -10,7 +10,6 @@
 using System.Collections;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Sisk.Core.Entity;
 
@@ -45,30 +44,6 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
         return this._items
             .Where(i => string.Compare(name, i.Name, true) == 0)
             .ToArray();
-    }
-
-    /// <summary>
-    /// Reads an form item contents by it's name.
-    /// </summary>
-    /// <param name="name">The form item name.</param>
-    /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
-    [Obsolete("This method is deprecated. Use GetItem(string) instead.")]
-    public MultipartObject? GetItem(string name, bool ignoreCase = false)
-    {
-        return this._items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0);
-    }
-
-    /// <summary>
-    /// Reads an form item contents by it's name and returns their content as string.
-    /// </summary>
-    /// <param name="name">The form item name.</param>
-    /// <param name="ignoreCase">Optional. Determines if this method should use an case-insensitive search to find the specified item.</param>
-    /// <param name="encoding">Optional. Specifies the <see cref="Encoding"/> used to read the content.</param>
-    [Obsolete("This method is deprecated. Use GetItem(string) instead.")]
-    public string? GetString(string name, bool ignoreCase = false, Encoding? encoding = null)
-    {
-        Encoding _enc = encoding ?? Encoding.UTF8;
-        return this._items.FirstOrDefault(i => string.Compare(name, i.Name, ignoreCase) == 0)?.ReadContentAsString(_enc);
     }
 
     /// <summary>

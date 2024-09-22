@@ -19,11 +19,7 @@ public class RegexRoute : Route
 {
     /// <inheritdoc/>
     /// <exclude/>
-#if NET6_0
-    public RegexRoute(RouteMethod method, string path, RouteAction action) : base(method, path, action)
-#elif NET7_0_OR_GREATER
     public RegexRoute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RouteAction action) : base(method, pattern, action)
-#endif
 
     {
         this.UseRegex = true;
@@ -31,11 +27,7 @@ public class RegexRoute : Route
 
     /// <inheritdoc/>
     /// <exclude/>
-#if NET6_0
-    public RegexRoute(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback) : base(method, path, name, action, beforeCallback)
-#elif NET7_0_OR_GREATER
     public RegexRoute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, string? name, RouteAction action, IRequestHandler[]? beforeCallback) : base(method, pattern, name, action, beforeCallback)
-#endif
     {
         this.UseRegex = true;
     }

@@ -39,10 +39,7 @@ namespace Sisk.Core.Http
     ///         http://182.32.112.223:5251/
     ///     </code>
     /// </example>
-    public readonly struct ListeningPort : IEquatable<ListeningPort>
-#if NET7_0_OR_GREATER
-        , IParsable<ListeningPort>
-#endif
+    public readonly struct ListeningPort : IEquatable<ListeningPort>, IParsable<ListeningPort>
     {
         /// <summary>
         /// Gets or sets the DNS hostname pattern where this listening port will refer.

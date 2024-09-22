@@ -54,19 +54,6 @@ namespace Sisk.Core.Http
         public RequestListenAction RemoteRequestsAction { get; set; } = RequestListenAction.Accept;
 
         /// <summary>
-        /// Gets or sets whether the HTTP server should resolve remote (IP) addresses by the X-Forwarded-For header. This option is useful if you are using
-        /// Sisk through a reverse proxy or load balancer.
-        /// </summary>
-        [Obsolete("This property is deprecated and should not be used. Use ForwardingResolver property instead.")]
-        public bool ResolveForwardedOriginAddress { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets whether the HTTP server should resolve remote forwarded hosts by the header X-Forwarded-Host.
-        /// </summary>
-        [Obsolete("This property is deprecated and should not be used. Use ForwardingResolver property instead.")]
-        public bool ResolveForwardedOriginHost { get; set; } = false;
-
-        /// <summary>
         /// Gets or sets an object that is responsible for resolving the
         /// client address, host and protocol of a proxy, load balancer or CDN, through the HTTP request.
         /// </summary>

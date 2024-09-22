@@ -72,11 +72,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         /// <param name="method">The route entry point method.</param>
         /// <param name="pattern">The Regex pattern which will match the route.</param>
-#if NET6_0
-        public RegexRouteAttribute(RouteMethod method, string pattern) : base(method, pattern)
-#elif NET7_0_OR_GREATER
         public RegexRouteAttribute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) : base(method, pattern)
-#endif
         {
             base.UseRegex = true;
         }

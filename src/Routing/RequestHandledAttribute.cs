@@ -11,7 +11,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Core.Routing
 {
-#if NET8_0_OR_GREATER
     /// <summary>
     /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
     /// </summary>
@@ -40,7 +39,6 @@ namespace Sisk.Core.Routing
             this.ConstructorArguments = constructorArguments;
         }
     }
-#endif
 
     /// <summary>
     /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.

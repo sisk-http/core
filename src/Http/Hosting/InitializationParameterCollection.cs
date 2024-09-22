@@ -33,6 +33,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// </summary>
     /// <typeparam name="T">The type of the managed object that will have the service parameters mapped.</typeparam>
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075", Justification = "The return value of method 'System.Reflection.PropertyInfo.PropertyType.get' does not have matching annotations.")]
+    [Obsolete("This method is deprecated and will be removed in next Sisk versions.")]
     public T Map<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : new()
     {
         T parametersObject = new T();
@@ -56,9 +57,6 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
             }
             else if (propType.IsValueType)
             {
-#if NET6_0
-                mappingValue = Parseable.ParseInternal(value, propType)!;
-#elif NET7_0_OR_GREATER
                 if (propType.IsAssignableTo(typeof(IParsable<>)))
                 {
                     mappingValue = propType.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string), typeof(IFormatProvider) })
@@ -68,7 +66,6 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
                 {
                     mappingValue = Parseable.ParseInternal(value, propType)!;
                 }
-#endif
             }
             else
             {

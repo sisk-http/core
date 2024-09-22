@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Internal.ServiceProvider;
-using System.ComponentModel;
 
 namespace Sisk.Core.Http.Hosting;
 
@@ -87,20 +86,5 @@ public sealed class PortableConfigurationBuilder
     {
         this._initializerHandler = handler;
         return this;
-    }
-
-    /// <summary>
-    /// Specifies the required configuration sections in the configuration file.
-    /// </summary>
-    /// <param name="requiredSections">One or more required sections.</param>
-    /// <remarks>
-    /// This method is obsolete and won't be used anywhere in the code, and will be removed in later Sisk versions.
-    /// </remarks>
-    [Obsolete("This method is obsolete and won't be used anywhere in the code, and will be removed in later Sisk versions.")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    [Browsable(false)]
-    public void WithRequiredSections(PortableConfigurationRequireSection requiredSections)
-    {
-        ;
     }
 }

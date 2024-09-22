@@ -307,7 +307,6 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
         }
     }
 
-#if NET7_0_OR_GREATER
     /// <summary>
     /// Gets the current value parsed by the provided <see cref="IParsable{TSelf}"/> at <typeparamref name="T"/>.
     /// </summary>
@@ -319,7 +318,6 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
         this.ThrowIfNull();
         return T.Parse(this._ref!, fmtProvider);
     }
-#endif
 
     /// <summary>
     /// Gets an not null value from the specified <typeparamref name="T"/>.

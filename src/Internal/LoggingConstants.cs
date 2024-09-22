@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 using System.Net;
 using System.Reflection;
@@ -74,8 +75,8 @@ namespace Sisk.Core.Internal
         private static string? rq(LoggingFormatter lc) => lc.bReqUri?.Query;
         private static string? sc(LoggingFormatter lc) => lc.bResStatusCode.ToString();
         private static string? sd(LoggingFormatter lc) => lc.bResStatusDescr;
-        private static string? lin(LoggingFormatter lc) => HttpServer.HumanReadableSize(lc.incomingSize);
-        private static string? lou(LoggingFormatter lc) => HttpServer.HumanReadableSize(lc.outcomingSize);
+        private static string? lin(LoggingFormatter lc) => SizeHelper.HumanReadableSize(lc.incomingSize);
+        private static string? lou(LoggingFormatter lc) => SizeHelper.HumanReadableSize(lc.outcomingSize);
         private static string? lms(LoggingFormatter lc) => lc.execTime.ToString();
         private static string? ls(LoggingFormatter lc) => lc.res?.Status.ToString();
 

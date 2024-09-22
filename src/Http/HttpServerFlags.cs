@@ -25,15 +25,6 @@ namespace Sisk.Core.Http
         public bool ThrowContentOnNonSemanticMethods = true;
 
         /// <summary>
-        /// Determines if the HTTP server should matches route after URL decoding the request path.
-        ///     <para>
-        ///         Default value: <c>true</c>
-        ///     </para>
-        /// </summary>
-        [Obsolete("This flag has expired and will be removed in future Sisk versions.")]
-        public bool UnescapedRouteMatching = true;
-
-        /// <summary>
         /// Determines if the HTTP server should handle requests asynchronously or if
         /// it should limit the request processing to one request per time.
         ///     <para>
