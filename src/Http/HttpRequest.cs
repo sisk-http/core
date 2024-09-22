@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
 using System.Diagnostics;
@@ -394,13 +395,13 @@ namespace Sisk.Core.Http
             // Content
             if (includeBody)
             {
-                if (this.Body.Length < 8 * HttpServer.UnitKb)
+                if (this.Body.Length < 8 * SizeHelper.UnitKb)
                 {
                     sb.Append(this.Body);
                 }
                 else
                 {
-                    sb.Append($"| ({HttpServer.HumanReadableSize(this.Body.Length)} bytes)");
+                    sb.Append($"| ({SizeHelper.HumanReadableSize(this.Body.Length)})");
                 }
             }
 
