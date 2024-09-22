@@ -59,7 +59,7 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
     /// <returns>True if the object is find with the specified key; otherwise, false.</returns>
     /// <typeparam name="T">The singleton type.</typeparam>
-    public bool IsSet<T>([NotNullWhen(true)] out T? value) where T : notnull
+    public bool IsSet<T>([MaybeNullWhen(false)] out T? value) where T : notnull
     {
         return this.TryGetValue(this.GetTypeKeyName(typeof(T)), out value);
     }
