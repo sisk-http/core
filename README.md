@@ -13,8 +13,9 @@
   <div>
 
   <a href="">[![Nuget](https://img.shields.io/nuget/dt/Sisk.HttpServer?logo=nuget)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
+  <a href="">[![Nuget](https://img.shields.io/nuget/v/Sisk.HttpServer?label=last%20version)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
   <a href="">[![Nuget](https://img.shields.io/github/license/sisk-http/core)](https://github.com/sisk-http/core/blob/master/LICENSE.txt)</a>
-  <a href="">[![Nuget](https://img.shields.io/badge/.net%20version-%206%20|%207%20|%208-purple.svg?logo=dotnet)](#)</a>
+  <a href="">[![Nuget](https://img.shields.io/badge/.net_version-8_|_9-purple?logo=dotnet)](#)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
 
   </div>
