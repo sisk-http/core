@@ -54,7 +54,7 @@ namespace Sisk.Core.Routing
         public bool UseCors { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets the matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.
+        /// Gets or sets the matching HTTP method.
         /// </summary>
         public RouteMethod Method { get; set; }
 
@@ -78,7 +78,7 @@ namespace Sisk.Core.Routing
         }
 
         /// <summary>
-        /// Gets or sets the route name. It allows it to be found by other routes and makes it easier to create links.
+        /// Gets or sets the route name.
         /// </summary>
         public string? Name { get; set; }
 

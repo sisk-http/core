@@ -20,7 +20,6 @@ public class RegexRoute : Route
     /// <inheritdoc/>
     /// <exclude/>
     public RegexRoute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RouteAction action) : base(method, pattern, action)
-
     {
         this.UseRegex = true;
     }

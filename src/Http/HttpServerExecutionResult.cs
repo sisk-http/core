@@ -119,7 +119,8 @@ namespace Sisk.Core.Http
         UncaughtExceptionThrown,
 
         /// <summary>
-        /// Indicates that the DNS was successful, however the matched <see cref="ListeningHost"/> does not have an valid initialized router .
+        /// Indicates that the DNS was successful, however the matched <see cref="ListeningHost"/> does
+        /// not have an valid initialized router.
         /// </summary>
         ListeningHostNotReady,
 

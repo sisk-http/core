@@ -26,7 +26,9 @@ public sealed class HttpResponseStream : CookieHelper
     {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException(nameof(listenerResponse));
         this.ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
-        HttpServer.SetCorsHeaders(host.baseServer.ServerConfiguration.Flags, listenerRequest, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, listenerResponse);
+
+        if (host.baseServer.ServerConfiguration.Flags.SendCorsHeaders && host.Context.MatchedRoute?.UseCors == true)
+            HttpServer.SetCorsHeaders(listenerRequest, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, listenerResponse);
     }
 
     /// <summary>

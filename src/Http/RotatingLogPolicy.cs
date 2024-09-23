@@ -17,7 +17,7 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class RotatingLogPolicy : IDisposable
     {
-        private System.Timers.Timer? checkTimer = null;
+        private System.Timers.Timer? checkTimer;
         internal LogStream? _logStream;
         private bool disposedValue;
 
@@ -136,6 +136,7 @@ namespace Sisk.Core.Http
             {
                 if (disposing)
                 {
+                    this.checkTimer?.Dispose();
                     this._logStream?.Dispose();
                 }
 

@@ -15,7 +15,7 @@ namespace Sisk.Core.Http;
 /// Provides HTTP forwarding resolving methods that can be used to resolving the client remote
 /// address, host and protocol of a proxy, load balancer or CDN, through the HTTP request.
 /// </summary>
-public class ForwardingResolver
+public abstract class ForwardingResolver
 {
     /// <summary>
     /// Method that is called when resolving the IP address of the client in the request.

@@ -142,7 +142,7 @@ namespace Sisk.Core.Http
         /// <exclude/>
         public readonly bool Equals(HttpStatusInformation other)
         {
-            return other.__statusCode.Equals(this.__statusCode) && other.__description.Equals(this.__description);
+            return other.__statusCode.Equals(this.__statusCode) && other.__description.Equals(this.__description, StringComparison.Ordinal);
         }
 
         /// <inheritdoc/>

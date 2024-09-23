@@ -277,7 +277,7 @@ public sealed class HttpHeaderCollection : StringKeyStore
     /// Gets or sets the value of the HTTP X-Forwarded-For header.
     /// </summary>
     /// <remarks>
-    /// Tip: enable the <see cref="HttpServerConfiguration.ResolveForwardedOriginAddress"/> property to obtain the user client proxied IP throught <see cref="HttpRequest.RemoteAddress"/>.
+    /// Tip: use the <see cref="HttpServerConfiguration.ForwardingResolver"/> property to obtain the user client proxied IP throught <see cref="HttpRequest.RemoteAddress"/>.
     /// </remarks>
     public string? XForwardedFor { get => this[Header.XForwardedFor]; set => this[Header.XForwardedFor] = value; }
 
@@ -285,7 +285,7 @@ public sealed class HttpHeaderCollection : StringKeyStore
     /// Gets or sets the value of the HTTP X-Forwarded-Host header.
     /// </summary>
     /// <remarks>
-    /// Tip: enable the <see cref="HttpServerConfiguration.ResolveForwardedOriginHost"/> property to obtain the client requested host throught <see cref="HttpRequest.Host"/>.
+    /// Tip: use the <see cref="HttpServerConfiguration.ForwardingResolver"/> property to obtain the client requested host throught <see cref="HttpRequest.Host"/>.
     /// </remarks>
     public string? XForwardedHost { get => this[Header.XForwardedHost]; set => this[Header.XForwardedHost] = value; }
 

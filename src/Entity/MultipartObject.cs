@@ -16,7 +16,7 @@ namespace Sisk.Core.Entity
     /// <summary>
     /// Represents an multipart/form-data object.
     /// </summary>
-    public sealed class MultipartObject
+    public sealed class MultipartObject : IEquatable<MultipartObject>
     {
         private readonly Encoding _baseEncoding;
 
@@ -44,7 +44,7 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// Gets this <see cref="MultipartObject"/> form data content length in byte count.
         /// </summary>
-        public int ContentLength { get; private set; }
+        public int ContentLength { get => this.ContentBytes.Length; }
 
         /// <summary>
         /// Gets an booolean indicating if this <see cref="MultipartObject"/> has contents or not.
@@ -137,7 +137,6 @@ namespace Sisk.Core.Entity
             this.Filename = filename;
             this.Name = name;
             this.ContentBytes = body ?? Array.Empty<byte>();
-            this.ContentLength = body?.Length ?? 0;
             this._baseEncoding = encoding;
         }
 
@@ -315,6 +314,26 @@ namespace Sisk.Core.Entity
             }
 
             return new MultipartFormCollection(outputObjects);
+        }
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(this.Name.GetHashCode(), this.ContentLength.GetHashCode(), this.Filename?.GetHashCode() ?? 0);
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object? obj)
+        {
+            if (obj is MultipartObject mo)
+                return this.Equals(mo);
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public bool Equals(MultipartObject? other)
+        {
+            return this.GetHashCode() == other?.GetHashCode();
         }
     }
 }

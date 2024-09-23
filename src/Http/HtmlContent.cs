@@ -17,11 +17,6 @@ namespace Sisk.Core.Http;
 public class HtmlContent : StringContent
 {
     /// <summary>
-    /// Gets or sets the default encoding which will be used on constructors.
-    /// </summary>
-    public static Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
-
-    /// <summary>
     /// Creates an new <see cref="HtmlContent"/> class with given HTML content and encoding.
     /// </summary>
     /// <param name="content">The HTML content string.</param>
@@ -31,8 +26,8 @@ public class HtmlContent : StringContent
     }
 
     /// <summary>
-    /// Creates an new <see cref="HtmlContent"/> class with given HTML content, using the <see cref="DefaultEncoding"/> encoding.
+    /// Creates an new <see cref="HtmlContent"/> class with given HTML content, using the environment default encoding.
     /// </summary>
     /// <param name="content">The HTML content string.</param>
-    public HtmlContent(string content) : this(content, DefaultEncoding) { }
+    public HtmlContent(string content) : this(content, Encoding.Default) { }
 }

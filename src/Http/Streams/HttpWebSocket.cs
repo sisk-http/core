@@ -145,7 +145,7 @@ namespace Sisk.Core.Http.Streams
                 catch (Exception)
                 {
                     if (this.ctx.WebSocket.State != WebSocketState.Open
-                     || this.ctx.WebSocket.State != WebSocketState.Connecting)
+                     && this.ctx.WebSocket.State != WebSocketState.Connecting)
                     {
                         this.Close();
                         break;

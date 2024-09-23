@@ -21,7 +21,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents an exception that is thrown while a request is being interpreted by the HTTP server.
     /// </summary>
-    public class HttpRequestException : Exception
+    public sealed class HttpRequestException : Exception
     {
         internal HttpRequestException(string message) : base(message) { }
         internal HttpRequestException(string message, Exception? innerException) : base(message, innerException) { }
@@ -66,7 +66,7 @@ namespace Sisk.Core.Http
             return outEnc.GetString(tempBytes);
         }
 
-        void ReadRequestStreamContents()
+        byte[] ReadRequestStreamContents()
         {
             if (this.contentBytes is null)
             {
@@ -87,11 +87,13 @@ namespace Sisk.Core.Http
                     this.contentBytes = Array.Empty<byte>();
                     throw new HttpRequestException(SR.HttpRequest_NoContentLength);
                 }
-                else
+                else // = 0
                 {
                     this.contentBytes = Array.Empty<byte>();
                 }
             }
+
+            return this.contentBytes;
         }
 
         /// <summary>
@@ -100,9 +102,12 @@ namespace Sisk.Core.Http
         public Guid RequestId { get => this.listenerRequest.RequestTraceIdentifier; }
 
         /// <summary>
-        /// Gets a boolean indicating whether this request was made by an secure
+        /// Gets a boolean indicating whether this request was locally made by an secure
         /// transport context (SSL/TLS) or not.
         /// </summary>
+        /// <remarks>
+        /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
+        /// </remarks>
         public bool IsSecure
         {
             get
@@ -119,9 +124,10 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets a boolean indicating whether the body content of this request has been processed by the server.
+        /// Gets a boolean indicating whether this request has body contents and whether
+        /// it has already been read into memory by the server.
         /// </summary>
-        public bool IsContentAvailable { get => this.contentBytes is not null; }
+        public bool IsContentAvailable { get => this.HasContents && this.contentBytes is not null; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request has body contents.
@@ -187,7 +193,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Get the requested host header (without port) from this HTTP request.
+        /// Get the requested host (without port) for this <see cref="HttpRequest"/>.
         /// </summary>
         public string? Host { get; internal set; }
 
@@ -202,6 +208,9 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Get the requested host header with the port from this HTTP request.
         /// </summary>
+        /// <remarks>
+        /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
+        /// </remarks>
         public string Authority
         {
             get => this.listenerRequest.Url!.Authority;
@@ -226,6 +235,9 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the full URL for this request, with scheme, host, port, path and query.
         /// </summary>
+        /// <remarks>
+        /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
+        /// </remarks>
         public string FullUrl
         {
             get => this.listenerRequest.Url!.ToString();
@@ -250,6 +262,9 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request body as string, decoded by the request content encoding.
         /// </summary>
+        /// <remarks>
+        /// When calling this property, the entire content of the request is read into memory and stored in <see cref="RawBody"/>.
+        /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public string Body
         {
@@ -259,13 +274,15 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the HTTP request body as a byte array.
         /// </summary>
+        /// <remarks>
+        /// When calling this property, the entire content of the request is read into memory.
+        /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public byte[] RawBody
         {
             get
             {
-                this.ReadRequestStreamContents();
-                return this.contentBytes!;
+                return this.ReadRequestStreamContents();
             }
         }
 
@@ -273,7 +290,7 @@ namespace Sisk.Core.Http
         /// Gets the content length in bytes count.
         /// </summary>
         /// <remarks>
-        /// The value can be negative if the content length is unknown.
+        /// This value can be negative if the content length is unknown.
         /// </remarks>
         public long ContentLength
         {
@@ -281,7 +298,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the HTTP request query extracted from the path string. This property also contains routing parameters.
+        /// Gets the HTTP request query string values extracted from the path string.
         /// </summary>
         public StringValueCollection Query
         {
@@ -310,7 +327,7 @@ namespace Sisk.Core.Http
         public string QueryString { get => this.listenerRequest.Url?.Query ?? string.Empty; }
 
         /// <summary>
-        /// Gets the incoming IP address from the request.
+        /// Gets the incoming local IP address from the request.
         /// </summary>
         public IPAddress RemoteAddress
         {
@@ -337,12 +354,12 @@ namespace Sisk.Core.Http
         public DateTime RequestedAt { get; private init; }
 
         /// <summary>
-        /// Gets the HttpContext for this request.
+        /// Gets the <see cref="HttpContext"/> for this request.
         /// </summary>
         public HttpContext Context { get; internal set; } = null!;
 
         /// <summary>
-        /// Gets the multipart form content for this request.
+        /// Reads the request body and obtains a <see cref="MultipartFormCollection"/> from it.
         /// </summary>
         public MultipartFormCollection GetMultipartFormContent()
         {
@@ -357,7 +374,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the values sent by a form in this request.
+        /// Reads the request body and extracts form data parameters from it.
         /// </summary>
         public StringKeyStore GetFormContent()
         {
@@ -367,6 +384,8 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the raw HTTP request message from the socket.
         /// </summary>
+        /// <param name="includeBody">Optional. Defines if the body should be included in the output.</param>
+        /// <param name="appendExtraInfo">Optional. Appends extra information, such as request id and date into the output.</param>
         public string GetRawHttpRequest(bool includeBody = true, bool appendExtraInfo = false)
         {
             StringBuilder sb = new StringBuilder();
@@ -409,39 +428,6 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Creates and stores a managed object in HTTP context bag through it's type.
-        /// </summary>
-        /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
-        /// <returns>Returns the stored object.</returns>
-        [Obsolete("This method is deprecated and should be removed in future Sisk versions. Please, use Bag property instead.")]
-        public T SetContextBag<T>() where T : notnull, new()
-        {
-            return this.Context.RequestBag.Set<T>();
-        }
-
-        /// <summary>
-        /// Stores a managed object in HTTP context bag through it's type.
-        /// </summary>
-        /// <typeparam name="T">The type of object that will be stored in the HTTP context bag.</typeparam>
-        /// <param name="contextObject">The object which will be stored.</param>
-        /// <returns>Returns the stored object.</returns>
-        [Obsolete("This method is deprecated and should be removed in future Sisk versions. Please, use Bag property instead.")]
-        public T SetContextBag<T>(T contextObject) where T : notnull
-        {
-            return this.Context.RequestBag.Set<T>(contextObject);
-        }
-
-        /// <summary>
-        /// Gets an managed object from the HTTP context bag through it's type.
-        /// </summary>
-        /// <typeparam name="T">The type of object which is stored in the HTTP context bag.</typeparam>
-        [Obsolete("This method is deprecated and should be removed in future Sisk versions. Please, use Bag property instead.")]
-        public T GetContextBag<T>() where T : notnull
-        {
-            return this.Context.RequestBag.Get<T>();
-        }
-
-        /// <summary>
         /// Gets a query value using an case-insensitive search.
         /// </summary>
         /// <param name="queryKeyName">The query value name.</param>
@@ -481,18 +467,6 @@ namespace Sisk.Core.Http
                 throw new OverflowException(SR.HttpRequest_SendTo_MaxRedirects);
             }
             return otherCallback(this);
-        }
-
-        /// <summary>
-        /// Closes this HTTP request and their connection with the remote client without sending any response.
-        /// </summary>
-        /// <remarks>
-        /// This method is now obsolete and will be removed in next Sisk versions. Please, use <see cref="HttpResponse.Refuse"/> instead.
-        /// </remarks>
-        [Obsolete("This method is now obsolete and will be removed in next Sisk versions. Please, use HttpResponse.Refuse() instead.")]
-        public HttpResponse Close()
-        {
-            return new HttpResponse(HttpResponse.HTTPRESPONSE_SERVER_REFUSE);
         }
 
         /// <summary>

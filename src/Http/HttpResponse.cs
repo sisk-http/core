@@ -9,7 +9,6 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
-using Sisk.Core.Routing;
 using System.Net;
 using System.Text;
 
@@ -38,57 +37,14 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Creates an <see cref="HttpResponse"/> object which closes the connection with the client immediately (ECONNRESET).
-        /// </summary>
-        /// <remarks>
-        /// This method is obsolete and replaced by <see cref="Refuse"/>.
-        /// </remarks>
-        [Obsolete("This method should be avoided and will be removed in next Sisk versions.")]
-        public static HttpResponse CreateEmptyResponse()
-        {
-            return new HttpResponse(HTTPRESPONSE_EMPTY);
-        }
-
-        /// <summary>
-        /// Creates an new redirect <see cref="HttpResponse"/> with given location header.
-        /// </summary>
-        /// <param name="location">The absolute or relative URL path which the client must be redirected to.</param>
-        [Obsolete("This method is deprecated and should not be used.")]
-        public static HttpResponse CreateRedirectResponse(string location)
-        {
-            HttpResponse res = new HttpResponse();
-            res.Status = System.Net.HttpStatusCode.MovedPermanently;
-            res.Headers.Add("Location", location);
-
-            return res;
-        }
-
-        /// <summary>
-        /// Creates an new redirect <see cref="HttpResponse"/> which redirects to the route path defined in a action. The provided method must have a valid RouteAttribute attribute.
-        /// </summary>
-        /// <param name="action">The receiving action contains a RouteAttribute attribute and its method is GET or ANY.</param>
-        [Obsolete("This method is deprecated and should not be used.")]
-        public static HttpResponse CreateRedirectResponse(RouteAction action)
-        {
-            var definition = RouteDefinition.GetFromCallback(action);
-            if (!definition.Method.HasFlag(RouteMethod.Get)) throw new InvalidOperationException(SR.HttpResponse_Redirect_NotMatchGet);
-            return CreateRedirectResponse(definition.Path);
-        }
-
-        /// <summary>
         /// Gets or sets the HTTP status code and description for this HTTP response.
         /// </summary>
-        public HttpStatusInformation StatusInformation { get; set; } = new HttpStatusInformation();
+        public HttpStatusInformation Status { get; set; } = new HttpStatusInformation();
 
         /// <summary>
-        /// Gets or sets the HTTP response status code.
+        /// Gets or sets the <see cref="HttpHeaderCollection"/> instance of the HTTP response headers.
         /// </summary>
-        public HttpStatusCode Status { get => (HttpStatusCode)this.StatusInformation.StatusCode; set => this.StatusInformation = new HttpStatusInformation(value); }
-
-        /// <summary>
-        /// Gets a <see cref="HttpHeaderCollection"/> instance of the HTTP response headers.
-        /// </summary>
-        public HttpHeaderCollection Headers { get; private set; } = new HttpHeaderCollection();
+        public HttpHeaderCollection Headers { get; set; } = new HttpHeaderCollection();
 
         /// <summary>
         /// Gets or sets the HTTP response body contents.
@@ -98,6 +54,9 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets whether the HTTP response can be sent chunked.
         /// </summary>
+        /// <remarks>
+        /// The response is always sent as chunked when it is not possible to determine the size of the content to send.
+        /// </remarks>
         public bool SendChunked { get; set; } = false;
 
         internal byte internalStatus = 0;
@@ -114,7 +73,7 @@ namespace Sisk.Core.Http
         public string GetRawHttpResponse(bool includeBody = true)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"HTTP/1.1 {this.StatusInformation}");
+            sb.AppendLine($"HTTP/1.1 {this.Status}");
             foreach (var header in this.Headers)
             {
                 sb.Append($"{header.Key}: {header.Value}");
@@ -150,7 +109,8 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Creates an new <see cref="HttpResponse"/> instance with HTTP OK status code and no content.
+        /// Creates an new <see cref="HttpResponse"/> instance with HTTP OK status
+        /// code and no content.
         /// </summary>
         public HttpResponse()
         {

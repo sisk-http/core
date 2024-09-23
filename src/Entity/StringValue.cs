@@ -366,11 +366,11 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
         }
         else if (obj is StringValue sv)
         {
-            return this._ref?.Equals(sv._ref) == true;
+            return this._ref?.Equals(sv._ref, StringComparison.Ordinal) == true;
         }
         else if (obj is string ss)
         {
-            return this._ref?.Equals(ss) == true;
+            return this._ref?.Equals(ss, StringComparison.Ordinal) == true;
         }
         else
         {
@@ -382,7 +382,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <exclude/>
     public override int GetHashCode()
     {
-        return this._ref?.GetHashCode() ?? 0;
+        return this._ref?.GetHashCode(StringComparison.Ordinal) ?? 0;
     }
 
     /// <inheritdoc/>

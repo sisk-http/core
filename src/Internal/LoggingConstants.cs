@@ -88,10 +88,10 @@ namespace Sisk.Core.Internal
             {
                 MethodInfo? m = Callers[i];
                 string literal = "%" + m.Name;
-                if (format.Contains(literal))
+                if (format.Contains(literal, StringComparison.CurrentCultureIgnoreCase))
                 {
                     string? invokeResult = (string?)m.Invoke(null, new object?[] { this });
-                    format = format.Replace(literal, invokeResult);
+                    format = format.Replace(literal, invokeResult, StringComparison.CurrentCultureIgnoreCase);
                 }
             }
         }

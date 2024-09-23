@@ -96,7 +96,7 @@ public static class HttpResponseExtensions
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
     public static THttpResponse WithStatus<THttpResponse>(this THttpResponse response, int httpStatusCode) where THttpResponse : HttpResponse
     {
-        response.StatusInformation = httpStatusCode;
+        response.Status = httpStatusCode;
         return response;
     }
 
@@ -109,7 +109,7 @@ public static class HttpResponseExtensions
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
     public static THttpResponse WithStatus<THttpResponse>(this THttpResponse response, HttpStatusCode httpStatusCode) where THttpResponse : HttpResponse
     {
-        response.StatusInformation = httpStatusCode;
+        response.Status = httpStatusCode;
         return response;
     }
 
@@ -122,7 +122,7 @@ public static class HttpResponseExtensions
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
     public static THttpResponse WithStatus<THttpResponse>(this THttpResponse response, in HttpStatusInformation statusInformation) where THttpResponse : HttpResponse
     {
-        response.StatusInformation = statusInformation;
+        response.Status = statusInformation;
         return response;
     }
 

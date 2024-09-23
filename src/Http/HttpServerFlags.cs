@@ -28,7 +28,7 @@ namespace Sisk.Core.Http
         /// Determines if the HTTP server should handle requests asynchronously or if
         /// it should limit the request processing to one request per time.
         ///     <para>
-        ///         Default value: <c>false</c>
+        ///         Default value: <c>true</c>
         ///     </para>
         /// </summary>
         public bool AsyncRequestProcessing = true;
@@ -122,10 +122,10 @@ namespace Sisk.Core.Http
         /// Determines if the new span-based multipart form reader should be used. This is an experimental
         /// feature and may not be stable for production usage.
         /// <para>
-        ///     Default value: <c>false</c>
+        ///     Default value: <c>true</c>
         /// </para>
         /// </summary>
-        public bool EnableNewMultipartFormReader = false;
+        public bool EnableNewMultipartFormReader = true;
 
         /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.

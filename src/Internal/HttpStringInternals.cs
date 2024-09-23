@@ -125,7 +125,7 @@ namespace Sisk.Core.Internal
         {
             StringComparison comparer = StringComparison.OrdinalIgnoreCase;
 
-            int portSeparatorPosition = subject.IndexOf(':');
+            int portSeparatorPosition = subject.IndexOf(':', StringComparison.Ordinal);
             if (portSeparatorPosition > 0)
             {
                 subject = subject[0..portSeparatorPosition];

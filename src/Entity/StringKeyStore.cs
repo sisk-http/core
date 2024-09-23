@@ -513,7 +513,7 @@ public class StringKeyStore : IDictionary<string, string[]>
             {
                 string part = kvPairs[i];
 
-                int eqPos = part.IndexOf(valueSeparator);
+                int eqPos = part.IndexOf(valueSeparator, StringComparison.Ordinal);
                 if (eqPos < 0)
                 {
                     this.AddInternal(part, new string[1] { string.Empty });

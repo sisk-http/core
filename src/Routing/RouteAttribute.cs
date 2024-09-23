@@ -35,7 +35,6 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets whether this route should send Cross-Origin Resource Sharing headers in the response.
         /// </summary>
-
         public bool UseCors { get; set; } = true;
 
         /// <summary>

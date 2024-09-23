@@ -60,11 +60,8 @@ public partial class HttpServer
 
     }
 
-    internal static void SetCorsHeaders(HttpServerFlags serverFlags, HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+    internal static void SetCorsHeaders(HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
     {
-        if (!serverFlags.SendCorsHeaders)
-            return;
-
         if (cors.AllowHeaders.Length > 0)
             baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join(", ", cors.AllowHeaders));
 
@@ -149,7 +146,7 @@ public partial class HttpServer
         long incomingSize = 0;
         long outcomingSize = 0;
         bool closeStream = true;
-        bool useCors = false;
+        bool routeAllowCors = false;
         bool hasAccessLogging = this.ServerConfiguration.AccessLogsStream is not null;
         bool hasErrorLogging = this.ServerConfiguration.ErrorsLogsStream is not null;
         IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
@@ -287,11 +284,11 @@ public partial class HttpServer
 
             _debugState = "receive_response";
             response = routerResult.Response;
-            useCors = routerResult.Route?.UseCors ?? true;
+            routeAllowCors = routerResult.Route?.UseCors ?? true;
 
-            if (useCors)
+            if (flag.SendCorsHeaders && routeAllowCors)
             {
-                SetCorsHeaders(flag, baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
+                SetCorsHeaders(baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse);
             }
 
             _debugState = "check_response";
@@ -313,7 +310,7 @@ public partial class HttpServer
                      response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
-                baseResponse.StatusCode = (int)response.Status;
+                baseResponse.StatusCode = (int)response.Status.StatusCode;
                 goto finishSending;
             }
             else if (response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)
@@ -324,8 +321,8 @@ public partial class HttpServer
             }
 
             _debugState = "send_status";
-            baseResponse.StatusCode = response.StatusInformation.StatusCode;
-            baseResponse.StatusDescription = response.StatusInformation.Description;
+            baseResponse.StatusCode = response.Status.StatusCode;
+            baseResponse.StatusDescription = response.Status.Description;
             baseResponse.KeepAlive = this.ServerConfiguration.KeepAlive;
 
             #endregion

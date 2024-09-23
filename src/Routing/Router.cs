@@ -9,6 +9,7 @@
 
 using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -69,7 +70,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
         /// </summary>
-        public IRequestHandler[]? GlobalRequestHandlers { get; set; }
+        public IRequestHandler[] GlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
 
         /// <summary>
         /// Gets or sets the Router action exception handler.
@@ -80,13 +81,37 @@ namespace Sisk.Core.Routing
         /// Gets or sets the Router "404 Not Found" handler.
         /// </summary>
         public RoutingErrorCallback? NotFoundErrorHandler { get; set; } = new RoutingErrorCallback(
-            (c) => new HttpResponse(System.Net.HttpStatusCode.NotFound));
+            (context) =>
+            {
+                string? accept = context.Request.Headers.Accept;
+
+                if (accept?.Contains("text/html", StringComparison.CurrentCulture) == true)
+                {
+                    return DefaultMessagePage.CreateDefaultResponse(HttpStatusCode.NotFound, SR.HttpResponse_404_DefaultMessage);
+                }
+                else
+                {
+                    return new HttpResponse(HttpStatusCode.NotFound);
+                }
+            });
 
         /// <summary>
         /// Gets or sets the Router "405 Method Not Allowed" handler.
         /// </summary>
         public RoutingErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new RoutingErrorCallback(
-            (c) => new HttpResponse(System.Net.HttpStatusCode.MethodNotAllowed));
+            (context) =>
+            {
+                string? accept = context.Request.Headers.Accept;
+
+                if (accept?.Contains("text/html", StringComparison.CurrentCulture) == true)
+                {
+                    return DefaultMessagePage.CreateDefaultResponse(HttpStatusCode.MethodNotAllowed, SR.HttpResponse_405_DefaultMessage);
+                }
+                else
+                {
+                    return new HttpResponse(HttpStatusCode.MethodNotAllowed);
+                }
+            });
 
         /// <summary>
         /// Gets all routes defined on this router instance.

@@ -113,14 +113,15 @@ public partial class Router
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal RouterExecutionResult Execute(HttpContext context)
     {
+        // the line below ensures that _routesList will not be modified in this method
         if (this.parentServer is null) throw new InvalidOperationException(SR.Router_NotBinded);
 
         context.Router = this;
         HttpRequest request = context.Request;
+        HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;
+
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
-
-        HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;
 
         Span<Route> rspan = CollectionsMarshal.AsSpan(this._routesList);
         ref Route rPointer = ref MemoryMarshal.GetReference(rspan);
@@ -150,7 +151,7 @@ public partial class Router
             bool isMethodMatched = false;
 
             // test method
-            if (request.Method == HttpMethod.Options)
+            if (flag.SendCorsHeaders && request.Method == HttpMethod.Options)
             {
                 matchResult = RouteMatchResult.OptionsMatched;
                 break;
@@ -199,7 +200,7 @@ public partial class Router
         else if (matchResult == RouteMatchResult.OptionsMatched)
         {
             HttpResponse corsResponse = new HttpResponse();
-            corsResponse.Status = System.Net.HttpStatusCode.OK;
+            corsResponse.Status = HttpStatusCode.OK;
 
             return new RouterExecutionResult(corsResponse, null, matchResult, null);
         }
@@ -226,11 +227,11 @@ public partial class Router
             #region Before-response handlers
             HttpResponse? rhResponse;
             Exception? rhException;
-            if (this.GlobalRequestHandlers is not null && this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
+            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
             {
                 return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }
-            if (matchedRoute.RequestHandlers is not null && this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException))
+            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException))
             {
                 return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }
@@ -284,11 +285,11 @@ public partial class Router
             #endregion
 
             #region After-response global handlers
-            if (this.GlobalRequestHandlers is not null && this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
+            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
             {
                 return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }
-            if (matchedRoute.RequestHandlers is not null && this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException))
+            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException))
             {
                 return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }

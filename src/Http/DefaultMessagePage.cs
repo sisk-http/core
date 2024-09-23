@@ -7,7 +7,6 @@
 // File name:   DefaultMessagePage.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Text;
 using System.Web;
 
 namespace Sisk.Core.Http;
@@ -24,18 +23,71 @@ public static class DefaultMessagePage
     /// <param name="description">The static page description text.</param>
     public static string CreateDefaultPageHtml(string firstHeader, string description)
     {
-        StringBuilder htmlBuilder = new StringBuilder();
-        htmlBuilder.Append("<!DOCTYPE html>");
-        htmlBuilder.Append("<html><head><title>");
-        htmlBuilder.Append(HttpUtility.HtmlEncode(firstHeader));
-        htmlBuilder.Append("</title></head><body><h1>");
-        htmlBuilder.Append(HttpUtility.HtmlEncode(firstHeader));
-        htmlBuilder.Append("</h1><p>");
-        htmlBuilder.Append(HttpUtility.HtmlEncode(description));
-        htmlBuilder.Append("</p><hr><i>Sisk v.");
-        htmlBuilder.Append(HttpServer.SiskVersion);
-        htmlBuilder.Append("</i></body></html>");
+        firstHeader = HttpUtility.HtmlEncode(firstHeader);
+        description = HttpUtility.HtmlEncode(description);
 
-        return htmlBuilder.ToString();
+        return $$"""
+            <!DOCTYPE html>
+            <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>{firstHeader}</title>
+                </head>
+
+                <body>
+                    <style>
+                        body {
+                            background-color: #eeeeee;
+                            font-family: sans-serif;
+                        }
+
+                        main {
+                            background-color: white;
+                            padding: 25px;
+                            border-radius: 10px;
+                            border: 1px solid #dddddd;
+                            display: block;
+                            margin: 30px auto 0 auto;
+                            max-width: 600px;
+                        }
+
+                        h1 {
+                            margin: 0;
+                        }
+
+                        hr {
+                            border-top: 1px solid #bbbbbb;
+                            border-bottom: none;
+                        }
+
+                        small {
+                            color: #777777;
+                        }
+                    </style>
+                    <main>
+                        <h1>{{firstHeader}}</h1>
+                        <p>{{description}}</p>
+                        <hr>
+                        <small>Sisk/{{HttpServer.SiskVersion.ToString(3)}}</small>
+                    </main>
+                </body>
+            </html>
+            """;
+    }
+
+    /// <summary>
+    /// Creates an static default page with given status code and description.
+    /// </summary>
+    /// <param name="status">The static page status code.</param>
+    /// <param name="longDescription">The static page description text.</param>
+    public static HttpResponse CreateDefaultResponse(in HttpStatusInformation status, string longDescription)
+    {
+        string html = CreateDefaultPageHtml(status.Description, longDescription);
+        return new HttpResponse()
+        {
+            Status = status,
+            Content = new HtmlContent(html)
+        };
     }
 }

@@ -169,7 +169,7 @@ internal sealed class MultipartFormReader
         string? line;
         while (!string.IsNullOrEmpty(line = this.ReadLine()))
         {
-            int sepIndex = line.IndexOf(':');
+            int sepIndex = line.IndexOf(':', StringComparison.Ordinal);
             if (sepIndex == -1)
                 break;
 

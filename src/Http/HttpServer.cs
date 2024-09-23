@@ -271,6 +271,10 @@ namespace Sisk.Core.Http
             {
                 throw new InvalidOperationException(SR.Httpserver_NoListeningHost);
             }
+            if (this._isDisposing)
+            {
+                throw new ObjectDisposedException(nameof(HttpServer));
+            }
 
             this.listeningPrefixes = new List<string>();
             foreach (ListeningHost listeningHost in this.ServerConfiguration.ListeningHosts)
@@ -322,13 +326,16 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Invalidates this class and releases the resources used by it, and permanently closes the HTTP server.
+        /// Invalidates this class and releases the resources used by it, and
+        /// permanently closes the HTTP server.
         /// </summary>
         public void Dispose()
         {
             this._isDisposing = true;
             this.httpListener.Close();
             this.ServerConfiguration.Dispose();
+            this.waitNextEvent.Set();
+            this.waitNextEvent.Dispose();
         }
     }
 }
