@@ -7,10 +7,10 @@
 // File name:   HttpStatusInformation.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http
 {
@@ -197,6 +197,48 @@ namespace Sisk.Core.Http
         public static implicit operator HttpStatusInformation(int statusCode)
         {
             return new HttpStatusInformation(statusCode);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static bool operator ==(HttpStatusInformation a, HttpStatusInformation b)
+        {
+            return a.Equals(b);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static bool operator !=(HttpStatusInformation a, HttpStatusInformation b)
+        {
+            return !a.Equals(b);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static bool operator ==(HttpStatusInformation a, int b)
+        {
+            return a.Equals(b);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static bool operator !=(HttpStatusInformation a, int b)
+        {
+            return !a.Equals(b);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static bool operator ==(HttpStatusInformation a, HttpStatusCode b)
+        {
+            return a.Equals(b);
+        }
+
+        /// <inheritdoc/>
+        /// <exclude/>
+        public static bool operator !=(HttpStatusInformation a, HttpStatusCode b)
+        {
+            return a.Equals(b);
         }
     }
 }
