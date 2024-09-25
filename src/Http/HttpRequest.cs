@@ -7,14 +7,14 @@
 // File name:   HttpRequest.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Helpers;
-using Sisk.Core.Http.Streams;
-using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
+using Sisk.Core.Http.Streams;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http
 {
@@ -298,7 +298,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the HTTP request query string values extracted from the path string.
+        /// Gets the HTTP request query value collection.
         /// </summary>
         public StringValueCollection Query
         {
@@ -438,15 +438,11 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <typeparam name="T">The parseable type which will be converted to.</typeparam>
         /// <param name="queryKeyName">The name of the URL parameter. The search is ignore-case.</param>
-        /// <param name="defaultValue">The default value that will be returned if the item is not found in the query.</param>
-        public T GetQueryValue<T>(string queryKeyName, T defaultValue = default) where T : struct
+        public T GetQueryValue<T>(string queryKeyName) where T : IParsable<T>
         {
-            StringValue value = this.Query[queryKeyName];
-            if (value.IsNull) return defaultValue;
-
             try
             {
-                return value.Get<T>();
+                return this.Query[queryKeyName].Get<T>();
             }
             catch (Exception)
             {

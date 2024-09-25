@@ -7,11 +7,11 @@
 // File name:   StringKeyStore.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Entity;
 

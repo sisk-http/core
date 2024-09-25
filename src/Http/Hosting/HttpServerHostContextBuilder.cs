@@ -7,12 +7,12 @@
 // File name:   HttpServerHostContextBuilder.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Http.Handlers;
-using Sisk.Core.Routing;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using Sisk.Core.Entity;
+using Sisk.Core.Http.Handlers;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http.Hosting;
 

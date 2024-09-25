@@ -7,11 +7,11 @@
 // File name:   InitializationParameterCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http.Hosting;
 

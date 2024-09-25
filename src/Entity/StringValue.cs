@@ -7,8 +7,6 @@
 // File name:   StringValue.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Runtime.CompilerServices;
-
 namespace Sisk.Core.Entity;
 
 /// <summary>
@@ -313,21 +311,20 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <typeparam name="T">The type where the conversion will result into.</typeparam>
     /// <param name="fmtProvider">Optional. An object that provides culture-specific formatting information about the current value.</param>
     /// <returns>The result of parsing the current string value.</returns>
+    [Obsolete("This method is deprecated and will be removed in later Sisk versions. Please, use Get<T> instead.")]
     public T GetParsable<T>(IFormatProvider? fmtProvider = null) where T : IParsable<T>
     {
-        this.ThrowIfNull();
-        return T.Parse(this._ref!, fmtProvider);
+        return this.Get<T>(fmtProvider);
     }
 
     /// <summary>
     /// Gets an not null value from the specified <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The type to convert the value to.</typeparam>
-    public T Get<T>() where T : struct
+    public T Get<T>(IFormatProvider? fmtProvider = null) where T : IParsable<T>
     {
         this.ThrowIfNull();
-        object result = Internal.Parseable.ParseInternal<T>(this._ref!);
-        return Unsafe.Unbox<T>(result);
+        return T.Parse(this._ref!, fmtProvider);
     }
 
     void ThrowIfNull()

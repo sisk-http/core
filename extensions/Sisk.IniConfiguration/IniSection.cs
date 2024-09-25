@@ -1,6 +1,6 @@
-﻿using Sisk.IniConfiguration.Serializer;
-using System.Collections;
+﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using Sisk.IniConfiguration.Serializer;
 
 namespace Sisk.IniConfiguration;
 
@@ -47,7 +47,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     internal IniSection(string name, (string, string)[] items)
     {
         this.items = items;
-        this.Name = name;
+        Name = name;
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     {
         get
         {
-            return this.items
+            return items
                 .Where(k => IniReader.IniNamingComparer.Compare(key, k.Item1) == 0)
                 .Select(k => k.Item2)
                 .ToArray();
@@ -72,7 +72,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     {
         get
         {
-            return this.items.Select(i => i.Item1).Distinct().ToArray();
+            return items.Select(i => i.Item1).Distinct().ToArray();
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     {
         get
         {
-            using (var e = this.GetEnumerator())
+            using (var e = GetEnumerator())
             {
                 while (e.MoveNext())
                 {
@@ -96,7 +96,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     /// <summary>
     /// Gets the number of properties in this INI section.
     /// </summary>
-    public int Count => this.items.Length;
+    public int Count => items.Length;
 
     /// <summary>
     /// Gets the last value defined in this INI section by their property name.
@@ -105,7 +105,7 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     /// <returns>The last value associated with the specified property name, or null if nothing is found.</returns>
     public string? GetOne(string key)
     {
-        return this.items
+        return items
             .Where(k => IniReader.IniNamingComparer.Compare(key, k.Item1) == 0)
             .Select(k => k.Item2)
             .LastOrDefault();
@@ -129,9 +129,9 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     /// <returns>An <see cref="bool"/> indicating if the specified property name is defined or not.</returns>
     public bool ContainsKey(string key)
     {
-        for (int i = 0; i < this.items.Length; i++)
+        for (int i = 0; i < items.Length; i++)
         {
-            (string, string?) item = this.items[i];
+            (string, string?) item = items[i];
 
             if (IniReader.IniNamingComparer.Compare(item.Item1, key) == 0)
                 return true;
@@ -142,11 +142,11 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
     /// <inheritdoc/>
     public IEnumerator<KeyValuePair<string, string[]>> GetEnumerator()
     {
-        string[] keysDistinct = this.items.Select(i => i.Item1).Distinct().ToArray();
+        string[] keysDistinct = items.Select(i => i.Item1).Distinct().ToArray();
 
         foreach (string key in keysDistinct)
         {
-            string[] valuesByKey = this.items
+            string[] valuesByKey = items
                 .Where(i => i.Item1 == key)
                 .Select(i => i.Item2)
                 .ToArray();
@@ -164,6 +164,6 @@ public sealed class IniSection : IReadOnlyDictionary<string, string[]>
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return this.GetEnumerator();
+        return GetEnumerator();
     }
 }

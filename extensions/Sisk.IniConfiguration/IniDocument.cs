@@ -1,5 +1,5 @@
-﻿using Sisk.IniConfiguration.Serializer;
-using System.Text;
+﻿using System.Text;
+using Sisk.IniConfiguration.Serializer;
 
 namespace Sisk.IniConfiguration;
 
@@ -16,7 +16,7 @@ public sealed class IniDocument
     /// <summary>
     /// Gets the global INI section, which is the primary section in the document.
     /// </summary>
-    public IniSection Global { get => this.Sections[0]; }
+    public IniSection Global { get => Sections[0]; }
 
     /// <summary>
     /// Creates an new <see cref="IniDocument"/> document from the specified
@@ -69,7 +69,7 @@ public sealed class IniDocument
 
     internal IniDocument(IniSection[] sections)
     {
-        this.Sections = IniSection.MergeIniSections(sections);
+        Sections = IniSection.MergeIniSections(sections);
     }
 
     /// <summary>
@@ -79,9 +79,9 @@ public sealed class IniDocument
     /// <returns>The <see cref="IniSection"/> object if found, or null if not defined.</returns>
     public IniSection? GetSection(string sectionName)
     {
-        for (int i = 0; i < this.Sections.Count; i++)
+        for (int i = 0; i < Sections.Count; i++)
         {
-            IniSection section = this.Sections[i];
+            IniSection section = Sections[i];
             if (IniReader.IniNamingComparer.Compare(section.Name, sectionName) == 0)
                 return section;
         }

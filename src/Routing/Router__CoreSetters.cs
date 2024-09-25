@@ -7,12 +7,12 @@
 // File name:   Router__CoreSetters.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Web;
+using Sisk.Core.Entity;
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Routing;
 

@@ -7,11 +7,11 @@
 // File name:   JsonConfigParser.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Core.Http.Hosting;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Sisk.Core.Http;
+using Sisk.Core.Http.Hosting;
 
 namespace Sisk.Core.Internal.ServiceProvider
 {

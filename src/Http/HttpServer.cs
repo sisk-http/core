@@ -7,11 +7,11 @@
 // File name:   HttpServer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Net;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
-using System.Net;
 
 namespace Sisk.Core.Http
 {

@@ -11,6 +11,7 @@ using System.Numerics;
 
 namespace Sisk.Core.Internal;
 
+// TODO: remove this class in 1.2
 internal class Parseable
 {
     public static object ParseInternal<T>(string value) where T : struct

@@ -7,11 +7,11 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Sisk.Core.Http;
 
 record struct RouteDictItem(System.Type type, Delegate lambda);
 

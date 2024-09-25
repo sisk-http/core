@@ -7,9 +7,9 @@
 // File name:   ListeningHostRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Internal;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http
 {

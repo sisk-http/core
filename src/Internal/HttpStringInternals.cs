@@ -7,9 +7,9 @@
 // File name:   HttpStringInternals.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Routing;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Internal
 {

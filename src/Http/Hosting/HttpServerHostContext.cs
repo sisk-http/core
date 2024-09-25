@@ -7,9 +7,9 @@
 // File name:   HttpServerHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
-using System.Text;
 
 namespace Sisk.Core.Http.Hosting;
 

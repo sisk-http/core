@@ -15,7 +15,7 @@ public sealed class IniReader : IDisposable
     /// <summary>
     /// Gets the <see cref="TextReader"/> which is providing data to this INI reader.
     /// </summary>
-    public TextReader Reader { get => this.reader; }
+    public TextReader Reader { get => reader; }
 
     /// <summary>
     /// Creates an new <see cref="IniReader"/> with the specified text reader.
@@ -32,21 +32,21 @@ public sealed class IniReader : IDisposable
     /// <returns>An <see cref="IniDocument"/> file containing all properties and data from the input stream.</returns>
     public IniDocument Read()
     {
-        this.ThrowIfDisposed();
+        ThrowIfDisposed();
 
         string lastSectionName = "__SISKINIGLOBAL__";
         List<(string, string)> items = new List<(string, string)>();
         List<IniSection> creatingSections = new List<IniSection>();
 
         int read = 0;
-        while ((read = this.reader.Peek()) >= 0)
+        while ((read = reader.Peek()) >= 0)
         {
             char c = (char)read;
 
             if (c is Token.SECTION_START)
             {
-                this.reader.Read();
-                string? sectionName = this.ReadUntil(new char[] { Token.SECTION_END })?.Trim();
+                reader.Read();
+                string? sectionName = ReadUntil(new char[] { Token.SECTION_END })?.Trim();
 
                 if (sectionName is null)
                     break;
@@ -57,26 +57,26 @@ public sealed class IniReader : IDisposable
                 items.Clear();
                 lastSectionName = sectionName;
 
-                this.SkipUntilNewLine();
+                SkipUntilNewLine();
             }
             else if (c is Token.COMMENT_1 or Token.COMMENT_2)
             {
-                this.SkipUntilNewLine();
+                SkipUntilNewLine();
             }
             else
             {
-                string? propertyName = this.ReadUntil(new char[] { Token.PROPERTY_DELIMITER, Token.NEW_LINE, Token.RETURN }, true);
+                string? propertyName = ReadUntil(new char[] { Token.PROPERTY_DELIMITER, Token.NEW_LINE, Token.RETURN }, true);
                 if (propertyName is null)
                     break;
 
-                string? propertyValue = this.ReadValue();
+                string? propertyValue = ReadValue();
                 if (propertyValue is null)
                     break;
 
                 if ((string.IsNullOrWhiteSpace(propertyName) && string.IsNullOrWhiteSpace(propertyValue)) == false)
                     items.Add((propertyName.Trim(), propertyValue));
 
-                this.SkipWhiteSpace();
+                SkipWhiteSpace();
             }
         }
 
@@ -91,27 +91,27 @@ public sealed class IniReader : IDisposable
 
     void SkipUntilNewLine()
     {
-        this.ReadUntil(new char[] { Token.NEW_LINE }, false);
+        ReadUntil(new char[] { Token.NEW_LINE }, false);
     }
 
     void SkipWhiteSpace()
     {
         int read = 0;
-        while ((read = this.reader.Peek()) >= 0)
+        while ((read = reader.Peek()) >= 0)
         {
             char c = (char)read;
             if (!char.IsWhiteSpace(c))
             {
                 break;
             }
-            else this.reader.Read();
+            else reader.Read();
         }
     }
 
     string? ReadValue()
     {
     readNext:
-        int read = this.reader.Read();
+        int read = reader.Read();
         if (read < 0)
         {
             return string.Empty;
@@ -130,15 +130,15 @@ public sealed class IniReader : IDisposable
             }
             if (c == Token.STRING_QUOTE_1)
             {
-                return this.ReadUntil(new char[] { Token.STRING_QUOTE_1 }, false);
+                return ReadUntil(new char[] { Token.STRING_QUOTE_1 }, false);
             }
             else if (c == Token.STRING_QUOTE_2)
             {
-                return this.ReadUntil(new char[] { Token.STRING_QUOTE_2 }, false);
+                return ReadUntil(new char[] { Token.STRING_QUOTE_2 }, false);
             }
             else
             {
-                return (c + this.ReadUntil(new char[] { Token.NEW_LINE }, true, true)).Trim();
+                return (c + ReadUntil(new char[] { Token.NEW_LINE }, true, true)).Trim();
             }
         }
     }
@@ -147,7 +147,7 @@ public sealed class IniReader : IDisposable
     {
         StringBuilder sb = new StringBuilder();
         int read = 0;
-        while ((read = this.reader.Read()) >= 0)
+        while ((read = reader.Read()) >= 0)
         {
             char c = (char)read;
 
@@ -158,7 +158,7 @@ public sealed class IniReader : IDisposable
             else if (breakOnComment && (c is Token.COMMENT_1 or Token.COMMENT_2))
             {
                 var s = sb.ToString();
-                this.SkipUntilNewLine();
+                SkipUntilNewLine();
                 return s;
             }
             else
@@ -179,27 +179,27 @@ public sealed class IniReader : IDisposable
 
     void ThrowIfDisposed()
     {
-        if (this.disposedValue)
+        if (disposedValue)
             throw new ObjectDisposedException(nameof(IniReader));
     }
 
     void Dispose(bool disposing)
     {
-        if (!this.disposedValue)
+        if (!disposedValue)
         {
             if (disposing)
             {
-                this.reader.Dispose();
+                reader.Dispose();
             }
 
-            this.disposedValue = true;
+            disposedValue = true;
         }
     }
 
     /// <inheritdoc/>
     public void Dispose()
     {
-        this.Dispose(disposing: true);
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 }
