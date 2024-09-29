@@ -14,7 +14,7 @@ namespace Sisk.Core.Routing;
 /// the specified prefix.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class RoutePrefixAttribute : Attribute
+public sealed class RoutePrefixAttribute : Attribute
 {
     /// <summary>
     /// Gets or sets the route prefix.

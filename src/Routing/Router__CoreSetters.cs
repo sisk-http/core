@@ -7,12 +7,12 @@
 // File name:   Router__CoreSetters.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Web;
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Web;
 
 namespace Sisk.Core.Routing;
 
@@ -240,10 +240,18 @@ public partial class Router
         {
             throw new InvalidOperationException(SR.Router_ReadOnlyException);
         }
+
         Route? collisonRoute;
-        if (!r.UseRegex && (collisonRoute = this.GetCollisionRoute(r.Method, r.Path)) != null)
+        if (!r.UseRegex)
         {
-            throw new ArgumentException(string.Format(SR.Router_Set_Collision, r, collisonRoute));
+            if (this.Prefix is string prefix)
+            {
+                r.Path = PathUtility.CombinePaths(prefix, r.Path);
+            }
+            if ((collisonRoute = this.GetCollisionRoute(r.Method, r.Path)) != null)
+            {
+                throw new ArgumentException(string.Format(SR.Router_Set_Collision, r, collisonRoute));
+            }
         }
 
         this._routesList!.Add(r);
@@ -416,7 +424,7 @@ public partial class Router
             bool methodMatch =
                 (method == RouteMethod.Any || r.Method == RouteMethod.Any) ||
                 method == r.Method;
-            bool pathMatch = HttpStringInternals.PathRouteMatch(r.Path, path, this.MatchRoutesIgnoreCase);
+            bool pathMatch = HttpStringInternals.IsRoutPatternMatch(r.Path, path, this.MatchRoutesIgnoreCase);
 
             if (methodMatch && pathMatch)
             {

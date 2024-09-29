@@ -59,14 +59,14 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
 
     /// <exclude/>
     /// <inheritdoc/>
-    public MultipartObject this[int index] => ((IReadOnlyList<MultipartObject>)this._items)[index];
+    public MultipartObject this[int index] => this._items[index];
 
     /// <exclude/>
     /// <inheritdoc/>
     public MultipartObject this[string name] => this.GetItem(name) ?? throw new KeyNotFoundException();
 
     /// <inheritdoc/>
-    public int Count => ((IReadOnlyCollection<MultipartObject>)this._items).Count;
+    public int Count => this._items.Count;
 
     /// <summary>
     /// Creates an array with the <see cref="MultipartObject"/> in this collection.

@@ -7,12 +7,12 @@
 // File name:   HttpServerHostContextBuilder.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Reflection;
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
 
 namespace Sisk.Core.Http.Hosting;
 
@@ -24,6 +24,12 @@ public sealed class HttpServerHostContextBuilder
     private readonly HttpServerHostContext _context;
     private PortableConfigurationBuilder? _portableConfiguration;
 
+    private readonly Router router;
+    private readonly HttpServerConfiguration configuration;
+    private readonly ListeningHost listeningHost;
+    private readonly ListeningPort listeningPort;
+    private readonly HttpServer server;
+
     /// <summary>
     /// Defines how the constructor should capture errors thrown within
     /// <see cref="UsePortableConfiguration"/> and display in the Console.
@@ -32,18 +38,18 @@ public sealed class HttpServerHostContextBuilder
 
     internal HttpServerHostContextBuilder()
     {
-        Router router = new Router();
-        HttpServerConfiguration configuration = new HttpServerConfiguration();
-        ListeningHost listeningHost = new ListeningHost();
-        ListeningPort listeningPort = ListeningPort.GetRandomPort();
+        this.router = new Router();
+        this.configuration = new HttpServerConfiguration();
+        this.listeningHost = new ListeningHost();
+        this.listeningPort = ListeningPort.GetRandomPort();
 
-        listeningHost.Ports = new ListeningPort[] { listeningPort };
-        listeningHost.Router = router;
-        configuration.ListeningHosts.Add(listeningHost);
+        this.listeningHost.Ports = [this.listeningPort];
+        this.listeningHost.Router = this.router;
+        this.configuration.ListeningHosts.Add(this.listeningHost);
 
-        HttpServer server = new HttpServer(configuration);
+        this.server = new HttpServer(this.configuration);
 
-        this._context = new HttpServerHostContext(server);
+        this._context = new HttpServerHostContext(this.server);
     }
 
     /// <summary>
@@ -117,7 +123,12 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="port">The port the server will listen on.</param>
     public HttpServerHostContextBuilder UseListeningPort(ushort port)
     {
-        this._context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(port);
+        var lport = new ListeningPort(port);
+        this.listeningHost.Ports[0] = lport;
+        if (lport.Path != "/")
+        {
+            this.router.Prefix = lport.Path;
+        }
         return this;
     }
 
@@ -127,7 +138,12 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
     public HttpServerHostContextBuilder UseListeningPort(string uri)
     {
-        this._context.ServerConfiguration.ListeningHosts[0].Ports[0] = new ListeningPort(uri);
+        var port = new ListeningPort(uri);
+        this.listeningHost.Ports[0] = port;
+        if (port.Path != "/")
+        {
+            this.router.Prefix = port.Path;
+        }
         return this;
     }
 
@@ -137,7 +153,11 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the HTTP server will listen to.</param>
     public HttpServerHostContextBuilder UseListeningPort(ListeningPort listeningPort)
     {
-        this._context.ServerConfiguration.ListeningHosts[0].Ports[0] = listeningPort;
+        this.listeningHost.Ports[0] = listeningPort;
+        if (listeningPort.Path != "/")
+        {
+            this.router.Prefix = listeningPort.Path;
+        }
         return this;
     }
 

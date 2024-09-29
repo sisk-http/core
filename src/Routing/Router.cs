@@ -7,11 +7,11 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Sisk.Core.Http;
 
 record struct RouteDictItem(System.Type type, Delegate lambda);
 
@@ -59,6 +59,12 @@ namespace Sisk.Core.Routing
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
         /// </summary>
         public bool MatchRoutesIgnoreCase { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the prefix which will be applied to all next defining routes in this
+        /// router.
+        /// </summary>
+        public string? Prefix { get; set; }
 
         /// <summary>
         /// Creates an new <see cref="Router"/> instance with default values.

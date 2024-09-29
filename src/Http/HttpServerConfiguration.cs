@@ -37,7 +37,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server access messages to.
         /// </summary>
-        public LogStream? AccessLogsStream { get; set; } = null;
+        public LogStream? AccessLogsStream { get; set; } = LogStream.ConsoleOutput;
 
         /// <summary>
         /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server error transcriptions to.

@@ -51,7 +51,15 @@ public sealed class SizeHelper
     /// <param name="byteCount">The total number of bytes to convert.</param>
     /// <returns>A string representing the byte count in a human-readable format.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string HumanReadableSize(long byteCount)
+    public static string HumanReadableSize(long byteCount) => HumanReadableSize((double)byteCount);
+
+    /// <summary>
+    /// Converts a byte count into a human-readable string representation.
+    /// </summary>
+    /// <param name="byteCount">The total number of bytes to convert.</param>
+    /// <returns>A string representing the byte count in a human-readable format.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string HumanReadableSize(double byteCount)
     {
         if (byteCount < UnitKb)
         {

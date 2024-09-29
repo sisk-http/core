@@ -7,14 +7,14 @@
 // File name:   HttpServer__Core.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
+using Sisk.Core.Internal;
+using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Sisk.Core.Entity;
-using Sisk.Core.Internal;
-using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
 
@@ -22,6 +22,9 @@ public partial class HttpServer
 {
     internal static void ApplyHttpContentHeaders(HttpListenerResponse response, HttpContentHeaders contentHeaders)
     {
+        // content-length is applied outside this method
+        // do not include that here
+
         if (contentHeaders.ContentType?.ToString() is { } ContentType
             && response.Headers.GetValues(HttpKnownHeaderNames.ContentType)?.Length is 0 or null)
             response.ContentType = ContentType;
@@ -44,11 +47,11 @@ public partial class HttpServer
 
         if (contentHeaders.LastModified is { } LastModified
             && response.Headers.GetValues(HttpKnownHeaderNames.LastModified)?.Length is 0 or null)
-            response.AppendHeader(HttpKnownHeaderNames.LastModified, LastModified.ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
+            response.AppendHeader(HttpKnownHeaderNames.LastModified, LastModified.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
 
         if (contentHeaders.Expires is { } Expires
             && response.Headers.GetValues(HttpKnownHeaderNames.Expires)?.Length is 0 or null)
-            response.AppendHeader(HttpKnownHeaderNames.Expires, Expires.ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
+            response.AppendHeader(HttpKnownHeaderNames.Expires, Expires.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH:mm:ss 'GMT'"));
 
         if (contentHeaders.ContentLanguage.Count > 0
             && response.Headers.GetValues(HttpKnownHeaderNames.ContentLanguage)?.Length is 0 or null)
@@ -209,7 +212,7 @@ public partial class HttpServer
 
             // detect the listening host for this listener
             ListeningHost? matchedListeningHost = this._onlyListeningHost
-                ?? this.ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.LocalEndPoint.Port);
+                ?? this.ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost(dnsSafeHost, baseRequest.Url!.AbsolutePath, baseRequest.LocalEndPoint.Port);
 
             if (matchedListeningHost is null)
             {
@@ -241,7 +244,7 @@ public partial class HttpServer
             #region Step 2 - Request validation
 
             if (this.ServerConfiguration.IncludeRequestIdHeader)
-                baseResponse.Headers.Set(flag.HeaderNameRequestId, request.RequestId.ToString());
+                baseResponse.Headers.Set(flag.HeaderNameRequestId, baseRequest.RequestTraceIdentifier.ToString());
 
             if (flag.SendSiskHeader)
                 baseResponse.Headers.Set(HttpKnownHeaderNames.XPoweredBy, PoweredBy);

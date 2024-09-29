@@ -381,6 +381,8 @@ public sealed class SslProxy : IDisposable
                             {
                                 AutoResetEvent waitEvent = new AutoResetEvent(false);
 
+                                Logger.LogInformation($"#{clientId} << entering ws");
+
                                 SerializerUtils.CopyBlocking(gatewayStream, sslStream, waitEvent);
                                 SerializerUtils.CopyBlocking(sslStream, gatewayStream, waitEvent);
 
@@ -388,13 +390,13 @@ public sealed class SslProxy : IDisposable
                             }
                             else if (resContentLength > 0)
                             {
+                                Logger.LogInformation($"#{clientId} << {resContentLength} bytes written");
                                 SerializerUtils.CopyStream(gatewayStream, sslStream, resContentLength, CancellationToken.None);
                             }
                             else if (isChunked)
                             {
-                                // SerializerUtils.CopyUntil(clientStream, sslStream, Constants.CHUNKED_EOF);
-
                                 AutoResetEvent waitEvent = new AutoResetEvent(false);
+                                Logger.LogInformation($"#{clientId} << entering chunked data");
                                 SerializerUtils.CopyUntilBlocking(gatewayStream, sslStream, Constants.CHUNKED_EOF, waitEvent);
                                 waitEvent.WaitOne();
                             }

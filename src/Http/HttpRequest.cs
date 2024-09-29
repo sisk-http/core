@@ -7,14 +7,14 @@
 // File name:   HttpRequest.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Diagnostics;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using System.Diagnostics;
+using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Sisk.Core.Http
 {
@@ -431,6 +431,7 @@ namespace Sisk.Core.Http
         /// Gets a query value using an case-insensitive search.
         /// </summary>
         /// <param name="queryKeyName">The query value name.</param>
+        [Obsolete("This method is deprecated and will be removed in later Sisk versions. Please, use the Query property instead.")]
         public string? GetQueryValue(string queryKeyName) => this.Query[queryKeyName].Value;
 
         /// <summary>
@@ -438,6 +439,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <typeparam name="T">The parseable type which will be converted to.</typeparam>
         /// <param name="queryKeyName">The name of the URL parameter. The search is ignore-case.</param>
+        [Obsolete("This method is deprecated and will be removed in later Sisk versions. Please, use the Query property instead.")]
         public T GetQueryValue<T>(string queryKeyName) where T : IParsable<T>
         {
             try

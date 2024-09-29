@@ -18,14 +18,14 @@ namespace Sisk.Core.Http.Handlers;
 public abstract class HttpServerHandler
 {
     /// <summary>
-    /// Method that is called immediately before starting the <see cref="HttpServer"/>.
+    /// Event that is called immediately before starting the <see cref="HttpServer"/>.
     /// </summary>
     /// <param name="server">The HTTP server entity which is starting.</param>
     protected virtual void OnServerStarting(HttpServer server) { }
     internal void InvokeOnServerStarting(HttpServer server) => this.OnServerStarting(server);
 
     /// <summary>
-    /// Method that is called immediately after starting the <see cref="HttpServer"/>, when it's
+    /// Event that is called immediately after starting the <see cref="HttpServer"/>, when it's
     /// ready and listening.
     /// </summary>
     /// <param name="server">The HTTP server entity which is ready.</param>
@@ -33,7 +33,7 @@ public abstract class HttpServerHandler
     internal void InvokeOnServerStarted(HttpServer server) => this.OnServerStarted(server);
 
     /// <summary>
-    /// Method that is called before the <see cref="HttpServer"/> stop, when it is
+    /// Event that is called before the <see cref="HttpServer"/> stop, when it is
     /// stopping from listening requests.
     /// </summary>
     /// <param name="server">The HTTP server entity which is stopping.</param>
@@ -41,7 +41,7 @@ public abstract class HttpServerHandler
     internal void InvokeOnServerStopping(HttpServer server) => this.OnServerStopping(server);
 
     /// <summary>
-    /// Method that is called after the <see cref="HttpServer"/> is stopped, meaning
+    /// Event that is called after the <see cref="HttpServer"/> is stopped, meaning
     /// it has stopped from listening to requests.
     /// </summary>
     /// <param name="server">The HTTP server entity which has stopped.</param>
@@ -49,14 +49,14 @@ public abstract class HttpServerHandler
     internal void InvokeOnServerStopped(HttpServer server) => this.OnServerStopped(server);
 
     /// <summary>
-    /// Method that is called when an <see cref="Router"/> is binded to the HTTP server.
+    /// Event that is called when an <see cref="Router"/> is binded to the HTTP server.
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>
     protected virtual void OnSetupRouter(Router router) { }
     internal void InvokeOnSetupRouter(Router router) => this.OnSetupRouter(router);
 
     /// <summary>
-    /// Method that is called when an HTTP context is created within an
+    /// Event that is called when an HTTP context is created within an
     /// <see cref="HttpRequest"/> object.
     /// </summary>
     /// <param name="contextBag">The creating context bag.</param>
@@ -64,7 +64,7 @@ public abstract class HttpServerHandler
     internal void InvokeOnContextBagCreated(TypedValueDictionary contextBag) => this.OnContextBagCreated(contextBag);
 
     /// <summary>
-    /// Method that is called when an <see cref="HttpRequest"/> is received in the
+    /// Event that is called when an <see cref="HttpRequest"/> is received in the
     /// HTTP server.
     /// </summary>
     /// <param name="request">The connecting HTTP request entity.</param>
@@ -72,7 +72,7 @@ public abstract class HttpServerHandler
     internal void InvokeOnHttpRequestOpen(HttpRequest request) => this.OnHttpRequestOpen(request);
 
     /// <summary>
-    /// Method that is called when an <see cref="HttpRequest"/> is closed in the
+    /// Event that is called when an <see cref="HttpRequest"/> is closed in the
     /// HTTP server.
     /// </summary>
     /// <param name="result">The result of the execution of the request.</param>
@@ -80,7 +80,7 @@ public abstract class HttpServerHandler
     internal void InvokeOnHttpRequestClose(HttpServerExecutionResult result) => this.OnHttpRequestClose(result);
 
     /// <summary>
-    /// Method that is called when an exception is caught in the HTTP server. This method is called
+    /// Event that is called when an exception is caught in the HTTP server. This method is called
     /// regardless of whether <see cref="HttpServerConfiguration.ThrowExceptions"/> is enabled or not.
     /// </summary>
     /// <param name="exception">The exception object.</param>

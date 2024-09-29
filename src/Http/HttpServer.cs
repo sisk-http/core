@@ -7,11 +7,11 @@
 // File name:   HttpServer.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using System.Net;
 
 namespace Sisk.Core.Http
 {
@@ -36,7 +36,7 @@ namespace Sisk.Core.Http
         private ListeningHost? _onlyListeningHost;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection();
-        internal List<string>? listeningPrefixes;
+        internal HashSet<string>? listeningPrefixes;
         internal HttpServerHandlerRepository handler;
 
         internal AutoResetEvent waitNextEvent = new AutoResetEvent(false);
@@ -79,6 +79,16 @@ namespace Sisk.Core.Http
         {
             var builder = new HttpServerHostContextBuilder();
             builder.UseListeningPort(port);
+            return builder;
+        }
+
+        /// <summary>
+        /// Builds an empty <see cref="HttpServerHostContext"/> context with predefined listening host string.
+        /// </summary>
+        public static HttpServerHostContextBuilder CreateBuilder(string listeningHost)
+        {
+            var builder = new HttpServerHostContextBuilder();
+            builder.UseListeningPort(listeningHost);
             return builder;
         }
 
@@ -276,18 +286,24 @@ namespace Sisk.Core.Http
                 throw new ObjectDisposedException(nameof(HttpServer));
             }
 
-            this.listeningPrefixes = new List<string>();
-            foreach (ListeningHost listeningHost in this.ServerConfiguration.ListeningHosts)
+            this.listeningPrefixes = new HashSet<string>();
+            var safelisteningPrefixes = new HashSet<string>();
+
+            for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++)
             {
-                foreach (ListeningPort port in listeningHost.Ports)
+                ListeningHost listeningHost = this.ServerConfiguration.ListeningHosts[i];
+
+                for (int j = 0; j < listeningHost.Ports.Length; j++)
                 {
-                    string prefix = port.ToString();
-                    if (!this.listeningPrefixes.Contains(prefix)) this.listeningPrefixes.Add(prefix);
+                    var port = listeningHost.Ports[j];
+
+                    safelisteningPrefixes.Add(port.ToString(false));
+                    this.listeningPrefixes.Add(port.ToString(true));
                 }
             }
 
             this.httpListener.Prefixes.Clear();
-            foreach (string prefix in this.listeningPrefixes)
+            foreach (string prefix in safelisteningPrefixes)
                 this.httpListener.Prefixes.Add(prefix);
 
             this._isListening = true;

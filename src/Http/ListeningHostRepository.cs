@@ -7,16 +7,16 @@
 // File name:   ListeningHostRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Collections;
 using System.Runtime.InteropServices;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http
 {
     /// <summary>
     /// Represents an fluent repository of <see cref="ListeningHost"/> that can add, modify, or remove listening hosts while an <see cref="HttpServer"/> is running.
     /// </summary>
-    public sealed class ListeningHostRepository : ICollection<ListeningHost>, IEnumerable<ListeningHost>
+    public sealed class ListeningHostRepository : IList<ListeningHost>
     {
         private readonly List<ListeningHost> _hosts = new List<ListeningHost>();
 
@@ -109,13 +109,10 @@ namespace Sisk.Core.Http
             return this.GetEnumerator();
         }
 
-        /// <summary>
-        /// Gets or sets a listening host through its index.
-        /// </summary>
-        /// <param name="index">The Listening Host index</param>
+        /// <inheritdoc/>
         public ListeningHost this[int index] { get => this._hosts[index]; set => this._hosts[index] = value; }
 
-        internal ListeningHost? GetRequestMatchingListeningHost(string incomingHost, in int incomingPort)
+        internal ListeningHost? GetRequestMatchingListeningHost(string incomingHost, string path, int incomingPort)
         {
             lock (this._hosts)
             {
@@ -129,7 +126,9 @@ namespace Sisk.Core.Http
                     {
                         ref ListeningPort p = ref ports[P];
 
-                        if (p.Port == incomingPort && HttpStringInternals.IsDnsMatch(p.Hostname, incomingHost))
+                        if (p.Port == incomingPort
+                            && HttpStringInternals.IsDnsMatch(p.Hostname, incomingHost)
+                            && path.StartsWith(p.Path, StringComparison.CurrentCultureIgnoreCase))
                         {
                             return h;
                         }
@@ -137,6 +136,24 @@ namespace Sisk.Core.Http
                 }
             }
             return null;
+        }
+
+        /// <inheritdoc/>
+        public int IndexOf(ListeningHost item)
+        {
+            return this._hosts.IndexOf(item);
+        }
+
+        /// <inheritdoc/>
+        public void Insert(int index, ListeningHost item)
+        {
+            this._hosts.Insert(index, item);
+        }
+
+        /// <inheritdoc/>
+        public void RemoveAt(int index)
+        {
+            this._hosts.RemoveAt(index);
         }
     }
 }

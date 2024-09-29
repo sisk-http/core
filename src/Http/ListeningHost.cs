@@ -102,13 +102,22 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Creates an new <see cref="ListeningHost"/> instance with given array of <see cref="ListeningPort"/>.
+        /// </summary>
+        /// <param name="ports">The array of <see cref="ListeningPort"/> to listen in the <see cref="ListeningHost"/>.</param>
+        public ListeningHost(params ListeningPort[] ports)
+        {
+            this._ports = ports;
+        }
+
+        /// <summary>
         /// Creates an new <see cref="ListeningHost"/> instance with given URL.
         /// </summary>
         /// <param name="uri">The well formatted URL with scheme, hostname and port.</param>
         /// <param name="r">The router which will handle this listener requests.</param>
         public ListeningHost(string uri, Router r)
         {
-            this.Ports = new ListeningPort[] { new ListeningPort(uri) };
+            this.Ports = [new ListeningPort(uri)];
             this.Router = r;
         }
     }

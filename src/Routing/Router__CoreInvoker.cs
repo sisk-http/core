@@ -7,14 +7,14 @@
 // File name:   Router__CoreInvoker.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Web;
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Routing;
 
@@ -123,6 +123,9 @@ public partial class Router
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
+        // IsReadOnly ensures that no route will be added or removed from the list during the
+        // span iteration
+        // 
         Span<Route> rspan = CollectionsMarshal.AsSpan(this._routesList);
         ref Route rPointer = ref MemoryMarshal.GetReference(rspan);
         for (int i = 0; i < rspan.Length; i++)
@@ -139,7 +142,7 @@ public partial class Router
             }
             else
             {
-                pathTest = HttpStringInternals.IsPathMatch(route.Path, reqUrlTest, this.MatchRoutesIgnoreCase);
+                pathTest = HttpStringInternals.IsReqPathMatch(route.Path, reqUrlTest, this.MatchRoutesIgnoreCase);
             }
 
             if (!pathTest.IsMatched)

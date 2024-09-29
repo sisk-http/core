@@ -39,7 +39,7 @@ namespace Sisk.Core.Http
         ///         Default value: <c>"X-Request-Id"</c>
         ///     </para>
         /// </summary>
-        public string HeaderNameRequestId = "X-Request-Id";
+        public string HeaderNameRequestId = HttpKnownHeaderNames.XRequestID;
 
         /// <summary>
         /// Determines if the HTTP server automatically should send CORS headers if set.

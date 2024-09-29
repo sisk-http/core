@@ -13,7 +13,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net;
-using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Internal;
 
@@ -22,7 +21,6 @@ static class HttpStatusDescription
     internal static string? Get(HttpStatusCode code) =>
         Get((int)code);
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal static string Get(int code) =>
         code switch
         {
@@ -67,8 +65,9 @@ static class HttpStatusDescription
             413 => "Request Entity Too Large",
             414 => "Request-Uri Too Long",
             415 => "Unsupported Media Type",
-            416 => "Requested Range Not Satisfiable",
+            416 => "Range Not Satisfiable",
             417 => "Expectation Failed",
+            418 => "I'm a Teapot",
             421 => "Misdirected Request",
             422 => "Unprocessable Entity",
             423 => "Locked",

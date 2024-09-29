@@ -17,6 +17,40 @@ namespace Sisk.Core.Http;
 public static class DefaultMessagePage
 {
     /// <summary>
+    /// Gets or sets the page CSS string used by the page code.
+    /// </summary>
+    public static string DefaultPageCSS { get; set; } =
+        """
+        body {
+            background-color: #eeeeee;
+            font-family: sans-serif;
+        }
+        
+        main {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #dddddd;
+            display: block;
+            margin: 30px auto 0 auto;
+            max-width: 600px;
+        }
+        
+        h1 {
+            margin: 0;
+        }
+        
+        hr {
+            border-top: 1px solid #bbbbbb;
+            border-bottom: none;
+        }
+        
+        small {
+            color: #777777;
+        }
+        """;
+
+    /// <summary>
     /// Creates an static default page with given header and description.
     /// </summary>
     /// <param name="firstHeader">The static page header text.</param>
@@ -32,38 +66,12 @@ public static class DefaultMessagePage
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>{firstHeader}</title>
+                    <title>{{firstHeader}}</title>
                 </head>
 
                 <body>
                     <style>
-                        body {
-                            background-color: #eeeeee;
-                            font-family: sans-serif;
-                        }
-
-                        main {
-                            background-color: white;
-                            padding: 25px;
-                            border-radius: 10px;
-                            border: 1px solid #dddddd;
-                            display: block;
-                            margin: 30px auto 0 auto;
-                            max-width: 600px;
-                        }
-
-                        h1 {
-                            margin: 0;
-                        }
-
-                        hr {
-                            border-top: 1px solid #bbbbbb;
-                            border-bottom: none;
-                        }
-
-                        small {
-                            color: #777777;
-                        }
+                        {{DefaultPageCSS}}
                     </style>
                     <main>
                         <h1>{{firstHeader}}</h1>

@@ -64,7 +64,7 @@ namespace Sisk.Core.Routing
     /// is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class RegexRouteAttribute : RouteAttribute
+    public sealed class RegexRouteAttribute : RouteAttribute
     {
         /// <summary>
         /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with given path.
@@ -81,7 +81,7 @@ namespace Sisk.Core.Routing
     /// Represents a mapping to an HTTP GET route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class RouteGetAttribute : RouteAttribute
+    public sealed class RouteGetAttribute : RouteAttribute
     {
         /// <summary>
         /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with given path.
@@ -99,7 +99,7 @@ namespace Sisk.Core.Routing
     /// Represents a mapping to an HTTP POST route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class RoutePostAttribute : RouteAttribute
+    public sealed class RoutePostAttribute : RouteAttribute
     {
         /// <summary>
         /// Creates an new <see cref="RoutePostAttribute"/> attribute instance with given path.
@@ -117,7 +117,7 @@ namespace Sisk.Core.Routing
     /// Represents a mapping to an HTTP PUT route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class RoutePutAttribute : RouteAttribute
+    public sealed class RoutePutAttribute : RouteAttribute
     {
         /// <summary>
         /// Creates an new <see cref="RoutePutAttribute"/> attribute instance with given path.
@@ -135,7 +135,7 @@ namespace Sisk.Core.Routing
     /// Represents a mapping to an HTTP PATCH route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class RoutePatchAttribute : RouteAttribute
+    public sealed class RoutePatchAttribute : RouteAttribute
     {
         /// <summary>
         /// Creates an new <see cref="RoutePatchAttribute"/> attribute instance with given path.
@@ -153,7 +153,7 @@ namespace Sisk.Core.Routing
     /// Represents a mapping to an HTTP DELETE route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class RouteDeleteAttribute : RouteAttribute
+    public sealed class RouteDeleteAttribute : RouteAttribute
     {
         /// <summary>
         /// Creates an new <see cref="RouteDeleteAttribute"/> attribute instance with given path.

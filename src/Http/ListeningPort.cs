@@ -56,6 +56,8 @@ namespace Sisk.Core.Http
         /// </summary>
         public bool Secure { get; }
 
+        public string Path { get; }
+
         /// <summary>
         /// Creates an new <see cref="ListeningPort"/> instance with default parameters.
         /// </summary>
@@ -64,6 +66,7 @@ namespace Sisk.Core.Http
             this.Hostname = "localhost";
             this.Port = 80;
             this.Secure = false;
+            this.Path = "/";
         }
 
         /// <summary>
@@ -75,6 +78,7 @@ namespace Sisk.Core.Http
             this.Hostname = "localhost";
             this.Port = port;
             this.Secure = this.Port == 443;
+            this.Path = "/";
         }
 
         /// <summary>
@@ -87,6 +91,7 @@ namespace Sisk.Core.Http
             this.Hostname = "localhost";
             this.Port = port;
             this.Secure = secure;
+            this.Path = "/";
         }
 
         /// <summary>
@@ -100,6 +105,23 @@ namespace Sisk.Core.Http
             this.Hostname = hostname;
             this.Port = port;
             this.Secure = secure;
+            this.Path = "/";
+        }
+
+        /// <summary>
+        /// Creates an new <see cref="ListeningPort"/> instance with the specified port, secure context, hostname
+        /// and path.
+        /// </summary>
+        /// <param name="port">The port the server will listen on.</param>
+        /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
+        /// <param name="hostname">The hostname DNS pattern the server will listen to.</param>
+        /// <param name="path">The prefix path.</param>
+        public ListeningPort(bool secure, string hostname, ushort port, string path)
+        {
+            this.Hostname = hostname;
+            this.Port = port;
+            this.Secure = secure;
+            this.Path = path;
         }
 
         /// <summary>
@@ -113,12 +135,19 @@ namespace Sisk.Core.Http
                 this.Hostname = "localhost";
                 this.Port = port;
                 this.Secure = port == 443;
+                this.Path = "/";
             }
             else if (Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var uriResult))
             {
+                if (uriResult.Scheme != "http" && uriResult.Scheme != "https")
+                {
+                    throw new ArgumentException(SR.ListeningPort_Parser_InvalidInput);
+                }
+
                 this.Hostname = uriResult.Host;
                 this.Port = (ushort)uriResult.Port;
                 this.Secure = string.Compare(uriResult.Scheme, "https", true) == 0;
+                this.Path = uriResult.AbsolutePath;
             }
             else
             {
@@ -153,7 +182,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Hostname, this.Port, this.Secure);
+            return HashCode.Combine(this.Hostname, this.Port, this.Secure, this.Path);
         }
 
         /// <summary>
@@ -173,7 +202,23 @@ namespace Sisk.Core.Http
         /// </summary>
         public override string ToString()
         {
-            return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}/";
+            return this.ToString(true);
+        }
+
+        /// <summary>
+        /// Gets an string representation of this <see cref="ListeningPort"/>.
+        /// </summary>
+        /// <param name="includePath">Optional. Defines whether the path should be included in the result string.</param>
+        public string ToString(bool includePath = true)
+        {
+            if (includePath)
+            {
+                return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}{this.Path}";
+            }
+            else
+            {
+                return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}/";
+            }
         }
 
         /// <summary>

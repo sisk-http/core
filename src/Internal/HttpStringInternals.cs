@@ -7,17 +7,19 @@
 // File name:   HttpStringInternals.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Collections.Specialized;
-using System.Runtime.CompilerServices;
 using Sisk.Core.Routing;
+using System.Collections.Specialized;
 
 namespace Sisk.Core.Internal
 {
     internal static class HttpStringInternals
     {
-        public record PathMatchResult(bool IsMatched, NameValueCollection? Query);
+        public record struct PathMatchResult(bool IsMatched, NameValueCollection? Query);
 
-        public static bool PathRouteMatch(ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase)
+        /// <summary>
+        /// Test if two routes matches their patterns, by comparing two <see cref="Route"/>s.
+        /// </summary>
+        public static bool IsRoutPatternMatch(ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase)
         {
             const char SEPARATOR = '/';
             const string ROUTE_GROUP_START = "<";
@@ -67,8 +69,11 @@ namespace Sisk.Core.Internal
             return matchCount == splnA;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static PathMatchResult IsPathMatch(ReadOnlySpan<char> pathPattern, ReadOnlySpan<char> requestPath, bool ignoreCase)
+        /// <summary>
+        /// Tests if one request path matches the specified route pattern, by comparing one ROUTE PATH and one REQUEST PATH. This
+        /// method allocates route parameters.
+        /// </summary>
+        public static PathMatchResult IsReqPathMatch(ReadOnlySpan<char> pathPattern, ReadOnlySpan<char> requestPath, bool ignoreCase)
         {
             const char SEPARATOR = '/';
             const string ROUTE_GROUP_START = "<";
@@ -79,7 +84,7 @@ namespace Sisk.Core.Internal
                 return new PathMatchResult(true, null);
             }
 
-            NameValueCollection? query = null;
+            NameValueCollection? pathParams = null;
 
             int pathPatternSepCount = pathPattern.Count(SEPARATOR);
             int reqsPatternSepCount = requestPath.Count(SEPARATOR);
@@ -92,7 +97,7 @@ namespace Sisk.Core.Internal
 
             if (splnA != splnB)
             {
-                return new PathMatchResult(false, query);
+                return new PathMatchResult(false, pathParams);
             }
 
             for (int i = 0; i < splnA; i++)
@@ -105,20 +110,20 @@ namespace Sisk.Core.Internal
 
                 if (pathPtt.StartsWith(ROUTE_GROUP_START) && pathPtt.EndsWith(ROUTE_GROUP_END))
                 {
-                    if (query is null) query = new NameValueCollection();
+                    if (pathParams is null) pathParams = new NameValueCollection();
                     string queryValueName = new string(pathPtt[new Range(1, pathPtt.Length - 1)]);
-                    query.Add(queryValueName, new string(reqsPtt));
+                    pathParams.Add(queryValueName, new string(reqsPtt));
                 }
                 else
                 {
                     if (pathPtt.CompareTo(reqsPtt, ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0)
                     {
-                        return new PathMatchResult(false, query);
+                        return new PathMatchResult(false, pathParams);
                     }
                 }
             }
 
-            return new PathMatchResult(true, query);
+            return new PathMatchResult(true, pathParams);
         }
 
         public static bool IsDnsMatch(in string wildcardPattern, string subject)
@@ -156,16 +161,16 @@ namespace Sisk.Core.Internal
                 }
                 else
                 {
-                    return isWildcardMatchRgx(wildcardPattern, subject, comparer);
+                    return WildcardMatch(wildcardPattern, subject, comparer);
                 }
             }
             else
             {
-                return isWildcardMatchRgx(wildcardPattern, subject, comparer);
+                return WildcardMatch(wildcardPattern, subject, comparer);
             }
         }
 
-        private static bool isWildcardMatchRgx(in string pattern, in string subject, StringComparison comparer)
+        private static bool WildcardMatch(in string pattern, in string subject, StringComparison comparer)
         {
             string[] parts = pattern.Split('*');
             if (parts.Length <= 1)
