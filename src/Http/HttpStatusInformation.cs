@@ -23,7 +23,7 @@ namespace Sisk.Core.Http
         private readonly string __description;
 
         /// <summary>
-        /// Gets or sets the short description of the HTTP message.
+        /// Gets the short description of the HTTP message.
         /// </summary>
         /// <remarks>
         /// Custom status descriptions is only supported for plain HTTP/1.1 and 1.0 transfers.
@@ -34,7 +34,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets or sets the numeric HTTP status code of the HTTP message.
+        /// Gets the numeric HTTP status code of the HTTP message.
         /// </summary>
         public int StatusCode
         {

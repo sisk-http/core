@@ -42,20 +42,23 @@ namespace Sisk.Core.Http
     public readonly struct ListeningPort : IEquatable<ListeningPort>, IParsable<ListeningPort>
     {
         /// <summary>
-        /// Gets or sets the DNS hostname pattern where this listening port will refer.
+        /// Gets the DNS hostname pattern where this listening port will refer.
         /// </summary>
         public string Hostname { get; }
 
         /// <summary>
-        /// Gets or sets the port where this listening port will refer.
+        /// Gets the port where this listening port will refer.
         /// </summary>
         public ushort Port { get; }
 
         /// <summary>
-        /// Gets or sets whether the server should listen to this port securely (SSL).
+        /// Gets whether the server should listen to this port securely (SSL).
         /// </summary>
         public bool Secure { get; }
 
+        /// <summary>
+        /// Gets where this listening port prefix is listening to.
+        /// </summary>
         public string Path { get; }
 
         /// <summary>

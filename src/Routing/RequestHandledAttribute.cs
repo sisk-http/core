@@ -14,15 +14,7 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
     /// </summary>
-    public class RequestHandlerAttribute<[DynamicallyAccessedMembers(
-              DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.NonPublicMethods
-            | DynamicallyAccessedMemberTypes.NonPublicFields
-            | DynamicallyAccessedMemberTypes.NonPublicConstructors
-        )] T> : RequestHandlerAttribute where T : IRequestHandler
+    public class RequestHandlerAttribute<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : RequestHandlerAttribute where T : IRequestHandler
     {
         /// <summary>
         /// Creates an new instance of this <see cref="RequestHandlerAttribute{T}"/> class.
@@ -50,15 +42,7 @@ namespace Sisk.Core.Routing
         /// Gets or sets the type that implements <see cref="IRequestHandler"/> which will be instantiated.
         /// </summary>
 
-        [DynamicallyAccessedMembers(
-              DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.NonPublicMethods
-            | DynamicallyAccessedMemberTypes.NonPublicFields
-            | DynamicallyAccessedMemberTypes.NonPublicConstructors
-        )]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type RequestHandlerType { get; set; }
 
         /// <summary>
@@ -70,15 +54,7 @@ namespace Sisk.Core.Routing
         /// Creates a new instance of this attribute with the informed parameters.
         /// </summary>
         /// <param name="handledBy">The type that implements <see cref="IRequestHandler"/> which will be instantiated.</param>
-        public RequestHandlerAttribute([DynamicallyAccessedMembers(
-              DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.NonPublicMethods
-            | DynamicallyAccessedMemberTypes.NonPublicFields
-            | DynamicallyAccessedMemberTypes.NonPublicConstructors
-        )] Type handledBy)
+        public RequestHandlerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type handledBy)
         {
             this.RequestHandlerType = handledBy;
             this.ConstructorArguments = Array.Empty<object?>();
@@ -86,8 +62,7 @@ namespace Sisk.Core.Routing
 
         internal IRequestHandler Activate()
         {
-            IRequestHandler? rhandler = Activator.CreateInstance(this.RequestHandlerType, this.ConstructorArguments) as IRequestHandler;
-            if (rhandler is null)
+            if (Activator.CreateInstance(this.RequestHandlerType, this.ConstructorArguments) is not IRequestHandler rhandler)
             {
                 throw new ArgumentException(SR.Format(SR.RequestHandler_ActivationException, this.RequestHandlerType.FullName, this.ConstructorArguments.Length));
             }

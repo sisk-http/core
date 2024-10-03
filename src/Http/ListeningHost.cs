@@ -18,7 +18,6 @@ namespace Sisk.Core.Http
     public sealed class ListeningHost
     {
         private ListeningPort[] _ports = null!;
-        internal ushort[] _numericPorts = null!;
 
         /// <summary>
         /// Determines if another object is equals to this class instance.
@@ -85,7 +84,6 @@ namespace Sisk.Core.Http
             set
             {
                 this._ports = value;
-                this._numericPorts = value.Select(p => p.Port).ToArray();
             }
         }
 
