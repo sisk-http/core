@@ -158,6 +158,15 @@ namespace Sisk.Core.Http
             this.Content = content;
         }
 
+        /// <summary>
+        /// Creates an new <see cref="HttpResponse"/> instance with given status code.
+        /// </summary>
+        /// <param name="status">The <see cref="HttpStatusInformation"/> of this HTTP response.</param>
+        public HttpResponse(in HttpStatusInformation status) : this()
+        {
+            this.Status = status;
+        }
+
         /// <inheritdoc/>
         protected sealed override void SetCookieHeader(String name, String value)
         {

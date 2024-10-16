@@ -313,7 +313,6 @@ public partial class HttpServer
                      response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
-                baseResponse.StatusCode = (int)response.Status.StatusCode;
                 goto finishSending;
             }
             else if (response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)

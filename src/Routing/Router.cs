@@ -7,11 +7,12 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 
 record struct RouteDictItem(System.Type type, Delegate lambda);
 
@@ -47,6 +48,8 @@ namespace Sisk.Core.Routing
             {
                 server.handler.SetupRouter(this);
                 this.parentServer = server;
+
+                this.CheckForRouteCollisions();
             }
         }
 
@@ -243,6 +246,30 @@ namespace Sisk.Core.Routing
             else
             {
                 throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, routeResult.GetType().FullName));
+            }
+        }
+
+        void CheckForRouteCollisions() // O(n²)
+        {
+            for (int i = 0; i < this._routesList.Count; i++)
+            {
+                Route I = this._routesList[i];
+
+                for (int j = 0; j < this._routesList.Count; j++)
+                {
+                    Route J = this._routesList[j];
+
+                    bool methodMatched =
+                        I.Method == RouteMethod.Any ||
+                        J.Method == RouteMethod.Any ||
+                        I.Method.HasFlag(J.Method) ||
+                        J.Method.HasFlag(I.Method);
+
+                    if (I != J && methodMatched && HttpStringInternals.IsRoutePatternMatch(I.Path, J.Path, this.MatchRoutesIgnoreCase))
+                    {
+                        throw new ArgumentException(SR.Format(SR.Router_Set_Collision, I, J));
+                    }
+                }
             }
         }
 

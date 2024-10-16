@@ -24,14 +24,17 @@
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
 		<Summary>Sisk is an powerful framework for building web applications with .NET.</Summary>
-		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 
-		<AssemblyVersion>1.1.1</AssemblyVersion>
-		<FileVersion>1.1.1</FileVersion>
-		<Version>1.1.1</Version>
+		<AssemblyVersion>1.2</AssemblyVersion>
+		<FileVersion>1.2</FileVersion>
+		<Version>1.2</Version>
+
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>false</EmbedUntrackedSources>
 
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
@@ -46,6 +49,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Compile Remove="Internal\Net\**" />
 	</ItemGroup>
 
@@ -53,7 +60,7 @@
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<!--<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>-->
-		
+
 		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
 		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
 	</PropertyGroup>

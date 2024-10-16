@@ -31,7 +31,7 @@ public abstract class RouterModule
     /// </summary>
     /// <param name="handler">The <see cref="IRequestHandler"/> instance which will be applied to all registered routes
     /// of this class.</param>
-    public void HasRequestHandler(IRequestHandler handler)
+    protected void HasRequestHandler(IRequestHandler handler)
     {
         this.RequestHandlers.Add(handler);
     }
@@ -42,7 +42,12 @@ public abstract class RouterModule
     /// be overloaded in the extending class and must not be called directly.
     /// </summary>
     /// <param name="configuringRoute">The route being defined on the router.</param>
-    public virtual void OnRouteCreating(Route configuringRoute)
+    protected virtual void OnRouteCreating(Route configuringRoute)
     {
+    }
+
+    internal void CallRouteCreating(Route configuringRoute)
+    {
+        this.OnRouteCreating(configuringRoute);
     }
 }

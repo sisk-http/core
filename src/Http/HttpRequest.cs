@@ -405,10 +405,7 @@ namespace Sisk.Core.Http
                 sb.AppendLine($":request-id: {this.RequestId}");
                 sb.AppendLine($":request-proto: {(this.IsSecure ? "https" : "http")}");
             }
-            foreach (var header in this.Headers)
-            {
-                sb.AppendLine($"{header.Key}: {header.Value}");
-            }
+            sb.AppendLine(this.Headers.ToString());
             sb.AppendLine();
 
             // Content

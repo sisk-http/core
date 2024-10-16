@@ -59,7 +59,7 @@ static partial class SR
     public const string Router_AutoScanModules_TModuleSameAssembly = "The TModule generic type must be a type that implements RouterModule and not RouterModule itself.";
     public const string Router_Set_Collision = "A possible route collision could happen between route {0} and route {1}. Please review the methods and paths of these routes.";
     public const string Router_Set_Exception = "Couldn't set method {0}.{1} as an route. See inner exception.";
-    public const string Router_Set_InvalidRouteStart = "Route paths must start with /.";
+    public const string Router_Set_InvalidRouteStart = "Route path expressions must start with '/' and cannot be an empty string.";
     public const string Router_RouteDefinitionNotFound = "No route definition was found for the given action. It may be possible that the informed method does not implement the RouteAttribute attribute.";
     public const string Router_Handler_HttpResponseRegister = "Cannot register HttpResponse as an valid type to the action handler.";
     public const string Router_Handler_Duplicate = "The specified type is already defined in this router instance.";
@@ -70,6 +70,9 @@ static partial class SR
     public const string Router_BindException = "This router is binded to another HTTP Server instance.";
     public const string Router_NoRouteActionDefined = "No route action was defined to the route {0}.";
     public const string Router_ReadOnlyException = "It's not possible to modify the routes or handlers for this router, as it is read-only.";
+    public const string Router_GtExpected = "Route path parameters must end with '>'.";
+    public const string Router_NameExpected = "Route path parameters name expected.";
+    public const string Router_EmptyRouterPathPart = "Empty path patameter parts are not allowed.";
 
     public const string RequestHandler_ActivationException = "Couldn't activate an instance of the IRequestHandler {0} with the {1} arguments.";
 

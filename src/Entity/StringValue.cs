@@ -26,6 +26,15 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     }
 
     /// <summary>
+    /// Creates an new <see cref="StringValue"/> from the specified string.
+    /// </summary>
+    /// <param name="value">The string value.</param>
+    public static StringValue Create(string? value)
+    {
+        return new StringValue("StringValue", value);
+    }
+
+    /// <summary>
     /// Creates an new empty value of the <see cref="StringValue"/> with no predefined value.
     /// </summary>
     /// <param name="name">The <see cref="StringValue"/> name.</param>

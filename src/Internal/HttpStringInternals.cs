@@ -16,28 +16,75 @@ namespace Sisk.Core.Internal
     {
         public record struct PathMatchResult(bool IsMatched, NameValueCollection? Query);
 
+        const char ROUTE_SEPARATOR = '/';
+        const char ROUTE_GROUP_START = '<';
+        const char ROUTE_GROUP_END = '>';
+
+        static readonly char[] ROUTE_TRIM_CHARS = [ROUTE_SEPARATOR, ' ', '\t'];
+
+        /// <summary>
+        /// Asserts if the specified route pattern is valid or not. (NOT FOR REGEX ROUTES)
+        /// </summary>
+        public static void AssertRoute(ReadOnlySpan<char> route)
+        {
+            if (route == Route.AnyPath)
+            {
+                return;
+            }
+            if (route.Length == 0 || route[0] != ROUTE_SEPARATOR)
+            {
+                throw new FormatException(SR.Router_Set_InvalidRouteStart);
+            }
+
+            int pathPatternSepCount = route.Count(ROUTE_SEPARATOR);
+            Span<Range> parts = stackalloc Range[pathPatternSepCount];
+
+            int partCount = route.Split(parts, ROUTE_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < partCount; i++)
+            {
+                var partRng = parts[i];
+                var part = route[partRng].Trim(ROUTE_SEPARATOR);
+
+                if (part.Length == 0)
+                {
+                    if (i != partCount - 1)
+                    {
+                        throw new FormatException(SR.Router_EmptyRouterPathPart);
+                    }
+                }
+                else if (part[0] == ROUTE_GROUP_START)
+                {
+                    if (part.Length < 2)
+                    {
+                        throw new FormatException(SR.Router_NameExpected);
+                    }
+                    if (part[^1] != ROUTE_GROUP_END)
+                    {
+                        throw new FormatException(SR.Router_GtExpected);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Test if two routes matches their patterns, by comparing two <see cref="Route"/>s.
         /// </summary>
-        public static bool IsRoutPatternMatch(ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase)
+        public static bool IsRoutePatternMatch(ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase)
         {
-            const char SEPARATOR = '/';
-            const string ROUTE_GROUP_START = "<";
-            const string ROUTE_GROUP_END = ">";
-
             if (routeA == Route.AnyPath || routeB == Route.AnyPath)
             {
                 return true;
             }
 
-            int pathPatternSepCount = routeA.Count(SEPARATOR);
-            int reqsPatternSepCount = routeB.Count(SEPARATOR);
+            int pathPatternSepCount = routeA.Count(ROUTE_SEPARATOR);
+            int reqsPatternSepCount = routeB.Count(ROUTE_SEPARATOR);
 
             Span<Range> aPrt = stackalloc Range[pathPatternSepCount];
             Span<Range> bPrt = stackalloc Range[reqsPatternSepCount];
 
-            int splnA = routeA.Split(aPrt, SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
-            int splnB = routeB.Split(bPrt, SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+            int splnA = routeA.Split(aPrt, ROUTE_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+            int splnB = routeB.Split(bPrt, ROUTE_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
 
             if (splnA != splnB)
             {
@@ -50,13 +97,17 @@ namespace Sisk.Core.Internal
                 Range aRng = aPrt[i];
                 Range bRng = bPrt[i];
 
-                ReadOnlySpan<char> aPtt = routeA[aRng.Start..aRng.End].Trim(SEPARATOR);
-                ReadOnlySpan<char> bPtt = routeB[bRng.Start..bRng.End].Trim(SEPARATOR);
+                ReadOnlySpan<char> aPtt = routeA[aRng].Trim(ROUTE_TRIM_CHARS);
+                ReadOnlySpan<char> bPtt = routeB[bRng].Trim(ROUTE_TRIM_CHARS);
 
-                bool isPathAQuery = aPtt.StartsWith(ROUTE_GROUP_START) && aPtt.EndsWith(ROUTE_GROUP_END);
-                bool isPathBQuery = bPtt.StartsWith(ROUTE_GROUP_START) && bPtt.EndsWith(ROUTE_GROUP_END);
+                bool isPathAQuery = aPtt is [ROUTE_GROUP_START, .., ROUTE_GROUP_END];
+                bool isPathBQuery = bPtt is [ROUTE_GROUP_START, .., ROUTE_GROUP_END];
 
-                if (isPathAQuery || isPathBQuery)
+                if (isPathAQuery && bPtt.Length > 0)
+                {
+                    matchCount++;
+                }
+                else if (isPathBQuery && aPtt.Length > 0)
                 {
                     matchCount++;
                 }
@@ -75,10 +126,6 @@ namespace Sisk.Core.Internal
         /// </summary>
         public static PathMatchResult IsReqPathMatch(ReadOnlySpan<char> pathPattern, ReadOnlySpan<char> requestPath, bool ignoreCase)
         {
-            const char SEPARATOR = '/';
-            const string ROUTE_GROUP_START = "<";
-            const string ROUTE_GROUP_END = ">";
-
             if (pathPattern == Route.AnyPath)
             {
                 return new PathMatchResult(true, null);
@@ -86,14 +133,14 @@ namespace Sisk.Core.Internal
 
             NameValueCollection? pathParams = null;
 
-            int pathPatternSepCount = pathPattern.Count(SEPARATOR);
-            int reqsPatternSepCount = requestPath.Count(SEPARATOR);
+            int pathPatternSepCount = pathPattern.Count(ROUTE_SEPARATOR);
+            int reqsPatternSepCount = requestPath.Count(ROUTE_SEPARATOR);
 
             Span<Range> pathPatternParts = stackalloc Range[pathPatternSepCount];
             Span<Range> requestPathParts = stackalloc Range[reqsPatternSepCount];
 
-            int splnA = pathPattern.Split(pathPatternParts, SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
-            int splnB = requestPath.Split(requestPathParts, SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+            int splnA = pathPattern.Split(pathPatternParts, ROUTE_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+            int splnB = requestPath.Split(requestPathParts, ROUTE_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
 
             if (splnA != splnB)
             {
@@ -105,10 +152,10 @@ namespace Sisk.Core.Internal
                 Range pathRng = pathPatternParts[i];
                 Range reqsRng = requestPathParts[i];
 
-                ReadOnlySpan<char> pathPtt = pathPattern[pathRng.Start..pathRng.End].Trim(SEPARATOR);
-                ReadOnlySpan<char> reqsPtt = requestPath[reqsRng.Start..reqsRng.End].Trim(SEPARATOR);
+                ReadOnlySpan<char> pathPtt = pathPattern[pathRng].Trim(ROUTE_TRIM_CHARS);
+                ReadOnlySpan<char> reqsPtt = requestPath[reqsRng].Trim(ROUTE_TRIM_CHARS);
 
-                if (pathPtt.StartsWith(ROUTE_GROUP_START) && pathPtt.EndsWith(ROUTE_GROUP_END))
+                if (pathPtt is [ROUTE_GROUP_START, .., ROUTE_GROUP_END] && reqsPtt.Length > 0)
                 {
                     if (pathParams is null) pathParams = new NameValueCollection();
                     string queryValueName = new string(pathPtt[new Range(1, pathPtt.Length - 1)]);

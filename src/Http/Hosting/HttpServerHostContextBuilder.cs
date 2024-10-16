@@ -267,11 +267,10 @@ public sealed class HttpServerHostContextBuilder
     /// This method is an shortcut for calling <see cref="Router.AutoScanModules{T}()"/>.
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
-    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public HttpServerHostContextBuilder UseAutoScan<TModule>(bool activateInstances = true) where TModule : RouterModule
+    public HttpServerHostContextBuilder UseAutoScan<TModule>() where TModule : RouterModule
     {
-        this._context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly, activateInstances);
+        this._context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly);
         return this;
     }
 
@@ -280,11 +279,10 @@ public sealed class HttpServerHostContextBuilder
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="t">The assembly where the scanning types are.</param>
-    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public HttpServerHostContextBuilder UseAutoScan<TModule>(Assembly t, bool activateInstances = true) where TModule : RouterModule
+    public HttpServerHostContextBuilder UseAutoScan<TModule>(Assembly t) where TModule : RouterModule
     {
-        this._context.Router.AutoScanModules<TModule>(t, activateInstances);
+        this._context.Router.AutoScanModules<TModule>(t);
         return this;
     }
 

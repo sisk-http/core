@@ -18,6 +18,8 @@ namespace Sisk.Core.Routing;
 
 public partial class Router
 {
+    static readonly BindingFlags SetObjectBindingFlag = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+
     #region "Route setters"
 
     /// <summary>
@@ -79,9 +81,8 @@ public partial class Router
     /// </summary>
     /// <param name="moduleType">An class which implements <see cref="RouterModule"/>, or the router module itself.</param>
     /// <param name="searchAssembly">The assembly to search the module type in.</param>
-    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void AutoScanModules(Type moduleType, Assembly searchAssembly, bool activateInstances = true)
+    public void AutoScanModules(Type moduleType, Assembly searchAssembly)
     {
         if (moduleType == typeof(RouterModule))
         {
@@ -99,21 +100,23 @@ public partial class Router
 
                     Abstract classes should not be included on the router.
                  */
-                if (type.IsAbstract || type == moduleType)
+                if (type == moduleType)
                 {
-                    continue;
+                    ;
+                }
+                else if (type.IsAbstract)
+                {
+                    if (type.IsSealed) // static
+                    {
+                        this.SetObject(type);
+                    }
                 }
                 else
                 {
-                    if (activateInstances)
+                    object? instance = Activator.CreateInstance(type);
+                    if (instance is not null)
                     {
-                        var instance = Activator.CreateInstance(type)!;
-                        if (instance != null)
-                            this.SetObject(instance);
-                    }
-                    else
-                    {
-                        this.SetObject(type);
+                        this.SetObject(instance);
                     }
                 }
             }
@@ -126,10 +129,9 @@ public partial class Router
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="assembly">The assembly to search <typeparamref name="TModule"/> in.</param>
-    /// <param name="activateInstances">Optional. Determines whether found types should be defined as instances or static members.</param>
     [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
-    public void AutoScanModules<TModule>(Assembly assembly, bool activateInstances = true) where TModule : RouterModule
-        => this.AutoScanModules(typeof(TModule), assembly, activateInstances);
+    public void AutoScanModules<TModule>(Assembly assembly) where TModule : RouterModule
+        => this.AutoScanModules(typeof(TModule), assembly);
 
     /// <summary>
     /// Scans for all types that implements <typeparamref name="TModule"/> and associates an instance of each type to the router. Note
@@ -241,16 +243,11 @@ public partial class Router
             throw new InvalidOperationException(SR.Router_ReadOnlyException);
         }
 
-        Route? collisonRoute;
         if (!r.UseRegex)
         {
             if (this.Prefix is string prefix)
             {
                 r.Path = PathUtility.CombinePaths(prefix, r.Path);
-            }
-            if ((collisonRoute = this.GetCollisionRoute(r.Method, r.Path)) != null)
-            {
-                throw new ArgumentException(string.Format(SR.Router_Set_Collision, r, collisonRoute));
             }
         }
 
@@ -258,38 +255,38 @@ public partial class Router
     }
 
     /// <summary>
-    /// Searches in the specified object for instance methods marked with routing attributes, such as <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates
-    /// routes from them. All routes is delegated to the specified instance.
+    /// Searches for all instance and static methods that are marked with an attribute of
+    /// type <see cref="RouteAttribute"/> in the specified object and creates routes
+    /// for these methods.
     /// </summary>
-    /// <param name="attrClassInstance">The instance of the class where the instance methods are. The routing methods must be instance methods and marked with <see cref="RouteAttribute"/>.</param>
+    /// <param name="attrClassInstance">The instance of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
     public void SetObject(object attrClassInstance)
     {
         Type attrClassType = attrClassInstance.GetType();
-        MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        MethodInfo[] methods = attrClassType.GetMethods(SetObjectBindingFlag);
         this.SetInternal(methods, attrClassType, attrClassInstance);
     }
 
     /// <summary>
-    /// Searches in the specified object for static methods marked with routing attributes, such as <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates
-    /// routes from them.
+    /// Searches for all instance and static methods that are marked with an attribute of
+    /// type <see cref="RouteAttribute"/> in the specified object and creates routes
+    /// for these methods.
     /// </summary>
-    /// <param name="attrClassType">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</param>
+    /// <param name="attrClassType">The type of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
     public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
     {
-        MethodInfo[] methods = attrClassType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+        MethodInfo[] methods = attrClassType.GetMethods(SetObjectBindingFlag);
         this.SetInternal(methods, attrClassType, null);
     }
 
     /// <summary>
-    /// Searches in the specified object for static methods marked with routing attributes, such as <see cref="RouteAttribute"/> and optionals <see cref="RequestHandlerAttribute"/>, and creates
-    /// routes from them.
+    /// Searches for all instance and static methods that are marked with an attribute of
+    /// type <see cref="RouteAttribute"/> in the specified object and creates routes
+    /// for these methods.
     /// </summary>
-    /// <remarks>
-    /// This method is an shortcut for <see cref="SetObject(Type)"/>.
-    /// </remarks>
-    /// <typeparam name="TObject">The type of the class where the static methods are. The routing methods must be static and marked with <see cref="RouteAttribute"/>.</typeparam>
+    /// <typeparam name="TObject">The type of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</typeparam>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
     public void SetObject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TObject>()
     {
@@ -324,6 +321,11 @@ public partial class Router
         {
             MethodInfo method = methods[imethod];
 
+            if (instance is null && !method.Attributes.HasFlag(MethodAttributes.Static))
+            {
+                continue;
+            }
+
             RouteAttribute? routeAttribute = null;
             object[] methodAttributes = method.GetCustomAttributes(true);
             List<IRequestHandler> methodAttrReqHandlers = new List<IRequestHandler>(methodAttributes.Length);
@@ -352,7 +354,7 @@ public partial class Router
                 {
                     RouteAction r;
 
-                    if (instance is null)
+                    if (instance is null || method.Attributes.HasFlag(MethodAttributes.Static))
                     {
                         r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
                     }
@@ -380,13 +382,7 @@ public partial class Router
                         UseRegex = routeAttribute.UseRegex
                     };
 
-                    Route? collisonRoute;
-                    if ((collisonRoute = this.GetCollisionRoute(route.Method, route.Path)) != null)
-                    {
-                        throw new ArgumentException(string.Format(SR.Router_Set_Collision, route, collisonRoute));
-                    }
-
-                    rmodule?.OnRouteCreating(route);
+                    rmodule?.CallRouteCreating(route);
                     this.SetRoute(route);
                 }
                 catch (Exception ex)
@@ -401,9 +397,9 @@ public partial class Router
     private HttpResponse RewriteHandler(string rewriteInto, HttpRequest request)
     {
         string newPath = rewriteInto;
-        foreach (StringValue item in request.Query)
+        foreach (StringValue item in request.RouteParameters)
         {
-            newPath = newPath.Replace($"<{item.Name}>", HttpUtility.UrlEncode(item.Value));
+            newPath = newPath.Replace($"<{item.Name}>", HttpUtility.UrlEncode(item.Value), this.MatchRoutesIgnoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture);
         }
 
         return new HttpResponse()
@@ -413,10 +409,8 @@ public partial class Router
 
     private Route? GetCollisionRoute(RouteMethod method, string path)
     {
-        if (!path.StartsWith('/'))
-        {
-            throw new ArgumentException(SR.Router_Set_InvalidRouteStart);
-        }
+        if (path is null) throw new ArgumentNullException(nameof(path));
+        HttpStringInternals.AssertRoute(path);
 
         for (int i = 0; i < this._routesList.Count; i++)
         {
@@ -424,9 +418,9 @@ public partial class Router
             bool methodMatch =
                 (method == RouteMethod.Any || r.Method == RouteMethod.Any) ||
                 method == r.Method;
-            bool pathMatch = HttpStringInternals.IsRoutPatternMatch(r.Path, path, this.MatchRoutesIgnoreCase);
+            bool pathMatch = HttpStringInternals.IsRoutePatternMatch(r.Path, path, this.MatchRoutesIgnoreCase);
 
-            if (methodMatch && pathMatch)
+            if (pathMatch & methodMatch)
             {
                 return r;
             }
