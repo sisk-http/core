@@ -29,9 +29,9 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 
-		<AssemblyVersion>1.1.0</AssemblyVersion>
-		<FileVersion>1.1.0</FileVersion>
-		<Version>1.1.0</Version>
+		<AssemblyVersion>1.0.4</AssemblyVersion>
+		<FileVersion>1.0.4</FileVersion>
+		<Version>1.0.4</Version>
 
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>

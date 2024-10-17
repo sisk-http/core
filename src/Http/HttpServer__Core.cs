@@ -7,14 +7,14 @@
 // File name:   HttpServer__Core.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Internal;
-using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Sisk.Core.Entity;
+using Sisk.Core.Internal;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
 
@@ -315,7 +315,6 @@ public partial class HttpServer
                      response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_CLOSE)
             {
                 executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
-                baseResponse.StatusCode = (int)response.Status;
                 goto finishSending;
             }
             else if (response.internalStatus == HttpResponse.HTTPRESPONSE_SERVER_REFUSE)
