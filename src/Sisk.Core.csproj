@@ -28,9 +28,9 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 
-		<AssemblyVersion>1.2</AssemblyVersion>
-		<FileVersion>1.2</FileVersion>
-		<Version>1.2</Version>
+		<AssemblyVersion>1.1.1</AssemblyVersion>
+		<FileVersion>1.1.1</FileVersion>
+		<Version>1.1.1</Version>
 
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
