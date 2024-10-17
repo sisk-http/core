@@ -42,18 +42,12 @@ public static class CertificateUtil
 
     static int ComputeArrayHash(string[] array)
     {
-        int i = array.GetHashCode();
+        int i = 3321581 /*choose by dream*/;
         for (int j = 0; j < array.Length; j++)
         {
             i ^= GetDeterministicHashCode(array[j]);
         }
         return Math.Abs(i);
-    }
-
-    static string GetIssuerName(string[] dnsNames)
-    {
-        int hash = ComputeArrayHash(dnsNames);
-        return $"CN = Sisk Development CA {hash},OU = IT,O = Sao Paulo,L = Brazil,S = Sao Paulo,C = Brazil";
     }
 
     /// <summary>
