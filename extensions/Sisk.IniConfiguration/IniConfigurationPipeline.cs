@@ -78,9 +78,16 @@ public sealed class IniConfigurationPipeline : IConfigurationReader
                         = AllowHeaders.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
                 parsingNode = "Cors.AllowOrigins";
-                if (corsSection.GetOne("AllowOrigins") is { } AllowOrigins)
+                var allowOrigins = corsSection.GetMany("AllowOrigins");
+                if (allowOrigins.Length > 0)
+                {
+                    List<string> origins = new List<string>();
+                    foreach (var originGroup in allowOrigins)
+                        origins.AddRange(originGroup.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+
                     context.TargetListeningHost.CrossOriginResourceSharingPolicy.AllowOrigins
-                        = AllowOrigins.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                        = origins.ToArray();
+                }
 
                 parsingNode = "Cors.AllowOrigin";
                 if (corsSection.GetOne("AllowOrigin") is { } AllowOrigin)

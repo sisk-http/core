@@ -7,14 +7,14 @@
 // File name:   HttpServer__Core.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Internal;
-using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Sisk.Core.Entity;
+using Sisk.Core.Internal;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
 
@@ -71,9 +71,6 @@ public partial class HttpServer
         if (cors.AllowMethods.Length > 0)
             baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowMethods, string.Join(", ", cors.AllowMethods));
 
-        if (cors.AllowOrigin is not null)
-            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin);
-
         if (cors.AllowOrigins?.Length > 0)
         {
             string? origin = baseRequest.Headers[HttpKnownHeaderNames.Origin];
@@ -90,6 +87,10 @@ public partial class HttpServer
                     }
                 }
             }
+        }
+        else if (cors.AllowOrigin is not null)
+        {
+            baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin);
         }
 
         if (cors.AllowCredentials == true)
