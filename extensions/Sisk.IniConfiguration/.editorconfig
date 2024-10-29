@@ -1,0 +1,134 @@
+[*.cs]
+file_header_template = The Sisk Framework source code\nCopyright (c) 2024 PROJECT PRINCIPIUM\n\nThe code below is licensed under the MIT license as\nof the date of its publication, available at\n\nFile name:   {fileName}\nRepository:  https://github.com/sisk-http/core
+[*.cs]
+#### Estilos de nomenclatura ####
+
+# Regras de nomenclatura
+
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
+
+dotnet_naming_rule.types_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.types_should_be_pascal_case.symbols = types
+dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
+dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+
+# Especificações de símbolo
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.interface.required_modifiers = 
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum
+dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.types.required_modifiers = 
+
+dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
+dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.non_field_members.required_modifiers = 
+
+# Estilos de nomenclatura
+
+dotnet_naming_style.begins_with_i.required_prefix = I
+dotnet_naming_style.begins_with_i.required_suffix = 
+dotnet_naming_style.begins_with_i.word_separator = 
+dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+csharp_space_around_binary_operators = before_and_after
+csharp_style_expression_bodied_methods = false:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_style_expression_bodied_operators = false:silent
+csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_indexers = true:silent
+csharp_style_expression_bodied_accessors = true:silent
+csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_expression_bodied_local_functions = false:silent
+csharp_using_directive_placement = outside_namespace:silent
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:silent
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_style_prefer_extended_property_pattern = true:suggestion
+csharp_prefer_static_local_function = true:suggestion
+csharp_style_prefer_readonly_struct = true:suggestion
+csharp_style_prefer_readonly_struct_member = true:suggestion
+csharp_style_allow_embedded_statements_on_same_line_experimental = true:silent
+csharp_style_allow_blank_lines_between_consecutive_braces_experimental = true:silent
+csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = true:silent
+csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental = true:silent
+csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental = true:silent
+csharp_prefer_simple_using_statement = true:suggestion
+
+[*.vb]
+#### Estilos de nomenclatura ####
+
+# Regras de nomenclatura
+
+dotnet_naming_rule.interface_should_be_começa_com_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_começa_com_i.symbols = interface
+dotnet_naming_rule.interface_should_be_começa_com_i.style = começa_com_i
+
+dotnet_naming_rule.tipos_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.tipos_should_be_pascal_case.symbols = tipos
+dotnet_naming_rule.tipos_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_rule.membros_sem_campo_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.membros_sem_campo_should_be_pascal_case.symbols = membros_sem_campo
+dotnet_naming_rule.membros_sem_campo_should_be_pascal_case.style = pascal_case
+
+# Especificações de símbolo
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
+dotnet_naming_symbols.interface.required_modifiers = 
+
+dotnet_naming_symbols.tipos.applicable_kinds = class, struct, interface, enum
+dotnet_naming_symbols.tipos.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
+dotnet_naming_symbols.tipos.required_modifiers = 
+
+dotnet_naming_symbols.membros_sem_campo.applicable_kinds = property, event, method
+dotnet_naming_symbols.membros_sem_campo.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
+dotnet_naming_symbols.membros_sem_campo.required_modifiers = 
+
+# Estilos de nomenclatura
+
+dotnet_naming_style.começa_com_i.required_prefix = I
+dotnet_naming_style.começa_com_i.required_suffix = 
+dotnet_naming_style.começa_com_i.word_separator = 
+dotnet_naming_style.começa_com_i.capitalization = pascal_case
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+[*.{cs,vb}]
+end_of_line = crlf
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+dotnet_style_qualification_for_field = true:silent
+dotnet_style_qualification_for_property = true:silent
+dotnet_style_qualification_for_method = true:silent
+dotnet_style_qualification_for_event = true:silent
+dotnet_style_readonly_field = true:suggestion
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
+dotnet_style_allow_multiple_blank_lines_experimental = true:silent
+dotnet_style_allow_statement_immediately_after_block_experimental = true:silent

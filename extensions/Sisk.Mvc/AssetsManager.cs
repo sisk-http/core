@@ -1,4 +1,13 @@
-﻿using Cascadium;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   AssetsManager.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Cascadium;
 using System.Reflection;
 using System.Text;
 

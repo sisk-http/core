@@ -1,4 +1,13 @@
-﻿using Sisk.Core.Http;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024 PROJECT PRINCIPIUM
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   IniConfigurationReader.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.IniConfiguration.Serializer;
 using System.Text;

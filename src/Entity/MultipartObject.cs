@@ -7,9 +7,9 @@
 // File name:   MultipartObject.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
 using System.Collections.Specialized;
 using System.Text;
-using Sisk.Core.Http;
 
 namespace Sisk.Core.Entity
 {

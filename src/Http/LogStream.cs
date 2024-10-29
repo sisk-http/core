@@ -7,9 +7,9 @@
 // File name:   LogStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using System.Text;
 using System.Threading.Channels;
-using Sisk.Core.Entity;
 
 namespace Sisk.Core.Http
 {

@@ -7,11 +7,11 @@
 // File name:   LoggingConstants.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
-using System.Reflection;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
+using System.Net;
+using System.Reflection;
 
 namespace Sisk.Core.Internal
 {

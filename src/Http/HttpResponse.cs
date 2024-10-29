@@ -7,10 +7,10 @@
 // File name:   HttpResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
-using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
+using System.Net;
+using System.Text;
 
 namespace Sisk.Core.Http
 {

@@ -7,10 +7,10 @@
 // File name:   HttpServerHandlerRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http.Handlers;
 

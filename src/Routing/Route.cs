@@ -7,8 +7,8 @@
 // File name:   Route.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Text.RegularExpressions;
 using Sisk.Core.Entity;
+using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Routing
 {

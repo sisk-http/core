@@ -7,14 +7,14 @@
 // File name:   HttpServer__Core.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
+using Sisk.Core.Internal;
+using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Sisk.Core.Entity;
-using Sisk.Core.Internal;
-using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http;
 
