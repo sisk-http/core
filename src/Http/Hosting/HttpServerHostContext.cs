@@ -7,7 +7,6 @@
 // File name:   HttpServerHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
@@ -18,7 +17,7 @@ namespace Sisk.Core.Http.Hosting;
 /// </summary>
 public sealed class HttpServerHostContext : IDisposable
 {
-    internal StringBuilder startupMessages = new StringBuilder();
+    internal List<Func<string>> startupMessages = new();
 
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
@@ -83,8 +82,10 @@ public sealed class HttpServerHostContext : IDisposable
             foreach (string prefix in this.HttpServer.ListeningPrefixes)
                 Console.WriteLine("- {0}", prefix);
 
-            if (this.startupMessages.Length > 0)
-                Console.WriteLine(this.startupMessages.ToString());
+            foreach (var startupMessage in this.startupMessages)
+            {
+                Console.WriteLine(startupMessage());
+            }
         }
 
         if (preventHault)

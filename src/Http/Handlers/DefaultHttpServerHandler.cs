@@ -14,12 +14,15 @@ namespace Sisk.Core.Http.Handlers;
 internal class DefaultHttpServerHandler : HttpServerHandler
 {
     internal Action<Router>? _routerSetup;
-    internal Action? _serverBootstraping;
+    internal List<Delegate> _serverBootstrapingFunctions = new List<Delegate>();
 
     protected override void OnServerStarting(HttpServer server)
     {
         base.OnServerStarting(server);
-        if (this._serverBootstraping != null) this._serverBootstraping();
+        foreach (var func in this._serverBootstrapingFunctions)
+        {
+            func.DynamicInvoke();
+        }
     }
 
     protected override void OnSetupRouter(Router router)

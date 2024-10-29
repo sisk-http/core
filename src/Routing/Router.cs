@@ -7,12 +7,12 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 
 record struct RouteDictItem(System.Type type, Delegate lambda);
 
@@ -79,7 +79,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
         /// </summary>
-        public IRequestHandler[] GlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
+        public List<IRequestHandler> GlobalRequestHandlers { get; set; } = new List<IRequestHandler>();
 
         /// <summary>
         /// Gets or sets the Router action exception handler.

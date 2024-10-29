@@ -7,11 +7,11 @@
 // File name:   StringKeyStore.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Entity;
 
@@ -259,6 +259,16 @@ public class StringKeyStore : IDictionary<string, string[]>
     {
         this.ThrowIfReadOnly();
         this.AddInternal(item.Key, item.Value);
+    }
+
+    /// <summary>
+    /// Adds the elements of the specified collection to the end of this collection.
+    /// </summary>
+    /// <param name="items">The collection whose items should be added to the end of this collection.</param>
+    public void AddRange(IEnumerable<KeyValuePair<string, string[]>> items)
+    {
+        foreach (KeyValuePair<string, string[]> item in items)
+            this.Add(item);
     }
 
     /// <summary>

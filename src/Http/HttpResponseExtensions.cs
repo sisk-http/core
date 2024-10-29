@@ -155,4 +155,16 @@ public static class HttpResponseExtensions
         response.SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
         return response;
     }
+
+    /// <summary>
+    /// Sets a cookie and sends it in the response to be set by the client.
+    /// </summary>
+    /// <typeparam name="THttpResponse">The type which implements <see cref="HttpResponse"/>.</typeparam>
+    /// <param name="response">The <see cref="HttpResponse"/> object.</param>
+    /// <param name="cookie">The cookie object.</param>
+    public static THttpResponse WithCookie<THttpResponse>(this THttpResponse response, Cookie cookie) where THttpResponse : HttpResponse
+    {
+        response.SetCookie(cookie);
+        return response;
+    }
 }

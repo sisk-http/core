@@ -15,7 +15,8 @@ namespace Sisk.Core.Http.Hosting;
 public sealed class ConfigurationContext
 {
     /// <summary>
-    /// Gets the absolute path to the configuration file. This does not guarantee that the file will exist.
+    /// Gets the absolute path to the configuration file. The file is guaranteed to exist
+    /// when getting this property value.
     /// </summary>
     public string ConfigurationFile { get; }
 

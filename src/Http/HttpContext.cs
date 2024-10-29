@@ -7,7 +7,6 @@
 // File name:   HttpContext.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Collections.Specialized;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
@@ -19,10 +18,20 @@ namespace Sisk.Core.Http
     public sealed class HttpContext
     {
         /// <summary>
-        /// Gets or sets an <see cref="NameValueCollection"/> indicating HTTP headers which
+        /// Gets or sets an <see cref="HttpHeaderCollection"/> indicating HTTP headers which
         /// will overwrite headers set by CORS, router response or request handlers.
         /// </summary>
+        /// <remarks>
+        /// This property replaces existing headers in the final response. Use <see cref="ExtraHeaders"/> to
+        /// add headers without replacing existing ones.
+        /// </remarks>
         public HttpHeaderCollection OverrideHeaders { get; set; } = new HttpHeaderCollection();
+
+        /// <summary>
+        /// Gets or sets the <see cref="HttpHeaderCollection"/> indicating HTTP headers which will
+        /// be added (not overwritten) in the final response.
+        /// </summary>
+        public HttpHeaderCollection ExtraHeaders { get; set; } = new HttpHeaderCollection();
 
         /// <summary>
         /// Gets the <see cref="ListeningHost"/> instance of this HTTP context.

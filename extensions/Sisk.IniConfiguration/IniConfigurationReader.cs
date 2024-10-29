@@ -1,14 +1,14 @@
-﻿using System.Text;
-using Sisk.Core.Http;
+﻿using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.IniConfiguration.Serializer;
+using System.Text;
 
 namespace Sisk.IniConfiguration;
 
 /// <summary>
 /// Provides an INI-Document based configuration-reader pipeline.
 /// </summary>
-public sealed class IniConfigurationPipeline : IConfigurationReader
+public sealed class IniConfigurationReader : IConfigurationReader
 {
     /// <inheritdoc/>
     public void ReadConfiguration(ConfigurationContext context)
@@ -23,7 +23,7 @@ public sealed class IniConfigurationPipeline : IConfigurationReader
             {
                 parsingNode = "Server.Listen";
                 string[] listeningPorts = serverSection.GetMany("Listen");
-                context.TargetListeningHost.Ports = listeningPorts.Select(n => ListeningPort.Parse(n, null)).ToArray();
+                context.TargetListeningHost.Ports = [.. context.TargetListeningHost.Ports, .. listeningPorts.Select(n => ListeningPort.Parse(n, null)).ToArray()];
 
                 parsingNode = "Server.Encoding";
                 if (serverSection.GetOne("Encoding") is { } encoding)

@@ -7,6 +7,7 @@
 // File name:   CookieHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Net;
 using System.Web;
 
 namespace Sisk.Core.Http;
@@ -26,11 +27,20 @@ public abstract class CookieHelper
     /// <summary>
     /// Sets a cookie and sends it in the response to be set by the client.
     /// </summary>
+    /// <param name="cookie">The cookie object.</param>
+    public void SetCookie(Cookie cookie)
+    {
+        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, BuildCookieHeaderValue(cookie));
+    }
+
+    /// <summary>
+    /// Sets a cookie and sends it in the response to be set by the client.
+    /// </summary>
     /// <param name="name">The cookie name.</param>
     /// <param name="value">The cookie value.</param>
     public void SetCookie(string name, string value)
     {
-        this.SetCookieHeader("Set-Cookie", $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
+        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
     }
 
     /// <summary>
@@ -56,26 +66,71 @@ public abstract class CookieHelper
         bool? httpOnly = null,
         string? sameSite = null)
     {
+        string cookieStr = BuildCookieHeaderValue(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
+        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, cookieStr);
+    }
+
+    /// <summary>
+    /// Builds the cookie header value and returns an string from it.
+    /// </summary>
+    /// <param name="cookie">The <see cref="Cookie"/> instance to build the cookie string.</param>
+    public static string BuildCookieHeaderValue(Cookie cookie)
+    {
+        return BuildCookieHeaderValue(
+            name: cookie.Name,
+            value: cookie.Value,
+            expires: cookie.Expires,
+            domain: cookie.Domain,
+            path: cookie.Path,
+            secure: cookie.Secure,
+            httpOnly: cookie.HttpOnly
+        );
+    }
+
+    /// <summary>
+    /// Builds the cookie header value and returns an string from it.
+    /// </summary>
+    /// <param name="name">The cookie name.</param>
+    /// <param name="value">The cookie value.</param>
+    /// <param name="expires">The cookie expirity date.</param>
+    /// <param name="maxAge">The cookie max duration after being set.</param>
+    /// <param name="domain">The domain where the cookie will be valid.</param>
+    /// <param name="path">The path where the cookie will be valid.</param>
+    /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
+    /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
+    /// <param name="sameSite">The cookie SameSite parameter.</param>
+    public static string BuildCookieHeaderValue(
+        string name,
+        string value,
+        DateTime? expires = null,
+        TimeSpan? maxAge = null,
+        string? domain = null,
+        string? path = null,
+        bool? secure = null,
+        bool? httpOnly = null,
+        string? sameSite = null)
+    {
         List<string> syntax = new List<string>();
         syntax.Add($"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
-        if (expires != null)
+        if (expires is not null)
         {
             syntax.Add($"Expires={expires.Value.ToUniversalTime():r}");
         }
-        if (maxAge != null)
+        if (maxAge is not null)
         {
             syntax.Add($"Max-Age={maxAge.Value.TotalSeconds}");
         }
-        if (domain != null)
+        if (domain is not null)
         {
             string d = domain;
+            // hope il optimize this
             if (d.StartsWith("https://")) d = d.Substring("https://".Length);
             if (d.StartsWith("http://")) d = d.Substring("http://".Length);
             d = d.TrimEnd('/');
 
             syntax.Add($"Domain={d}");
         }
-        if (path != null)
+        if (path is not null)
         {
             syntax.Add($"Path={path}");
         }
@@ -87,11 +142,11 @@ public abstract class CookieHelper
         {
             syntax.Add($"HttpOnly");
         }
-        if (sameSite != null)
+        if (sameSite is not null)
         {
             syntax.Add($"SameSite={sameSite}");
         }
 
-        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, String.Join("; ", syntax));
+        return String.Join("; ", syntax);
     }
 }

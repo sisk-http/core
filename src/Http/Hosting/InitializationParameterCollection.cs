@@ -9,9 +9,6 @@
 
 using System.Collections;
 using System.Collections.Specialized;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http.Hosting;
 
@@ -27,56 +24,6 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// Gets an instance of <see cref="NameValueCollection"/> with the values of this class.
     /// </summary>
     public NameValueCollection AsNameValueCollection() => this._decorator;
-
-    /// <summary>
-    /// Associates the parameters received in the service configuration to a managed object.
-    /// </summary>
-    /// <typeparam name="T">The type of the managed object that will have the service parameters mapped.</typeparam>
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075", Justification = "The return value of method 'System.Reflection.PropertyInfo.PropertyType.get' does not have matching annotations.")]
-    [Obsolete("This method is deprecated and will be removed in next Sisk versions.")]
-    public T Map<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : new()
-    {
-        T parametersObject = new T();
-
-        Type parameterType = typeof(T);
-        PropertyInfo[] properties = parameterType.GetProperties();
-        foreach (PropertyInfo property in properties)
-        {
-            object mappingValue;
-            string? value = this._decorator[property.Name];
-            Type propType = property.PropertyType;
-
-            if (value is null) continue;
-            if (propType.IsEnum)
-            {
-                mappingValue = Enum.Parse(propType, value, true);
-            }
-            else if (propType == typeof(string))
-            {
-                mappingValue = value;
-            }
-            else if (propType.IsValueType)
-            {
-                if (propType.IsAssignableTo(typeof(IParsable<>)))
-                {
-                    mappingValue = propType.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string), typeof(IFormatProvider) })
-                        !.Invoke(propType, new[] { value, null })!;
-                }
-                else
-                {
-                    mappingValue = Parseable.ParseInternal(value, propType)!;
-                }
-            }
-            else
-            {
-                throw new InvalidCastException(string.Format(SR.InitializationParameterCollection_MapCastException, value, propType.FullName));
-            }
-
-            property.SetValue(parametersObject, mappingValue);
-        }
-
-        return parametersObject;
-    }
 
     /// <summary>
     /// Ensures that the parameter defined by name <paramref name="parameterName"/> is present and not empty in this collection.
@@ -138,6 +85,28 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
                 _keys.Add(this._decorator[s]);
             return _keys.ToArray();
         }
+    }
+
+    /// <summary>
+    /// Gets the specified value if present in this parameter collection, or throw an exception
+    /// if the value is not present.
+    /// </summary>
+    /// <param name="parameterName">The parameter name.</param>
+    /// <param name="option">Specifies the <see cref="GetValueOption"/> used for getting the value.</param>
+    public string GetValueOrThrow(string parameterName, GetValueOption option = GetValueOption.NotNullOrEmpty)
+    {
+        string? value = this[parameterName];
+
+        if (option == GetValueOption.NotNull && value is null)
+            throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName));
+
+        if (option == GetValueOption.NotNullOrEmpty && string.IsNullOrEmpty(value))
+            throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName));
+
+        if (option == GetValueOption.NotNullOrWhiteSpace && string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException(string.Format(SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName));
+
+        return value!;
     }
 
     /// <inheritdoc/>
@@ -252,5 +221,28 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
         {
             throw new InvalidOperationException("Cannot modify this collection: it is read-only.");
         }
+    }
+
+    /// <summary>
+    /// Represents the option used in the method <see cref="GetValueOrThrow(string, GetValueOption)"/>.
+    /// </summary>
+    public enum GetValueOption
+    {
+        /// <summary>
+        /// The method should throw if the value is not present in the collection, but allow empty
+        /// values.
+        /// </summary>
+        NotNull,
+
+        /// <summary>
+        /// The method should throw if the value is not present in the collection or has an empty value.
+        /// </summary>
+        NotNullOrEmpty,
+
+        /// <summary>
+        /// The method should throw if the value is not present in the collection, has an empty value or
+        /// consists of whitespaces (spaces, tabs, etc.).
+        /// </summary>
+        NotNullOrWhiteSpace
     }
 }

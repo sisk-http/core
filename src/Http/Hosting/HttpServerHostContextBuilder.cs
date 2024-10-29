@@ -66,12 +66,12 @@ public sealed class HttpServerHostContextBuilder
     }
 
     /// <summary>
-    /// Defines a function that will be executed immediately before starting the HTTP server.
+    /// Adds an function that will be executed immediately before starting the HTTP server.
     /// </summary>
     /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
     public HttpServerHostContextBuilder UseBootstraper(Action bootstrapAction)
     {
-        this._context.HttpServer.handler._default._serverBootstraping = bootstrapAction;
+        this._context.HttpServer.handler._default._serverBootstrapingFunctions.Add(bootstrapAction);
         return this;
     }
 
@@ -312,7 +312,17 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="startupMessage">The startup message.</param>
     public HttpServerHostContextBuilder UseStartupMessage(string startupMessage)
     {
-        this._context.startupMessages.AppendLine(startupMessage);
+        this._context.startupMessages.Add(() => startupMessage);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a function that returns an optional initialization message to the <see cref="HttpServerHostContext"/> output verbose.
+    /// </summary>
+    /// <param name="startupMessage">The startup message function.</param>
+    public HttpServerHostContextBuilder UseStartupMessage(Func<string> startupMessage)
+    {
+        this._context.startupMessages.Add(startupMessage);
         return this;
     }
 }

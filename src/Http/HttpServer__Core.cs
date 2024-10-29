@@ -227,6 +227,7 @@ public partial class HttpServer
             request.Host = dnsSafeHost;
             request.Context = srContext;
             executionResult.Request = request;
+            executionResult.Context = srContext;
             otherParty = request.RemoteAddress;
 
             if (matchedListeningHost.Router is null)
@@ -332,15 +333,14 @@ public partial class HttpServer
 
             #region Step 4 - Response computing
             HttpHeaderCollection resHeaders = response.Headers;
+            resHeaders.AddRange(srContext.ExtraHeaders);
+
             HttpHeaderCollection overrideHeaders = srContext.OverrideHeaders;
 
-            if (overrideHeaders.Count > 0)
+            for (int i = 0; i < overrideHeaders.Count; i++)
             {
-                for (int i = 0; i < overrideHeaders.Count; i++)
-                {
-                    var overridingHeader = overrideHeaders.items[i];
-                    resHeaders.Set(overridingHeader.Item1, overridingHeader.Item2);
-                }
+                var overridingHeader = overrideHeaders.items[i];
+                resHeaders.Set(overridingHeader.Item1, overridingHeader.Item2);
             }
 
             for (int i = 0; i < resHeaders.Count; i++)

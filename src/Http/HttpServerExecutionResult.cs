@@ -24,22 +24,28 @@ namespace Sisk.Core.Http
     public delegate void ReceiveRequestEventHandler(object sender, HttpRequest request);
 
     /// <summary>
-    /// Represents the results of executing a request on the server.
+    /// Represents the results of an request execution on the HTTP server.
     /// </summary>
     public sealed class HttpServerExecutionResult
     {
         /// <summary>
-        /// Represents the request received in this diagnosis.
+        /// Gets the <see cref="HttpRequest"/> received in this diagnosis.
         /// </summary>
         public HttpRequest Request { get; internal set; } = null!;
 
         /// <summary>
-        /// Represents the response sent by the server.
+        /// Gets the resulted <see cref="HttpResponse"/> send by the router, if any. This object can be null if the
+        /// server didn't sent any response to the client.
         /// </summary>
         public HttpResponse? Response { get; internal set; }
 
         /// <summary>
-        /// Represents the status of server operation.
+        /// Gets the <see cref="HttpContext"/> of this execution result.
+        /// </summary>
+        public HttpContext Context { get; internal set; } = null!;
+
+        /// <summary>
+        /// Gets the status of server operation.
         /// </summary>
         public HttpServerExecutionStatus Status { get; internal set; }
 
@@ -54,13 +60,12 @@ namespace Sisk.Core.Http
         public bool IsSuccessStatus { get => this.Status == HttpServerExecutionStatus.Executed || this.Status == HttpServerExecutionStatus.ConnectionClosed; }
 
         /// <summary>
-        /// Gets the request size in bytes.
+        /// Gets the estimated request size in bytes.
         /// </summary>
-
         public long RequestSize { get; internal set; }
 
         /// <summary>
-        /// Gets the response size in bytes, if any.
+        /// Gets the estimated response size in bytes, if any.
         /// </summary>
         public long ResponseSize { get; internal set; }
 

@@ -17,33 +17,40 @@ namespace Sisk.Core.Helpers;
 public sealed class SizeHelper
 {
     /// <summary>
-    /// Represents the number of bytes in one kilobyte (KB).
+    /// Represents the number of bytes in one kibibyte (KiB).
+    /// This is calculated as 1024 bytes.
     /// </summary>
     public const long UnitKb = 1024;
 
     /// <summary>
-    /// Represents the number of bytes in one megabyte (MB).
-    /// This is calculated as 1024 kilobytes.
+    /// Represents the number of bytes in one mebibyte (MiB).
+    /// This is calculated as 1024 kibibytes.
     /// </summary>
-    public const long UnitMb = UnitKb * 1024;
+    public const long UnitMb = 1_048_576;
 
     /// <summary>
-    /// Represents the number of bytes in one gigabyte (GB).
-    /// This is calculated as 1024 megabytes.
+    /// Represents the number of bytes in one gibibyte (GiB).
+    /// This is calculated as 1024 mebibytes.
     /// </summary>
-    public const long UnitGb = UnitMb * 1024;
+    public const long UnitGb = 1_073_741_824;
 
     /// <summary>
-    /// Represents the number of bytes in one terabyte (TB).
-    /// This is calculated as 1024 gigabytes.
+    /// Represents the number of bytes in one tebibyte (TiB).
+    /// This is calculated as 1024 gibibytes.
     /// </summary>
-    public const long UnitTb = UnitGb * 1024;
+    public const long UnitTb = 1_099_511_627_776;
 
     /// <summary>
-    /// Represents the number of bytes in one exabyte (TB).
-    /// This is calculated as 1024 terabytes.
+    /// Represents the number of bytes in one pebibyte (PiB).
+    /// This is calculated as 1024 tebibytes.
     /// </summary>
-    public const long UnitEb = UnitTb * 1024;
+    public const long UnitPb = 1_125_899_906_842_624;
+
+    /// <summary>
+    /// Represents the number of bytes in one exibibyte (EiB).
+    /// This is calculated as 1024 pebibytes.
+    /// </summary>
+    public const long UnitEb = 1_152_921_504_606_846_976;
 
     /// <summary>
     /// Converts a byte count into a human-readable string representation.

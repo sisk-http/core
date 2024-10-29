@@ -19,11 +19,7 @@ namespace Sisk.Core.Internal.ServiceProvider
     {
         public void ReadConfiguration(ConfigurationContext prov)
         {
-            string filename = Path.GetFullPath(prov.ConfigurationFile);
-            if (!File.Exists(filename))
-            {
-                throw new ArgumentException(string.Format(SR.Provider_ConfigParser_ConfigFileNotFound, prov.ConfigurationFile));
-            }
+            string filename = prov.ConfigurationFile;
 
             string fileContents = File.ReadAllText(filename);
             ConfigStructureFile? config = System.Text.Json.JsonSerializer.Deserialize(fileContents, typeof(ConfigStructureFile),
