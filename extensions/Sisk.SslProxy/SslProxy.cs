@@ -7,14 +7,12 @@
 // File name:   SslProxy.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Ssl.HttpSerializer;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Channels;
+using Sisk.Ssl.HttpSerializer;
 
 namespace Sisk.Ssl;
 
@@ -160,272 +158,17 @@ public sealed class SslProxy : IDisposable
         {
             while (reader.TryRead(out var client))
             {
-                new Thread(() => this.HandleTcpClient(client))
-                    .Start();
+                new Thread(delegate () { this.HandleTcpClient(client); }).Start();
             }
         }
     }
 
     void HandleTcpClient(TcpClient client)
     {
-        client.NoDelay = true;
-        bool keepAliveEnabled = this.KeepAliveEnabled;
-        int clientId = clientIdGenerator.Next();
-        int connectionCloseState = 0;
-        int iteration = 0;
+        using var gatewayClient = new TcpClient();
+        using var connection = new HttpConnection(this, client);
 
-        if (this.disposedValue)
-            return;
-
-        Logger.LogInformation($"#{clientId} open");
-
-        try
-        {
-            using (var tcpStream = client.GetStream())
-            using (var sslStream = new SslStream(tcpStream, true))
-            using (var gatewayClient = new TcpClient())
-            {
-                try
-                {
-                    gatewayClient.Connect(this.remoteEndpoint);
-                    gatewayClient.NoDelay = true;
-                    gatewayClient.SendTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-                    gatewayClient.ReceiveTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-                }
-                catch (Exception ex)
-                {
-                    connectionCloseState = 1;
-                    Logger.LogInformation($"#{clientId}: Gateway connect exception: {ex.Message}");
-
-                    HttpResponseWriter.TryWriteHttp1DefaultResponse(
-                        new HttpStatusInformation(502),
-                        "The host service ins't working.",
-                        sslStream);
-
-                    return;
-                }
-
-                // used by header values
-                Span<byte> secHXl1 = stackalloc byte[4096];
-                // used by request path
-                Span<byte> secHXl2 = stackalloc byte[2048];
-                // used by header name
-                Span<byte> secHLg1 = stackalloc byte[512];
-                // used by response reason message
-                Span<byte> secHL21 = stackalloc byte[256];
-                // used by request method and response status code
-                Span<byte> secHSm1 = stackalloc byte[8];
-                // used by request and respones protocol
-                Span<byte> secHSm2 = stackalloc byte[8];
-
-                HttpRequestReaderSpan reqReaderMemory = new HttpRequestReaderSpan()
-                {
-                    MethodBuffer = secHSm1,
-                    PathBuffer = secHXl2,
-                    ProtocolBuffer = secHSm2,
-                    PsHeaderName = secHLg1,
-                    PsHeaderValue = secHXl1
-                };
-
-                HttpResponseReaderSpan resReaderMemory = new HttpResponseReaderSpan()
-                {
-                    ProtocolBuffer = secHSm2,
-                    StatusCodeBuffer = secHSm1,
-                    StatusReasonBuffer = secHL21,
-                    PsHeaderName = secHLg1,
-                    PsHeaderValue = secHXl1
-                };
-
-                using (var gatewayStream = gatewayClient.GetStream())
-                {
-                    gatewayStream.ReadTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-                    gatewayStream.WriteTimeout = (int)(this.GatewayTimeout.TotalSeconds);
-
-                    try
-                    {
-                        sslStream.AuthenticateAsServer(this.ServerCertificate, this.ClientCertificateRequired, this.AllowedProtocols, this.CheckCertificateRevocation);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogInformation($"#{clientId}: SslAuthentication failed: {ex.Message}");
-                        connectionCloseState = 2;
-
-                        // write an error on the http stream
-                        HttpResponseWriter.TryWriteHttp1DefaultResponse(
-                            new HttpStatusInformation(400),
-                            "The plain HTTP request was sent to an HTTPS port.",
-                            sslStream);
-
-                        return;
-                    }
-
-                    while (client.Connected && !this.disposedValue)
-                    {
-                        try
-                        {
-                            if (!HttpRequestReader.TryReadHttp1Request(
-                                        clientId,
-                                        sslStream,
-                                        reqReaderMemory,
-                                        this.GatewayHostname,
-                                        client,
-                                out var method,
-                                out var path,
-                                out var proto,
-                                out var forwardedFor,
-                                out var reqContentLength,
-                                out var headers,
-                                out var expectContinue))
-                            {
-                                Logger.LogInformation($"#{clientId}: couldn't read request");
-                                connectionCloseState = 9;
-
-                                HttpResponseWriter.TryWriteHttp1DefaultResponse(
-                                    new HttpStatusInformation(400),
-                                    "The server received an invalid HTTP message.",
-                                    sslStream);
-
-                                return;
-                            }
-
-                            Logger.LogInformation($"#{clientId} >> {method} {path}");
-
-                            if (this.ProxyAuthorization is not null)
-                            {
-                                headers.Add((HttpKnownHeaderNames.ProxyAuthorization, this.ProxyAuthorization.ToString()));
-                            }
-
-                            string clientIpAddress = ((IPEndPoint)client.Client.LocalEndPoint!).Address.ToString();
-                            if (forwardedFor is not null)
-                            {
-                                headers.Add((HttpKnownHeaderNames.XForwardedFor, forwardedFor + ", " + clientIpAddress));
-                            }
-                            else
-                            {
-                                headers.Add((HttpKnownHeaderNames.XForwardedFor, clientIpAddress));
-                            }
-
-                            if (!HttpRequestWriter.TryWriteHttpV1Request(clientId, gatewayStream, method, path, headers))
-                            {
-                                HttpResponseWriter.TryWriteHttp1DefaultResponse(
-                                    new HttpStatusInformation(502),
-                                    "The host service ins't working.",
-                                    sslStream);
-
-                                connectionCloseState = 3;
-                                return;
-                            }
-
-                            if (expectContinue)
-                            {
-                                goto readGatewayResponse;
-                            }
-
-                        redirClientContent:
-                            if (reqContentLength > 0)
-                            {
-                                if (!SerializerUtils.CopyStream(sslStream, gatewayStream, reqContentLength, CancellationToken.None))
-                                {
-                                    // client couldn't send the full content
-                                    break;
-                                }
-                            }
-
-                        readGatewayResponse:
-                            if (!HttpResponseReader.TryReadHttp1Response(
-                                        clientId,
-                                        gatewayStream,
-                                        resReaderMemory,
-                                out var resStatusCode,
-                                out var resStatusDescr,
-                                out var resHeaders,
-                                out var resContentLength,
-                                out var isChunked,
-                                out var gatewayAllowsKeepAlive,
-                                out var isWebSocket))
-                            {
-                                HttpResponseWriter.TryWriteHttp1DefaultResponse(
-                                      new HttpStatusInformation(502),
-                                      "The host service ins't working.",
-                                      sslStream);
-
-                                connectionCloseState = 4;
-                                return;
-                            }
-
-                            Logger.LogInformation($"#{clientId} << {resStatusCode} {resStatusDescr}");
-
-                            // TODO: check if client wants to keep alive
-                            if (gatewayAllowsKeepAlive && keepAliveEnabled)
-                            {
-                                ;
-                            }
-                            else
-                            {
-                                resHeaders.Add(("Connection", "close"));
-                            }
-#if VERBOSE
-                            if (!expectContinue)
-                                resHeaders.Add(("X-Debug-Connection-Id", clientId.ToString()));
-#endif
-
-                            HttpResponseWriter.TryWriteHttp1Response(clientId, sslStream, resStatusCode, resStatusDescr, resHeaders);
-
-                            if (expectContinue && resStatusCode == "100")
-                            {
-                                expectContinue = false;
-                                goto redirClientContent;
-                            }
-
-                            if (isWebSocket)
-                            {
-                                AutoResetEvent waitEvent = new AutoResetEvent(false);
-
-                                Logger.LogInformation($"#{clientId} << entering ws");
-
-                                SerializerUtils.CopyBlocking(gatewayStream, sslStream, waitEvent);
-                                SerializerUtils.CopyBlocking(sslStream, gatewayStream, waitEvent);
-
-                                waitEvent.WaitOne();
-                            }
-                            else if (resContentLength > 0)
-                            {
-                                Logger.LogInformation($"#{clientId} << {resContentLength} bytes written");
-                                SerializerUtils.CopyStream(gatewayStream, sslStream, resContentLength, CancellationToken.None);
-                            }
-                            else if (isChunked)
-                            {
-                                AutoResetEvent waitEvent = new AutoResetEvent(false);
-                                Logger.LogInformation($"#{clientId} << entering chunked data");
-                                SerializerUtils.CopyUntilBlocking(gatewayStream, sslStream, Constants.CHUNKED_EOF, waitEvent);
-                                waitEvent.WaitOne();
-                            }
-
-                            tcpStream.Flush();
-
-                            if (!gatewayAllowsKeepAlive || !keepAliveEnabled)
-                            {
-                                connectionCloseState = 5;
-                                break;
-                            }
-                        }
-                        catch
-                        {
-                            connectionCloseState = 6;
-                            return;
-                        }
-                        finally
-                        {
-                            iteration++;
-                        }
-                    }
-                }
-            }
-        }
-        finally
-        {
-            Logger.LogInformation($"#{clientId} closed. State = {connectionCloseState}");
-        }
+        connection.HandleConnection();
     }
 
     private void Dispose(bool disposing)

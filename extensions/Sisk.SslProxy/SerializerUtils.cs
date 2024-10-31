@@ -29,7 +29,7 @@ static class SerializerUtils
         return true;
     }
 
-    public static Span<byte> ReadUntil(Span<byte> buffer, Stream inputStream, int intercept)
+    public static ReadOnlySpan<byte> ReadUntil(Span<byte> buffer, Stream inputStream, int intercept)
     {
         int current, size = 0;
         while (inputStream.CanRead && ((current = inputStream.ReadByte()) >= 0))

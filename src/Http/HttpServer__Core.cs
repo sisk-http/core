@@ -60,7 +60,6 @@ public partial class HttpServer
         if (contentHeaders.ContentEncoding.Count > 0
             && response.Headers.GetValues(HttpKnownHeaderNames.ContentEncoding)?.Length is 0 or null)
             response.AppendHeader(HttpKnownHeaderNames.ContentEncoding, string.Join(", ", contentHeaders.ContentEncoding));
-
     }
 
     internal static void SetCorsHeaders(HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
@@ -134,6 +133,7 @@ public partial class HttpServer
 
         this.httpListener.BeginGetContext(this.ListenerCallback, null);
         HttpListenerContext context = this.httpListener.EndGetContext(result);
+
         this.ProcessRequest(context);
     }
 

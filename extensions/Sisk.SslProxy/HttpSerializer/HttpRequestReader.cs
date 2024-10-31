@@ -7,9 +7,9 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using Sisk.Core.Http;
 
 namespace Sisk.Ssl.HttpSerializer;
 
@@ -44,21 +44,21 @@ static class HttpRequestReader
 
         try
         {
-            Span<byte> _method = SerializerUtils.ReadUntil(readMemory.MethodBuffer, inboundStream, Constants.CH_SPACE);
+            ReadOnlySpan<byte> _method = SerializerUtils.ReadUntil(readMemory.MethodBuffer, inboundStream, Constants.CH_SPACE);
             if (_method.Length == 0) goto ret;
             method = SerializerUtils.DecodeString(_method);
 
-            Span<byte> _path = SerializerUtils.ReadUntil(readMemory.PathBuffer, inboundStream, Constants.CH_SPACE);
+            ReadOnlySpan<byte> _path = SerializerUtils.ReadUntil(readMemory.PathBuffer, inboundStream, Constants.CH_SPACE);
             if (_path.Length == 0) goto ret;
             path = SerializerUtils.DecodeString(_path);
 
-            Span<byte> _protocol = SerializerUtils.ReadUntil(readMemory.ProtocolBuffer, inboundStream, Constants.CH_RETURN);
+            ReadOnlySpan<byte> _protocol = SerializerUtils.ReadUntil(readMemory.ProtocolBuffer, inboundStream, Constants.CH_RETURN);
             if (_protocol.Length == 0) goto ret;
             proto = SerializerUtils.DecodeString(_protocol);
 
             inboundStream.ReadByte(); // \n
 
-            List<(string, string)> headerList = new List<(string, string)>(32);
+            List<(string, string)> headerList = new List<(string, string)>(Constants.HEADER_LINE_ALLOCATION);
             while (inboundStream.CanRead)
             {
                 char? firstReadChar;
@@ -75,10 +75,10 @@ static class HttpRequestReader
 
                 bool fwHeader = true;
 
-                Span<byte> headerName = SerializerUtils.ReadUntil(readMemory.PsHeaderName, inboundStream, Constants.CH_HSEP);
+                ReadOnlySpan<byte> headerName = SerializerUtils.ReadUntil(readMemory.PsHeaderName, inboundStream, Constants.CH_HSEP);
                 if (headerName.Length == 0) goto ret;
 
-                Span<byte> headerValue = SerializerUtils.ReadUntil(readMemory.PsHeaderValue, inboundStream, Constants.CH_RETURN);
+                ReadOnlySpan<byte> headerValue = SerializerUtils.ReadUntil(readMemory.PsHeaderValue, inboundStream, Constants.CH_RETURN);
                 if (headerValue.Length == 0) goto ret;
 
                 inboundStream.ReadByte(); // \n

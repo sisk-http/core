@@ -20,6 +20,9 @@ static class Constants
 
     public const string Server = "siskproxy/0.1";
 
+    // pre-allocate 32 headers for each request
+    public const int HEADER_LINE_ALLOCATION = 32;
+
     public static readonly byte[] CHUNKED_EOF = [
         0x30, // ascii 0
         CH_RETURN, CH_LINEFEED,
