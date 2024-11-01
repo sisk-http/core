@@ -16,6 +16,7 @@ static partial class SR
     public const string MultipartFormReader_Exception = "Caught an exception while trying to read the multipart form request: {0}";
 
     public const string HttpContextBagRepository_UndefinedDynamicProperty = "The specified type {0} was not defined in this context bag repository.";
+    public const string HttpContext_SharedNotDefined = "This property is only accessible within a request context.";
 
     public const string HttpRequest_InvalidForwardedIpAddress = "The forwarded IP address is invalid.";
     public const string HttpRequest_InvalidCookieSyntax = "The cookie header is invalid or is it has an malformed syntax.";
@@ -77,6 +78,7 @@ static partial class SR
     public const string RequestHandler_ActivationException = "Couldn't activate an instance of the IRequestHandler {0} with the {1} arguments.";
 
     public const string Route_Action_ValueTypeSet = "Defining actions which their return type is an value type is not supported. Encapsulate it with ValueResult<T>.";
+    public const string Route_Action_InvalidDelegateType = "The router action delegate type must be either RouteAction or ParameterlessRouteAction.";
     public const string Route_Action_AsyncMissingGenericType = "Async route {0} action must return an object in addition to Task.";
 
     public const string ValueResult_Null = "ValueResult cannot hold null values.";

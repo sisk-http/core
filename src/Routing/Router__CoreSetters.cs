@@ -352,15 +352,22 @@ public partial class Router
             {
                 try
                 {
-                    RouteAction r;
+                    Delegate r;
+                    int paramCount = method.GetParameters().Length;
+                    var delegateType = paramCount switch
+                    {
+                        0 => typeof(ParameterlessRouteAction),
+                        1 => typeof(RouteAction),
+                        _ => throw new Exception()
+                    };
 
                     if (instance is null || method.Attributes.HasFlag(MethodAttributes.Static))
                     {
-                        r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
+                        r = Delegate.CreateDelegate(delegateType, method);
                     }
                     else
                     {
-                        r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), instance, method);
+                        r = Delegate.CreateDelegate(delegateType, instance, method);
                     }
 
                     string path = routeAttribute.Path;

@@ -120,6 +120,8 @@ public partial class Router
         HttpRequest request = context.Request;
         HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;
 
+        HttpContext._shared = context;
+
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
 
@@ -250,9 +252,24 @@ public partial class Router
             try
             {
                 context.MatchedRoute = matchedRoute;
-                object? actionResult = matchedRoute.Action(request);
+                object? actionResult;
 
-                if (matchedRoute.isReturnTypeTask)
+                if (matchedRoute._callback is RouteAction _routeAction)
+                {
+                    actionResult = _routeAction(request);
+                }
+                else if (matchedRoute._callback is ParameterlessRouteAction _paramlessRouteAction)
+                {
+                    actionResult = _paramlessRouteAction();
+                }
+                else
+                {
+                    // it will probably never get here since the route
+                    // ensures that the callback is one of RouteAction or ParameterlessRouteAction
+                    throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
+                }
+
+                if (matchedRoute._isAsyncAction)
                 {
                     if (actionResult is null)
                     {

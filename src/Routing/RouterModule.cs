@@ -7,6 +7,8 @@
 // File name:   RouterModule.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
+
 namespace Sisk.Core.Routing;
 
 /// <summary>
@@ -15,6 +17,16 @@ namespace Sisk.Core.Routing;
 /// </summary>
 public abstract class RouterModule
 {
+    /// <summary>
+    /// Gets the current <see cref="HttpRequest"/>.
+    /// </summary>
+    public HttpRequest Request { get => HttpContext.CurrentContext.Request; }
+
+    /// <summary>
+    /// Gets the current <see cref="HttpContext"/>.
+    /// </summary>
+    public HttpContext Context { get => HttpContext.CurrentContext; }
+
     /// <summary>
     /// Gets or sets an list of <see cref="IRequestHandler"/> this <see cref="RouterModule"/> runs.
     /// </summary>
