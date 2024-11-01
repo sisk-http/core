@@ -31,4 +31,30 @@ public abstract class RequestHandler : IRequestHandler
     {
         return null;
     }
+
+    /// <summary>
+    /// Gets an inline <see cref="RequestHandler"/> that resolves to the specified function.
+    /// </summary>
+    /// <param name="execute">The function that the <see cref="RequestHandler"/> will run.</param>
+    /// <param name="executionMode">Optional. Determines where the request handler will be executed.</param>
+    public static RequestHandler Create(Func<HttpRequest, HttpContext, HttpResponse?> execute, RequestHandlerExecutionMode executionMode = RequestHandlerExecutionMode.BeforeResponse)
+    {
+        return new InlineRequestHandler(execute, executionMode);
+    }
+}
+
+class InlineRequestHandler : RequestHandler
+{
+    public Func<HttpRequest, HttpContext, HttpResponse?> Handler { get; set; }
+
+    public InlineRequestHandler(Func<HttpRequest, HttpContext, HttpResponse?> handler, RequestHandlerExecutionMode mode)
+    {
+        this.Handler = handler ?? throw new ArgumentNullException(nameof(handler));
+        base.ExecutionMode = mode;
+    }
+
+    public override HttpResponse? Execute(HttpRequest request, HttpContext context)
+    {
+        return this.Handler(request, context);
+    }
 }

@@ -120,7 +120,7 @@ public partial class Router
         HttpRequest request = context.Request;
         HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;
 
-        HttpContext._shared = context;
+        //  HttpContext._shared = context;
 
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;

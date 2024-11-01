@@ -20,7 +20,6 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Represents the function that is called after the route is matched with the request.
     /// </summary>
-    /// <param name="request">The received request on the router.</param>
     public delegate object ParameterlessRouteAction();
 
     /// <summary>
