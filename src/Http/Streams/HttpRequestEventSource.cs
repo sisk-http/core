@@ -75,9 +75,10 @@ namespace Sisk.Core.Http.Streams
 
             this.IsActive = true;
 
-            res.AddHeader("Cache-Control", "no-store, no-cache");
-            res.AddHeader("Content-Type", "text/event-stream");
-            res.AddHeader("X-Powered-By", HttpServer.PoweredBy);
+            res.AddHeader(HttpKnownHeaderNames.CacheControl, "no-store, no-cache");
+            res.AddHeader(HttpKnownHeaderNames.ContentType, "text/event-stream");
+            if (host.baseServer.ServerConfiguration.Flags.SendSiskHeader)
+                res.AddHeader(HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy);
 
             if (host.baseServer.ServerConfiguration.Flags.SendCorsHeaders && host.Context.MatchedRoute?.UseCors == true)
                 HttpServer.SetCorsHeaders(req, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, res);

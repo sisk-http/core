@@ -25,7 +25,7 @@ namespace Sisk.Core.Http
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
         internal const byte HTTPRESPONSE_UNHANDLED_EXCEPTION = 8;
 
-        internal long CalculedLength = -1;
+        internal long? CalculedLength = null;
 
         /// <summary>
         /// Creates an <see cref="HttpResponse"/> object which closes the connection with the client immediately (ECONNRESET).

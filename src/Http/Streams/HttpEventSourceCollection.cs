@@ -43,6 +43,7 @@ namespace Sisk.Core.Http.Streams
 
         internal void RegisterEventSource(HttpRequestEventSource src)
         {
+            // only register identified event sources
             if (src.Identifier != null)
             {
                 lock (this._eventSources)

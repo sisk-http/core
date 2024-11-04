@@ -88,6 +88,11 @@ public sealed class HttpServerHostContext : IDisposable
             }
         }
 
+        if (this.Router.GetDefinedRoutes().Length == 0)
+        {
+            Console.WriteLine($"Warning: {SR.Httpserver_Warning_NoRoutes}");
+        }
+
         if (preventHault)
             Thread.Sleep(-1);
     }

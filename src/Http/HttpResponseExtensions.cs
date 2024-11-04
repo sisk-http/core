@@ -167,14 +167,4 @@ public static class HttpResponseExtensions
         response.SetCookie(cookie);
         return response;
     }
-
-    /// <summary>
-    /// Gets a completed <see cref="Task"/> from the given <see cref="HttpResponse"/> as the result.
-    /// </summary>
-    /// <typeparam name="THttpResponse">The type which implements <see cref="HttpResponse"/>.</typeparam>
-    /// <param name="response">The <see cref="HttpResponse"/> object.</param>
-    public static Task<THttpResponse> AsTask<THttpResponse>(this THttpResponse response) where THttpResponse : HttpResponse
-    {
-        return Task.FromResult(response);
-    }
 }

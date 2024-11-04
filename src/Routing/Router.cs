@@ -79,7 +79,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
         /// </summary>
-        public List<IRequestHandler> GlobalRequestHandlers { get; set; } = new List<IRequestHandler>();
+        public IRequestHandler[] GlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
 
         /// <summary>
         /// Gets or sets the Router action exception handler.

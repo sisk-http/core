@@ -52,10 +52,6 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
 	</ItemGroup>
 
-	<ItemGroup>
-		<Compile Remove="Internal\Net\**" />
-	</ItemGroup>
-
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<!--<AnalysisLevel>latest</AnalysisLevel>

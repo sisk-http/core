@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Sisk.Core.Routing
 {
     /// <summary>
-    /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
+    /// Specifies that the method or class, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
     /// </summary>
     public class RequestHandlerAttribute<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : RequestHandlerAttribute where T : IRequestHandler
     {
@@ -33,7 +33,7 @@ namespace Sisk.Core.Routing
     }
 
     /// <summary>
-    /// Specifies that the method, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
+    /// Specifies that the method or class, when used on this attribute, will instantiate the type and call the <see cref="IRequestHandler"/> with given parameters.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
     public class RequestHandlerAttribute : Attribute

@@ -69,6 +69,11 @@ namespace Sisk.Core.Http
         /// </summary>
         public long ResponseSize { get; internal set; }
 
+        /// <summary>
+        /// Gets the total processing time of the HTTP session.
+        /// </summary>
+        public TimeSpan Elapsed { get; internal set; }
+
         internal HttpServerExecutionResult() { }
     }
 

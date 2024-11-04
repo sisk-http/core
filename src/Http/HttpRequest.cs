@@ -13,7 +13,6 @@ using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
 using System.Diagnostics;
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Core.Http
@@ -241,6 +240,14 @@ namespace Sisk.Core.Http
         public string FullUrl
         {
             get => this.listenerRequest.Url!.ToString();
+        }
+
+        /// <summary>
+        /// Gets the <see cref="System.Uri"/> component for this HTTP request requested URL.
+        /// </summary>
+        public Uri Uri
+        {
+            get => this.listenerRequest.Url!;
         }
 
         /// <summary>
@@ -531,8 +538,5 @@ namespace Sisk.Core.Http
         {
             return $"{this.Method} {this.FullPath}";
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal long CalcRequestSize() => this.listenerRequest.ContentLength64;
     }
 }

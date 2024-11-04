@@ -230,7 +230,7 @@ public partial class Router
             #region Before-response handlers
             HttpResponse? rhResponse;
             Exception? rhException;
-            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, CollectionsMarshal.AsSpan(this.GlobalRequestHandlers), matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
+            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.BeforeResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
             {
                 return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }
@@ -288,7 +288,7 @@ public partial class Router
             #endregion
 
             #region After-response global handlers
-            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, CollectionsMarshal.AsSpan(this.GlobalRequestHandlers), matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
+            if (this.InvokeRequestHandlerGroup(RequestHandlerExecutionMode.AfterResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException))
             {
                 return new RouterExecutionResult(rhResponse, matchedRoute, matchResult, rhException);
             }

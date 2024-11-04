@@ -59,9 +59,11 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
     /// <returns>True if the object is find with the specified key; otherwise, false.</returns>
     /// <typeparam name="T">The singleton type.</typeparam>
-    public bool IsSet<T>([MaybeNullWhen(false)] out T? value) where T : notnull
+    public bool IsSet<T>([NotNullWhen(true)] out T value) where T : notnull
     {
-        return this.TryGetValue(this.GetTypeKeyName(typeof(T)), out value);
+        var b = this.TryGetValue(this.GetTypeKeyName(typeof(T)), out var v);
+        value = b ? (T)v! : default!;
+        return b;
     }
 
     /// <summary>
@@ -100,15 +102,65 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
     public T Get<T>() where T : notnull
     {
-        Type contextType = typeof(T);
-        string key = this.GetTypeKeyName(contextType);
-        if (this.ContainsKey(key))
+        if (this.IsSet(out T value))
         {
-            return (T)this._values[key]!;
+            return value;
+        }
+        throw new ArgumentException(string.Format(SR.HttpContextBagRepository_UndefinedDynamicProperty, typeof(T).FullName));
+    }
+
+    /// <summary>
+    /// Gets a singleton previously defined in this context bag via its type <typeparamref name="T"/>.
+    /// Returns the default value if the object is not defined.
+    /// </summary>
+    /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
+    /// <returns>The object of type <typeparamref name="T"/> if it exists; otherwise, <c>null</c>.</returns>
+    public T? GetOrDefault<T>() where T : notnull
+    {
+        if (this.IsSet(out T value))
+        {
+            return value;
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// Gets a singleton previously defined in this context bag via its type <typeparamref name="T"/>.
+    /// If it does not exist, it adds the object to the context bag using the provided <paramref name="getter"/> function.
+    /// </summary>
+    /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
+    /// <param name="getter">A function that provides the object to be added if it does not exist.</param>
+    /// <returns>The object of type <typeparamref name="T"/> from the context bag.</returns>
+    public T GetOrAdd<T>(Func<T> getter) where T : notnull
+    {
+        if (this.IsSet(out T value))
+        {
+            return value;
         }
         else
         {
-            throw new ArgumentException(string.Format(SR.HttpContextBagRepository_UndefinedDynamicProperty, contextType.FullName));
+            value = getter();
+            return this.Set(value);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously gets a singleton previously defined in this context bag via its type <typeparamref name="T"/>.
+    /// If it does not exist, it adds the object to the context bag using the provided asynchronous <paramref name="getter"/> function.
+    /// </summary>
+    /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
+    /// <param name="getter">An asynchronous function that provides the object to be added if it does not exist.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the object of type <typeparamref name="T"/> from the context bag.</returns>
+    public async Task<T> GetOrAddAsync<T>(Func<Task<T>> getter) where T : notnull
+    {
+        if (this.IsSet(out T value))
+        {
+            return value;
+        }
+        else
+        {
+            value = await getter();
+            return this.Set(value);
         }
     }
 

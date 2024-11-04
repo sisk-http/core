@@ -27,7 +27,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the access logging format for incoming HTTP requests.
         /// </summary>
-        public string AccessLogsFormat { get; set; } = "%dd-%dm-%dy %th:%ti:%ts %ls %ri %rm %rs://%ra%rz%rq [%sc %sd] %lin -> %lou in %lmsms";
+        public string AccessLogsFormat { get; set; } = "%ri - [%dd/%dmm/%dy %tH:%ti:%ts %tz] \"%rm %rz%rq\" %sc %lou";
 
         /// <summary>
         /// Gets or sets the default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.

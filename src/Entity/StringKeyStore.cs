@@ -29,7 +29,7 @@ public class StringKeyStore : IDictionary<string, string[]>
     public StringKeyStore()
     {
         this.Comparer = StringComparer.CurrentCulture;
-        this.items = new();
+        this.items = new(64);
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public class StringKeyStore : IDictionary<string, string[]>
     public StringKeyStore(IEqualityComparer<string> comparer)
     {
         this.Comparer = comparer;
-        this.items = new();
+        this.items = new(64);
     }
 
     #region Internal methods
@@ -272,15 +272,27 @@ public class StringKeyStore : IDictionary<string, string[]>
     }
 
     /// <summary>
+    /// Sets the elements of the specified collection, replacing existing values.
+    /// </summary>
+    /// <param name="items">The collection whose items should be replaced or added to this collection.</param>
+    public void SetRange(IEnumerable<KeyValuePair<string, string[]>> items)
+    {
+        foreach (KeyValuePair<string, string[]> item in items)
+            this.Set(item);
+    }
+
+    /// <summary>
+    /// Sets the value associated with the specified key, replacing any existing values.
+    /// </summary>
+    /// <param name="item">The key-value pair to add, where the key is associated with an array of values.</param>
+    public void Set(KeyValuePair<string, string[]> item) => this.Set(item.Key, item.Value);
+
+    /// <summary>
     /// Sets the value associated with the specified key, replacing any existing values.
     /// </summary>
     /// <param name="key">The key for which to set the value.</param>
     /// <param name="value">The value to associate with the key.</param>
-    public void Set(string key, string value)
-    {
-        this.Remove(key);
-        this.Add(key, value);
-    }
+    public void Set(string key, string value) => this.Set(key, [value]);
 
     /// <summary>
     /// Sets the collection of values associated with the specified key, replacing any existing values.

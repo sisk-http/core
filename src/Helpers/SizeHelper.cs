@@ -70,7 +70,7 @@ public sealed class SizeHelper
     {
         if (byteCount < UnitKb)
         {
-            return $"{byteCount:n2} bytes";
+            return $"{byteCount:n0} bytes";
         }
         else if (byteCount > UnitKb && byteCount <= UnitMb)
         {
@@ -84,9 +84,13 @@ public sealed class SizeHelper
         {
             return $"{byteCount / UnitGb:n2} GB";
         }
-        else if (byteCount > UnitTb)
+        else if (byteCount > UnitTb && byteCount <= UnitPb)
         {
             return $"{byteCount / UnitTb:n2} TB";
+        }
+        else if (byteCount > UnitPb)
+        {
+            return $"{byteCount / UnitTb:n2} PB";
         }
         else
         {
