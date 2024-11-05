@@ -11,6 +11,42 @@ namespace Sisk.Core.Internal;
 
 internal class MimeTypeList
 {
+    public static string[] InlineMimeTypes =
+    [
+        "text/html",
+        "text/css",
+        "text/javascript",
+        "text/plain",
+        "text/xml",
+
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/svg+xml",
+        "image/webp",
+        "image/bmp",
+        "image/avif",
+
+        "audio/mpeg",
+        "audio/wav",
+        "audio/ogg",
+
+        "video/mp4",
+        "video/webm",
+        "video/ogg",
+
+        "font/woff2",
+        "application/font-woff",
+
+        "application/javascript",
+        "application/json",
+        "application/xml",
+        "application/pdf",
+        "application/xhtml+xml",
+        "application/wasm"
+    ];
+
+
     // i forked this list from somewhere but can't remember where.
     // if someone found the source, please, open an issue and I will put an
     // credit/reference to it here.

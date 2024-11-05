@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 namespace Sisk.Core.Internal;
+
 internal class PlainTextFileExtensions
 {
     public static bool IsTextFile(string extension)

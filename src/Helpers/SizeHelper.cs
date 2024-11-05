@@ -88,7 +88,7 @@ public sealed class SizeHelper
         {
             return $"{byteCount / UnitTb:n2} TB";
         }
-        else if (byteCount > UnitPb)
+        else if (byteCount > UnitPb && byteCount <= UnitEb)
         {
             return $"{byteCount / UnitTb:n2} PB";
         }

@@ -55,7 +55,8 @@ public sealed class PathHelper
     {
         string[] parts = path.Split(new char[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
         string result = string.Join(directorySeparator, parts);
-        if (path.StartsWith('/') || path.StartsWith('\\')) result = directorySeparator + result;
+        if (path.StartsWith('/') || path.StartsWith('\\'))
+            result = directorySeparator + result;
         return result;
     }
 }
