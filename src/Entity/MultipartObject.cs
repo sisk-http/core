@@ -143,13 +143,11 @@ namespace Sisk.Core.Entity
         //
         // we should rewrite it using Spans<>, but there are so many code and it would take
         // days...
+        // edit: we did it! but we'll mantain this method for at least one year
         internal static MultipartFormCollection ParseMultipartObjects(HttpRequest req)
         {
-            string? contentType = req.Headers[HttpKnownHeaderNames.ContentType];
-            if (contentType is null)
-            {
-                throw new InvalidOperationException(SR.MultipartObject_ContentTypeMissing);
-            }
+            string? contentType = req.Headers[HttpKnownHeaderNames.ContentType]
+                ?? throw new InvalidOperationException(SR.MultipartObject_ContentTypeMissing);
 
             string[] contentTypePieces = contentType.Split(';');
             string? boundary = null;

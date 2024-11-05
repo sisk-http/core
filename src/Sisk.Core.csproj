@@ -54,8 +54,8 @@
 
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		<!--<AnalysisLevel>latest</AnalysisLevel>
-		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>-->
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
 		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
 		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>

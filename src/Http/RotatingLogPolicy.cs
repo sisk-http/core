@@ -70,11 +70,10 @@ namespace Sisk.Core.Http
             this.MaximumSize = maximumSize;
             this.Due = due;
 
-            if (this.checkTimer is null)
-                this.checkTimer = new System.Timers.Timer()
-                {
-                    AutoReset = false
-                };
+            this.checkTimer ??= new System.Timers.Timer()
+            {
+                AutoReset = false
+            };
 
             this.checkTimer.Interval = this.Due.TotalMilliseconds;
             this.checkTimer.Elapsed += this.Check;

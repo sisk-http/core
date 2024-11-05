@@ -226,8 +226,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="handler">An action where the first argument is the main <see cref="CrossOriginResourceSharingHeaders"/> object.</param>
     public HttpServerHostContextBuilder UseCors(Action<CrossOriginResourceSharingHeaders> handler)
     {
-        if (this._context.CrossOriginResourceSharingPolicy is null)
-            this._context.CrossOriginResourceSharingPolicy = CrossOriginResourceSharingHeaders.Empty;
+        this._context.CrossOriginResourceSharingPolicy ??= CrossOriginResourceSharingHeaders.Empty;
 
         handler(this._context.CrossOriginResourceSharingPolicy);
         return this;

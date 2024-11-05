@@ -40,10 +40,7 @@ namespace Sisk.Core.Http
         {
             get
             {
-                if (this.rotatingLogPolicy is null)
-                {
-                    this.rotatingLogPolicy = new RotatingLogPolicy(this);
-                }
+                this.rotatingLogPolicy ??= new RotatingLogPolicy(this);
                 return this.rotatingLogPolicy;
             }
         }
@@ -240,7 +237,6 @@ namespace Sisk.Core.Http
                             if (!gotAnyError)
                             {
                                 await this.channel.Writer.WriteAsync(item);
-                                gotAnyError = true;
                             }
                         }
                     }

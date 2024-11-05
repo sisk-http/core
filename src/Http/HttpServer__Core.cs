@@ -152,7 +152,7 @@ public partial class HttpServer
         bool hasAccessLogging = this.ServerConfiguration.AccessLogsStream is not null;
         bool hasErrorLogging = this.ServerConfiguration.ErrorsLogsStream is not null;
 
-        IPAddress otherParty = baseRequest.RemoteEndPoint.Address;
+        IPAddress otherParty;
         Uri? connectingUri = baseRequest.Url;
         Router.RouterExecutionResult? routerResult = null;
 
@@ -463,7 +463,7 @@ public partial class HttpServer
             bool canAccessLog = logMode.HasFlag(LogOutput.AccessLog) && hasAccessLogging;
             bool canErrorLog = logMode.HasFlag(LogOutput.ErrorLog) && hasErrorLogging;
 
-            if (executionResult.ServerException is { } ex && canErrorLog)
+            if (executionResult.ServerException is not null && canErrorLog)
             {
                 string entry = LogFormatter.FormatExceptionEntr(executionResult);
                 this.ServerConfiguration.ErrorsLogsStream?.WriteLine(entry);

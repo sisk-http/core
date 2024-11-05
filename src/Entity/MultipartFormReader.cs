@@ -160,7 +160,7 @@ internal sealed class MultipartFormReader
 
         this.position -= boundaryLen + this.nlbytes.Length + 2 /* the boundary "--" construct */;
 
-        return this.bytes[istart..this.position];
+        return this.bytes.AsSpan()[istart..this.position];
     }
 
     NameValueCollection ReadHeaders()
@@ -173,8 +173,8 @@ internal sealed class MultipartFormReader
             if (sepIndex == -1)
                 break;
 
-            string hname = line.Substring(0, sepIndex);
-            string hvalue = line.Substring(sepIndex + 1).Trim();
+            string hname = line[..sepIndex];
+            string hvalue = line[(sepIndex + 1)..].Trim();
 
             headers.Add(hname, hvalue);
         }

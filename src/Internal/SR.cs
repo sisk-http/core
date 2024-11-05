@@ -35,7 +35,6 @@ static partial class SR
     public const string Httpserver_Commons_HeaderAfterContents = "Cannot send headers or status code after sending response contents.";
     public const string Httpserver_Commons_RouterTimeout = "Request maximum execution time exceeded it's limit.";
     public const string Httpserver_WaitNext_Race_Condition = "This HTTP server is already waiting for the next request in another call of this method.";
-    public const string Httpserver_MaxContentLengthZero = "The maximum content size must not be a negative number.";
     public const string Httpserver_Warning_NoRoutes = "no routes has been defined in this router.";
 
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";

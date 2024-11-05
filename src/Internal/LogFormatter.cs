@@ -14,16 +14,17 @@ using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Internal;
 
-internal class LogFormatter
+internal partial class LogFormatter
 {
     public static string FormatExceptionEntr(HttpServerExecutionResult executionResult)
     {
         StringBuilder errLineBuilder = new StringBuilder(128);
-        errLineBuilder.Append("[");
+        errLineBuilder.Append('[');
         errLineBuilder.Append(executionResult.Request.RequestedAt.ToString("G"));
-        errLineBuilder.Append("] ");
+        errLineBuilder.Append(']');
+        errLineBuilder.Append(' ');
         errLineBuilder.Append(executionResult.Request.Method.Method);
-        errLineBuilder.Append(" ");
+        errLineBuilder.Append(' ');
         errLineBuilder.Append(executionResult.Request.FullPath);
         errLineBuilder.AppendLine();
         errLineBuilder.AppendLine(executionResult.ServerException?.ToString());
@@ -37,12 +38,14 @@ internal class LogFormatter
         return errLineBuilder.ToString();
     }
 
-    static readonly Regex EntryMatchRegex = new Regex(@"%([a-z]+|\{[^\}]+\})", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    [GeneratedRegex(@"%([a-z]+|\{[^\}]+\})", RegexOptions.IgnoreCase)]
+    internal static partial Regex EntryMatchRegex();
+
     public static string FormatAccessLogEntry(in string format, HttpServerExecutionResult executionResult)
     {
         ReadOnlySpan<char> formatSpan = format;
         StringBuilder sb = new StringBuilder(format.Length);
-        MatchCollection matches = EntryMatchRegex.Matches(format);
+        MatchCollection matches = EntryMatchRegex().Matches(format);
 
         int lastIndex = 0;
         for (int i = 0; i < matches.Count; i++)

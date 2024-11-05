@@ -33,10 +33,7 @@ public partial class Router
 
     private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex(Route route, string requestPath)
     {
-        if (route.routeRegex is null)
-        {
-            route.routeRegex = new Regex(route.Path, this.MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
-        }
+        route.routeRegex ??= new Regex(route.Path, this.MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
 
         var test = route.routeRegex.Match(requestPath);
         if (test.Success)

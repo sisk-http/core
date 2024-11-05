@@ -30,7 +30,8 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T>
     /// <param name="capacity">The circular buffer capacity.</param>
     public CircularBuffer(int capacity)
     {
-        if (capacity <= 0) throw new ArgumentOutOfRangeException("Capacity cannot be less or equals to zero.");
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+
         this.capacity = capacity;
         this.items = new T[capacity];
     }
@@ -69,7 +70,8 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T>
     /// <param name="capacity">The new size for this circular buffer.</param>
     public void Resize(int capacity)
     {
-        if (capacity <= 0) throw new ArgumentOutOfRangeException("Capacity cannot be less or equals to zero.");
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+
         Array.Resize(ref this.items, capacity);
         this.capacity = capacity;
     }

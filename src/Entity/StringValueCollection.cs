@@ -24,6 +24,17 @@ public sealed class StringValueCollection : StringKeyStore
     /// </summary>
     public StringValueCollection(IDictionary<string, string?> values) : base(StringComparer.InvariantCultureIgnoreCase)
     {
+        base.AddRange(values.Select(k => new KeyValuePair<string, string[]>(k.Key, [k.Value ?? string.Empty])));
+        this.paramName = "StringValue";
+    }
+
+    /// <summary>
+    /// Creates an new <see cref="StringValueCollection"/> instance with values from another
+    /// <see cref="IDictionary"/> instance.
+    /// </summary>
+    public StringValueCollection(IDictionary<string, string[]> values) : base(StringComparer.InvariantCultureIgnoreCase)
+    {
+        base.AddRange(values);
         this.paramName = "StringValue";
     }
 

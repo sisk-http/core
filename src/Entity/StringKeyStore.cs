@@ -544,8 +544,8 @@ public class StringKeyStore : IDictionary<string, string[]>
                 }
                 else
                 {
-                    string key = part.Substring(0, eqPos).Trim();
-                    string value = part.Substring(eqPos + 1).Trim();
+                    string key = part[..eqPos].Trim();
+                    string value = part[(eqPos + 1)..].Trim();
 
                     if (string.IsNullOrWhiteSpace(key))
                     {

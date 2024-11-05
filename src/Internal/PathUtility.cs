@@ -50,7 +50,7 @@ internal static class PathUtility
     {
         if (paths.Length == 0) return "";
 
-        bool startsWithSepChar = paths[0].StartsWith("/") || paths[0].StartsWith("\\");
+        bool startsWithSepChar = paths[0].StartsWith('/') || paths[0].StartsWith('\\');
         List<string> tokens = new List<string>();
 
         for (int ip = 0; ip < paths.Length; ip++)

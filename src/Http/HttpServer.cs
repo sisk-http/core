@@ -281,10 +281,8 @@ namespace Sisk.Core.Http
             {
                 throw new InvalidOperationException(SR.Httpserver_NoListeningHost);
             }
-            if (this._isDisposing)
-            {
-                throw new ObjectDisposedException(nameof(HttpServer));
-            }
+
+            ObjectDisposedException.ThrowIf(this._isDisposing, this);
 
             this.listeningPrefixes = new HashSet<string>();
             var safelisteningPrefixes = new HashSet<string>();

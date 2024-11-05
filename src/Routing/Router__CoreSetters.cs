@@ -410,7 +410,7 @@ public partial class Router
 
     private Route? GetCollisionRoute(RouteMethod method, string path)
     {
-        if (path is null) throw new ArgumentNullException(nameof(path));
+        ArgumentNullException.ThrowIfNull(path);
         HttpStringInternals.AssertRoute(path);
 
         for (int i = 0; i < this._routesList.Count; i++)

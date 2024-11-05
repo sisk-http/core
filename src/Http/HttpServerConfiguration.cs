@@ -78,10 +78,8 @@ namespace Sisk.Core.Http
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(SR.Httpserver_MaxContentLengthZero);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
+
                 this._maximumContentLength = value;
             }
         }

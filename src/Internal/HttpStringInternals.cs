@@ -158,7 +158,7 @@ namespace Sisk.Core.Internal
 
                 if (pathPtt is [ROUTE_GROUP_START, .., ROUTE_GROUP_END] && reqsPtt.Length > 0)
                 {
-                    if (pathParams is null) pathParams = new NameValueCollection();
+                    pathParams ??= new NameValueCollection();
                     string queryValueName = new string(pathPtt[new Range(1, pathPtt.Length - 1)]);
                     pathParams.Add(queryValueName, new string(reqsPtt));
                 }
