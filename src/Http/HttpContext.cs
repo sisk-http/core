@@ -17,6 +17,17 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class HttpContext
     {
+        [ThreadStatic]
+        internal static HttpContext? _threadShared = null;
+
+        /// <summary>
+        /// Gets the current running <see cref="HttpContext"/>.
+        /// </summary>
+        /// <remarks>
+        /// This property is only accessible during an HTTP session, within the executing HTTP code.
+        /// </remarks>
+        public static HttpContext Current { get => _threadShared ?? throw new InvalidOperationException(); }
+
         /// <summary>
         /// Gets or sets an <see cref="HttpHeaderCollection"/> indicating HTTP headers which
         /// will overwrite headers set by CORS, router response or request handlers.

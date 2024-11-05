@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Internal;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Net;
@@ -29,7 +30,7 @@ public class StringKeyStore : IDictionary<string, string[]>
     public StringKeyStore()
     {
         this.Comparer = StringComparer.CurrentCulture;
-        this.items = new(64);
+        this.items = new();
     }
 
     /// <summary>
@@ -39,7 +40,7 @@ public class StringKeyStore : IDictionary<string, string[]>
     public StringKeyStore(IEqualityComparer<string> comparer)
     {
         this.Comparer = comparer;
-        this.items = new(64);
+        this.items = new();
     }
 
     #region Internal methods

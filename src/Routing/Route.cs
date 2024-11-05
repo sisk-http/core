@@ -224,12 +224,12 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Determines that the context or the route can write log messages only to the access logs through <see cref="Http.HttpServerConfiguration.AccessLogsStream"/>.
         /// </summary>
-        AccessLog = 1,
+        AccessLog = 1 << 1,
 
         /// <summary>
         /// Determines that the context or the route can write error messages only to the error logs through <see cref="Http.HttpServerConfiguration.ErrorsLogsStream"/>.
         /// </summary>
-        ErrorLog = 2,
+        ErrorLog = 1 << 2,
 
         /// <summary>
         /// Determines that the context or the route can write log messages to both error and access logs.

@@ -9,8 +9,6 @@
 
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Http.Handlers;
 
@@ -30,7 +28,7 @@ enum HttpServerHandlerActionEvent
 internal class HttpServerHandlerRepository
 {
     private readonly HttpServer parent;
-    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>(20);
+    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler>();
     internal readonly DefaultHttpServerHandler _default = new DefaultHttpServerHandler();
 
     public HttpServerHandlerRepository(HttpServer parent)
@@ -49,17 +47,16 @@ internal class HttpServerHandlerRepository
         || eventName == HttpServerHandlerActionEvent.ServerStarted
         || eventName == HttpServerHandlerActionEvent.SetupRouter;
 
-    private void CallEvery(Action<HttpServerHandler> action, HttpServerHandlerActionEvent eventName)
+    private void CallEvery(HandlerActionBase action, HttpServerHandlerActionEvent eventName)
     {
-        Span<HttpServerHandler> hspan = CollectionsMarshal.AsSpan(this.handlers);
-        ref HttpServerHandler hpointer = ref MemoryMarshal.GetReference(hspan);
-        for (int i = 0; i < hspan.Length; i++)
+        int c = this.handlers.Count;
+        for (int i = 0; i < c; i++)
         {
-            HttpServerHandler handler = Unsafe.Add(ref hpointer, i);
+            var handler = this.handlers[i];
 
             try
             {
-                action(handler);
+                action.DynamicInvoke(handler);
             }
             catch (Exception ex)
             {
@@ -81,4 +78,6 @@ internal class HttpServerHandlerRepository
     internal void Exception(Exception val) => this.CallEvery(handler => handler.InvokeOnException(val), HttpServerHandlerActionEvent.Exception);
     internal void Stopping(HttpServer val) => this.CallEvery(handler => handler.InvokeOnServerStopping(val), HttpServerHandlerActionEvent.Stopping);
     internal void Stopped(HttpServer val) => this.CallEvery(handler => handler.InvokeOnServerStopped(val), HttpServerHandlerActionEvent.Stopped);
+
+    internal delegate void HandlerActionBase(HttpServerHandler handler);
 }

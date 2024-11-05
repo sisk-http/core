@@ -17,10 +17,12 @@ namespace Sisk.Core.Entity;
 /// </summary>
 public sealed class HttpHeaderCollection : StringKeyStore
 {
+    static readonly StringComparer _comparer = StringComparer.InvariantCultureIgnoreCase;
+
     /// <summary>
     /// Create an new instance of the <see cref="HttpHeaderCollection"/> class.
     /// </summary>
-    public HttpHeaderCollection() : base(StringComparer.InvariantCultureIgnoreCase)
+    public HttpHeaderCollection() : base(_comparer)
     {
     }
 

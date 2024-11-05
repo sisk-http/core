@@ -116,6 +116,7 @@ public partial class Router
         // the line below ensures that _routesList will not be modified in this method
         if (this.parentServer is null) throw new InvalidOperationException(SR.Router_NotBinded);
 
+        HttpContext._threadShared = context;
         context.Router = this;
         HttpRequest request = context.Request;
         HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;

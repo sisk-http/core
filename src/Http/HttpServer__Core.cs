@@ -98,7 +98,7 @@ public partial class HttpServer
         if (cors.ExposeHeaders.Length > 0)
             baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlExposeHeaders, string.Join(", ", cors.ExposeHeaders));
 
-        if (cors.MaxAge.TotalSeconds > 0)
+        if (cors.MaxAge > TimeSpan.Zero)
             baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString());
     }
 
