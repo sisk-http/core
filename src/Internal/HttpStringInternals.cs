@@ -9,6 +9,7 @@
 
 using Sisk.Core.Routing;
 using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Internal
 {
@@ -72,7 +73,7 @@ namespace Sisk.Core.Internal
         /// </summary>
         public static bool IsRoutePatternMatch(ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase)
         {
-            if (routeA == Route.AnyPath || routeB == Route.AnyPath)
+            if (IsRouteAnyPath(routeA) || IsRouteAnyPath(routeB))
             {
                 return true;
             }
@@ -126,7 +127,7 @@ namespace Sisk.Core.Internal
         /// </summary>
         public static PathMatchResult IsReqPathMatch(ReadOnlySpan<char> pathPattern, ReadOnlySpan<char> requestPath, bool ignoreCase)
         {
-            if (pathPattern == Route.AnyPath)
+            if (IsRouteAnyPath(pathPattern))
             {
                 return new PathMatchResult(true, null);
             }
@@ -260,5 +261,9 @@ namespace Sisk.Core.Internal
 
             return true;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsRouteAnyPath(ReadOnlySpan<char> path)
+            => MemoryExtensions.Equals(path, Route.AnyPath, StringComparison.Ordinal);
     }
 }

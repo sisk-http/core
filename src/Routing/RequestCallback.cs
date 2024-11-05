@@ -18,6 +18,11 @@ namespace Sisk.Core.Routing
     public delegate object RouteAction(HttpRequest request);
 
     /// <summary>
+    /// Represents the function that is called after the route is matched with the request.
+    /// </summary>
+    public delegate object ParameterlessRouteAction();
+
+    /// <summary>
     /// Represents the function that is called when an request reaches an error on the 
     /// router.
     /// </summary>

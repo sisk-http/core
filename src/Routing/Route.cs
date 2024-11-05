@@ -8,6 +8,8 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Routing
@@ -17,8 +19,10 @@ namespace Sisk.Core.Routing
     /// </summary>
     public class Route : IEquatable<Route>
     {
-        internal RouteAction? _callback { get; set; }
-        internal bool isReturnTypeTask;
+        internal RouteAction? _singleParamCallback;
+        internal ParameterlessRouteAction? _parameterlessRouteAction;
+
+        internal bool _isAsync;
         internal Regex? routeRegex;
         private string path;
 
@@ -36,7 +40,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
-        public bool IsAsync { get => this.isReturnTypeTask; }
+        public bool IsAsync { get => this._isAsync; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
@@ -86,39 +90,84 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the function that is called after the route is matched with the request.
         /// </summary>
-        public RouteAction? Action
+        public Delegate? Action
         {
-            get => this._callback;
+            get
+            {
+                if (this._parameterlessRouteAction != null)
+                {
+                    return this._parameterlessRouteAction;
+                }
+                else
+                {
+                    return this._singleParamCallback;
+                }
+            }
             set
             {
-                this._callback = value;
-                if (value != null)
+                if (value is null)
                 {
-                    var memberInfo = value.Method;
-                    var retType = memberInfo.ReturnType;
+                    this._parameterlessRouteAction = null;
+                    this._singleParamCallback = null;
+                    this._isAsync = false;
+                    return;
+                }
+                else if (!this.TrySetRouteAction(value.Method, value.Target, out Exception? ex))
+                {
+                    throw ex;
+                }
+            }
+        }
 
-                    if (retType.IsValueType)
+        internal bool TrySetRouteAction(MethodInfo method, object? target, [NotNullWhen(false)] out Exception? ex)
+        {
+            if (Delegate.CreateDelegate(typeof(RouteAction), target, method, false) is RouteAction raction)
+            {
+                this._singleParamCallback = raction;
+                this._parameterlessRouteAction = null;
+            }
+            else if (Delegate.CreateDelegate(typeof(ParameterlessRouteAction), target, method, false) is ParameterlessRouteAction parameterlessRouteAction)
+            {
+                this._singleParamCallback = null;
+                this._parameterlessRouteAction = parameterlessRouteAction;
+            }
+            else
+            {
+                ex = new ArgumentException(SR.Router_Set_InvalidType);
+                return false;
+            }
+
+            var retType = method.ReturnType;
+            if (retType.IsValueType)
+            {
+                ex = new NotSupportedException(SR.Route_Action_ValueTypeSet);
+                return false;
+            }
+            else if (retType.IsAssignableTo(typeof(Task)))
+            {
+                this._isAsync = true;
+                if (retType.GenericTypeArguments.Length == 0)
+                {
+                    ex = new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
+                    return false;
+                }
+                else
+                {
+                    Type genericAssignType = retType.GenericTypeArguments[0];
+                    if (genericAssignType.IsValueType)
                     {
-                        throw new NotSupportedException(SR.Route_Action_ValueTypeSet);
-                    }
-                    else if (retType.IsAssignableTo(typeof(Task)))
-                    {
-                        this.isReturnTypeTask = true;
-                        if (retType.GenericTypeArguments.Length == 0)
-                        {
-                            throw new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
-                        }
-                        else
-                        {
-                            Type genericAssignType = retType.GenericTypeArguments[0];
-                            if (genericAssignType.IsValueType)
-                            {
-                                throw new NotSupportedException(SR.Route_Action_ValueTypeSet);
-                            }
-                        }
+                        ex = new NotSupportedException(SR.Route_Action_ValueTypeSet);
+                        return false;
                     }
                 }
             }
+            else
+            {
+                this._isAsync = false;
+            }
+
+            ex = null;
+            return true;
         }
 
         /// <summary>
@@ -137,7 +186,7 @@ namespace Sisk.Core.Routing
         /// <param name="method">The matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.</param>
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
         /// <param name="action">The function that is called after the route is matched with the request.</param>
-        public Route(RouteMethod method, string path, RouteAction action)
+        public Route(RouteMethod method, string path, Delegate? action)
         {
             this.Method = method;
             this.path = path;
@@ -152,7 +201,7 @@ namespace Sisk.Core.Routing
         /// <param name="name">The route name. It allows it to be found by other routes and makes it easier to create links.</param>
         /// <param name="action">The function that is called after the route is matched with the request.</param>
         /// <param name="beforeCallback">The RequestHandlers to run before the route's Action.</param>
-        public Route(RouteMethod method, string path, string? name, RouteAction action, IRequestHandler[]? beforeCallback)
+        public Route(RouteMethod method, string path, string? name, Delegate? action, IRequestHandler[]? beforeCallback)
         {
             this.Method = method;
             this.path = path;

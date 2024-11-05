@@ -60,6 +60,7 @@ static partial class SR
     public const string Router_AutoScanModules_TModuleSameAssembly = "The TModule generic type must be a type that implements RouterModule and not RouterModule itself.";
     public const string Router_Set_Collision = "A possible route collision could happen between route {0} and route {1}. Please review the methods and paths of these routes.";
     public const string Router_Set_Exception = "Couldn't set method {0}.{1} as an route. See inner exception.";
+    public const string Router_Set_InvalidType = "The specified method doens't has any compatible signature with RouteAction or ParameterlessRouteAction.";
     public const string Router_Set_InvalidRouteStart = "Route path expressions must start with '/' and cannot be an empty string.";
     public const string Router_RouteDefinitionNotFound = "No route definition was found for the given action. It may be possible that the informed method does not implement the RouteAttribute attribute.";
     public const string Router_Handler_HttpResponseRegister = "Cannot register HttpResponse as an valid type to the action handler.";

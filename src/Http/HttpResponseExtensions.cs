@@ -7,6 +7,7 @@
 // File name:   HttpResponseExtensions.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Entity;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -84,6 +85,19 @@ public static class HttpResponseExtensions
     {
         foreach (string key in headers.Keys)
             response.Headers.Add(key, headers[key] ?? string.Empty);
+        return response;
+    }
+
+    /// <summary>
+    /// Sets an list of HTTP headers in this <see cref="HttpResponse"/>.
+    /// </summary>
+    /// <typeparam name="THttpResponse">The type which implements <see cref="HttpResponse"/>.</typeparam>
+    /// <param name="response">The <see cref="HttpResponse"/> object.</param>
+    /// <param name="headers">The collection of HTTP headers.</param>
+    /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
+    public static THttpResponse WithHeader<THttpResponse>(this THttpResponse response, StringKeyStore headers) where THttpResponse : HttpResponse
+    {
+        headers.AddRange(headers);
         return response;
     }
 

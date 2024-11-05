@@ -218,12 +218,6 @@ public static class HttpKnownHeaderNames
     public const string Expires = "Expires";
 
     /// <summary>
-    /// The HTTP From header.
-    /// <para>Contains the email address of the user making the request, often used for identifying the requester.</para>
-    /// </summary>
-    public const string From = "From";
-
-    /// <summary>
     /// The HTTP Host header.
     /// <para>Specifies the domain name of the server and the TCP port number on which the server is listening, allowing for virtual hosting.</para>
     /// </summary>

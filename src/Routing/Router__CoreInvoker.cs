@@ -243,21 +243,29 @@ public partial class Router
 
             #region Route action
 
-            if (matchedRoute.Action is null)
-            {
-                throw new ArgumentNullException(string.Format(SR.Router_NoRouteActionDefined, matchedRoute));
-            }
-
             try
             {
                 context.MatchedRoute = matchedRoute;
-                object? actionResult = matchedRoute.Action(request);
+                object? actionResult;
 
-                if (matchedRoute.isReturnTypeTask)
+                if (matchedRoute._parameterlessRouteAction != null)
+                {
+                    actionResult = matchedRoute._parameterlessRouteAction();
+                }
+                else if (matchedRoute._singleParamCallback != null)
+                {
+                    actionResult = matchedRoute._singleParamCallback(request);
+                }
+                else
+                {
+                    throw new ArgumentException(string.Format(SR.Router_NoRouteActionDefined, matchedRoute));
+                }
+
+                if (matchedRoute._isAsync)
                 {
                     if (actionResult is null)
                     {
-                        throw new ArgumentNullException(SR.Router_Handler_ActionNullValue);
+                        throw new ArgumentException(SR.Router_Handler_ActionNullValue);
                     }
 
                     ref Task<object> actionTask = ref Unsafe.As<object, Task<object>>(ref actionResult);

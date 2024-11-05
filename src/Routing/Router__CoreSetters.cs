@@ -148,7 +148,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapGet(string path, RouteAction action)
+    public void MapGet(string path, Delegate action)
         => this.SetRoute(RouteMethod.Get, path, action);
 
     /// <summary>
@@ -156,7 +156,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapPost(string path, RouteAction action)
+    public void MapPost(string path, Delegate action)
         => this.SetRoute(RouteMethod.Post, path, action);
 
     /// <summary>
@@ -164,7 +164,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapPut(string path, RouteAction action)
+    public void MapPut(string path, Delegate action)
         => this.SetRoute(RouteMethod.Put, path, action);
 
     /// <summary>
@@ -172,7 +172,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapDelete(string path, RouteAction action)
+    public void MapDelete(string path, Delegate action)
         => this.SetRoute(RouteMethod.Delete, path, action);
 
     /// <summary>
@@ -180,7 +180,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapPatch(string path, RouteAction action)
+    public void MapPatch(string path, Delegate action)
         => this.SetRoute(RouteMethod.Patch, path, action);
 
     /// <summary>
@@ -188,18 +188,21 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapAny(string path, RouteAction action)
+    public void MapAny(string path, Delegate action)
         => this.SetRoute(RouteMethod.Any, path, action);
 
     /// <summary>
     /// Maps a rewrite route, which redirects all requests that match the given path to another path,
     /// keeping the body and headers of the original request.
     /// </summary>
+    /// <remarks>
+    /// 
+    /// </remarks>
     /// <param name="rewritePath">The incoming HTTP request path.</param>
     /// <param name="rewriteInto">The rewrited URL.</param>
     public void Rewrite(string rewritePath, string rewriteInto)
     {
-        this.SetRoute(RouteMethod.Any, rewritePath, request => this.RewriteHandler(rewriteInto, request));
+        this.SetRoute(RouteMethod.Any, rewritePath, new RouteAction(request => this.RewriteHandler(rewriteInto, request)));
     }
 
     /// <summary>
@@ -208,7 +211,7 @@ public partial class Router
     /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void SetRoute(RouteMethod method, string path, RouteAction action)
+    public void SetRoute(RouteMethod method, string path, Delegate action)
         => this.SetRoute(new Route(method, path, action));
 
     /// <summary>
@@ -218,7 +221,7 @@ public partial class Router
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
     /// <param name="name">The route name.</param>
-    public void SetRoute(RouteMethod method, string path, RouteAction action, string? name)
+    public void SetRoute(RouteMethod method, string path, Delegate action, string? name)
         => this.SetRoute(new Route(method, path, name, action, null));
 
     /// <summary>
@@ -352,17 +355,6 @@ public partial class Router
             {
                 try
                 {
-                    RouteAction r;
-
-                    if (instance is null || method.Attributes.HasFlag(MethodAttributes.Static))
-                    {
-                        r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), method);
-                    }
-                    else
-                    {
-                        r = (RouteAction)Delegate.CreateDelegate(typeof(RouteAction), instance, method);
-                    }
-
                     string path = routeAttribute.Path;
 
                     if (prefix is not null && !routeAttribute.UseRegex)
@@ -374,13 +366,17 @@ public partial class Router
                     {
                         Method = routeAttribute.Method,
                         Path = path,
-                        Action = r,
                         Name = routeAttribute.Name,
                         RequestHandlers = methodAttrReqHandlers.ToArray(),
                         LogMode = routeAttribute.LogMode,
                         UseCors = routeAttribute.UseCors,
                         UseRegex = routeAttribute.UseRegex
                     };
+
+                    if (!route.TrySetRouteAction(method, instance, out Exception? ex))
+                    {
+                        throw ex;
+                    }
 
                     rmodule?.CallRouteCreating(route);
                     this.SetRoute(route);
@@ -403,8 +399,13 @@ public partial class Router
         }
 
         return new HttpResponse()
-            .WithStatus(System.Net.HttpStatusCode.Found)
-            .WithHeader("Location", newPath);
+        {
+            Status = HttpStatusInformation.Found,
+            Headers = new HttpHeaderCollection()
+            {
+                Location = newPath
+            }
+        };
     }
 
     private Route? GetCollisionRoute(RouteMethod method, string path)

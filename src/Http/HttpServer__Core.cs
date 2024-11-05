@@ -330,29 +330,30 @@ public partial class HttpServer
                     baseResponse.Headers.Add(incameHeader.Item1, incameHeader.Item2[j]);
             }
 
-            if (response.Content is ByteArrayContent barrayContent)
+            try
             {
-                ApplyHttpContentHeaders(baseResponse, barrayContent.Headers);
-                ReadOnlySpan<byte> contentBytes = ByteArrayAccessors.UnsafeGetContent(barrayContent);
-
-                if (response.SendChunked)
+                if (response.Content is ByteArrayContent barrayContent)
                 {
-                    baseResponse.SendChunked = true;
+                    ApplyHttpContentHeaders(baseResponse, barrayContent.Headers);
+                    ReadOnlySpan<byte> contentBytes = ByteArrayAccessors.UnsafeGetContent(barrayContent);
+
+                    if (response.SendChunked)
+                    {
+                        baseResponse.SendChunked = true;
+                    }
+                    else
+                    {
+                        baseResponse.SendChunked = false;
+                        baseResponse.ContentLength64 = contentBytes.Length;
+                    }
+
+                    baseResponse.OutputStream.Write(contentBytes);
                 }
-                else
+                else if (response.Content is HttpContent httpContent)
                 {
-                    baseResponse.SendChunked = false;
-                    baseResponse.ContentLength64 = contentBytes.Length;
-                }
+                    ApplyHttpContentHeaders(baseResponse, httpContent.Headers);
+                    var httpContentStream = httpContent.ReadAsStream(); // the HttpContent.Dispose should dispose this stream
 
-                baseResponse.OutputStream.Write(contentBytes);
-            }
-            else if (response.Content is HttpContent httpContent)
-            {
-                ApplyHttpContentHeaders(baseResponse, httpContent.Headers);
-
-                using (var httpContentStream = httpContent.ReadAsStream())
-                {
                     if (httpContentStream.CanSeek && !response.SendChunked)
                     {
                         httpContentStream.Seek(0, SeekOrigin.Begin);
@@ -366,6 +367,10 @@ public partial class HttpServer
 
                     httpContentStream.CopyTo(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
                 }
+            }
+            finally
+            {
+                response.Content?.Dispose();
             }
 
         #endregion
