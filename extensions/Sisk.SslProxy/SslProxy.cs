@@ -7,12 +7,12 @@
 // File name:   SslProxy.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Ssl.HttpSerializer;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Channels;
-using Sisk.Ssl.HttpSerializer;
 
 namespace Sisk.Ssl;
 

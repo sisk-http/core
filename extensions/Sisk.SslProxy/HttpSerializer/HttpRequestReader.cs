@@ -7,9 +7,9 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
-using Sisk.Core.Http;
 
 namespace Sisk.Ssl.HttpSerializer;
 

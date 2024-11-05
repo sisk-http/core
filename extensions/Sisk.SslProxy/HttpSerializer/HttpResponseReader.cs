@@ -7,8 +7,8 @@
 // File name:   HttpResponseReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Diagnostics.CodeAnalysis;
 using Sisk.Core.Http;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Ssl.HttpSerializer;
 

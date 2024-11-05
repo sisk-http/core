@@ -7,7 +7,6 @@
 // File name:   Logger.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Ssl;

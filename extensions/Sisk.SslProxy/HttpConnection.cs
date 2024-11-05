@@ -7,11 +7,11 @@
 // File name:   HttpConnection.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
+using Sisk.Ssl.HttpSerializer;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using Sisk.Core.Http;
-using Sisk.Ssl.HttpSerializer;
 
 namespace Sisk.Ssl;
 
@@ -20,9 +20,9 @@ internal class HttpConnection : IDisposable
     private static readonly Random clientIdRngGenerator = new Random();
     private int connectionCloseState = -1;
     private bool disposedValue;
-    private int clientId = clientIdRngGenerator.Next();
+    private readonly int clientId = clientIdRngGenerator.Next();
     private int iteration = 0;
-    private DateTime createdAt = DateTime.Now;
+    private readonly DateTime createdAt = DateTime.Now;
 
     // do not dispose parent on Dispose ()
     public SslProxy Parent { get; }

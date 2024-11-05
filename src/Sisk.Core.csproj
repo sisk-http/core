@@ -1,21 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<!-- supported frameworks -->
 	<PropertyGroup>
 		<TargetFrameworks>net8.0</TargetFrameworks>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<RootNamespace>Sisk.Core</RootNamespace>
+		<Configurations>Debug;Release</Configurations>
+	</PropertyGroup>
+
+	<!-- debug info, symbols -->
+	<PropertyGroup>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DebugType>embedded</DebugType>
-
+	</PropertyGroup>
+	
+	<!-- aot, build options -->
+	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
 		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
 
+	<!-- nuget package info -->
+	<PropertyGroup>
 		<PackageId>Sisk.HttpServer</PackageId>
 		<Title>Sisk.HttpServer</Title>
 		<Authors>CypherPotato</Authors>
@@ -24,34 +35,42 @@
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
 		<Summary>Sisk is an powerful framework for building web applications with .NET.</Summary>
-		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
-
-		<AssemblyVersion>1.2.0</AssemblyVersion>
-		<FileVersion>1.2.0</FileVersion>
-		<Version>1.2.0</Version>
-
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>false</EmbedUntrackedSources>
+	</PropertyGroup>
 
+	<!-- version info -->
+	<PropertyGroup>
+		<AssemblyVersion>1.3.0</AssemblyVersion>
+		<FileVersion>1.3.0</FileVersion>
+		<Version>1.3.0-rc</Version>
+	</PropertyGroup>
+
+	<!-- licensing, readme, signing -->
+	<PropertyGroup>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackRelease>True</PackRelease>
-		<RootNamespace>Sisk.Core</RootNamespace>
-		<Configurations>Debug;Release</Configurations>
+	</PropertyGroup>
 
+	<!-- idk what is that -->
+	<PropertyGroup>
 		<PathMap>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)=.</PathMap>
 	</PropertyGroup>
 
+	<!-- source link -->
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 	</ItemGroup>
 
+	<!-- enforce code quality on release -->
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<AnalysisLevel>latest</AnalysisLevel>
@@ -61,10 +80,7 @@
 		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<None Include="..\.nuget\README.html" Link="README.html" />
-	</ItemGroup>
-
+	<!-- package included files -->
 	<ItemGroup>
 		<None Include="..\.github\Icon.png">
 			<Pack>True</Pack>
@@ -82,9 +98,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Include="..\.nuget\README.html" Link="README.html" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<EditorConfigFiles Remove=".\.editorconfig" />
 	</ItemGroup>
 
+	<!-- global imports -->
 	<ItemGroup>
 		<Using Include="System" />
 		<Using Include="System.Collections.Generic" />
