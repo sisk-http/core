@@ -62,6 +62,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the default encoding for sending and decoding messages.
         /// </summary>
+        [Obsolete("This property is deprecated and will be removed in later Sisk versions.")]
         public Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
@@ -118,8 +119,8 @@ namespace Sisk.Core.Http
         public void Dispose()
         {
             this.ListeningHosts.Clear();
-            this.AccessLogsStream?.Close();
-            this.ErrorsLogsStream?.Close();
+            this.AccessLogsStream?.Dispose();
+            this.ErrorsLogsStream?.Dispose();
         }
     }
 

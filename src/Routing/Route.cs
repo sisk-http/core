@@ -261,6 +261,73 @@ namespace Sisk.Core.Routing
             if (left is null && right is null) return false;
             return !left?.Equals(right) == true;
         }
+
+        #region Helper constructors
+
+        /// <summary>
+        /// Creates a route that responds to HTTP GET requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for GET requests.</returns>
+        public static Route Get(string path, RouteAction action) => new Route(RouteMethod.Get, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to HTTP POST requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for POST requests.</returns>
+        public static Route Post(string path, RouteAction action) => new Route(RouteMethod.Post, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to HTTP PUT requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for PUT requests.</returns>
+        public static Route Put(string path, RouteAction action) => new Route(RouteMethod.Put, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to HTTP PATCH requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for PATCH requests.</returns>
+        public static Route Patch(string path, RouteAction action) => new Route(RouteMethod.Patch, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to HTTP HEAD requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for HEAD requests.</returns>
+        public static Route Head(string path, RouteAction action) => new Route(RouteMethod.Head, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to any HTTP request method.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for any request method.</returns>
+        public static Route Any(string path, RouteAction action) => new Route(RouteMethod.Any, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to HTTP DELETE requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for DELETE requests.</returns>
+        public static Route Delete(string path, RouteAction action) => new Route(RouteMethod.Delete, path, action);
+
+        /// <summary>
+        /// Creates a route that responds to HTTP OPTIONS requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for OPTIONS requests.</returns>
+        public static Route Options(string path, RouteAction action) => new Route(RouteMethod.Options, path, action);
+        #endregion
     }
 
     /// <summary>

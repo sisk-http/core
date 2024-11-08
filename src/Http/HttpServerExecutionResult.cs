@@ -10,20 +10,6 @@
 namespace Sisk.Core.Http
 {
     /// <summary>
-    /// Represents the function that is called when a server receives and computes a request.
-    /// </summary>
-    /// <param name="sender">The <see cref="HttpServer"/> calling the function.</param>
-    /// <param name="e">Server request and operation information.</param>
-    public delegate void ServerExecutionEventHandler(object sender, HttpServerExecutionResult e);
-
-    /// <summary>
-    /// Represents a function that is called when the server receives an HTTP request.
-    /// </summary>
-    /// <param name="sender">The <see cref="HttpServer"/> calling the function.</param>
-    /// <param name="request">The received request.</param>
-    public delegate void ReceiveRequestEventHandler(object sender, HttpRequest request);
-
-    /// <summary>
     /// Represents the results of an request execution on the HTTP server.
     /// </summary>
     public sealed class HttpServerExecutionResult

@@ -17,7 +17,7 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class ListeningHost
     {
-        private ListeningPort[] _ports = null!;
+        internal List<ListeningPort> _ports = new List<ListeningPort>();
 
         /// <summary>
         /// Determines if another object is equals to this class instance.
@@ -27,15 +27,7 @@ namespace Sisk.Core.Http
         {
             if (obj is ListeningHost other)
             {
-                if (other._ports.Length != this._ports.Length) return false;
-
-                for (int i = 0; i < this._ports.Length; i++)
-                {
-                    ListeningPort A = this._ports[i];
-                    ListeningPort B = other._ports[i];
-                    if (!A.Equals(B)) return false;
-                }
-                return true;
+                return other.GetHashCode() == this.GetHashCode();
             }
             else
             {
@@ -73,9 +65,9 @@ namespace Sisk.Core.Http
         public string? Label { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets the ports that this host will listen on.
+        /// Gets or sets the list of <see cref="ListeningPort"/> that this host will listen on.
         /// </summary>
-        public ListeningPort[] Ports
+        public IList<ListeningPort> Ports
         {
             get
             {
@@ -83,7 +75,7 @@ namespace Sisk.Core.Http
             }
             set
             {
-                this._ports = value;
+                this._ports = new List<ListeningPort>(value);
             }
         }
 
@@ -105,7 +97,7 @@ namespace Sisk.Core.Http
         /// <param name="ports">The array of <see cref="ListeningPort"/> to listen in the <see cref="ListeningHost"/>.</param>
         public ListeningHost(params ListeningPort[] ports)
         {
-            this._ports = ports;
+            this._ports = ports.ToList();
         }
 
         /// <summary>
@@ -117,6 +109,30 @@ namespace Sisk.Core.Http
         {
             this.Ports = [new ListeningPort(uri)];
             this.Router = r;
+        }
+
+        internal void EnsureReady()
+        {
+            // The router does not need to be defined to start the server.
+            ;
+            if (this._ports.Count == 0)
+            {
+                throw new InvalidOperationException(SR.ListeningHost_NotReady_EmptyPorts);
+            }
+
+            string firstPath = this._ports[0].Path;
+            for (int i = 0; i < this._ports.Count; i++)
+            {
+                ListeningPort port = this._ports[i];
+                if (!port.Path.StartsWith('/'))
+                {
+                    throw new InvalidOperationException(SR.ListeningHost_NotReady_InvalidPath);
+                }
+                if (port.Path.CompareTo(firstPath) != 0)
+                {
+                    throw new InvalidOperationException(SR.ListeningHost_NotReady_DifferentPath);
+                }
+            }
         }
     }
 }

@@ -290,8 +290,9 @@ namespace Sisk.Core.Http
             for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++)
             {
                 ListeningHost listeningHost = this.ServerConfiguration.ListeningHosts[i];
+                listeningHost.EnsureReady();
 
-                for (int j = 0; j < listeningHost.Ports.Length; j++)
+                for (int j = 0; j < listeningHost.Ports.Count; j++)
                 {
                     var port = listeningHost.Ports[j];
 

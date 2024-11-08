@@ -20,14 +20,21 @@ namespace Sisk.Core.Routing;
 
 public partial class Router
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMethodMatching(string ogRqMethod, RouteMethod method)
     {
-        if (method == RouteMethod.Any) return true;
-        if (Enum.TryParse(ogRqMethod, true, out RouteMethod ogRqParsed))
+        switch (method)
         {
-            return method.HasFlag(ogRqParsed);
+            case RouteMethod.Any:
+            case RouteMethod.Get when ogRqMethod == "GET":
+            case RouteMethod.Post when ogRqMethod == "POST":
+            case RouteMethod.Put when ogRqMethod == "PUT":
+            case RouteMethod.Patch when ogRqMethod == "PATCH":
+            case RouteMethod.Options when ogRqMethod == "OPTIONS":
+            case RouteMethod.Head when ogRqMethod == "HEAD":
+            case RouteMethod.Delete when ogRqMethod == "DELETE":
+                return true;
         }
+
         return false;
     }
 
@@ -113,8 +120,6 @@ public partial class Router
         // the line below ensures that _routesList will not be modified in this method
         if (this.parentServer is null) throw new InvalidOperationException(SR.Router_NotBinded);
 
-        HttpContext._threadShared = context;
-        context.Router = this;
         HttpRequest request = context.Request;
         HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;
 
@@ -152,18 +157,18 @@ public partial class Router
             bool isMethodMatched = false;
 
             // test method
-            if (flag.SendCorsHeaders && request.Method == HttpMethod.Options)
-            {
-                matchResult = RouteMatchResult.OptionsMatched;
-                break;
-            }
-            else if (flag.TreatHeadAsGetMethod && request.Method == HttpMethod.Head && route.Method == RouteMethod.Get)
+            if (flag.TreatHeadAsGetMethod && request.Method == HttpMethod.Head && route.Method == RouteMethod.Get)
             {
                 isMethodMatched = true;
             }
             else if (this.IsMethodMatching(request.Method.Method, route.Method))
             {
                 isMethodMatched = true;
+            }
+            else if (flag.SendCorsHeaders && request.Method == HttpMethod.Options)
+            {
+                matchResult = RouteMatchResult.OptionsMatched;
+                break;
             }
 
             if (isMethodMatched)
@@ -219,7 +224,8 @@ public partial class Router
             {
                 HttpResponse res = new HttpResponse();
                 res.Status = HttpStatusCode.TemporaryRedirect;
-                res.Headers.Add("Location", request.Path + "/" + (request.QueryString ?? string.Empty));
+                res.Headers.Add(HttpKnownHeaderNames.Location, request.Path + "/" + request.QueryString);
+
                 return new RouterExecutionResult(res, matchedRoute, matchResult, null);
             }
 

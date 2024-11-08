@@ -148,7 +148,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapGet(string path, Delegate action)
+    public void MapGet(string path, RouteAction action)
         => this.SetRoute(RouteMethod.Get, path, action);
 
     /// <summary>
@@ -156,7 +156,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapPost(string path, Delegate action)
+    public void MapPost(string path, RouteAction action)
         => this.SetRoute(RouteMethod.Post, path, action);
 
     /// <summary>
@@ -164,7 +164,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapPut(string path, Delegate action)
+    public void MapPut(string path, RouteAction action)
         => this.SetRoute(RouteMethod.Put, path, action);
 
     /// <summary>
@@ -172,7 +172,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapDelete(string path, Delegate action)
+    public void MapDelete(string path, RouteAction action)
         => this.SetRoute(RouteMethod.Delete, path, action);
 
     /// <summary>
@@ -180,7 +180,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapPatch(string path, Delegate action)
+    public void MapPatch(string path, RouteAction action)
         => this.SetRoute(RouteMethod.Patch, path, action);
 
     /// <summary>
@@ -188,7 +188,7 @@ public partial class Router
     /// </summary>
     /// <param name="path">The route path.</param>
     /// <param name="action">The route function to be called after matched.</param>
-    public void MapAny(string path, Delegate action)
+    public void MapAny(string path, RouteAction action)
         => this.SetRoute(RouteMethod.Any, path, action);
 
     /// <summary>
@@ -204,6 +204,15 @@ public partial class Router
     {
         this.SetRoute(RouteMethod.Any, rewritePath, new RouteAction(request => this.RewriteHandler(rewriteInto, request)));
     }
+
+    /// <summary>
+    /// Defines an route with their method, path and action function.
+    /// </summary>
+    /// <param name="method">The route method to be matched. "Any" means any method that matches their path.</param>
+    /// <param name="path">The route path.</param>
+    /// <param name="action">The route function to be called after matched.</param>
+    public void SetRoute(RouteMethod method, string path, RouteAction action)
+        => this.SetRoute(new Route(method, path, action));
 
     /// <summary>
     /// Defines an route with their method, path and action function.
@@ -268,7 +277,7 @@ public partial class Router
     {
         Type attrClassType = attrClassInstance.GetType();
         MethodInfo[] methods = attrClassType.GetMethods(SetObjectBindingFlag);
-        this.SetInternal(methods, attrClassType, attrClassInstance);
+        this.SetObjectInternal(methods, attrClassType, attrClassInstance);
     }
 
     /// <summary>
@@ -281,7 +290,7 @@ public partial class Router
     public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
     {
         MethodInfo[] methods = attrClassType.GetMethods(SetObjectBindingFlag);
-        this.SetInternal(methods, attrClassType, null);
+        this.SetObjectInternal(methods, attrClassType, null);
     }
 
     /// <summary>
@@ -296,7 +305,7 @@ public partial class Router
         this.SetObject(typeof(TObject));
     }
 
-    private void SetInternal(MethodInfo[] methods, Type callerType, object? instance)
+    private void SetObjectInternal(MethodInfo[] methods, Type callerType, object? instance)
     {
         RouterModule? rmodule = instance as RouterModule;
 
@@ -378,7 +387,14 @@ public partial class Router
                         throw ex;
                     }
 
-                    rmodule?.CallRouteCreating(route);
+                    if (rmodule is not null)
+                    {
+                        rmodule.CallRouteCreating(route);
+
+                        if (rmodule._wasSetupCalled == false)
+                            rmodule.CallOnSetup(this);
+                    }
+
                     this.SetRoute(route);
                 }
                 catch (Exception ex)

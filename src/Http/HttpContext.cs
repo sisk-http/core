@@ -26,7 +26,7 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is only accessible during an HTTP session, within the executing HTTP code.
         /// </remarks>
-        public static HttpContext Current { get => _threadShared ?? throw new InvalidOperationException(); }
+        public static HttpContext Current { get => _threadShared ?? throw new InvalidOperationException(SR.HttpContext_InvalidThreadStaticAccess); }
 
         /// <summary>
         /// Gets or sets an <see cref="HttpHeaderCollection"/> indicating HTTP headers which
@@ -45,12 +45,12 @@ namespace Sisk.Core.Http
         public HttpHeaderCollection ExtraHeaders { get; set; } = new HttpHeaderCollection();
 
         /// <summary>
-        /// Gets the <see cref="ListeningHost"/> instance of this HTTP context.
+        /// Gets the <see cref="Http.ListeningHost"/> instance of this HTTP context.
         /// </summary>
-        public ListeningHost ListeningHost { get; private set; }
+        public ListeningHost? ListeningHost { get; internal set; }
 
         /// <summary>
-        /// Gets or sets a managed object that is accessed and modified by request handlers.
+        /// Gets or sets a managed collection for this HTTP context.
         /// </summary>
         public TypedValueDictionary RequestBag { get; set; } = new TypedValueDictionary();
 
@@ -68,7 +68,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets the <see cref="Http.HttpRequest"/> which is contained in this HTTP context.
         /// </summary>
-        public HttpRequest Request { get; private set; }
+        public HttpRequest Request { get; internal set; }
 
         /// <summary>
         /// Gets the matched <see cref="Routing.Route"/> for this context.
@@ -79,15 +79,14 @@ namespace Sisk.Core.Http
         /// Gets the <see cref="Routing.Router"/> where this context was
         /// created.
         /// </summary>
-        public Router Router { get; internal set; }
+        public Router? Router { get; internal set; }
 
-        internal HttpContext(HttpServer httpServer, HttpRequest request, Route? matchedRoute, ListeningHost host)
+        internal HttpContext(HttpServer httpServer)
         {
-            this.Request = request;
             this.HttpServer = httpServer;
-            this.MatchedRoute = matchedRoute;
-            this.ListeningHost = host;
-            this.Router = null!; // will be associated later in the router executor
+            this.Request = null!; // associated later
+            this.Router = null!;// associated later, may be null
+            this.ListeningHost = null!; // associated later, may be null
         }
     }
 }

@@ -9,6 +9,7 @@
 
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -38,6 +39,7 @@ internal partial class LogFormatter
         return errLineBuilder.ToString();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [GeneratedRegex(@"%([a-z]+|\{[^\}]+\})", RegexOptions.IgnoreCase)]
     internal static partial Regex EntryMatchRegex();
 
@@ -89,6 +91,7 @@ internal partial class LogFormatter
 
                     "lin" => SizeHelper.HumanReadableSize(executionResult.RequestSize),
                     "linr" => executionResult.RequestSize.ToString(),
+
                     "lou" => SizeHelper.HumanReadableSize(executionResult.ResponseSize),
                     "lour" => executionResult.ResponseSize.ToString(),
 

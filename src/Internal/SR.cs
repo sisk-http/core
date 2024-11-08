@@ -16,6 +16,7 @@ static partial class SR
     public const string MultipartFormReader_Exception = "Caught an exception while trying to read the multipart form request: {0}";
 
     public const string HttpContextBagRepository_UndefinedDynamicProperty = "The specified type {0} was not defined in this context bag repository.";
+    public const string HttpContext_InvalidThreadStaticAccess = "This property is only accessible from an HTTP request scope.";
 
     public const string HttpRequest_InvalidForwardedIpAddress = "The forwarded IP address is invalid.";
     public const string HttpRequest_InvalidCookieSyntax = "The cookie header is invalid or is it has an malformed syntax.";
@@ -41,6 +42,9 @@ static partial class SR
     public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters.";
 
     public const string ListeningHostRepository_Duplicate = "This ListeningHost has already been defined in this collection with identical definitions.";
+    public const string ListeningHost_NotReady_EmptyPorts = "No ListeningPort prefix have been defined on this ListeningHost.";
+    public const string ListeningHost_NotReady_DifferentPath = "All ListeningPorts defined on this ListeningHost must share the same path.";
+    public const string ListeningHost_NotReady_InvalidPath = "The ListeningPort path must start with /.";
 
     public const string ListeningPort_Parser_InvalidInput = "Invalid ListeningPort syntax.";
 

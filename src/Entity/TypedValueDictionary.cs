@@ -70,9 +70,9 @@ public class TypedValueDictionary : IDictionary<string, object?>
     /// Removes an singleton object from it's type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The singleton type.</typeparam>
-    public void Unset<T>() where T : notnull
+    public bool Unset<T>() where T : notnull
     {
-        this._values.Remove(this.GetTypeKeyName(typeof(T)));
+        return this._values.Remove(this.GetTypeKeyName(typeof(T)));
     }
 
     /// <summary>

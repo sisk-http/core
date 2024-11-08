@@ -121,7 +121,7 @@ namespace Sisk.Core.Http
                 {
                     ListeningHost h = hosts[H];
 
-                    Span<ListeningPort> ports = h.Ports.AsSpan();
+                    Span<ListeningPort> ports = CollectionsMarshal.AsSpan(h._ports);
                     for (int P = 0; P < ports.Length; P++)
                     {
                         ref ListeningPort p = ref ports[P];

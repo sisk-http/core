@@ -146,14 +146,14 @@ public partial class HttpServer
         Stopwatch sw = Stopwatch.StartNew();
         HttpListenerResponse baseResponse = context.Response;
         HttpListenerRequest baseRequest = context.Request;
-        HttpContext? srContext = null;
+        HttpContext? srContext = new HttpContext(this);
         bool closeStream = true;
+
+        HttpContext._threadShared = srContext;
 
         bool hasAccessLogging = this.ServerConfiguration.AccessLogsStream is not null;
         bool hasErrorLogging = this.ServerConfiguration.ErrorsLogsStream is not null;
 
-        IPAddress otherParty;
-        Uri? connectingUri = baseRequest.Url;
         Router.RouterExecutionResult? routerResult = null;
 
         if (this.ServerConfiguration.DefaultCultureInfo is not null)
@@ -166,6 +166,7 @@ public partial class HttpServer
         {
             Request = request,
             Response = response,
+            Context = srContext,
             Status = HttpServerExecutionStatus.NoResponse
         };
 
@@ -180,23 +181,30 @@ public partial class HttpServer
 
             #region Step 1 - DNS/Listening host matching
 
-            if (connectingUri is null)
+            // context initialization
+            request = new HttpRequest(this, context);
+
+            srContext.Request = request;
+            request.Context = srContext;
+
+            executionResult.Request = request;
+            executionResult.Context = srContext;
+
+            if (baseRequest.Url is null)
             {
                 baseResponse.StatusCode = 400;
                 executionResult.Status = HttpServerExecutionStatus.DnsFailed;
                 return;
             }
 
-            if (!baseRequest.IsLocal && this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop)
+            if (baseRequest.IsLocal == false && this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop)
             {
                 executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
                 baseResponse.Abort();
                 return;
             }
 
-            request = new HttpRequest(this, context);
             string dnsSafeHost = baseRequest.UserHostName;
-
             if (this.ServerConfiguration.ForwardingResolver is ForwardingResolver fr)
             {
                 dnsSafeHost = fr.OnResolveRequestHost(request, dnsSafeHost);
@@ -212,14 +220,11 @@ public partial class HttpServer
                 executionResult.Status = HttpServerExecutionStatus.DnsUnknownHost;
                 return;
             }
-
-            srContext = new HttpContext(this, request, null, matchedListeningHost);
-
-            request.Host = dnsSafeHost;
-            request.Context = srContext;
-            executionResult.Request = request;
-            executionResult.Context = srContext;
-            otherParty = request.RemoteAddress;
+            else
+            {
+                srContext.ListeningHost = matchedListeningHost;
+                request.Host = dnsSafeHost;
+            }
 
             if (matchedListeningHost.Router is null)
             {
@@ -229,6 +234,7 @@ public partial class HttpServer
             }
             else
             {
+                srContext.Router = matchedListeningHost.Router;
                 matchedListeningHost.Router.BindServer(this);
             }
 
@@ -332,40 +338,53 @@ public partial class HttpServer
 
             try
             {
-                if (response.Content is ByteArrayContent barrayContent)
+                bool canServeContent;
+                if (flag.PreventResponseContentsInProhibitedMethods)
                 {
-                    ApplyHttpContentHeaders(baseResponse, barrayContent.Headers);
-                    ReadOnlySpan<byte> contentBytes = ByteArrayAccessors.UnsafeGetContent(barrayContent);
-
-                    if (response.SendChunked)
-                    {
-                        baseResponse.SendChunked = true;
-                    }
-                    else
-                    {
-                        baseResponse.SendChunked = false;
-                        baseResponse.ContentLength64 = contentBytes.Length;
-                    }
-
-                    baseResponse.OutputStream.Write(contentBytes);
+                    canServeContent = request.Method != HttpMethod.Head && request.Method != HttpMethod.Options;
                 }
-                else if (response.Content is HttpContent httpContent)
+                else
                 {
-                    ApplyHttpContentHeaders(baseResponse, httpContent.Headers);
-                    var httpContentStream = httpContent.ReadAsStream(); // the HttpContent.Dispose should dispose this stream
+                    canServeContent = true;
+                }
 
-                    if (httpContentStream.CanSeek && !response.SendChunked)
+                if (canServeContent)
+                {
+                    if (response.Content is ByteArrayContent barrayContent)
                     {
-                        httpContentStream.Seek(0, SeekOrigin.Begin);
-                        baseResponse.SendChunked = false;
-                        baseResponse.ContentLength64 = httpContentStream.Length;
-                    }
-                    else
-                    {
-                        baseResponse.SendChunked = true;
-                    }
+                        ApplyHttpContentHeaders(baseResponse, barrayContent.Headers);
+                        ReadOnlySpan<byte> contentBytes = ByteArrayAccessors.UnsafeGetContent(barrayContent);
 
-                    httpContentStream.CopyTo(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
+                        if (response.SendChunked)
+                        {
+                            baseResponse.SendChunked = true;
+                        }
+                        else
+                        {
+                            baseResponse.SendChunked = false;
+                            baseResponse.ContentLength64 = contentBytes.Length;
+                        }
+
+                        baseResponse.OutputStream.Write(contentBytes);
+                    }
+                    else if (response.Content is HttpContent httpContent)
+                    {
+                        ApplyHttpContentHeaders(baseResponse, httpContent.Headers);
+                        var httpContentStream = httpContent.ReadAsStream(); // the HttpContent.Dispose should dispose this stream
+
+                        if (httpContentStream.CanSeek && !response.SendChunked)
+                        {
+                            httpContentStream.Seek(0, SeekOrigin.Begin);
+                            baseResponse.SendChunked = false;
+                            baseResponse.ContentLength64 = httpContentStream.Length;
+                        }
+                        else
+                        {
+                            baseResponse.SendChunked = true;
+                        }
+
+                        httpContentStream.CopyTo(baseResponse.OutputStream, flag.RequestStreamCopyBufferSize);
+                    }
                 }
             }
             finally

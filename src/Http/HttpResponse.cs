@@ -30,7 +30,6 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an <see cref="HttpResponse"/> object which closes the connection with the client immediately (ECONNRESET).
         /// </summary>
-        /// <returns></returns>
         public static HttpResponse Refuse()
         {
             return new HttpResponse(HTTPRESPONSE_SERVER_REFUSE);

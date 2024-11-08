@@ -27,7 +27,6 @@ public sealed class HttpServerHostContextBuilder
     private readonly Router router;
     private readonly HttpServerConfiguration configuration;
     private readonly ListeningHost listeningHost;
-    private readonly ListeningPort listeningPort;
     private readonly HttpServer server;
 
     /// <summary>
@@ -41,9 +40,7 @@ public sealed class HttpServerHostContextBuilder
         this.router = new Router();
         this.configuration = new HttpServerConfiguration();
         this.listeningHost = new ListeningHost();
-        this.listeningPort = ListeningPort.GetRandomPort();
 
-        this.listeningHost.Ports = [this.listeningPort];
         this.listeningHost.Router = this.router;
         this.configuration.ListeningHosts.Add(this.listeningHost);
 
@@ -62,6 +59,9 @@ public sealed class HttpServerHostContextBuilder
     /// </summary>
     public HttpServerHostContext Build()
     {
+        if (this.listeningHost.Ports.Count == 0)
+            this.listeningHost.Ports.Add(ListeningPort.GetRandomPort());
+
         return this._context;
     }
 
@@ -124,8 +124,8 @@ public sealed class HttpServerHostContextBuilder
     public HttpServerHostContextBuilder UseListeningPort(ushort port)
     {
         var lport = new ListeningPort(port);
-        this.listeningHost.Ports[0] = lport;
-        if (lport.Path != "/")
+        this.listeningHost.Ports.Add(lport);
+        if (!lport.IsPathRoot)
         {
             this.router.Prefix = lport.Path;
         }
@@ -139,7 +139,7 @@ public sealed class HttpServerHostContextBuilder
     public HttpServerHostContextBuilder UseListeningPort(string uri)
     {
         var port = new ListeningPort(uri);
-        this.listeningHost.Ports[0] = port;
+        this.listeningHost.Ports.Add(port);
         if (port.Path != "/")
         {
             this.router.Prefix = port.Path;
@@ -153,7 +153,7 @@ public sealed class HttpServerHostContextBuilder
     /// <param name="listeningPort">The <see cref="ListeningPort"/> object which the HTTP server will listen to.</param>
     public HttpServerHostContextBuilder UseListeningPort(ListeningPort listeningPort)
     {
-        this.listeningHost.Ports[0] = listeningPort;
+        this.listeningHost.Ports.Add(listeningPort);
         if (listeningPort.Path != "/")
         {
             this.router.Prefix = listeningPort.Path;

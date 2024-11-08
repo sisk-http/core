@@ -9,7 +9,6 @@
 
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
-using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -37,7 +36,6 @@ namespace Sisk.Core.Internal.ServiceProvider
 
             if (config.Server != null)
             {
-                prov.Host.ServerConfiguration.DefaultEncoding = Encoding.GetEncoding(config.Server.DefaultEncoding);
                 prov.Host.ServerConfiguration.MaximumContentLength = config.Server.MaximumContentLength;
                 prov.Host.ServerConfiguration.IncludeRequestIdHeader = config.Server.IncludeRequestIdHeader;
                 prov.Host.ServerConfiguration.ThrowExceptions = config.Server.ThrowExceptions;
@@ -122,7 +120,6 @@ namespace Sisk.Core.Internal.ServiceProvider
     {
         public string? AccessLogsStream { get; set; } = "console";
         public string? ErrorsLogsStream { get; set; }
-        public string DefaultEncoding { get; set; } = "UTF-8";
         public int MaximumContentLength { get; set; } = 0;
         public bool IncludeRequestIdHeader { get; set; } = false;
         public bool ThrowExceptions { get; set; } = true;

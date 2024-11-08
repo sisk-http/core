@@ -7,6 +7,8 @@
 // File name:   RouterModule.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Runtime.CompilerServices;
+
 namespace Sisk.Core.Routing;
 
 /// <summary>
@@ -15,6 +17,8 @@ namespace Sisk.Core.Routing;
 /// </summary>
 public abstract class RouterModule
 {
+    internal bool _wasSetupCalled = false;
+
     /// <summary>
     /// Gets or sets an list of <see cref="IRequestHandler"/> this <see cref="RouterModule"/> runs.
     /// </summary>
@@ -37,6 +41,19 @@ public abstract class RouterModule
     }
 
     /// <summary>
+    /// Method that is called when an <see cref="Router"/> is defining routes from the current
+    /// <see cref="RouterModule"/>.
+    /// </summary>
+    /// <remarks>
+    /// The base method <see cref="RouterModule.OnSetup(Router)"/> is mandatory to be called on all derived methods.
+    /// </remarks>
+    /// <param name="parentRouter">The <see cref="Router"/> which is defining routes from the current <see cref="RouterModule"/>.</param>
+    protected virtual void OnSetup(Router parentRouter)
+    {
+        this._wasSetupCalled = true;
+    }
+
+    /// <summary>
     /// This method is called before a route is defined in the router and after it
     /// is created in this class, so its attributes and parameters can be modified. This method must
     /// be overloaded in the extending class and must not be called directly.
@@ -46,8 +63,9 @@ public abstract class RouterModule
     {
     }
 
-    internal void CallRouteCreating(Route configuringRoute)
-    {
-        this.OnRouteCreating(configuringRoute);
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void CallRouteCreating(Route configuringRoute) => this.OnRouteCreating(configuringRoute);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void CallOnSetup(Router parentRouter) => this.OnSetup(parentRouter);
 }

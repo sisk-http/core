@@ -25,6 +25,15 @@ namespace Sisk.Core.Http
         public bool ThrowContentOnNonSemanticMethods = true;
 
         /// <summary>
+        /// Determines if the HTTP server should prevent sending body contents in responses when the HTTP request 
+        /// method prohibits it.
+        ///     <para>
+        ///         Default value: <c>true</c>
+        ///     </para>
+        /// </summary>
+        public bool PreventResponseContentsInProhibitedMethods = true;
+
+        /// <summary>
         /// Determines if the HTTP server should handle requests asynchronously or if
         /// it should limit the request processing to one request per time.
         ///     <para>

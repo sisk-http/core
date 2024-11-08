@@ -62,6 +62,11 @@ namespace Sisk.Core.Http
         public string Path { get; }
 
         /// <summary>
+        /// Gets an boolean indicating if this listening port has an non-rooted path.
+        /// </summary>
+        public bool IsPathRoot { get => this.Path != "/" && this.Path != ""; }
+
+        /// <summary>
         /// Creates an new <see cref="ListeningPort"/> instance with default parameters.
         /// </summary>
         public ListeningPort()

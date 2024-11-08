@@ -59,10 +59,10 @@ public sealed class HttpHeaderCollection : StringKeyStore
     public string? AcceptPatch { get => this[Header.AcceptPatch]; }
 
     /// <summary>
-    /// Gets the value of the HTTP Accept-Ranges header.
+    /// Gets or sets the value of the HTTP Accept-Ranges header.
     /// <para>Indicates that the server supports range requests for the resource, allowing clients to request specific byte ranges.</para>
     /// </summary>
-    public string? AcceptRanges { get => this[Header.AcceptRanges]; }
+    public string? AcceptRanges { get => this[Header.AcceptRanges]; set => this[Header.AcceptRanges] = value; }
 
     /// <summary>
     /// Gets or sets the value of the HTTP Access-Control-Allow-Credentials header.
