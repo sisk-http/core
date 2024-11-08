@@ -7,6 +7,8 @@
 // File name:   RoutePrefixAttribute.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Sisk.Core.Routing;
 
 /// <summary>
@@ -24,7 +26,7 @@ public sealed class RoutePrefixAttribute : Attribute
     /// <summary>
     /// Initializes an new <see cref="RoutePrefixAttribute"/> with given prefix.
     /// </summary>
-    public RoutePrefixAttribute(string prefix)
+    public RoutePrefixAttribute([StringSyntax(StringSyntaxAttribute.Uri)] string prefix)
     {
         if (string.IsNullOrEmpty(prefix))
         {

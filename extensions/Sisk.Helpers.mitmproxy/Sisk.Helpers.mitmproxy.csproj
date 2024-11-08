@@ -1,17 +1,109 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<!-- supported frameworks -->
+	<PropertyGroup>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<RootNamespace>Sisk.Core</RootNamespace>
+		<Configurations>Debug;Release</Configurations>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Asmichi.ChildProcess" Version="0.18.0" />
-  </ItemGroup>
+	<!-- debug info, symbols -->
+	<PropertyGroup>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
-  </ItemGroup>
+	<!-- aot, build options -->
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
+		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
+
+	<!-- nuget package info -->
+	<PropertyGroup>
+		<PackageId>Sisk.Helpers.mitmproxy</PackageId>
+		<Title>Sisk.Helpers.mitmproxy</Title>
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.HttpServer</Product>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<Description>Provides an interface to access Sisk through mitmproxy.</Description>
+		<Summary>Provides an interface to access Sisk through mitmproxy.</Summary>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
+		<PackageProjectUrl>https://sisk-framework.org/</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>false</EmbedUntrackedSources>
+	</PropertyGroup>
+
+	<!-- version info -->
+	<PropertyGroup>
+		<AssemblyVersion>1.3.0</AssemblyVersion>
+		<FileVersion>1.3.0</FileVersion>
+		<Version>1.3.0</Version>
+	</PropertyGroup>
+
+	<!-- licensing, readme, signing -->
+	<PropertyGroup>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<SignAssembly>False</SignAssembly>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackRelease>True</PackRelease>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PathMap>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)=.</PathMap>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<!-- source link -->
+	<ItemGroup>
+		<PackageReference Include="Asmichi.ChildProcess" Version="0.18.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
+		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<!-- package included files -->
+	<ItemGroup>
+		<None Include="..\..\.github\Icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\.nuget\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EditorConfigFiles Remove=".\.editorconfig" />
+	</ItemGroup>
 
 </Project>

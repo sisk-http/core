@@ -62,8 +62,11 @@ public partial class HttpServer
             response.AppendHeader(HttpKnownHeaderNames.ContentEncoding, string.Join(", ", contentHeaders.ContentEncoding));
     }
 
-    internal static void SetCorsHeaders(HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders cors, HttpListenerResponse baseResponse)
+    internal static void SetCorsHeaders(HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders? cors, HttpListenerResponse baseResponse)
     {
+        if (cors is null)
+            return;
+
         if (cors.AllowHeaders.Length > 0)
             baseResponse.Headers.Set(HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join(", ", cors.AllowHeaders));
 

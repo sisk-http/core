@@ -17,7 +17,7 @@ namespace Sisk.Core.Http
     /// <summary>
     /// Represents an HTTP Response.
     /// </summary>
-    public class HttpResponse : CookieHelper
+    public class HttpResponse
     {
         internal const byte HTTPRESPONSE_EMPTY = 2;  // <- theres no reason for this to exist
         internal const byte HTTPRESPONSE_SERVER_REFUSE = 4;
@@ -166,10 +166,72 @@ namespace Sisk.Core.Http
             this.Status = status;
         }
 
-        /// <inheritdoc/>
-        protected sealed override void SetCookieHeader(String name, String value)
+        #region Cookie setter helpers
+        /// <summary>
+        /// Sets a cookie and sends it in the response to be set by the client.
+        /// </summary>
+        /// <param name="cookie">The cookie object.</param>
+        public void SetCookie(Cookie cookie)
         {
-            this.Headers.Add(name, value);
+            this.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(cookie));
+        }
+
+        /// <summary>
+        /// Sets a cookie and sends it in the response to be set by the client.
+        /// </summary>
+        /// <param name="name">The cookie name.</param>
+        /// <param name="value">The cookie value.</param>
+        public void SetCookie(string name, string value)
+        {
+            this.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(name, value));
+        }
+
+        /// <summary>
+        /// Sets a cookie and sends it in the response to be set by the client.
+        /// </summary>
+        /// <param name="name">The cookie name.</param>
+        /// <param name="value">The cookie value.</param>
+        /// <param name="expires">The cookie expirity date.</param>
+        /// <param name="maxAge">The cookie max duration after being set.</param>
+        /// <param name="domain">The domain where the cookie will be valid.</param>
+        /// <param name="path">The path where the cookie will be valid.</param>
+        /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
+        /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
+        /// <param name="sameSite">The cookie SameSite parameter.</param>
+        public void SetCookie(string name,
+            string value,
+            DateTime? expires = null,
+            TimeSpan? maxAge = null,
+            string? domain = null,
+            string? path = null,
+            bool? secure = null,
+            bool? httpOnly = null,
+            string? sameSite = null)
+        {
+            this.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite));
+        }
+        #endregion
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"HttpResponse {{ Status = {this.Status}, Headers = HttpHeaderCollection[{this.Headers.Count}], Content = {this.Content?.GetType().Name ?? "<None>"} }}";
+        }
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(this.Status, this.Headers, this.Content);
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object? obj)
+        {
+            if (obj is HttpResponse res)
+            {
+                return res.GetHashCode() == this.GetHashCode();
+            }
+            return false;
         }
     }
 }

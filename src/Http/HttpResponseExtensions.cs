@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -166,7 +167,7 @@ public static class HttpResponseExtensions
         string? sameSite = null)
         where THttpResponse : HttpResponse
     {
-        response.SetCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
+        response.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite));
         return response;
     }
 
@@ -178,7 +179,7 @@ public static class HttpResponseExtensions
     /// <param name="cookie">The cookie object.</param>
     public static THttpResponse WithCookie<THttpResponse>(this THttpResponse response, Cookie cookie) where THttpResponse : HttpResponse
     {
-        response.SetCookie(cookie);
+        response.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(cookie));
         return response;
     }
 }

@@ -10,7 +10,6 @@
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.IniConfiguration.Serializer;
-using System.Text;
 
 namespace Sisk.IniConfiguration;
 
@@ -33,10 +32,6 @@ public sealed class IniConfigurationReader : IConfigurationReader
                 parsingNode = "Server.Listen";
                 string[] listeningPorts = serverSection.GetMany("Listen");
                 context.TargetListeningHost.Ports = [.. context.TargetListeningHost.Ports, .. listeningPorts.Select(n => ListeningPort.Parse(n, null)).ToArray()];
-
-                parsingNode = "Server.Encoding";
-                if (serverSection.GetOne("Encoding") is { } encoding)
-                    context.Host.ServerConfiguration.DefaultEncoding = Encoding.GetEncoding(encoding);
 
                 parsingNode = "Server.MaximumContentLength";
                 if (serverSection.GetOne("MaximumContentLength") is { } MaximumContentLength)

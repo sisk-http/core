@@ -96,7 +96,7 @@ static partial class SR
     public const string InitializationParameterCollection_NullParameter = "The required parameter \"{0}\" is not present in the configuration file.";
     public const string InitializationParameterCollection_MapCastException = "Cannot cast the value \"{0}\" into an {1}.";
 
-    public const string ValueItem_ValueNull = "The value \"{0}\" contained at this {1} is null or it's undefined.";
+    public const string ValueItem_ValueNull = "The {1} \"{0}\" cannot be null or undefined.";
     public const string ValueItem_CastException = "Cannot cast the value \"{0}\" at parameter {1} into an {2}.";
 
     public const string Collection_ReadOnly = "Cannot insert items to this collection as it is read-only.";

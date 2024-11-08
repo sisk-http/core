@@ -10,66 +10,13 @@
 using System.Net;
 using System.Web;
 
-namespace Sisk.Core.Http;
+namespace Sisk.Core.Helpers;
 
 /// <summary>
 /// Provides a class that contains useful methods for working with cookies in HTTP responses.
 /// </summary>
-public abstract class CookieHelper
+public static class CookieHelper
 {
-    /// <summary>
-    /// Abstract method that calls the "Set-Cookie" header with the value of the created cookie.
-    /// </summary>
-    /// <param name="name">The cookie header name. Usually Set-Cookie.</param>
-    /// <param name="value">The cookie value.</param>
-    protected abstract void SetCookieHeader(string name, string value);
-
-    /// <summary>
-    /// Sets a cookie and sends it in the response to be set by the client.
-    /// </summary>
-    /// <param name="cookie">The cookie object.</param>
-    public void SetCookie(Cookie cookie)
-    {
-        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, BuildCookieHeaderValue(cookie));
-    }
-
-    /// <summary>
-    /// Sets a cookie and sends it in the response to be set by the client.
-    /// </summary>
-    /// <param name="name">The cookie name.</param>
-    /// <param name="value">The cookie value.</param>
-    public void SetCookie(string name, string value)
-    {
-        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, $"{HttpUtility.UrlEncode(name)}={HttpUtility.UrlEncode(value)}");
-    }
-
-    /// <summary>
-    /// Sets a cookie and sends it in the response to be set by the client.
-    /// </summary>
-    /// <param name="name">The cookie name.</param>
-    /// <param name="value">The cookie value.</param>
-    /// <param name="expires">The cookie expirity date.</param>
-    /// <param name="maxAge">The cookie max duration after being set.</param>
-    /// <param name="domain">The domain where the cookie will be valid.</param>
-    /// <param name="path">The path where the cookie will be valid.</param>
-    /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
-    /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
-    /// <param name="sameSite">The cookie SameSite parameter.</param>
-    public void SetCookie(
-        string name,
-        string value,
-        DateTime? expires = null,
-        TimeSpan? maxAge = null,
-        string? domain = null,
-        string? path = null,
-        bool? secure = null,
-        bool? httpOnly = null,
-        string? sameSite = null)
-    {
-        string cookieStr = BuildCookieHeaderValue(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite);
-        this.SetCookieHeader(HttpKnownHeaderNames.SetCookie, cookieStr);
-    }
-
     /// <summary>
     /// Builds the cookie header value and returns an string from it.
     /// </summary>
@@ -147,6 +94,6 @@ public abstract class CookieHelper
             syntax.Add($"SameSite={sameSite}");
         }
 
-        return String.Join("; ", syntax);
+        return string.Join("; ", syntax);
     }
 }

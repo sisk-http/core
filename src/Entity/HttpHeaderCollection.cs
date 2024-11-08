@@ -7,6 +7,7 @@
 // File name:   HttpHeaderCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 using Header = Sisk.Core.Http.HttpKnownHeaderNames;
 

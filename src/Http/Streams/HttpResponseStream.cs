@@ -7,6 +7,7 @@
 // File name:   HttpResponseStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Helpers;
 using System.Net;
 
 namespace Sisk.Core.Http.Streams;
@@ -14,7 +15,7 @@ namespace Sisk.Core.Http.Streams;
 /// <summary>
 /// Represents a way to manage HTTP requests with their output streams, without relying on synchronous content.
 /// </summary>
-public sealed class HttpResponseStream : CookieHelper
+public sealed class HttpResponseStream
 {
     internal HttpListenerResponse listenerResponse;
     private bool hasSentData = false;
@@ -28,7 +29,7 @@ public sealed class HttpResponseStream : CookieHelper
         this.ResponseStream = new ResponseStreamWriter(listenerResponse.OutputStream, this);
 
         if (host.baseServer.ServerConfiguration.Flags.SendCorsHeaders && host.Context.MatchedRoute?.UseCors == true)
-            HttpServer.SetCorsHeaders(listenerRequest, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, listenerResponse);
+            HttpServer.SetCorsHeaders(listenerRequest, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, listenerResponse);
     }
 
     /// <summary>
@@ -159,11 +160,51 @@ public sealed class HttpResponseStream : CookieHelper
         };
     }
 
-    /// <inheritdoc/>
-    protected override void SetCookieHeader(string name, string value)
+    #region Cookie setter helpers
+    /// <summary>
+    /// Sets a cookie and sends it in the response to be set by the client.
+    /// </summary>
+    /// <param name="cookie">The cookie object.</param>
+    public void SetCookie(Cookie cookie)
     {
-        this.SetHeader(name, value);
+        this.SetHeader(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(cookie));
     }
+
+    /// <summary>
+    /// Sets a cookie and sends it in the response to be set by the client.
+    /// </summary>
+    /// <param name="name">The cookie name.</param>
+    /// <param name="value">The cookie value.</param>
+    public void SetCookie(string name, string value)
+    {
+        this.SetHeader(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(name, value));
+    }
+
+    /// <summary>
+    /// Sets a cookie and sends it in the response to be set by the client.
+    /// </summary>
+    /// <param name="name">The cookie name.</param>
+    /// <param name="value">The cookie value.</param>
+    /// <param name="expires">The cookie expirity date.</param>
+    /// <param name="maxAge">The cookie max duration after being set.</param>
+    /// <param name="domain">The domain where the cookie will be valid.</param>
+    /// <param name="path">The path where the cookie will be valid.</param>
+    /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
+    /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
+    /// <param name="sameSite">The cookie SameSite parameter.</param>
+    public void SetCookie(string name,
+        string value,
+        DateTime? expires = null,
+        TimeSpan? maxAge = null,
+        string? domain = null,
+        string? path = null,
+        bool? secure = null,
+        bool? httpOnly = null,
+        string? sameSite = null)
+    {
+        this.SetHeader(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite));
+    }
+    #endregion
 }
 
 internal class ResponseStreamWriter : Stream
