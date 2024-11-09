@@ -81,7 +81,7 @@ namespace Sisk.Core.Http.Streams
                 res.AddHeader(HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy);
 
             if (host.baseServer.ServerConfiguration.Flags.SendCorsHeaders && host.Context.MatchedRoute?.UseCors == true)
-                HttpServer.SetCorsHeaders(req, host.Context.ListeningHost.CrossOriginResourceSharingPolicy, res);
+                HttpServer.SetCorsHeaders(req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res);
         }
 
         private void keepAliveTask()

@@ -7,7 +7,6 @@
 // File name:   HttpHeaderCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 using Header = Sisk.Core.Http.HttpKnownHeaderNames;
 
@@ -204,7 +203,7 @@ public sealed class HttpHeaderCollection : StringKeyStore
     /// </summary>
     /// <remarks>
     /// Tip: use <see cref="HttpRequest.Cookies"/> property to getting cookies values from requests and
-    /// <see cref="CookieHelper.SetCookie(string, string)"/> on <see cref="HttpResponse"/> to set cookies.
+    /// <see cref="HttpResponse.SetCookie(string, string)"/> on <see cref="HttpResponse"/> to set cookies.
     /// </remarks>
     public string? Cookie { get => this[Header.Cookie]; }
 
@@ -334,7 +333,7 @@ public sealed class HttpHeaderCollection : StringKeyStore
     /// </summary>
     /// <remarks>
     /// Note: setting this property, it will override all previous Set-Cookie headers. Use the <see cref="StringKeyStore.Add(string, string)"/> method
-    /// to add more than one Set-Cookie header or use the <see cref="CookieHelper.SetCookie(string, string)"/> method.
+    /// to add more than one Set-Cookie header or use the <see cref="HttpResponse.SetCookie(string, string)"/> method.
     /// </remarks>
     public string? SetCookie { get => this[Header.SetCookie]; set => this[Header.SetCookie] = value; }
 

@@ -9,13 +9,11 @@
 
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Internal;
 
-internal partial class LogFormatter
+internal class LogFormatter
 {
     public static string FormatExceptionEntr(HttpServerExecutionResult executionResult)
     {
@@ -39,26 +37,25 @@ internal partial class LogFormatter
         return errLineBuilder.ToString();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [GeneratedRegex(@"%([a-z]+|\{[^\}]+\})", RegexOptions.IgnoreCase)]
-    internal static partial Regex EntryMatchRegex();
-
     public static string FormatAccessLogEntry(in string format, HttpServerExecutionResult executionResult)
     {
-        ReadOnlySpan<char> formatSpan = format;
+        ReadOnlySpan<char> formatSpan = format.AsSpan();
         StringBuilder sb = new StringBuilder(format.Length);
-        MatchCollection matches = EntryMatchRegex().Matches(format);
 
-        int lastIndex = 0;
-        for (int i = 0; i < matches.Count; i++)
+        int incidences = formatSpan.Count('%');
+        Span<Range> formatRanges = stackalloc Range[incidences];
+        ExtractIncidences(formatSpan, formatRanges);
+
+        Index lastIndexStart = Index.FromStart(0);
+        for (int i = 0; i < incidences; i++)
         {
-            Match match = matches[i];
-            string term = match.Groups[1].Value;
+            ref Range currentRange = ref formatRanges[i];
+            ReadOnlySpan<char> term = formatSpan[(currentRange.Start.Value + 1)..currentRange.End];
             string? result;
 
             if (term is ['{', .., '}'])
             {
-                result = executionResult.Request.Headers[term[1..^1]];
+                result = executionResult.Request.Headers[new string(term[1..^1])];
             }
             else
             {
@@ -97,16 +94,61 @@ internal partial class LogFormatter
 
                     "lms" => executionResult.Elapsed.TotalMilliseconds.ToString("N0"),
                     "ls" => executionResult.Status.ToString(),
-                    _ => match.Value
+                    _ => new string(formatSpan[currentRange])
                 };
             }
 
-            sb.Append(formatSpan[lastIndex..match.Index]);
+            sb.Append(formatSpan[lastIndexStart..currentRange.Start]);
             sb.Append(result);
 
-            lastIndex = match.Index + match.Length;
+            lastIndexStart = currentRange.End;
         }
 
         return sb.ToString();
+    }
+
+    static int ExtractIncidences(ReadOnlySpan<char> input, Span<Range> output)
+    {
+        int inputLength = input.Length,
+            index = 0,
+            found = 0;
+
+        while ((index = input.IndexOf('%', index)) >= 0)
+        {
+            int seek = index++;
+            char current = input[seek];
+            if (seek == inputLength - 1)//reached end
+            {
+                return found;
+            }
+            else if ((current = input[++seek]) == '{')
+            {
+                while (seek < inputLength - 1 && input[++seek] != '}')
+                {
+                    ;
+                }
+
+                if (seek < inputLength - 1)
+                    seek++;
+                else if (seek == inputLength - 1 && char.IsLetter(input[seek]))
+                    seek++;
+
+                output[found++] = new Range(index - 1, Index.FromStart(seek));
+            }
+            else if (char.IsLetter(current))
+            {
+                while (seek < inputLength - 1 && char.IsLetter(current = input[++seek]))
+                {
+                    ;
+                }
+
+                if (seek == inputLength - 1 && char.IsLetter(input[seek]))
+                    seek++;
+
+                output[found++] = new Range(index - 1, Index.FromStart(seek));
+            }
+
+        }
+        return found;
     }
 }
