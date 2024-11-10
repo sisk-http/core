@@ -411,7 +411,7 @@ public partial class Router
         string newPath = rewriteInto;
         foreach (StringValue item in request.RouteParameters)
         {
-            newPath = newPath.Replace($"<{item.Name}>", HttpUtility.UrlEncode(item.Value), this.MatchRoutesIgnoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture);
+            newPath = newPath.Replace($"<{item.Name}>", HttpUtility.UrlEncode(item.Value), this.MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
 
         return new HttpResponse()

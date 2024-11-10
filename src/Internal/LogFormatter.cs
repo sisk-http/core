@@ -9,6 +9,7 @@
 
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Core.Internal;
@@ -51,51 +52,17 @@ internal class LogFormatter
         {
             ref Range currentRange = ref formatRanges[i];
             ReadOnlySpan<char> term = formatSpan[new Range(currentRange.Start.Value + 1, currentRange.End)];
-            string? result;
+            string result;
 
             if (term is ['{', .., '}'])
             {
-                result = executionResult.Request.Headers[new string(term[1..^1])];
+                result = executionResult.Request.Headers[new string(term[1..^1])]
+                    ?? string.Empty;
             }
             else
             {
-                result = term switch
-                {
-                    "dd" => executionResult.Request.RequestedAt.Day.ToString("D2"),
-                    "dmmm" => executionResult.Request.RequestedAt.ToString("MMMM"),
-                    "dmm" => executionResult.Request.RequestedAt.ToString("MMM"),
-                    "dm" => executionResult.Request.RequestedAt.Month.ToString("D2"),
-                    "dy" => executionResult.Request.RequestedAt.Year.ToString("D4"),
-
-                    "th" => executionResult.Request.RequestedAt.ToString("hh"),
-                    "tH" => executionResult.Request.RequestedAt.ToString("HH"),
-                    "ti" => executionResult.Request.RequestedAt.ToString("MM"),
-                    "ts" => executionResult.Request.RequestedAt.ToString("ss"),
-                    "tm" => executionResult.Request.RequestedAt.Millisecond.ToString("D3"),
-                    "tz" => $"{TimeZoneInfo.Local.GetUtcOffset(executionResult.Request.RequestedAt).TotalHours:00}00",
-
-                    "ri" => executionResult.Request.RemoteAddress.ToString(),
-                    "rm" => executionResult.Request.Method.Method.ToUpper(),
-                    "rs" => executionResult.Request.Uri.Scheme,
-                    "ra" => executionResult.Request.Authority,
-                    "rh" => executionResult.Request.Host,
-                    "rp" => executionResult.Request.Uri.Port.ToString(),
-                    "rz" => executionResult.Request.Path,
-                    "rq" => executionResult.Request.QueryString,
-
-                    "sc" => executionResult.Response?.Status.StatusCode.ToString(),
-                    "sd" => executionResult.Response?.Status.Description.ToString(),
-
-                    "lin" => SizeHelper.HumanReadableSize(executionResult.RequestSize),
-                    "linr" => executionResult.RequestSize.ToString(),
-
-                    "lou" => SizeHelper.HumanReadableSize(executionResult.ResponseSize),
-                    "lour" => executionResult.ResponseSize.ToString(),
-
-                    "lms" => executionResult.Elapsed.TotalMilliseconds.ToString("N0"),
-                    "ls" => executionResult.Status.ToString(),
-                    _ => new string(formatSpan[currentRange])
-                };
+                result = MatchTermExpression(term, executionResult)
+                    ?? new string(formatSpan[currentRange]);
             }
 
             sb.Append(formatSpan[lastIndexStart..currentRange.Start]);
@@ -106,6 +73,46 @@ internal class LogFormatter
 
         return sb.ToString();
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static string? MatchTermExpression(ReadOnlySpan<char> term, HttpServerExecutionResult executionResult)
+        => term switch
+        {
+            "dd" => executionResult.Request.RequestedAt.Day.ToString("D2"),
+            "dmmm" => executionResult.Request.RequestedAt.ToString("MMMM"),
+            "dmm" => executionResult.Request.RequestedAt.ToString("MMM"),
+            "dm" => executionResult.Request.RequestedAt.Month.ToString("D2"),
+            "dy" => executionResult.Request.RequestedAt.Year.ToString("D4"),
+
+            "th" => executionResult.Request.RequestedAt.ToString("hh"),
+            "tH" => executionResult.Request.RequestedAt.ToString("HH"),
+            "ti" => executionResult.Request.RequestedAt.ToString("MM"),
+            "ts" => executionResult.Request.RequestedAt.ToString("ss"),
+            "tm" => executionResult.Request.RequestedAt.Millisecond.ToString("D3"),
+            "tz" => $"{TimeZoneInfo.Local.GetUtcOffset(executionResult.Request.RequestedAt).TotalHours:00}00",
+
+            "ri" => executionResult.Request.RemoteAddress.ToString(),
+            "rm" => executionResult.Request.Method.Method.ToUpper(),
+            "rs" => executionResult.Request.Uri.Scheme,
+            "ra" => executionResult.Request.Authority,
+            "rh" => executionResult.Request.Host,
+            "rp" => executionResult.Request.Uri.Port.ToString(),
+            "rz" => executionResult.Request.Path,
+            "rq" => executionResult.Request.QueryString,
+
+            "sc" => executionResult.Response?.Status.StatusCode.ToString(),
+            "sd" => executionResult.Response?.Status.Description.ToString(),
+
+            "lin" => SizeHelper.HumanReadableSize(executionResult.RequestSize),
+            "linr" => executionResult.RequestSize.ToString(),
+
+            "lou" => SizeHelper.HumanReadableSize(executionResult.ResponseSize),
+            "lour" => executionResult.ResponseSize.ToString(),
+
+            "lms" => executionResult.Elapsed.TotalMilliseconds.ToString("N0"),
+            "ls" => executionResult.Status.ToString(),
+            _ => null
+        };
 
     static int ExtractIncidences(ReadOnlySpan<char> input, Span<Range> output)
     {

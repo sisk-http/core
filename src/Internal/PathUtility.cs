@@ -7,18 +7,20 @@
 // File name:   PathUtility.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Core.Internal;
 
 internal static class PathUtility
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsFullyRootedUri(string uri)
     {
-        return uri.StartsWith("http://")
-            || uri.StartsWith("https://")
-            || uri.StartsWith("ws://")
-            || uri.StartsWith("wss://");
+        return uri.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || uri.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || uri.StartsWith("ws://", StringComparison.OrdinalIgnoreCase)
+            || uri.StartsWith("wss://", StringComparison.OrdinalIgnoreCase);
     }
 
     public static string CombinePaths(params string[] paths)

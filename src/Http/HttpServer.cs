@@ -197,11 +197,6 @@ namespace Sisk.Core.Http
         public HttpWebSocketConnectionCollection WebSockets { get => this._wsCollection; }
 
         /// <summary>
-        /// Gets the Sisk version label.
-        /// </summary>
-        public string GetVersion() => PoweredBy;
-
-        /// <summary>
         /// Creates a new default configuration <see cref="Sisk.Core.Http.HttpServer"/> instance with the given Route and server configuration.
         /// </summary>
         /// <param name="configuration">The configuration object of the server.</param>

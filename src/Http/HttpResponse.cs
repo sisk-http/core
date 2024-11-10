@@ -51,7 +51,8 @@ namespace Sisk.Core.Http
         public HttpContent? Content { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the HTTP response can be sent chunked.
+        /// Gets or sets whether the HTTP response will be sent chunked. When setting this property to <c>true</c>,
+        /// the Content-Length header is automatically omitted.
         /// </summary>
         /// <remarks>
         /// The response is always sent as chunked when it is not possible to determine the size of the content to send.
@@ -66,7 +67,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the raw HTTP response message.
+        /// Gets a visual representation of this HTTP response.
         /// </summary>
         /// <param name="includeBody">Determines whether the message content will also be included in the return from this function.</param>
         public string GetRawHttpResponse(bool includeBody = true)
@@ -215,7 +216,7 @@ namespace Sisk.Core.Http
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"HttpResponse {{ Status = {this.Status}, Headers = HttpHeaderCollection[{this.Headers.Count}], Content = {this.Content?.GetType().Name ?? "<None>"} }}";
+            return this.Status.ToString();
         }
 
         /// <inheritdoc/>

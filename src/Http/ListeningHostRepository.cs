@@ -128,7 +128,7 @@ namespace Sisk.Core.Http
 
                         if (p.Port == incomingPort
                             && HttpStringInternals.IsDnsMatch(p.Hostname, incomingHost)
-                            && path.StartsWith(p.Path, StringComparison.CurrentCultureIgnoreCase))
+                            && path.StartsWith(p.Path, StringComparison.OrdinalIgnoreCase))
                         {
                             return h;
                         }

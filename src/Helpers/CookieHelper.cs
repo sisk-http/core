@@ -7,6 +7,7 @@
 // File name:   CookieHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Internal;
 using System.Net;
 using System.Web;
 
@@ -70,9 +71,9 @@ public static class CookieHelper
         if (domain is not null)
         {
             string d = domain;
-            // hope il optimize this
-            if (d.StartsWith("https://")) d = d.Substring("https://".Length);
-            if (d.StartsWith("http://")) d = d.Substring("http://".Length);
+
+            d = d.RemoveStart("https://", StringComparison.OrdinalIgnoreCase);
+            d = d.RemoveStart("http://", StringComparison.OrdinalIgnoreCase);
             d = d.TrimEnd('/');
 
             syntax.Add($"Domain={d}");

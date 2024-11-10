@@ -94,7 +94,7 @@ namespace Sisk.Core.Routing
             {
                 string? accept = context.Request.Headers.Accept;
 
-                if (accept?.Contains("text/html", StringComparison.CurrentCulture) == true)
+                if (accept?.Contains("text/html", StringComparison.Ordinal) == true)
                 {
                     return DefaultMessagePage.CreateDefaultResponse(HttpStatusCode.NotFound, SR.HttpResponse_404_DefaultMessage);
                 }
@@ -112,7 +112,7 @@ namespace Sisk.Core.Routing
             {
                 string? accept = context.Request.Headers.Accept;
 
-                if (accept?.Contains("text/html", StringComparison.CurrentCulture) == true)
+                if (accept?.Contains("text/html", StringComparison.Ordinal) == true)
                 {
                     return DefaultMessagePage.CreateDefaultResponse(HttpStatusCode.MethodNotAllowed, SR.HttpResponse_405_DefaultMessage);
                 }

@@ -173,21 +173,20 @@ public partial class Router
 
             if (isMethodMatched)
             {
-                if (pathTest.Query is not null)
+                if (pathTest.PathParameters is not null)
                 {
-                    var keys = pathTest.Query.Keys;
+                    var keys = pathTest.PathParameters.Keys;
 
                     for (int j = 0; j < keys.Count; j++)
                     {
-                        string? queryItem = keys[j];
-                        if (string.IsNullOrEmpty(queryItem)) continue;
+                        string? name = keys[j];
+                        if (string.IsNullOrEmpty(name)) continue;
 
-                        string? value = pathTest.Query[queryItem];
+                        string? value = pathTest.PathParameters[name];
                         if (string.IsNullOrEmpty(value)) continue;
-                        string valueDecoded = HttpUtility.UrlDecode(pathTest.Query[queryItem]) ?? string.Empty;
 
-                        request.Query.SetItemInternal(queryItem, valueDecoded);
-                        request.RouteParameters.SetItemInternal(queryItem, valueDecoded);
+                        string valueDecoded = HttpUtility.UrlDecode(value);
+                        request.RouteParameters.SetItemInternal(name, valueDecoded);
                     }
 
                     request.RouteParameters.MakeReadOnly();

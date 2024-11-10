@@ -389,7 +389,7 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
-        /// Gets the raw HTTP request message from the socket.
+        /// Gets a visual representation of this request.
         /// </summary>
         /// <param name="includeBody">Optional. Defines if the body should be included in the output.</param>
         /// <param name="appendExtraInfo">Optional. Appends extra information, such as request id and date into the output.</param>
@@ -429,31 +429,6 @@ namespace Sisk.Core.Http
             }
 
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// Gets a query value using an case-insensitive search.
-        /// </summary>
-        /// <param name="queryKeyName">The query value name.</param>
-        [Obsolete("This method is deprecated and will be removed in later Sisk versions. Please, use the Query property instead.")]
-        public string? GetQueryValue(string queryKeyName) => this.Query[queryKeyName].Value;
-
-        /// <summary>
-        /// Gets the value stored from the <see cref="Query"/> and converts it to the given type.
-        /// </summary>
-        /// <typeparam name="T">The parseable type which will be converted to.</typeparam>
-        /// <param name="queryKeyName">The name of the URL parameter. The search is ignore-case.</param>
-        [Obsolete("This method is deprecated and will be removed in later Sisk versions. Please, use the Query property instead.")]
-        public T GetQueryValue<T>(string queryKeyName) where T : IParsable<T>
-        {
-            try
-            {
-                return this.Query[queryKeyName].Get<T>();
-            }
-            catch (Exception)
-            {
-                throw new InvalidCastException(string.Format(SR.HttpRequest_GetQueryValue_CastException, queryKeyName, typeof(T).FullName));
-            }
         }
 
         /// <summary>

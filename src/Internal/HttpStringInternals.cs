@@ -15,7 +15,7 @@ namespace Sisk.Core.Internal
 {
     internal static class HttpStringInternals
     {
-        public record struct PathMatchResult(bool IsMatched, NameValueCollection? Query);
+        public record struct PathMatchResult(bool IsMatched, NameValueCollection? PathParameters);
 
         const char ROUTE_SEPARATOR = '/';
         const char ROUTE_GROUP_START = '<';
@@ -112,7 +112,7 @@ namespace Sisk.Core.Internal
                 {
                     matchCount++;
                 }
-                else if (aPtt.CompareTo(bPtt, ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) == 0)
+                else if (aPtt.CompareTo(bPtt, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0)
                 {
                     matchCount++;
                 }
@@ -164,7 +164,7 @@ namespace Sisk.Core.Internal
                 }
                 else
                 {
-                    if (pathPtt.CompareTo(reqsPtt, ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0)
+                    if (pathPtt.CompareTo(reqsPtt, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) != 0)
                     {
                         return new PathMatchResult(false, pathParams);
                     }

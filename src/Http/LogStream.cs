@@ -51,15 +51,14 @@ namespace Sisk.Core.Http
         /// </summary>
         public bool IsBuffering { get => this._bufferingContent is not null; }
 
-
         /// <summary>
         /// Gets an boolean indicating if this <see cref="LogStream"/> was disposed.
         /// </summary>
         public bool Disposed { get => this.isDisposed; }
 
         /// <summary>
-        /// Gets or sets a boolean that indicates that every input must be trimmed and normalized before
-        /// being written to some output stream.
+        /// Gets or sets a boolean that indicates that every input must be trimmed and have their
+        /// line endings normalized before being written to the output stream.
         /// </summary>
         public bool NormalizeEntries { get; set; } = true;
 
