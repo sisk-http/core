@@ -40,7 +40,7 @@ internal class LogFormatter
     public static string FormatAccessLogEntry(in string format, HttpServerExecutionResult executionResult)
     {
         ReadOnlySpan<char> formatSpan = format.AsSpan();
-        StringBuilder sb = new StringBuilder(format.Length);
+        StringBuilder sb = new StringBuilder(format.Length * 2);
 
         int incidences = formatSpan.Count('%');
         Span<Range> formatRanges = stackalloc Range[incidences];
@@ -50,7 +50,7 @@ internal class LogFormatter
         for (int i = 0; i < incidences; i++)
         {
             ref Range currentRange = ref formatRanges[i];
-            ReadOnlySpan<char> term = formatSpan[(currentRange.Start.Value + 1)..currentRange.End];
+            ReadOnlySpan<char> term = formatSpan[new Range(currentRange.Start.Value + 1, currentRange.End)];
             string? result;
 
             if (term is ['{', .., '}'])
@@ -110,45 +110,56 @@ internal class LogFormatter
     static int ExtractIncidences(ReadOnlySpan<char> input, Span<Range> output)
     {
         int inputLength = input.Length,
-            index = 0,
+
+            // 0 = find next % ocurrence
+            // 1 = find next non-letter ocurrence
+            // 2 = find next } ocurrence
+            mode = 0,
+
+            rangeStart = -1,
+            rangeEnd = -1,
+
             found = 0;
 
-        while ((index = input.IndexOf('%', index)) >= 0)
+        for (int i = 0; i < inputLength; i++)
         {
-            int seek = index++;
-            char current = input[seek];
-            if (seek == inputLength - 1)//reached end
+            char current = input[i];
+            if (current == '%')
             {
-                return found;
-            }
-            else if ((current = input[++seek]) == '{')
-            {
-                while (seek < inputLength - 1 && input[++seek] != '}')
+                if (mode == 1)
                 {
-                    ;
+                    output[found++] = new Range(rangeStart, i);
                 }
-
-                if (seek < inputLength - 1)
-                    seek++;
-                else if (seek == inputLength - 1 && char.IsLetter(input[seek]))
-                    seek++;
-
-                output[found++] = new Range(index - 1, Index.FromStart(seek));
+                rangeStart = i;
+                rangeEnd = -1;
+                mode = 1;
             }
-            else if (char.IsLetter(current))
+            else if (mode == 1)
             {
-                while (seek < inputLength - 1 && char.IsLetter(current = input[++seek]))
+                if (current == '{')
                 {
-                    ;
+                    mode = 2;
                 }
-
-                if (seek == inputLength - 1 && char.IsLetter(input[seek]))
-                    seek++;
-
-                output[found++] = new Range(index - 1, Index.FromStart(seek));
+                else if (!char.IsLetter(current))
+                {
+                    rangeEnd = i;
+                    mode = 0;
+                    output[found++] = new Range(rangeStart, rangeEnd);
+                }
             }
-
+            else if (mode == 2 && current == '}')
+            {
+                rangeEnd = i;
+                mode = 0;
+                output[found++] = new Range(rangeStart, rangeEnd + 1);
+            }
         }
+
+        if (mode == 1)
+        {
+            output[found++] = new Range(rangeStart, inputLength);
+        }
+
         return found;
     }
 }
