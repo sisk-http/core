@@ -30,7 +30,8 @@ namespace Sisk.Core.Http
         public string AccessLogsFormat { get; set; } = "%ri - [%dd/%dmm/%dy %tH:%ti:%ts %tz] \"%rm %rz%rq\" %sc %lou";
 
         /// <summary>
-        /// Gets or sets the default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.
+        /// Gets or sets the default <see cref="CultureInfo"/> object which the HTTP server will apply to the request
+        /// handlers and callbacks thread.
         /// </summary>
         public CultureInfo? DefaultCultureInfo { get; set; }
 
@@ -40,7 +41,8 @@ namespace Sisk.Core.Http
         public LogStream? AccessLogsStream { get; set; } = LogStream.ConsoleOutput;
 
         /// <summary>
-        /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server error transcriptions to.
+        /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server error
+        /// transcriptions to.
         /// </summary>
         public LogStream? ErrorsLogsStream { get; set; } = LogStream.ConsoleOutput;
 
@@ -96,7 +98,8 @@ namespace Sisk.Core.Http
         public ListeningHostRepository ListeningHosts { get; set; } = new ListeningHostRepository();
 
         /// <summary>
-        /// Gets or sets whether the server should throw exceptions instead of reporting it on <see cref="HttpServerExecutionStatus"/> if any is thrown while processing requests.
+        /// Gets or sets whether the server should throw exceptions instead of reporting it on 
+        /// <see cref="HttpServerExecutionStatus"/> if any is thrown while processing requests.
         /// </summary>
         public bool ThrowExceptions { get; set; } = false;
 
