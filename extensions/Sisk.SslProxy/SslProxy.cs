@@ -7,7 +7,6 @@
 // File name:   SslProxy.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Ssl.HttpSerializer;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -28,12 +27,6 @@ public sealed class SslProxy : IDisposable
     private readonly Channel<TcpClient> clientQueue;
     private readonly Thread channelConsumerThread;
     private bool disposedValue;
-
-    /// <summary>
-    /// Gets or sets an boolean indicating if the <see cref="SslProxy"/> should trace the
-    /// gateway client when starting the proxy.
-    /// </summary>
-    public bool CheckGatewayConnectionOnInit { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the maximum of open TCP connections this <see cref="SslProxy"/> can mantain
@@ -109,26 +102,6 @@ public sealed class SslProxy : IDisposable
     /// </summary>
     public void Start()
     {
-        if (this.CheckGatewayConnectionOnInit)
-        {
-            using (var gatewayClient = new TcpClient())
-            {
-                gatewayClient.Connect(this.remoteEndpoint);
-
-                using (var gatewayStream = gatewayClient.GetStream())
-                {
-                    bool sentRequest = HttpRequestWriter.TryWriteHttpV1Request(0, gatewayStream, "TRACE", "/", [
-                        ("Host", this.GatewayHostname ?? "localhost")
-                    ]);
-
-                    if (!sentRequest)
-                    {
-                        throw new Exception("Couldn't connect to the gateway address.");
-                    }
-                }
-            }
-        }
-
         if (this.KeepAliveEnabled)
         {
             this.listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);

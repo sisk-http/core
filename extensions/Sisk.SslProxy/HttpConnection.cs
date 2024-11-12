@@ -58,8 +58,8 @@ internal class HttpConnection : IDisposable
                 {
                     gatewayClient.Connect(this.Parent.GatewayEndpoint);
                     gatewayClient.NoDelay = true;
-                    gatewayClient.SendTimeout = (int)(this.Parent.GatewayTimeout.TotalSeconds);
-                    gatewayClient.ReceiveTimeout = (int)(this.Parent.GatewayTimeout.TotalSeconds);
+                    gatewayClient.SendTimeout = (int)(this.Parent.GatewayTimeout.TotalMilliseconds);
+                    gatewayClient.ReceiveTimeout = (int)(this.Parent.GatewayTimeout.TotalMilliseconds);
                 }
                 catch (Exception ex)
                 {
@@ -107,9 +107,6 @@ internal class HttpConnection : IDisposable
 
                 using (var gatewayStream = gatewayClient.GetStream())
                 {
-                    gatewayStream.ReadTimeout = (int)(this.Parent.GatewayTimeout.TotalSeconds);
-                    gatewayStream.WriteTimeout = (int)(this.Parent.GatewayTimeout.TotalSeconds);
-
                     try
                     {
                         sslStream.AuthenticateAsServer(
