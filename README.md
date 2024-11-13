@@ -4,10 +4,10 @@
   </p>
   <h1>Sisk Framework</h1>
 
-  [Discover Sisk](https://www.sisk-framework.org/) 
-  | [Documentation](https://docs.sisk-framework.org/) 
-  | [Blog](https://blog.sisk-framework.org/) 
-  | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs) 
+  [Discover Sisk](https://www.sisk-framework.org/)
+  | [Documentation](https://docs.sisk-framework.org/)
+  | [Blog](https://blog.sisk-framework.org/)
+  | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs)
   | [Benchmarks](https://github.com/sisk-http/benchmarks)
 
   <div>
@@ -19,7 +19,7 @@
   <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
 
   </div>
-
+  
   **Sisk** is a set of libraries for web development that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
 
 </div>
@@ -46,9 +46,9 @@ dotnet add package Sisk.HttpServer
 In this repository, you have the source code of:
 
   - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
-  - [Sisk.SslProxy](extensions/Sisk.SslProxy): the HTTPS provider for Sisk.
+  - [Sisk.SslProxy](extensions/Sisk.SslProxy): an experimental SSL proxy provider for Sisk.
+  - [Sisk.IniConfiguration](extensions/Sisk.IniConfiguration): an INI-document configuration provider for Sisk.
   - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
-  - [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider): (obsolete) the Service Providers utility package for porting your Sisk app between environments. This package is indeed to work with version 0.15 and olders, as 0.16 has it implemented on it's [core package](https://github.com/sisk-http/docs/blob/master/archive/0.16/service-providers-migration.md).
 
 ## Getting started
 
