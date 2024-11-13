@@ -152,7 +152,7 @@ public partial class HttpServer
         HttpContext? srContext = new HttpContext(this);
         bool closeStream = true;
 
-        HttpContext._threadShared = srContext;
+        HttpContext._context.Value = srContext;
 
         bool hasAccessLogging = this.ServerConfiguration.AccessLogsStream is not null;
         bool hasErrorLogging = this.ServerConfiguration.ErrorsLogsStream is not null;

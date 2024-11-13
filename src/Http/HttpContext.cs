@@ -17,8 +17,7 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class HttpContext
     {
-        [ThreadStatic]
-        internal static HttpContext? _threadShared = null;
+        internal static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?>();
 
         /// <summary>
         /// Gets the current running <see cref="HttpContext"/>.
@@ -26,7 +25,7 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is only accessible during an HTTP session, within the executing HTTP code.
         /// </remarks>
-        public static HttpContext Current { get => _threadShared ?? throw new InvalidOperationException(SR.HttpContext_InvalidThreadStaticAccess); }
+        public static HttpContext Current { get => _context.Value ?? throw new InvalidOperationException(SR.HttpContext_InvalidThreadStaticAccess); }
 
         /// <summary>
         /// Gets or sets an <see cref="HttpHeaderCollection"/> indicating HTTP headers which
