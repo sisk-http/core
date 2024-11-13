@@ -81,7 +81,7 @@ public partial class Router
     /// </summary>
     /// <param name="moduleType">An class which implements <see cref="RouterModule"/>, or the router module itself.</param>
     /// <param name="searchAssembly">The assembly to search the module type in.</param>
-    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    [RequiresUnreferencedCode(SR.RequiresUnreferencedCode)]
     public void AutoScanModules(Type moduleType, Assembly searchAssembly)
     {
         if (moduleType == typeof(RouterModule))
@@ -129,7 +129,7 @@ public partial class Router
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="assembly">The assembly to search <typeparamref name="TModule"/> in.</param>
-    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    [RequiresUnreferencedCode(SR.RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>(Assembly assembly) where TModule : RouterModule
         => this.AutoScanModules(typeof(TModule), assembly);
 
@@ -139,7 +139,7 @@ public partial class Router
     /// for each type must be present.
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
-    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    [RequiresUnreferencedCode(SR.RequiresUnreferencedCode)]
     public void AutoScanModules<TModule>() where TModule : RouterModule
         => this.AutoScanModules<TModule>(typeof(TModule).Assembly);
 
@@ -273,6 +273,7 @@ public partial class Router
     /// </summary>
     /// <param name="attrClassInstance">The instance of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</param>
     /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
+    [RequiresUnreferencedCode(SR.RequiresUnreferencedCode__RouterSetObject)]
     public void SetObject(object attrClassInstance)
     {
         Type attrClassType = attrClassInstance.GetType();
@@ -286,11 +287,23 @@ public partial class Router
     /// for these methods.
     /// </summary>
     /// <param name="attrClassType">The type of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</param>
-    /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
     public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType)
     {
         MethodInfo[] methods = attrClassType.GetMethods(SetObjectBindingFlag);
         this.SetObjectInternal(methods, attrClassType, null);
+    }
+
+    /// <summary>
+    /// Searches for all instance and static methods that are marked with an attribute of
+    /// type <see cref="RouteAttribute"/> in the specified object and creates routes
+    /// for these methods.
+    /// </summary>
+    /// <param name="attrClassType">The type of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</param>
+    /// <param name="instance">The instance of the object where the route methods are.</param>
+    public void SetObject([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type attrClassType, object instance)
+    {
+        MethodInfo[] methods = attrClassType.GetMethods(SetObjectBindingFlag);
+        this.SetObjectInternal(methods, attrClassType, instance);
     }
 
     /// <summary>
@@ -303,6 +316,19 @@ public partial class Router
     public void SetObject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TObject>()
     {
         this.SetObject(typeof(TObject));
+    }
+
+    /// <summary>
+    /// Searches for all instance and static methods that are marked with an attribute of
+    /// type <see cref="RouteAttribute"/> in the specified object and creates routes
+    /// for these methods.
+    /// </summary>
+    /// <param name="instance">The instance of <typeparamref name="TObject"/> to invoke the instance methods on.</param>
+    /// <typeparam name="TObject">The type of the class where the methods are. The routing methods must be marked with any <see cref="RouteAttribute"/>.</typeparam>
+    /// <exception cref="Exception">An exception is thrown when a method has an erroneous signature.</exception>
+    public void SetObject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TObject>(TObject instance) where TObject : notnull
+    {
+        this.SetObject(typeof(TObject), instance);
     }
 
     private void SetObjectInternal(MethodInfo[] methods, Type callerType, object? instance)

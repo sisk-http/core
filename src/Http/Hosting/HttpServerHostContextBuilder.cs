@@ -266,7 +266,7 @@ public sealed class HttpServerHostContextBuilder
     /// This method is an shortcut for calling <see cref="Router.AutoScanModules{T}()"/>.
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
-    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    [RequiresUnreferencedCode(SR.RequiresUnreferencedCode)]
     public HttpServerHostContextBuilder UseAutoScan<TModule>() where TModule : RouterModule
     {
         this._context.Router.AutoScanModules<TModule>(typeof(TModule).Assembly);
@@ -278,7 +278,7 @@ public sealed class HttpServerHostContextBuilder
     /// </summary>
     /// <typeparam name="TModule">An class which implements <see cref="RouterModule"/>, or the router module itself.</typeparam>
     /// <param name="t">The assembly where the scanning types are.</param>
-    [RequiresUnreferencedCode(SR.Router_AutoScanModules_RequiresUnreferencedCode)]
+    [RequiresUnreferencedCode(SR.RequiresUnreferencedCode)]
     public HttpServerHostContextBuilder UseAutoScan<TModule>(Assembly t) where TModule : RouterModule
     {
         this._context.Router.AutoScanModules<TModule>(t);

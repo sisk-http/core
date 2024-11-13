@@ -8,7 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Entity;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Sisk.Core.Http
 {
@@ -17,7 +19,7 @@ namespace Sisk.Core.Http
     /// </summary>
     public sealed class HttpContext
     {
-        internal static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?>();
+        internal readonly static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?>();
 
         /// <summary>
         /// Gets the current running <see cref="HttpContext"/>.
@@ -25,6 +27,7 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is only accessible during an HTTP session, within the executing HTTP code.
         /// </remarks>
+        [Experimental(DiagnosticId.Sisk_HttpContext_Current_Experimental)]
         public static HttpContext Current { get => _context.Value ?? throw new InvalidOperationException(SR.HttpContext_InvalidThreadStaticAccess); }
 
         /// <summary>
