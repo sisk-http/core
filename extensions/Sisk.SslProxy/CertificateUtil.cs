@@ -55,7 +55,7 @@ public static class CertificateUtil
     /// to the local user's certificate store.
     /// </summary>
     /// <param name="dnsNames">The certificate DNS names.</param>
-    public static X509Certificate2 CreateTrustedDevelopmentCertificate(string[] dnsNames)
+    public static X509Certificate2 CreateTrustedDevelopmentCertificate(params string[] dnsNames)
     {
         X509Certificate2 x509Certificate2;
         using (var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
@@ -103,7 +103,7 @@ public static class CertificateUtil
                 sanBuilder.Build());
 
             var certificate = request.CreateSelfSigned(new DateTimeOffset(DateTime.UtcNow.AddDays(-1)), new DateTimeOffset(DateTime.UtcNow.AddDays(3650)));
-            return new X509Certificate2(certificate.Export(X509ContentType.Pfx, "sisk"), "sisk", X509KeyStorageFlags.MachineKeySet);
+            return new X509Certificate2(certificate.Export(X509ContentType.Pfx, "sisk"), "sisk", X509KeyStorageFlags.DefaultKeySet);
         }
     }
 }

@@ -18,6 +18,9 @@ namespace Sisk.Helpers.Mitmproxy;
 /// </summary>
 public sealed class MitmproxyProvider : HttpServerHandler
 {
+    private ChildProcessStartInfo MitmdumpProcessInfo = null!;
+    private readonly Action<ChildProcessStartInfo>? setupAction;
+
     /// <summary>
     /// Gets the <see cref="IChildProcess"/> instance of the mitmdump process.
     /// </summary>
@@ -32,9 +35,6 @@ public sealed class MitmproxyProvider : HttpServerHandler
     /// Gets or sets a value indicating whether the mitmproxy should run in silent mode.
     /// </summary>
     public bool Silent { get; set; }
-
-    private ChildProcessStartInfo MitmdumpProcessInfo = null!;
-    private readonly Action<ChildProcessStartInfo>? setupAction;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MitmproxyProvider"/> class.

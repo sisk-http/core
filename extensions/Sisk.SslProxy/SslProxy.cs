@@ -21,7 +21,6 @@ namespace Sisk.Ssl;
 /// </summary>
 public sealed class SslProxy : IDisposable
 {
-    private readonly static Random clientIdGenerator = new Random();
     private readonly TcpListener listener;
     private readonly IPEndPoint remoteEndpoint;
     private readonly Channel<TcpClient> clientQueue;
