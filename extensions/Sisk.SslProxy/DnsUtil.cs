@@ -9,6 +9,7 @@
 
 using Sisk.Core.Http;
 using System.Net;
+using System.Net.Sockets;
 
 namespace Sisk.Ssl;
 
@@ -17,26 +18,29 @@ static class DnsUtil
     public static IPEndPoint ResolveEndpoint(ListeningPort port, bool onlyUseIPv4 = false)
     {
         var hostEntry = Dns.GetHostEntry(port.Hostname);
+
         if (hostEntry.AddressList.Length == 0)
+            throw new InvalidOperationException($"Couldn't resolve any IP addresses for {port}.");
+
+        IPAddress? resolvedAddress;
+
+        if (onlyUseIPv4)
         {
-            throw new InvalidOperationException($"Couldn't resolve DNS IP-address for {port}.");
+            resolvedAddress =
+                // only resolves IPv4
+                hostEntry.AddressList.LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
         }
         else
         {
-            if (onlyUseIPv4)
-            {
-                return new IPEndPoint(hostEntry.AddressList.Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).Last(), port.Port);
-            }
-            else
-            {
-                var ipv6AddressList = hostEntry.AddressList.Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6);
-                if (ipv6AddressList.Any())
-                {
-                    return new IPEndPoint(ipv6AddressList.Last(), port.Port);
-                }
-                else
-                    return new IPEndPoint(hostEntry.AddressList.Last(), port.Port);
-            }
+            resolvedAddress =
+                // try to return the last IPv6, or the last IPv4 if no IPv6 was found (#16)
+                hostEntry.AddressList.LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetworkV6)
+                ?? hostEntry.AddressList.LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
         }
+
+        if (resolvedAddress is null)
+            throw new InvalidOperationException($"Couldn't resolve any IP addresses for {port}.");
+
+        return new IPEndPoint(resolvedAddress, port.Port);
     }
 }
