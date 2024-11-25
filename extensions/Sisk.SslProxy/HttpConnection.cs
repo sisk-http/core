@@ -138,7 +138,6 @@ internal class HttpConnection : IDisposable
                                         sslStream,
                                         reqReaderMemory,
                                         this.Parent.GatewayHostname,
-                                        this.Client,
                                 out var method,
                                 out var path,
                                 out var proto,

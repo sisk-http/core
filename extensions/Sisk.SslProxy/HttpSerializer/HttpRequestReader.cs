@@ -9,7 +9,6 @@
 
 using Sisk.Core.Http;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Sockets;
 
 namespace Sisk.Ssl.HttpSerializer;
 
@@ -29,7 +28,6 @@ static class HttpRequestReader
                             Stream inboundStream,
                       scoped HttpRequestReaderSpan readMemory,
                             string? replaceHostName,
-                            TcpClient client,
         [NotNullWhen(true)] out string? method,
         [NotNullWhen(true)] out string? path,
         [NotNullWhen(true)] out string? proto,
