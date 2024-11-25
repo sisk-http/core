@@ -29,6 +29,7 @@ public static class SslProxyExtensions
     /// <param name="clientCertificateRequired">Optional. Specifies whether a client certificate is required for authentication. Defaults to <c>false</c>.</param>
     /// <param name="proxyAuthorization">Optional. Specifies the Proxy-Authorization header value for creating an trusted gateway between
     /// the application and the proxy.</param>
+    /// <param name="onlyUseIPv4">Optional. Specifies whether DNS Resolve may also use IPv6 addresses or should only use IPv4 addresses</param>
     /// <returns>The configured <see cref="HttpServerHostContextBuilder"/> instance.</returns>
     public static HttpServerHostContextBuilder UseSsl(
         this HttpServerHostContextBuilder builder,
@@ -36,13 +37,14 @@ public static class SslProxyExtensions
         X509Certificate? certificate = null,
         SslProtocols allowedProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
         bool clientCertificateRequired = false,
-        object? proxyAuthorization = null)
+        object? proxyAuthorization = null,
+        bool onlyUseIPv4 = false)
     {
         var primaryHost = builder.ServerConfiguration.ListeningHosts[0];
         var primaryPort = primaryHost.Ports[0];
         var usableHosts = primaryHost.Ports.Select(p => p.Hostname);
 
-        var endpoint = DnsUtil.ResolveEndpoint(primaryPort);
+        var endpoint = DnsUtil.ResolveEndpoint(primaryPort, onlyUseIPv4);
         if (certificate is null)
         {
             certificate = CertificateUtil.CreateTrustedDevelopmentCertificate(["localhost", .. usableHosts]);
