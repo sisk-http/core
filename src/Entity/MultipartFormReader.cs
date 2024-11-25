@@ -142,6 +142,7 @@ internal sealed class MultipartFormReader
 
     Span<byte> ReadContent()
     {
+        var boundarySpan = this.boundaryBytes.AsSpan();
         int boundaryLen = this.boundaryBytes.Length;
         int istart = this.position;
 
@@ -151,14 +152,14 @@ internal sealed class MultipartFormReader
 
             if ((this.position - istart) > boundaryLen)
             {
-                if (this.bytes[(this.position - boundaryLen)..this.position].SequenceEqual(this.boundaryBytes))
+                if (this.bytes[(this.position - boundaryLen)..this.position].AsSpan().SequenceCompareTo(boundarySpan) == 0)
                 {
                     break;
                 }
             }
         }
 
-        this.position -= boundaryLen + this.nlbytes.Length + 2 /* the boundary "--" construct */;
+        this.position -= boundaryLen + this.nlbytes.Length + 2 /* +2 represents the boundary "--" construct */;
 
         return this.bytes.AsSpan()[istart..this.position];
     }
@@ -182,7 +183,7 @@ internal sealed class MultipartFormReader
         return headers;
     }
 
-    unsafe void ReadNextBoundary()
+    void ReadNextBoundary()
     {
         Span<byte> boundaryBlock = stackalloc byte[this.boundaryBytes.Length + 2];
         int nextLine = this.Read(boundaryBlock);

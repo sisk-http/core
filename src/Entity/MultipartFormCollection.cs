@@ -26,7 +26,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     }
 
     /// <summary>
-    /// Gets the last form item by their name. The search is case-insensitive.
+    /// Gets the last form item by their name. This search is case-insensitive.
     /// </summary>
     /// <param name="name">The form item name.</param>
     public MultipartObject? GetItem(string name)
@@ -35,7 +35,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     }
 
     /// <summary>
-    /// Gets all form items that shares the specified name. The search is case-insensitive.
+    /// Gets all form items that shares the specified name. This search is case-insensitive.
     /// </summary>
     /// <param name="name">The form item name.</param>
     /// <returns>An array of <see cref="MultipartObject"/> with the specified name.</returns>

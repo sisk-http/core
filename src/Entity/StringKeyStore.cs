@@ -43,6 +43,19 @@ public class StringKeyStore : IDictionary<string, string[]>
         this.items = new();
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StringKeyStore"/> class,
+    /// </summary>
+    /// <param name="comparer">The comparer used for key equality.</param>
+    /// <param name="items">The inner collection to add to this instance.</param>
+    public StringKeyStore(IEqualityComparer<string> comparer, IDictionary<string, string[]>? items)
+    {
+        this.Comparer = StringComparer.CurrentCulture;
+        this.items = new();
+        if (items != null)
+            this.AddRange(items);
+    }
+
     #region Internal methods
 
     internal void AddInternal(string key, IEnumerable<string> values)
@@ -270,6 +283,16 @@ public class StringKeyStore : IDictionary<string, string[]>
     {
         foreach (KeyValuePair<string, string[]> item in items)
             this.Add(item);
+    }
+
+    /// <summary>
+    /// Adds the elements of the specified collection to the end of this collection.
+    /// </summary>
+    /// <param name="items">The collection whose items should be added to the end of this collection.</param>
+    public void AddRange(IEnumerable<KeyValuePair<string, string?>> items)
+    {
+        foreach (KeyValuePair<string, string?> item in items)
+            this.Add(item.Key, item.Value ?? string.Empty);
     }
 
     /// <summary>

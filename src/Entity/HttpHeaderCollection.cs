@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Http;
+using System.Net;
 using Header = Sisk.Core.Http.HttpKnownHeaderNames;
 
 namespace Sisk.Core.Entity;
@@ -17,7 +18,7 @@ namespace Sisk.Core.Entity;
 /// </summary>
 public sealed class HttpHeaderCollection : StringKeyStore
 {
-    static readonly StringComparer _comparer = StringComparer.InvariantCultureIgnoreCase;
+    static readonly StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
 
     /// <summary>
     /// Create an new instance of the <see cref="HttpHeaderCollection"/> class.
@@ -26,6 +27,35 @@ public sealed class HttpHeaderCollection : StringKeyStore
     {
     }
 
+    /// <summary>
+    /// Create an new instance of the <see cref="HttpHeaderCollection"/> class with values from another
+    /// collection.
+    /// </summary>
+    /// <param name="items">The inner collection to add to this collection.</param>
+    public HttpHeaderCollection(IDictionary<string, string[]> items) : base(_comparer)
+    {
+        this.AddRange(items);
+    }
+
+    /// <summary>
+    /// Create an new instance of the <see cref="HttpHeaderCollection"/> class with values from another
+    /// collection.
+    /// </summary>
+    /// <param name="items">The inner collection to add to this collection.</param>
+    public HttpHeaderCollection(IDictionary<string, string?> items) : base(_comparer)
+    {
+        this.AddRange(items);
+    }
+
+    /// <summary>
+    /// Create an new instance of the <see cref="HttpHeaderCollection"/> class with values from another
+    /// collection.
+    /// </summary>
+    /// <param name="items">The inner collection to add to this collection.</param>
+    public HttpHeaderCollection(WebHeaderCollection items) : base(_comparer)
+    {
+        this.AddRange(FromNameValueCollection(items));
+    }
     #region Helper properties
 
     /// <summary>

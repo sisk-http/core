@@ -207,7 +207,7 @@ public partial class HttpServer
                 return;
             }
 
-            string dnsSafeHost = baseRequest.UserHostName;
+            string dnsSafeHost = baseRequest.Url.Host;
             if (this.ServerConfiguration.ForwardingResolver is ForwardingResolver fr)
             {
                 dnsSafeHost = fr.OnResolveRequestHost(request, dnsSafeHost);

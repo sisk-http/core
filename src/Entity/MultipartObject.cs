@@ -168,8 +168,7 @@ namespace Sisk.Core.Entity
                 throw new InvalidOperationException(SR.MultipartObject_BoundaryMissing);
             }
 
-            byte[] boundaryBytes = Encoding.UTF8.GetBytes(boundary);
-
+            byte[] boundaryBytes = req.RequestEncoding.GetBytes(boundary);
             if (req.baseServer.ServerConfiguration.Flags.EnableNewMultipartFormReader == true)
             {
                 MultipartFormReader reader = new MultipartFormReader(req.RawBody, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions);
