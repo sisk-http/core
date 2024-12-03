@@ -14,7 +14,17 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-record struct RouteDictItem(System.Type type, Delegate lambda);
+class ActionHandler
+{
+    public Type MatchingType { get; set; }
+    public Func<object, HttpResponse> Handler { get; set; }
+
+    public ActionHandler(Type matchingType, Func<object, HttpResponse> handler)
+    {
+        this.MatchingType = matchingType;
+        this.Handler = handler;
+    }
+}
 
 
 namespace Sisk.Core.Routing
@@ -28,7 +38,7 @@ namespace Sisk.Core.Routing
 
         internal HttpServer? parentServer;
         internal List<Route> _routesList = new();
-        internal List<RouteDictItem> _actionHandlersList = new();
+        internal List<ActionHandler> _actionHandlersList = new();
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal void BindServer(HttpServer server)
@@ -77,12 +87,28 @@ namespace Sisk.Core.Routing
         }
 
         /// <summary>
+        /// Creates an new <see cref="Router"/> instance with given route collection.
+        /// </summary>
+        /// <param name="routes">The route collection to import in this router.</param>
+#if NET9_0_OR_GREATER
+        public Router(params IEnumerable<Route> routes)
+#else
+        public Router(IEnumerable<Route> routes)
+#endif
+        {
+            foreach (var route in routes)
+                this.SetRoute(route);
+        }
+
+        /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
         /// </summary>
         public IRequestHandler[] GlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
 
         /// <summary>
-        /// Gets or sets the Router action exception handler.
+        /// Gets or sets the Router action exception handler. The response handler for this property will
+        /// send an HTTP response to the client when an exception is caught during execution. This property
+        /// is only called when <see cref="HttpServerConfiguration.ThrowExceptions"/> is disabled.
         /// </summary>
         public ExceptionErrorCallback? CallbackErrorHandler { get; set; }
 
@@ -174,17 +200,18 @@ namespace Sisk.Core.Routing
             {
                 Type actionType = result.GetType();
 
-                Span<RouteDictItem> hspan = CollectionsMarshal.AsSpan(this._actionHandlersList);
-                ref RouteDictItem pointer = ref MemoryMarshal.GetReference(hspan);
+                Span<ActionHandler> hspan = CollectionsMarshal.AsSpan(this._actionHandlersList);
+                ref ActionHandler pointer = ref MemoryMarshal.GetReference(hspan);
                 for (int i = 0; i < hspan.Length; i++)
                 {
-                    ref RouteDictItem current = ref Unsafe.Add(ref pointer, i);
-                    if (actionType.IsAssignableTo(current.type))
+                    ref ActionHandler current = ref Unsafe.Add(ref pointer, i);
+
+                    if (actionType.IsAssignableTo(current.MatchingType))
                     {
-                        var resultObj = current.lambda.DynamicInvoke(result) as HttpResponse;
+                        var resultObj = current.Handler(result);
                         if (resultObj is null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.Router_Handler_HandlerNotHttpResponse, current.type.Name));
+                            throw new InvalidOperationException(SR.Format(SR.Router_Handler_HandlerNotHttpResponse, current.MatchingType.Name));
                         }
                         response = resultObj;
                         return true;
@@ -220,13 +247,13 @@ namespace Sisk.Core.Routing
             }
             for (int i = 0; i < this._actionHandlersList!.Count; i++)
             {
-                RouteDictItem item = this._actionHandlersList[i];
-                if (item.type.Equals(type))
+                ActionHandler item = this._actionHandlersList[i];
+                if (item.MatchingType.Equals(type))
                 {
                     throw new ArgumentException(SR.Router_Handler_Duplicate);
                 }
             }
-            this._actionHandlersList.Add(new RouteDictItem(type, actionHandler));
+            this._actionHandlersList.Add(new ActionHandler(type, (obj) => actionHandler((T)obj)));
         }
 
         HttpResponse ResolveAction(object? routeResult)

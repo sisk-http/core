@@ -283,6 +283,7 @@ public partial class HttpServer
 
             // get response
             routerResult = matchedListeningHost.Router.Execute(srContext);
+            executionResult.ServerException = routerResult.Exception;
 
             response = routerResult.Response;
             bool routeAllowCors = routerResult.Route?.UseCors ?? true;

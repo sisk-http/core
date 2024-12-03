@@ -56,7 +56,7 @@ public partial class Router
         }
         else
         {
-            return new HttpStringInternals.PathMatchResult(false, new NameValueCollection());
+            return new HttpStringInternals.PathMatchResult(false, null);
         }
     }
 
@@ -99,13 +99,12 @@ public partial class Router
         catch (Exception ex)
         {
             exception = ex;
-            if (!this.parentServer!.ServerConfiguration.ThrowExceptions)
+            if (this.parentServer!.ServerConfiguration.ThrowExceptions == false)
             {
                 if (this.CallbackErrorHandler is not null)
                 {
                     result = this.CallbackErrorHandler(ex, context);
                 }
-                else { /* do nothing */ };
             }
             else throw;
         }
@@ -125,6 +124,7 @@ public partial class Router
 
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
+        Exception? handledException = null;
 
         // IsReadOnly ensures that no route will be added or removed from the list during the
         // span iteration
@@ -263,7 +263,7 @@ public partial class Router
                     throw new ArgumentException(string.Format(SR.Router_NoRouteActionDefined, matchedRoute));
                 }
 
-                if (matchedRoute._isAsync)
+                if (matchedRoute._isAsyncTask)
                 {
                     if (actionResult is null)
                     {
@@ -272,6 +272,14 @@ public partial class Router
 
                     ref Task<object> actionTask = ref Unsafe.As<object, Task<object>>(ref actionResult);
                     actionResult = actionTask.GetAwaiter().GetResult();
+                }
+                else if (matchedRoute._isAsyncEnumerable)
+                {
+                    if (flag.ConvertIAsyncEnumerableIntoEnumerable)
+                    {
+                        ref IAsyncEnumerable<object> asyncEnumerable = ref Unsafe.As<object, IAsyncEnumerable<object>>(ref actionResult);
+                        actionResult = asyncEnumerable.ToBlockingEnumerable();
+                    }
                 }
 
                 result = this.ResolveAction(actionResult);
@@ -282,6 +290,7 @@ public partial class Router
                 {
                     if (this.CallbackErrorHandler is not null)
                     {
+                        handledException = ex;
                         result = this.CallbackErrorHandler(ex, context);
                     }
                     else
@@ -310,6 +319,6 @@ public partial class Router
             #endregion     
         }
 
-        return new RouterExecutionResult(context.RouterResponse, matchedRoute, matchResult, null);
+        return new RouterExecutionResult(context.RouterResponse, matchedRoute, matchResult, handledException);
     }
 }

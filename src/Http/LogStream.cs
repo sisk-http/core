@@ -258,10 +258,17 @@ namespace Sisk.Core.Http
         /// Writes an exception description in the log.
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
-        public virtual void WriteException(Exception exp)
+        public virtual void WriteException(Exception exp) => this.WriteException(exp, null);
+
+        /// <summary>
+        /// Writes an exception description in the log.
+        /// </summary>
+        /// <param name="exp">The exception which will be written.</param>
+        /// <param name="extraContext">Extra context message to append to the exception message.</param>
+        public virtual void WriteException(Exception exp, string? extraContext = null)
         {
             StringBuilder excpStr = new StringBuilder();
-            this.WriteExceptionInternal(excpStr, exp, 0);
+            this.WriteExceptionInternal(excpStr, exp, extraContext, 0);
             this.WriteLineInternal(excpStr.ToString());
         }
 
@@ -339,17 +346,20 @@ namespace Sisk.Core.Http
             _ = this.channel.Writer.WriteAsync(message);
         }
 
-        void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, int currentDepth = 0)
+        void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0)
         {
             if (currentDepth == 0)
-                exceptionSbuilder.AppendLine(string.Format(SR.LogStream_ExceptionDump_Header, DateTime.Now.ToString("R")));
+                exceptionSbuilder.AppendLine(string.Format(SR.LogStream_ExceptionDump_Header,
+                    context is null ? DateTime.Now.ToString("R") : $"{context}, {DateTime.Now:R}"));
+
             exceptionSbuilder.AppendLine(exp.ToString());
 
             if (exp.InnerException != null)
             {
                 if (currentDepth <= 3)
                 {
-                    this.WriteExceptionInternal(exceptionSbuilder, exp.InnerException, currentDepth + 1);
+                    exceptionSbuilder.AppendLine("+++ inner exception +++");
+                    this.WriteExceptionInternal(exceptionSbuilder, exp.InnerException, null, currentDepth + 1);
                 }
                 else
                 {

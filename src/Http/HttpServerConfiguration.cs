@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Globalization;
-using System.Text;
 
 namespace Sisk.Core.Http
 {
@@ -60,12 +59,6 @@ namespace Sisk.Core.Http
         /// client address, host and protocol of a proxy, load balancer or CDN, through the HTTP request.
         /// </summary>
         public ForwardingResolver? ForwardingResolver { get; set; }
-
-        /// <summary>
-        /// Gets or sets the default encoding for sending and decoding messages.
-        /// </summary>
-        [Obsolete("This property is deprecated and will be removed in later Sisk versions.")]
-        public Encoding DefaultEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
         /// Gets or sets the maximum size of a request body before it is closed by the socket.

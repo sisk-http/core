@@ -22,7 +22,8 @@ namespace Sisk.Core.Routing
         internal RouteAction? _singleParamCallback;
         internal ParameterlessRouteAction? _parameterlessRouteAction;
 
-        internal bool _isAsync;
+        internal bool _isAsyncEnumerable;
+        internal bool _isAsyncTask;
         internal Regex? routeRegex;
         private string path;
 
@@ -40,7 +41,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
-        public bool IsAsync { get => this._isAsync; }
+        public bool IsAsync { get => this._isAsyncTask; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
@@ -109,7 +110,8 @@ namespace Sisk.Core.Routing
                 {
                     this._parameterlessRouteAction = null;
                     this._singleParamCallback = null;
-                    this._isAsync = false;
+                    this._isAsyncTask = false;
+                    this._isAsyncEnumerable = false;
                     return;
                 }
                 else if (!this.TrySetRouteAction(value.Method, value.Target, out Exception? ex))
@@ -137,6 +139,23 @@ namespace Sisk.Core.Routing
                 return false;
             }
 
+            Exception? CheckAsyncReturnParameters(Type asyncOutType)
+            {
+                if (asyncOutType.GenericTypeArguments.Length == 0)
+                {
+                    return new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
+                }
+                else
+                {
+                    Type genericAssignType = asyncOutType.GenericTypeArguments[0];
+                    if (genericAssignType.IsValueType)
+                    {
+                        return new NotSupportedException(SR.Route_Action_ValueTypeSet);
+                    }
+                }
+                return null;
+            }
+
             var retType = method.ReturnType;
             if (retType.IsValueType)
             {
@@ -145,25 +164,26 @@ namespace Sisk.Core.Routing
             }
             else if (retType.IsAssignableTo(typeof(Task)))
             {
-                this._isAsync = true;
-                if (retType.GenericTypeArguments.Length == 0)
+                this._isAsyncTask = true;
+                if (CheckAsyncReturnParameters(retType) is Exception rex)
                 {
-                    ex = new InvalidOperationException(string.Format(SR.Route_Action_AsyncMissingGenericType, this));
+                    ex = rex;
                     return false;
                 }
-                else
+            }
+            else if (retType.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))
+            {
+                this._isAsyncEnumerable = true;
+                if (CheckAsyncReturnParameters(retType) is Exception rex)
                 {
-                    Type genericAssignType = retType.GenericTypeArguments[0];
-                    if (genericAssignType.IsValueType)
-                    {
-                        ex = new NotSupportedException(SR.Route_Action_ValueTypeSet);
-                        return false;
-                    }
+                    ex = rex;
+                    return false;
                 }
             }
             else
             {
-                this._isAsync = false;
+                this._isAsyncTask = false;
+                this._isAsyncEnumerable = false;
             }
 
             ex = null;
@@ -223,7 +243,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         public override string ToString()
         {
-            return $"[{this.Method.ToString().ToUpper()} {this.path}] {this.Name ?? this.Action?.Method.Name}";
+            return $"[{this.Method.ToString().ToUpper()} {this.path}] {this.Name ?? this.Action?.Method.Name ?? "<no action>"}";
         }
 
         /// <inheritdoc/>

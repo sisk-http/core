@@ -128,13 +128,21 @@ namespace Sisk.Core.Http
         public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds(120);
 
         /// <summary>
-        /// Determines if the new span-based multipart form reader should be used. This is an experimental
-        /// feature and may not be stable for production usage.
+        /// Determines if the new span-based multipart form reader should be used.
         /// <para>
         ///     Default value: <c>true</c>
         /// </para>
         /// </summary>
         public bool EnableNewMultipartFormReader = true;
+
+        /// <summary>
+        /// Determines if the HTTP server should convert <see cref="IAsyncEnumerable{T}"/> object responses into
+        /// an blocking <see cref="IEnumerable{T}"/>.
+        /// <para>
+        ///     Default value: <c>true</c>
+        /// </para>
+        /// </summary>
+        public bool ConvertIAsyncEnumerableIntoEnumerable = true;
 
         /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
