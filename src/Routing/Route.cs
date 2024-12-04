@@ -171,7 +171,7 @@ namespace Sisk.Core.Routing
                     return false;
                 }
             }
-            else if (retType.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))
+            else if (retType.IsGenericType && retType.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))
             {
                 this._isAsyncEnumerable = true;
                 if (CheckAsyncReturnParameters(retType) is Exception rex)
