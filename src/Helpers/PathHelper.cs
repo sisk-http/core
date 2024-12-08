@@ -24,6 +24,17 @@ public sealed class PathHelper
     {
         return PathUtility.CombinePaths(paths);
     }
+    
+    /// <summary>
+    /// Normalizes and combines the specified file-system paths into one.
+    /// </summary>
+    /// <param name="allowRelativeReturn">Specifies if relative paths should be merged and ".." returns should be respected.</param>
+    /// <param name="separator">Specifies the path separator character.</param>
+    /// <param name="paths">Specifies the array of paths to combine.</param>
+    public static string FilesystemCombinePaths(bool allowRelativeReturn, char separator, params string[] paths)
+    {
+        return PathUtility.NormalizedCombine(allowRelativeReturn, separator, paths);
+    }
 
     /// <summary>
     /// Normalizes and combines the specified file-system paths into one.

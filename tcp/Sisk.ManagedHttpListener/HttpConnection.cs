@@ -25,7 +25,7 @@ public sealed class HttpConnection : IDisposable
         {
             //try
             //{
-            using var bufferedStreamSession = new Streams.HttpBufferedStream(_connectionStream);
+            using var bufferedStreamSession = new Streams.HttpBufferedReadStream(_connectionStream);
 
             if (!HttpRequestSerializer.TryReadHttp1Request(
                         bufferedStreamSession,

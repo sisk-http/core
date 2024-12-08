@@ -2,20 +2,22 @@
 
 namespace Sisk.ManagedHttpListener.Streams;
 
-internal class HttpBufferedStream : Stream
+internal class HttpBufferedReadStream : Stream
 {
+    private const int INITIAL_BUFFER = 4096;
+
     private readonly Stream _stream;
     private readonly byte[] _b;
 
     private long _position;
     private int _read;
 
-    public HttpBufferedStream(Stream stream)
+    public HttpBufferedReadStream(Stream stream)
     {
         _stream = stream;
         _position = 0;
         _read = 0;
-        _b = ArrayPool<byte>.Shared.Rent(4096);
+        _b = ArrayPool<byte>.Shared.Rent(INITIAL_BUFFER);
     }
 
     public Span<byte> BufferedBytes => _b;
@@ -99,5 +101,11 @@ internal class HttpBufferedStream : Stream
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(toPosition, _read);
         _position = toPosition;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        ArrayPool<byte>.Shared.Return(_b);
+        base.Dispose(disposing);
     }
 }

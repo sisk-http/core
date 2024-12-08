@@ -5,7 +5,7 @@ namespace Sisk.ManagedHttpListener.HttpSerializer;
 
 internal static class HttpRequestSerializer
 {
-    static ReadOnlySpan<byte> ReadUntil(Span<byte> readBuffer, Streams.HttpBufferedStream bufferStream, byte intercept, out bool found)
+    static ReadOnlySpan<byte> ReadUntil(Span<byte> readBuffer, Streams.HttpBufferedReadStream bufferStream, byte intercept, out bool found)
     {
         int accumulatedPosition = (int)bufferStream.Position;
         while (bufferStream.Read(readBuffer) > 0)
@@ -29,7 +29,7 @@ internal static class HttpRequestSerializer
     }
 
     public static bool TryReadHttp1Request(
-                            Streams.HttpBufferedStream inboundStream,
+                            Streams.HttpBufferedReadStream inboundStream,
                      scoped Span<byte> lineMemory,
         [NotNullWhen(true)] out string? method,
         [NotNullWhen(true)] out string? path,

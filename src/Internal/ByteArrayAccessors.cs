@@ -15,4 +15,10 @@ class ByteArrayAccessors
 {
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_content")]
     public extern static ref byte[] UnsafeGetContent(ByteArrayContent bcontent);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_offset")]
+    public extern static ref int UnsafeGetOffset(ByteArrayContent bcontent);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_count")]
+    public extern static ref int UnsafeGetCount(ByteArrayContent bcontent);
 }

@@ -9,7 +9,6 @@
 
 using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Core.Http.Streams
 {
@@ -78,7 +77,7 @@ namespace Sisk.Core.Http.Streams
         /// Represents the event which is called when this web socket receives an message from
         /// remote origin.
         /// </summary>
-        public event WebSocketMessageReceivedEventHandler? OnReceive = null;
+        public event WebSocketMessageReceivedEventHandler? OnReceive;
 
         internal HttpWebSocket(HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier)
         {
@@ -170,7 +169,7 @@ namespace Sisk.Core.Http.Streams
                 }
                 else
                 {
-                    if (OnReceive != null) OnReceive(this, message);
+                    if (OnReceive != null) OnReceive.Invoke(this, message);
                 }
             }
         }
@@ -199,35 +198,61 @@ namespace Sisk.Core.Http.Streams
         }
 
         /// <summary>
-        /// Sends an text message to the remote point.
+        /// Asynchronously sends an message to the remote point.
         /// </summary>
         /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
-        public void Send(object? message)
+        public Task<bool> SendAsync(object message)
         {
-            string? t = message?.ToString();
-            this.Send(t ?? string.Empty);
+            return Task.FromResult(this.Send(message));
+        }
+
+        /// <summary>
+        /// Asynchronously sends an text message to the remote point.
+        /// </summary>
+        /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
+        public Task<bool> SendAsync(string message)
+        {
+            return Task.FromResult(this.Send(message));
+        }
+
+        /// <summary>
+        /// Asynchronously sends an binary message to the remote point.
+        /// </summary>
+        /// <param name="buffer">The target message which will be as an encoded UTF-8 string.</param>
+        public Task<bool> SendAsync(byte[] buffer)
+        {
+            return Task.FromResult(this.Send(buffer));
         }
 
         /// <summary>
         /// Sends an text message to the remote point.
         /// </summary>
         /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
-        public void Send(string message)
+        public bool Send(object message)
         {
-            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-            ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte>(messageBytes);
-            this.SendInternal(span, WebSocketMessageType.Text);
+            string? t = message.ToString();
+            if (t is null) throw new ArgumentNullException(nameof(message));
+
+            return this.Send(t);
+        }
+
+        /// <summary>
+        /// Sends an text message to the remote point.
+        /// </summary> 
+        /// <param name="message">The target message which will be as an encoded using the request preferred encoding.</param>
+        public bool Send(string message)
+        {
+            ArgumentNullException.ThrowIfNull(message);
+
+            byte[] messageBytes = this.request.RequestEncoding.GetBytes(message);
+            return this.SendInternal(messageBytes, WebSocketMessageType.Text);
         }
 
         /// <summary>
         /// Sends an binary message to the remote point.
         /// </summary>
         /// <param name="buffer">The target byte array.</param>
-        public void Send(byte[] buffer)
-        {
-            ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte>(buffer);
-            this.SendInternal(span, WebSocketMessageType.Binary);
-        }
+        public bool Send(byte[] buffer) => this.Send(buffer, 0, buffer.Length);
 
         /// <summary>
         /// Sends an binary message to the remote point.
@@ -235,19 +260,19 @@ namespace Sisk.Core.Http.Streams
         /// <param name="buffer">The target byte array.</param>
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
-        public void Send(byte[] buffer, int start, int length)
+        public bool Send(byte[] buffer, int start, int length)
         {
             ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte>(buffer, start, length);
-            this.SendInternal(span, WebSocketMessageType.Binary);
+            return this.SendInternal(span, WebSocketMessageType.Binary);
         }
 
         /// <summary>
         /// Sends an binary message to the remote point.
         /// </summary>
         /// <param name="buffer">The target byte memory.</param>
-        public void Send(ReadOnlyMemory<byte> buffer)
+        public bool Send(ReadOnlyMemory<byte> buffer)
         {
-            this.SendInternal(buffer, WebSocketMessageType.Binary);
+            return this.SendInternal(buffer, WebSocketMessageType.Binary);
         }
 
         /// <summary>
@@ -290,9 +315,9 @@ namespace Sisk.Core.Http.Streams
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        private void SendInternal(ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType)
+        private bool SendInternal(ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType)
         {
-            if (this.isClosed) { return; }
+            if (this.isClosed) { return false; }
 
             if (this.closeTimeout.TotalMilliseconds > 0)
                 this.asyncListenerToken?.CancelAfter(this.closeTimeout);
@@ -323,9 +348,10 @@ namespace Sisk.Core.Http.Streams
                 if (this.MaxAttempts >= 0 && this.attempt >= this.MaxAttempts)
                 {
                     this.Close();
-                    return;
+                    return false;
                 }
             }
+            return true;
         }
 
         /// <summary>
@@ -419,18 +445,18 @@ namespace Sisk.Core.Http.Streams
         /// <summary>
         /// Reads the message bytes as string using the specified encoding.
         /// </summary>
-        /// <param name="encoder">The encoding which will be used to decode the message.</param>
-        public string GetString(System.Text.Encoding encoder)
+        /// <param name="encoding">The encoding which will be used to decode the message.</param>
+        public string GetString(System.Text.Encoding encoding)
         {
-            return encoder.GetString(this.MessageBytes);
+            return encoding.GetString(this.MessageBytes);
         }
 
         /// <summary>
-        /// Reads the message bytes as string using the UTF-8 text encoding.
+        /// Reads the message bytes as string using the HTTP request encoding.
         /// </summary>
         public string GetString()
         {
-            return this.GetString(Encoding.UTF8);
+            return this.GetString(this.Sender.HttpRequest.RequestEncoding);
         }
 
         internal WebSocketMessage(HttpWebSocket httpws, int bufferLen)

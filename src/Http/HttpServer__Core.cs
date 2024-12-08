@@ -357,7 +357,9 @@ public partial class HttpServer
                     if (response.Content is ByteArrayContent barrayContent)
                     {
                         ApplyHttpContentHeaders(baseResponse, barrayContent.Headers);
-                        ReadOnlySpan<byte> contentBytes = ByteArrayAccessors.UnsafeGetContent(barrayContent);
+                        byte[] contentBytes = ByteArrayAccessors.UnsafeGetContent(barrayContent);
+                        int offset = ByteArrayAccessors.UnsafeGetOffset(barrayContent);
+                        int count = ByteArrayAccessors.UnsafeGetCount(barrayContent);
 
                         if (response.SendChunked)
                         {
@@ -366,10 +368,10 @@ public partial class HttpServer
                         else
                         {
                             baseResponse.SendChunked = false;
-                            baseResponse.ContentLength64 = contentBytes.Length;
+                            baseResponse.ContentLength64 = count;
                         }
 
-                        baseResponse.OutputStream.Write(contentBytes);
+                        baseResponse.OutputStream.Write(contentBytes, offset, count);
                     }
                     else if (response.Content is HttpContent httpContent)
                     {

@@ -33,9 +33,8 @@ static class DnsUtil
         else
         {
             resolvedAddress =
-                // try to return the last IPv6, or the last IPv4 if no IPv6 was found (#16)
-                hostEntry.AddressList.LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetworkV6)
-                ?? hostEntry.AddressList.LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                // try to return the last IPv6 or IPv4
+                hostEntry.AddressList.LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork || a.AddressFamily == AddressFamily.InterNetworkV6);
         }
 
         if (resolvedAddress is null)

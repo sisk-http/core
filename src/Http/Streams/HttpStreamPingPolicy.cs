@@ -44,6 +44,19 @@ public sealed class HttpStreamPingPolicy
     {
         this._timer = new Timer(new TimerCallback(this.OnCallback), null, 0, (int)this.Interval.TotalMilliseconds);
     }
+    
+    /// <summary>
+    /// Configures and starts sending periodic pings to the client.
+    /// </summary>
+    /// <param name="dataMessage">The payload message that is sent to the server as a ping message.</param>
+    /// <param name="interval">The sending interval for each ping message.</param>
+    public void Start(string dataMessage, TimeSpan interval)
+    {
+        this.DataMessage = dataMessage;
+        this.Interval = interval;
+
+        this.Start();
+    }
 
     private void OnCallback(object? state)
     {
