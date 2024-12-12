@@ -19,7 +19,7 @@
   <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
 
   </div>
-  
+
   **Sisk** is a set of libraries for web development that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
 
 </div>
@@ -83,6 +83,7 @@ You can learn more about Sisk on its [website](https://www.sisk-framework.org/).
 
 Sisk can do web development the way you want. Create MVC, MVVC, SOLID applications, or any other design pattern you're interested in.
 
+- **Flexible**: you're not limited to build an full-featured web application, but it can be an module to your existing project.
 - **Lightweight:** robust projects tested in small, low-cost, low-performance environments and got good results.
 - **Open-source:** the entire Sisk ecosystem is open source, and all the libraries and technologies we use must be open source as well. Sisk is entirely distributed under the MIT License, which allows the commercial development.
 - **Sustainable:** you are the one who makes the project, Sisk gives you the tools. Because it is open source, the community (including you) can maintain, fix bugs and improve Sisk over time.
@@ -90,6 +91,13 @@ Sisk can do web development the way you want. Create MVC, MVVC, SOLID applicatio
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/sisk-http/core.svg?variant=light)](https://starchart.cc/sisk-http/core)
+
+## Contributors
+
+Special thanks to all the contributors who have helped Sisk to grow and improve.
+
+- [Khalid Abuhakmeh](https://github.com/khalidabuhakmeh)
+- [Sascha-L](https://github.com/Sascha-L)
 
 ## License
 
