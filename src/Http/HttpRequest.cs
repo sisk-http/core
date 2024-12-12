@@ -507,6 +507,19 @@ namespace Sisk.Core.Http
         }
 
         /// <summary>
+        /// Immediately closes the connection with the client and does not send any response. 
+        /// </summary>
+        /// <remarks>
+        /// This method returns an <see cref="HttpResponse"/> indicated to exit outside the scope of the request
+        /// context. However, when calling this method, the connection is interrupted instantly.
+        /// </remarks>
+        public HttpResponse Abort()
+        {
+            this.listenerResponse.Abort();
+            return HttpResponse.Refuse();
+        }
+
+        /// <summary>
         /// Gets an string representation of this <see cref="HttpRequest"/> object.
         /// </summary>
         public override string ToString()

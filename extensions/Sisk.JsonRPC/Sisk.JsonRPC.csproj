@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+
+		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
+		<IsAotCompatible>true</IsAotCompatible>
+
+		<Title>Sisk.JsonRpc</Title>
+		<PackageId>Sisk.JsonRpc</PackageId>
+
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.IniConfiguration</Product>
+		<Description>This package provides an JSON-RPC 2.0 interface for Sisk projects.</Description>
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PackageTags>http-server,http,web framework</PackageTags>
+		<RepositoryType>git</RepositoryType>
+
+		<AssemblyVersion>1.3.0</AssemblyVersion>
+		<FileVersion>1.3.0</FileVersion>
+		<Version>1.3.0</Version>
+
+		<NeutralLanguage>en</NeutralLanguage>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
+		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\.github\Icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\.nuget\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\..\LightJson\Sources\LightJson\LightJson.csproj" />
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+	</ItemGroup>
+
+</Project>

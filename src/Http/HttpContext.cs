@@ -31,6 +31,11 @@ namespace Sisk.Core.Http
         public static HttpContext Current { get => _context.Value ?? throw new InvalidOperationException(SR.HttpContext_InvalidThreadStaticAccess); }
 
         /// <summary>
+        /// Gets whether the current thread context is running inside an HTTP context.
+        /// </summary>
+        public static bool IsRequestContext { get => _context.Value is not null; }
+
+        /// <summary>
         /// Gets or sets an <see cref="HttpHeaderCollection"/> indicating HTTP headers which
         /// will overwrite headers set by CORS, router response or request handlers.
         /// </summary>
