@@ -7,11 +7,11 @@
 // File name:   HttpServer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Net;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
-using System.Net;
 
 namespace Sisk.Core.Http
 {
@@ -280,7 +280,6 @@ namespace Sisk.Core.Http
             ObjectDisposedException.ThrowIf(this._isDisposing, this);
 
             this.listeningPrefixes = new HashSet<string>();
-            var safelisteningPrefixes = new HashSet<string>();
 
             for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++)
             {
@@ -291,13 +290,12 @@ namespace Sisk.Core.Http
                 {
                     var port = listeningHost.Ports[j];
 
-                    safelisteningPrefixes.Add(port.ToString(false));
                     this.listeningPrefixes.Add(port.ToString(true));
                 }
             }
 
             this.httpListener.Prefixes.Clear();
-            foreach (string prefix in safelisteningPrefixes)
+            foreach (string prefix in this.listeningPrefixes)
                 this.httpListener.Prefixes.Add(prefix);
 
             this._isListening = true;

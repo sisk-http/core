@@ -221,7 +221,7 @@ namespace Sisk.Core.Http
         {
             if (includePath)
             {
-                return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}{this.Path}";
+                return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}{this.Path.TrimEnd('/')}/";
             }
             else
             {
