@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -17,8 +17,7 @@ namespace Sisk.Core.Http;
 /// <summary>
 /// Provides most of the most commonly known HTTP headers for constants.
 /// </summary>
-public static class HttpKnownHeaderNames
-{
+public static class HttpKnownHeaderNames {
     /// <summary>
     /// The HTTP Accept header.
     /// <para>Specifies the media types that are acceptable for the response, allowing the client to indicate its preferences.</para>

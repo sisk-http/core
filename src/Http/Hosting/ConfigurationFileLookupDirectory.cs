@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -14,8 +14,7 @@ namespace Sisk.Core.Http.Hosting;
 /// file.
 /// </summary>
 [Flags]
-public enum ConfigurationFileLookupDirectory
-{
+public enum ConfigurationFileLookupDirectory {
     /// <summary>
     /// The <see cref="IConfigurationReader"/> should search in the process current/base directory.
     /// </summary>

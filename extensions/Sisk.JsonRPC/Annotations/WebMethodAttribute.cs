@@ -1,11 +1,19 @@
-﻿namespace Sisk.JsonRPC.Annotations;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   WebMethodAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.JsonRPC.Annotations;
 
 /// <summary>
 /// Represents an JSON-RPC method.
 /// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-public sealed class WebMethodAttribute : Attribute
-{
+[AttributeUsage ( AttributeTargets.Method, AllowMultiple = false, Inherited = false )]
+public sealed class WebMethodAttribute : Attribute {
     /// <summary>
     /// Gets or sets the method name.
     /// </summary>
@@ -14,8 +22,7 @@ public sealed class WebMethodAttribute : Attribute
     /// <summary>
     /// Creates an new <see cref="WebMethodAttribute"/> with no parameters.
     /// </summary>
-    public WebMethodAttribute()
-    {
+    public WebMethodAttribute () {
     }
 
     /// <summary>
@@ -23,8 +30,7 @@ public sealed class WebMethodAttribute : Attribute
     /// parameters.
     /// </summary>
     /// <param name="methodName">The method name.</param>
-    public WebMethodAttribute(string methodName)
-    {
-        Name = methodName;
+    public WebMethodAttribute ( string methodName ) {
+        this.Name = methodName;
     }
 }

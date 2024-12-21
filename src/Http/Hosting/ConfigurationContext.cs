@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -12,8 +12,7 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Represents a reading context for a portable configuration file.
 /// </summary>
-public sealed class ConfigurationContext
-{
+public sealed class ConfigurationContext {
     /// <summary>
     /// Gets the absolute path to the configuration file. The file is guaranteed to exist
     /// when getting this property value.
@@ -35,8 +34,7 @@ public sealed class ConfigurationContext
     /// </summary>
     public InitializationParameterCollection Parameters { get => this.Host.Parameters; }
 
-    internal ConfigurationContext(string configurationFile, HttpServerHostContext host, ListeningHost targetListeningHost)
-    {
+    internal ConfigurationContext ( string configurationFile, HttpServerHostContext host, ListeningHost targetListeningHost ) {
         this.ConfigurationFile = configurationFile;
         this.Host = host;
         this.TargetListeningHost = targetListeningHost;

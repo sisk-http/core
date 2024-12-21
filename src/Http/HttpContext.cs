@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,19 +7,17 @@
 // File name:   HttpContext.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics.CodeAnalysis;
 using Sisk.Core.Entity;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
-using System.Diagnostics.CodeAnalysis;
 
-namespace Sisk.Core.Http
-{
+namespace Sisk.Core.Http {
     /// <summary>
     /// Represents an context that is shared in a entire HTTP session.
     /// </summary>
-    public sealed class HttpContext
-    {
-        internal readonly static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?>();
+    public sealed class HttpContext {
+        internal readonly static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?> ();
 
         /// <summary>
         /// Gets the current running <see cref="HttpContext"/>.
@@ -27,8 +25,8 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// This property is only accessible during an HTTP session, within the executing HTTP code.
         /// </remarks>
-        [Experimental(DiagnosticId.Sisk_HttpContext_Current_Experimental)]
-        public static HttpContext Current { get => _context.Value ?? throw new InvalidOperationException(SR.HttpContext_InvalidThreadStaticAccess); }
+        [Experimental ( DiagnosticId.Sisk_HttpContext_Current_Experimental )]
+        public static HttpContext Current { get => _context.Value ?? throw new InvalidOperationException ( SR.HttpContext_InvalidThreadStaticAccess ); }
 
         /// <summary>
         /// Gets whether the current thread context is running inside an HTTP context.
@@ -43,13 +41,13 @@ namespace Sisk.Core.Http
         /// This property replaces existing headers in the final response. Use <see cref="ExtraHeaders"/> to
         /// add headers without replacing existing ones.
         /// </remarks>
-        public HttpHeaderCollection OverrideHeaders { get; set; } = new HttpHeaderCollection();
+        public HttpHeaderCollection OverrideHeaders { get; set; } = new HttpHeaderCollection ();
 
         /// <summary>
         /// Gets or sets the <see cref="HttpHeaderCollection"/> indicating HTTP headers which will
         /// be added (not overwritten) in the final response.
         /// </summary>
-        public HttpHeaderCollection ExtraHeaders { get; set; } = new HttpHeaderCollection();
+        public HttpHeaderCollection ExtraHeaders { get; set; } = new HttpHeaderCollection ();
 
         /// <summary>
         /// Gets the <see cref="Http.ListeningHost"/> instance of this HTTP context.
@@ -59,7 +57,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets a managed collection for this HTTP context.
         /// </summary>
-        public TypedValueDictionary RequestBag { get; set; } = new TypedValueDictionary();
+        public TypedValueDictionary RequestBag { get; set; } = new TypedValueDictionary ();
 
         /// <summary>
         /// Gets the context <see cref="Http.HttpServer"/> instance.
@@ -88,8 +86,7 @@ namespace Sisk.Core.Http
         /// </summary>
         public Router? Router { get; internal set; }
 
-        internal HttpContext(HttpServer httpServer)
-        {
+        internal HttpContext ( HttpServer httpServer ) {
             this.HttpServer = httpServer;
             this.Request = null!; // associated later
             this.Router = null!;// associated later, may be null

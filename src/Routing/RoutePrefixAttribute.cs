@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -15,9 +15,8 @@ namespace Sisk.Core.Routing;
 /// Represents an attribute that, when applied to an class containing routes, all child routes will start with
 /// the specified prefix.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public sealed class RoutePrefixAttribute : Attribute
-{
+[AttributeUsage ( AttributeTargets.Class, AllowMultiple = false )]
+public sealed class RoutePrefixAttribute : Attribute {
     /// <summary>
     /// Gets or sets the route prefix.
     /// </summary>
@@ -26,11 +25,9 @@ public sealed class RoutePrefixAttribute : Attribute
     /// <summary>
     /// Initializes an new <see cref="RoutePrefixAttribute"/> with given prefix.
     /// </summary>
-    public RoutePrefixAttribute([StringSyntax(StringSyntaxAttribute.Uri)] string prefix)
-    {
-        if (string.IsNullOrEmpty(prefix))
-        {
-            throw new ArgumentNullException(nameof(prefix));
+    public RoutePrefixAttribute ( [StringSyntax ( StringSyntaxAttribute.Uri )] string prefix ) {
+        if (string.IsNullOrEmpty ( prefix )) {
+            throw new ArgumentNullException ( nameof ( prefix ) );
         }
         this.Prefix = prefix;
     }

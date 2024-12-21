@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,17 +7,15 @@
 // File name:   MultipartObject.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
 using System.Collections.Specialized;
 using System.Text;
+using Sisk.Core.Http;
 
-namespace Sisk.Core.Entity
-{
+namespace Sisk.Core.Entity {
     /// <summary>
     /// Represents an multipart/form-data object.
     /// </summary>
-    public sealed class MultipartObject : IEquatable<MultipartObject>
-    {
+    public sealed class MultipartObject : IEquatable<MultipartObject> {
         private readonly Encoding _baseEncoding;
 
         /// <summary>
@@ -39,7 +37,7 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// Gets this <see cref="MultipartObject"/> form data content in bytes.
         /// </summary>
-        public byte[] ContentBytes { get; private set; }
+        public byte [] ContentBytes { get; private set; }
 
         /// <summary>
         /// Gets this <see cref="MultipartObject"/> form data content length in byte count.
@@ -54,73 +52,59 @@ namespace Sisk.Core.Entity
         /// <summary>
         /// Reads the content bytes with the given encoder.
         /// </summary>
-        public string ReadContentAsString(Encoding encoder)
-        {
+        public string ReadContentAsString ( Encoding encoder ) {
             if (this.ContentLength == 0)
                 return string.Empty;
-            return encoder.GetString(this.ContentBytes);
+            return encoder.GetString ( this.ContentBytes );
         }
 
         /// <summary>
         /// Reads the content bytes using the HTTP request content-encoding.
         /// </summary>
-        public string ReadContentAsString()
-        {
-            return this.ReadContentAsString(this._baseEncoding);
+        public string ReadContentAsString () {
+            return this.ReadContentAsString ( this._baseEncoding );
         }
 
         /// <summary>
         /// Determines the image format based in the file header for each image content type.
         /// </summary>
-        public MultipartObjectCommonFormat GetCommonFileFormat()
-        {
+        public MultipartObjectCommonFormat GetCommonFileFormat () {
             int byteLen = this.ContentBytes.Length;
 
-            if (byteLen >= 8)
-            {
-                Span<byte> len8 = this.ContentBytes.AsSpan(0, 8);
+            if (byteLen >= 8) {
+                Span<byte> len8 = this.ContentBytes.AsSpan ( 0, 8 );
 
-                if (len8.SequenceEqual(MultipartObjectCommonFormatByteMark.PNG))
-                {
+                if (len8.SequenceEqual ( MultipartObjectCommonFormatByteMark.PNG )) {
                     return MultipartObjectCommonFormat.PNG;
                 }
             }
-            if (byteLen >= 4)
-            {
-                Span<byte> len4 = this.ContentBytes.AsSpan(0, 4);
+            if (byteLen >= 4) {
+                Span<byte> len4 = this.ContentBytes.AsSpan ( 0, 4 );
 
-                if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.WEBP))
-                {
+                if (len4.SequenceEqual ( MultipartObjectCommonFormatByteMark.WEBP )) {
                     return MultipartObjectCommonFormat.WEBP;
                 }
-                else if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.PDF))
-                {
+                else if (len4.SequenceEqual ( MultipartObjectCommonFormatByteMark.PDF )) {
                     return MultipartObjectCommonFormat.PDF;
                 }
-                else if (len4.SequenceEqual(MultipartObjectCommonFormatByteMark.TIFF))
-                {
+                else if (len4.SequenceEqual ( MultipartObjectCommonFormatByteMark.TIFF )) {
                     return MultipartObjectCommonFormat.TIFF;
                 }
             }
-            if (byteLen >= 3)
-            {
-                Span<byte> len3 = this.ContentBytes.AsSpan(0, 3);
+            if (byteLen >= 3) {
+                Span<byte> len3 = this.ContentBytes.AsSpan ( 0, 3 );
 
-                if (len3.SequenceEqual(MultipartObjectCommonFormatByteMark.JPEG))
-                {
+                if (len3.SequenceEqual ( MultipartObjectCommonFormatByteMark.JPEG )) {
                     return MultipartObjectCommonFormat.JPEG;
                 }
-                else if (len3.SequenceEqual(MultipartObjectCommonFormatByteMark.GIF))
-                {
+                else if (len3.SequenceEqual ( MultipartObjectCommonFormatByteMark.GIF )) {
                     return MultipartObjectCommonFormat.GIF;
                 }
             }
-            if (byteLen >= 2)
-            {
-                Span<byte> len2 = this.ContentBytes.AsSpan(0, 2);
+            if (byteLen >= 2) {
+                Span<byte> len2 = this.ContentBytes.AsSpan ( 0, 2 );
 
-                if (len2.SequenceEqual(MultipartObjectCommonFormatByteMark.BMP))
-                {
+                if (len2.SequenceEqual ( MultipartObjectCommonFormatByteMark.BMP )) {
                     return MultipartObjectCommonFormat.BMP;
                 }
             }
@@ -128,15 +112,14 @@ namespace Sisk.Core.Entity
             return MultipartObjectCommonFormat.Unknown;
         }
 
-        internal MultipartObject(NameValueCollection headers, string? filename, string name, byte[]? body, Encoding encoding)
-        {
-            this.Headers = new HttpHeaderCollection();
-            this.Headers.ImportNameValueCollection(headers);
-            this.Headers.MakeReadOnly();
+        internal MultipartObject ( NameValueCollection headers, string? filename, string name, byte []? body, Encoding encoding ) {
+            this.Headers = new HttpHeaderCollection ();
+            this.Headers.ImportNameValueCollection ( headers );
+            this.Headers.MakeReadOnly ();
 
             this.Filename = filename;
             this.Name = name;
-            this.ContentBytes = body ?? Array.Empty<byte>();
+            this.ContentBytes = body ?? Array.Empty<byte> ();
             this._baseEncoding = encoding;
         }
 
@@ -144,80 +127,69 @@ namespace Sisk.Core.Entity
         // we should rewrite it using Spans<>, but there are so many code and it would take
         // days...
         // edit: we did it! but we'll mantain this method for at least one year
-        internal static MultipartFormCollection ParseMultipartObjects(HttpRequest req)
-        {
-            string? contentType = req.Headers[HttpKnownHeaderNames.ContentType]
-                ?? throw new InvalidOperationException(SR.MultipartObject_ContentTypeMissing);
+        internal static MultipartFormCollection ParseMultipartObjects ( HttpRequest req ) {
+            string? contentType = req.Headers [ HttpKnownHeaderNames.ContentType ]
+                ?? throw new InvalidOperationException ( SR.MultipartObject_ContentTypeMissing );
 
-            string[] contentTypePieces = contentType.Split(';');
+            string [] contentTypePieces = contentType.Split ( ';' );
             string? boundary = null;
-            for (int i = 0; i < contentTypePieces.Length; i++)
-            {
-                string obj = contentTypePieces[i];
-                string[] kv = obj.Split("=");
-                if (kv.Length != 2)
-                { continue; }
-                if (kv[0].Trim() == "boundary")
-                {
-                    boundary = kv[1].Trim();
+            for (int i = 0; i < contentTypePieces.Length; i++) {
+                string obj = contentTypePieces [ i ];
+                string [] kv = obj.Split ( "=" );
+                if (kv.Length != 2) { continue; }
+                if (kv [ 0 ].Trim () == "boundary") {
+                    boundary = kv [ 1 ].Trim ();
                 }
             }
 
-            if (boundary is null)
-            {
-                throw new InvalidOperationException(SR.MultipartObject_BoundaryMissing);
+            if (boundary is null) {
+                throw new InvalidOperationException ( SR.MultipartObject_BoundaryMissing );
             }
 
-            byte[] boundaryBytes = req.RequestEncoding.GetBytes(boundary);
-            if (req.baseServer.ServerConfiguration.Flags.EnableNewMultipartFormReader == true)
-            {
-                MultipartFormReader reader = new MultipartFormReader(req.RawBody, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions);
-                var objects = reader.Read();
+            byte [] boundaryBytes = req.RequestEncoding.GetBytes ( boundary );
+            if (req.baseServer.ServerConfiguration.Flags.EnableNewMultipartFormReader == true) {
+                MultipartFormReader reader = new MultipartFormReader ( req.RawBody, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions );
+                var objects = reader.Read ();
 
-                return new MultipartFormCollection(objects);
+                return new MultipartFormCollection ( objects );
             }
 
             /////////
             // https://stackoverflow.com/questions/9755090/split-a-byte-array-at-a-delimiter
-            byte[][] Separate(byte[] source, byte[] separator)
-            {
-                var Parts = new List<byte[]>();
+            byte [] [] Separate ( byte [] source, byte [] separator ) {
+                var Parts = new List<byte []> ();
                 var Index = 0;
-                byte[] Part;
-                for (var I = 0; I < source.Length; ++I)
-                {
-                    if (Equals(source, separator, I))
-                    {
-                        Part = new byte[I - Index];
-                        Array.Copy(source, Index, Part, 0, Part.Length);
-                        Parts.Add(Part);
+                byte [] Part;
+                for (var I = 0; I < source.Length; ++I) {
+                    if (Equals ( source, separator, I )) {
+                        Part = new byte [ I - Index ];
+                        Array.Copy ( source, Index, Part, 0, Part.Length );
+                        Parts.Add ( Part );
                         Index = I + separator.Length;
                         I += separator.Length - 1;
                     }
                 }
-                Part = new byte[source.Length - Index];
-                Array.Copy(source, Index, Part, 0, Part.Length);
-                Parts.Add(Part);
-                return Parts.ToArray();
+                Part = new byte [ source.Length - Index ];
+                Array.Copy ( source, Index, Part, 0, Part.Length );
+                Parts.Add ( Part );
+                return Parts.ToArray ();
             }
 
-            bool Equals(byte[] source, byte[] separator, int index)
-            {
+            bool Equals ( byte [] source, byte [] separator, int index ) {
                 for (int i = 0; i < separator.Length; ++i)
-                    if (index + i >= source.Length || source[index + i] != separator[i])
+                    if (index + i >= source.Length || source [ index + i ] != separator [ i ])
                         return false;
                 return true;
             }
             /////////
 
-            byte[][] matchedResults = Separate(req.RawBody, boundaryBytes);
+            byte [] [] matchedResults = Separate ( req.RawBody, boundaryBytes );
 
-            List<MultipartObject> outputObjects = new List<MultipartObject>();
-            for (int i = 1; i < matchedResults.Length - 1; i++)
-            {
-                byte[]? contentBytes = null;
-                NameValueCollection headers = new NameValueCollection();
-                byte[] result = matchedResults[i].ToArray();
+            List<MultipartObject> outputObjects = new List<MultipartObject> ();
+            for (int i = 1; i < matchedResults.Length - 1; i++) {
+                byte []? contentBytes = null;
+                NameValueCollection headers = new NameValueCollection ();
+                byte [] result = matchedResults [ i ].ToArray ();
                 int resultLength = result.Length - 4;
                 //string content = Encoding.ASCII.GetString(result);
 
@@ -225,112 +197,94 @@ namespace Sisk.Core.Entity
                 bool parsingContent = false;
                 bool headerNameParsed = false;
                 bool headerValueParsed = false;
-                List<byte> headerNameBytes = new();
-                List<byte> headerValueBytes = new();
+                List<byte> headerNameBytes = new ();
+                List<byte> headerValueBytes = new ();
 
                 int headerSize = 0;
-                for (int j = 0; j < resultLength; j++)
-                {
-                    byte J = result[j];
-                    if (spaceLength == 2 && headerNameParsed && !headerValueParsed)
-                    {
-                        string headerName = Encoding.UTF8.GetString(headerNameBytes.ToArray());
-                        string headerValue = Encoding.UTF8.GetString(headerValueBytes.ToArray());
+                for (int j = 0; j < resultLength; j++) {
+                    byte J = result [ j ];
+                    if (spaceLength == 2 && headerNameParsed && !headerValueParsed) {
+                        string headerName = Encoding.UTF8.GetString ( headerNameBytes.ToArray () );
+                        string headerValue = Encoding.UTF8.GetString ( headerValueBytes.ToArray () );
 
-                        headers.Add(headerName, headerValue.Trim());
+                        headers.Add ( headerName, headerValue.Trim () );
                         headerNameParsed = false;
                         headerValueParsed = false;
                     }
-                    else if (spaceLength == 4 && !parsingContent)
-                    {
+                    else if (spaceLength == 4 && !parsingContent) {
                         headerSize = j;
-                        contentBytes = new byte[resultLength - headerSize];
+                        contentBytes = new byte [ resultLength - headerSize ];
                         parsingContent = true;
                     }
-                    if ((J == 0x0A || J == 0x0D) && !parsingContent)
-                    {
+                    if ((J == 0x0A || J == 0x0D) && !parsingContent) {
                         spaceLength++;
                         continue;
                     }
-                    else
-                    {
+                    else {
                         spaceLength = 0;
                     }
-                    if (!parsingContent)
-                    {
-                        if (!headerNameParsed)
-                        {
-                            if (J == 58)
-                            {
+                    if (!parsingContent) {
+                        if (!headerNameParsed) {
+                            if (J == 58) {
                                 headerNameParsed = true;
                             }
-                            else
-                            {
-                                headerNameBytes.Add(J);
+                            else {
+                                headerNameBytes.Add ( J );
                             }
                         }
-                        else if (!headerValueParsed)
-                        {
-                            headerValueBytes.Add(J);
+                        else if (!headerValueParsed) {
+                            headerValueBytes.Add ( J );
                         }
                     }
-                    else
-                    {
-                        contentBytes![j - headerSize] = J;
+                    else {
+                        contentBytes! [ j - headerSize ] = J;
                     }
                 }
 
                 // parse field name
-                string[] val = headers[HttpKnownHeaderNames.ContentDisposition]?.Split(';') ?? Array.Empty<string>();
+                string [] val = headers [ HttpKnownHeaderNames.ContentDisposition ]?.Split ( ';' ) ?? Array.Empty<string> ();
                 string? fieldName = null;
                 string? fieldFilename = null;
 
-                for (int k = 0; k < val.Length; k++)
-                {
-                    string valueAttribute = val[k];
-                    string[] valAttributeParts = valueAttribute.Trim().Split("=");
+                for (int k = 0; k < val.Length; k++) {
+                    string valueAttribute = val [ k ];
+                    string [] valAttributeParts = valueAttribute.Trim ().Split ( "=" );
                     if (valAttributeParts.Length != 2)
                         continue;
-                    if (valAttributeParts[0] == "name")
-                    {
-                        fieldName = valAttributeParts[1].Trim('"');
+                    if (valAttributeParts [ 0 ] == "name") {
+                        fieldName = valAttributeParts [ 1 ].Trim ( '"' );
                     }
-                    else if (valAttributeParts[0] == "filename")
-                    {
-                        fieldFilename = valAttributeParts[1].Trim('"');
+                    else if (valAttributeParts [ 0 ] == "filename") {
+                        fieldFilename = valAttributeParts [ 1 ].Trim ( '"' );
                     }
                 }
 
-                if (fieldName is null)
-                {
-                    throw new InvalidOperationException(string.Format(SR.MultipartObject_EmptyFieldName, i));
+                if (fieldName is null) {
+                    throw new InvalidOperationException ( string.Format ( SR.MultipartObject_EmptyFieldName, i ) );
                 }
 
-                MultipartObject newObject = new MultipartObject(headers, fieldFilename, fieldName, contentBytes?.ToArray(), req.RequestEncoding);
-                outputObjects.Add(newObject);
+                MultipartObject newObject = new MultipartObject ( headers, fieldFilename, fieldName, contentBytes?.ToArray (), req.RequestEncoding );
+                outputObjects.Add ( newObject );
             }
 
-            return new MultipartFormCollection(outputObjects);
+            return new MultipartFormCollection ( outputObjects );
         }
 
         /// <inheritdoc/>
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(this.Name.GetHashCode(), this.ContentLength.GetHashCode(), this.Filename?.GetHashCode() ?? 0);
+        public override int GetHashCode () {
+            return HashCode.Combine ( this.Name.GetHashCode (), this.ContentLength.GetHashCode (), this.Filename?.GetHashCode () ?? 0 );
         }
 
         /// <inheritdoc/>
-        public override bool Equals(object? obj)
-        {
+        public override bool Equals ( object? obj ) {
             if (obj is MultipartObject mo)
-                return this.Equals(mo);
+                return this.Equals ( mo );
             return false;
         }
 
         /// <inheritdoc/>
-        public bool Equals(MultipartObject? other)
-        {
-            return this.GetHashCode() == other?.GetHashCode();
+        public bool Equals ( MultipartObject? other ) {
+            return this.GetHashCode () == other?.GetHashCode ();
         }
     }
 }

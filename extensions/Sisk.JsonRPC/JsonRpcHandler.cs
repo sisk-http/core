@@ -1,4 +1,13 @@
-﻿using LightJson;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   JsonRpcHandler.cs
+// Repository:  https://github.com/sisk-http/core
+
+using LightJson;
 using Sisk.JsonRPC.Converters;
 
 namespace Sisk.JsonRPC;
@@ -6,40 +15,37 @@ namespace Sisk.JsonRPC;
 /// <summary>
 /// Represents a handler for JSON-RPC requests.
 /// </summary>
-public sealed class JsonRpcHandler
-{
+public sealed class JsonRpcHandler {
     internal readonly JsonOptions _jsonOptions;
     readonly JsonRpcMethodCollection _methodCollection;
-    readonly RpcTransportLayer _transport;
+    readonly JsonRpcTransportLayer _transport;
 
     /// <summary>
     /// Gets the transport layer used for communication.
     /// </summary>
-    public RpcTransportLayer Transport { get => _transport; }
+    public JsonRpcTransportLayer Transport { get => this._transport; }
 
     /// <summary>
     /// Gets the collection of JSON-RPC methods available in this handler.
     /// </summary>
-    public JsonRpcMethodCollection Methods { get => _methodCollection; }
+    public JsonRpcMethodCollection Methods { get => this._methodCollection; }
 
     /// <summary>
     /// Gets the JSON serializer options used for serialization and deserialization.
     /// </summary>
-    public JsonOptions JsonSerializerOptions { get => _jsonOptions; }
-
+    public JsonOptions JsonSerializerOptions { get => this._jsonOptions; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonRpcHandler"/> class.
     /// </summary>
-    public JsonRpcHandler()
-    {
-        _transport = new RpcTransportLayer(this);
-        _jsonOptions = new JsonOptions();
-        _methodCollection = new JsonRpcMethodCollection();
+    public JsonRpcHandler () {
+        this._transport = new JsonRpcTransportLayer ( this );
+        this._jsonOptions = new JsonOptions ();
+        this._methodCollection = new JsonRpcMethodCollection ();
 
-        _jsonOptions.PropertyNameComparer = new JsonSanitizedComparer();
-        _jsonOptions.Converters.Add(new JsonRpcErrorConverter());
-        _jsonOptions.Converters.Add(new JsonRpcRequestConverter());
-        _jsonOptions.Converters.Add(new JsonRpcResponseConverter());
+        this._jsonOptions.PropertyNameComparer = new JsonSanitizedComparer ();
+        this._jsonOptions.Converters.Add ( new JsonRpcErrorConverter () );
+        this._jsonOptions.Converters.Add ( new JsonRpcRequestConverter () );
+        this._jsonOptions.Converters.Add ( new JsonRpcResponseConverter () );
     }
 }

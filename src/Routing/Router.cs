@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,59 +7,50 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Sisk.Core.Http;
+using Sisk.Core.Internal;
 
-class ActionHandler
-{
+class ActionHandler {
     public Type MatchingType { get; set; }
     public Func<object, HttpResponse> Handler { get; set; }
 
-    public ActionHandler(Type matchingType, Func<object, HttpResponse> handler)
-    {
+    public ActionHandler ( Type matchingType, Func<object, HttpResponse> handler ) {
         this.MatchingType = matchingType;
         this.Handler = handler;
     }
 }
 
 
-namespace Sisk.Core.Routing
-{
+namespace Sisk.Core.Routing {
     /// <summary>
     /// Represents a collection of <see cref="Route"/> and main executor of actions in the <see cref="HttpServer"/>.
     /// </summary>
-    public sealed partial class Router
-    {
-        internal record RouterExecutionResult(HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception);
+    public sealed partial class Router {
+        internal record RouterExecutionResult ( HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception );
 
         internal HttpServer? parentServer;
-        internal List<Route> _routesList = new();
-        internal List<ActionHandler> _actionHandlersList = new();
+        internal List<Route> _routesList = new ();
+        internal List<ActionHandler> _actionHandlersList = new ();
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal void BindServer(HttpServer server)
-        {
-            if (this.parentServer is not null)
-            {
-                if (ReferenceEquals(server, this.parentServer))
-                {
+        [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+        internal void BindServer ( HttpServer server ) {
+            if (this.parentServer is not null) {
+                if (ReferenceEquals ( server, this.parentServer )) {
                     return;
                 }
-                else
-                {
-                    throw new InvalidOperationException(SR.Router_BindException);
+                else {
+                    throw new InvalidOperationException ( SR.Router_BindException );
                 }
             }
-            else
-            {
-                server.handler.SetupRouter(this);
+            else {
+                server.handler.SetupRouter ( this );
                 this.parentServer = server;
 
-                this.CheckForRouteCollisions();
+                this.CheckForRouteCollisions ();
             }
         }
 
@@ -82,8 +73,7 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Creates an new <see cref="Router"/> instance with default values.
         /// </summary>
-        public Router()
-        {
+        public Router () {
         }
 
         /// <summary>
@@ -91,19 +81,19 @@ namespace Sisk.Core.Routing
         /// </summary>
         /// <param name="routes">The route collection to import in this router.</param>
 #if NET9_0_OR_GREATER
-        public Router(params IEnumerable<Route> routes)
+        public Router ( params IEnumerable<Route> routes )
 #else
-        public Router(IEnumerable<Route> routes)
+        public Router ( IEnumerable<Route> routes )
 #endif
         {
             foreach (var route in routes)
-                this.SetRoute(route);
+                this.SetRoute ( route );
         }
 
         /// <summary>
         /// Gets or sets the global requests handlers that will be executed in all matched routes.
         /// </summary>
-        public IRequestHandler[] GlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler>();
+        public IRequestHandler [] GlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler> ();
 
         /// <summary>
         /// Gets or sets the Router action exception handler. The response handler for this property will
@@ -115,43 +105,37 @@ namespace Sisk.Core.Routing
         /// <summary>
         /// Gets or sets the Router "404 Not Found" handler.
         /// </summary>
-        public RoutingErrorCallback? NotFoundErrorHandler { get; set; } = new RoutingErrorCallback(
-            (context) =>
-            {
+        public RoutingErrorCallback? NotFoundErrorHandler { get; set; } = new RoutingErrorCallback (
+            ( context ) => {
                 string? accept = context.Request.Headers.Accept;
 
-                if (accept?.Contains("text/html", StringComparison.Ordinal) == true)
-                {
-                    return DefaultMessagePage.CreateDefaultResponse(HttpStatusCode.NotFound, SR.HttpResponse_404_DefaultMessage);
+                if (accept?.Contains ( "text/html", StringComparison.Ordinal ) == true) {
+                    return DefaultMessagePage.CreateDefaultResponse ( HttpStatusCode.NotFound, SR.HttpResponse_404_DefaultMessage );
                 }
-                else
-                {
-                    return new HttpResponse(HttpStatusCode.NotFound);
+                else {
+                    return new HttpResponse ( HttpStatusCode.NotFound );
                 }
-            });
+            } );
 
         /// <summary>
         /// Gets or sets the Router "405 Method Not Allowed" handler.
         /// </summary>
-        public RoutingErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new RoutingErrorCallback(
-            (context) =>
-            {
+        public RoutingErrorCallback? MethodNotAllowedErrorHandler { get; set; } = new RoutingErrorCallback (
+            ( context ) => {
                 string? accept = context.Request.Headers.Accept;
 
-                if (accept?.Contains("text/html", StringComparison.Ordinal) == true)
-                {
-                    return DefaultMessagePage.CreateDefaultResponse(HttpStatusCode.MethodNotAllowed, SR.HttpResponse_405_DefaultMessage);
+                if (accept?.Contains ( "text/html", StringComparison.Ordinal ) == true) {
+                    return DefaultMessagePage.CreateDefaultResponse ( HttpStatusCode.MethodNotAllowed, SR.HttpResponse_405_DefaultMessage );
                 }
-                else
-                {
-                    return new HttpResponse(HttpStatusCode.MethodNotAllowed);
+                else {
+                    return new HttpResponse ( HttpStatusCode.MethodNotAllowed );
                 }
-            });
+            } );
 
         /// <summary>
         /// Gets all routes defined on this router instance.
         /// </summary>
-        public Route[] GetDefinedRoutes() => this._routesList.ToArray();
+        public Route [] GetDefinedRoutes () => this._routesList.ToArray ();
 
         /// <summary>
         /// Resolves the specified object into an valid <see cref="HttpResponse"/> using the defined
@@ -162,9 +146,8 @@ namespace Sisk.Core.Routing
         /// This method can throw exceptions. To avoid exceptions while trying to convert the specified object
         /// into an <see cref="HttpResponse"/>, consider using <see cref="TryResolveActionResult(object?, out HttpResponse?)"/>.
         /// </remarks>
-        public HttpResponse ResolveActionResult(object? result)
-        {
-            return this.ResolveAction(result);
+        public HttpResponse ResolveActionResult ( object? result ) {
+            return this.ResolveAction ( result );
         }
 
         /// <summary>
@@ -174,15 +157,12 @@ namespace Sisk.Core.Routing
         /// <param name="result">The object that will be converted to an valid <see cref="HttpResponse"/>.</param>
         /// <param name="response">When this method returns, the response object. This parameter is not initialized.</param>
         /// <returns>When this method returns, the <see cref="HttpResponse"/> object.</returns>
-        public bool TryResolveActionResult(object? result, [NotNullWhen(true)] out HttpResponse? response)
-        {
-            if (result is null)
-            {
+        public bool TryResolveActionResult ( object? result, [NotNullWhen ( true )] out HttpResponse? response ) {
+            if (result is null) {
                 response = null;
                 return false;
             }
-            else if (result is HttpResponse httpres)
-            {
+            else if (result is HttpResponse httpres) {
                 response = httpres;
                 return true;
             }
@@ -191,27 +171,22 @@ namespace Sisk.Core.Routing
             // _routesList will be not modified during span reading
             ;
             bool wasLocked = false;
-            if (!this.IsReadOnly)
-            {
+            if (!this.IsReadOnly) {
                 wasLocked = true;
-                Monitor.Enter(this._actionHandlersList);
+                Monitor.Enter ( this._actionHandlersList );
             }
-            try
-            {
-                Type actionType = result.GetType();
+            try {
+                Type actionType = result.GetType ();
 
-                Span<ActionHandler> hspan = CollectionsMarshal.AsSpan(this._actionHandlersList);
-                ref ActionHandler pointer = ref MemoryMarshal.GetReference(hspan);
-                for (int i = 0; i < hspan.Length; i++)
-                {
-                    ref ActionHandler current = ref Unsafe.Add(ref pointer, i);
+                Span<ActionHandler> hspan = CollectionsMarshal.AsSpan ( this._actionHandlersList );
+                ref ActionHandler pointer = ref MemoryMarshal.GetReference ( hspan );
+                for (int i = 0; i < hspan.Length; i++) {
+                    ref ActionHandler current = ref Unsafe.Add ( ref pointer, i );
 
-                    if (actionType.IsAssignableTo(current.MatchingType))
-                    {
-                        var resultObj = current.Handler(result);
-                        if (resultObj is null)
-                        {
-                            throw new InvalidOperationException(SR.Format(SR.Router_Handler_HandlerNotHttpResponse, current.MatchingType.Name));
+                    if (actionType.IsAssignableTo ( current.MatchingType )) {
+                        var resultObj = current.Handler ( result );
+                        if (resultObj is null) {
+                            throw new InvalidOperationException ( SR.Format ( SR.Router_Handler_HandlerNotHttpResponse, current.MatchingType.Name ) );
                         }
                         response = resultObj;
                         return true;
@@ -221,11 +196,9 @@ namespace Sisk.Core.Routing
                 response = null;
                 return false;
             }
-            finally
-            {
-                if (wasLocked)
-                {
-                    Monitor.Exit(this._actionHandlersList);
+            finally {
+                if (wasLocked) {
+                    Monitor.Exit ( this._actionHandlersList );
                 }
             }
         }
@@ -234,80 +207,65 @@ namespace Sisk.Core.Routing
         /// Register an type handling association to converting it to an <see cref="HttpResponse"/> object.
         /// </summary>
         /// <param name="actionHandler">The function that receives an object of the <typeparamref name="T"/> and returns an <see cref="HttpResponse"/> response from the informed object.</param>
-        public void RegisterValueHandler<T>(RouterActionHandlerCallback<T> actionHandler) where T : notnull
-        {
-            if (this.IsReadOnly)
-            {
-                throw new InvalidOperationException(SR.Router_ReadOnlyException);
+        public void RegisterValueHandler<T> ( RouterActionHandlerCallback<T> actionHandler ) where T : notnull {
+            if (this.IsReadOnly) {
+                throw new InvalidOperationException ( SR.Router_ReadOnlyException );
             }
-            Type type = typeof(T);
-            if (type == typeof(HttpResponse))
-            {
-                throw new ArgumentException(SR.Router_Handler_HttpResponseRegister);
+            Type type = typeof ( T );
+            if (type == typeof ( HttpResponse )) {
+                throw new ArgumentException ( SR.Router_Handler_HttpResponseRegister );
             }
-            for (int i = 0; i < this._actionHandlersList!.Count; i++)
-            {
-                ActionHandler item = this._actionHandlersList[i];
-                if (item.MatchingType.Equals(type))
-                {
-                    throw new ArgumentException(SR.Router_Handler_Duplicate);
+            for (int i = 0; i < this._actionHandlersList!.Count; i++) {
+                ActionHandler item = this._actionHandlersList [ i ];
+                if (item.MatchingType.Equals ( type )) {
+                    throw new ArgumentException ( SR.Router_Handler_Duplicate );
                 }
             }
-            this._actionHandlersList.Add(new ActionHandler(type, (obj) => actionHandler((T)obj)));
+            this._actionHandlersList.Add ( new ActionHandler ( type, ( obj ) => actionHandler ( (T) obj ) ) );
         }
 
-        HttpResponse ResolveAction(object? routeResult)
-        {
-            if (routeResult is null)
-            {
-                throw new ArgumentNullException(nameof(routeResult), SR.Router_Handler_ActionNullValue);
+        HttpResponse ResolveAction ( object? routeResult ) {
+            if (routeResult is null) {
+                throw new ArgumentNullException ( nameof ( routeResult ), SR.Router_Handler_ActionNullValue );
             }
-            else if (routeResult is HttpResponse rh)
-            {
+            else if (routeResult is HttpResponse rh) {
                 return rh;
             }
-            else if (this.TryResolveActionResult(routeResult, out HttpResponse? result))
-            {
+            else if (this.TryResolveActionResult ( routeResult, out HttpResponse? result )) {
                 return result;
             }
-            else
-            {
-                throw new InvalidOperationException(string.Format(SR.Router_Handler_UnrecognizedAction, routeResult.GetType().FullName));
+            else {
+                throw new InvalidOperationException ( string.Format ( SR.Router_Handler_UnrecognizedAction, routeResult.GetType ().FullName ) );
             }
         }
 
-        void CheckForRouteCollisions() // O(n²)
+        void CheckForRouteCollisions () // O(n²)
         {
-            for (int i = 0; i < this._routesList.Count; i++)
-            {
-                Route I = this._routesList[i];
+            for (int i = 0; i < this._routesList.Count; i++) {
+                Route I = this._routesList [ i ];
 
-                for (int j = 0; j < this._routesList.Count; j++)
-                {
-                    Route J = this._routesList[j];
+                for (int j = 0; j < this._routesList.Count; j++) {
+                    Route J = this._routesList [ j ];
 
                     bool methodMatched =
                         I.Method == RouteMethod.Any ||
                         J.Method == RouteMethod.Any ||
-                        I.Method.HasFlag(J.Method) ||
-                        J.Method.HasFlag(I.Method);
+                        I.Method.HasFlag ( J.Method ) ||
+                        J.Method.HasFlag ( I.Method );
 
-                    if (I != J && methodMatched && HttpStringInternals.IsRoutePatternMatch(I.Path, J.Path, this.MatchRoutesIgnoreCase))
-                    {
-                        throw new ArgumentException(SR.Format(SR.Router_Set_Collision, I, J));
+                    if (I != J && methodMatched && HttpStringInternals.IsRoutePatternMatch ( I.Path, J.Path, this.MatchRoutesIgnoreCase )) {
+                        throw new ArgumentException ( SR.Format ( SR.Router_Set_Collision, I, J ) );
                     }
                 }
             }
         }
 
-        internal void FreeHttpServer()
-        {
+        internal void FreeHttpServer () {
             this.parentServer = null;
         }
     }
 
-    internal enum RouteMatchResult
-    {
+    internal enum RouteMatchResult {
         FullyMatched,
         PathMatched,
         OptionsMatched,

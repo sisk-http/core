@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -14,8 +14,7 @@ namespace Sisk.Core.Http;
 /// <summary>
 /// Provides methods for creating informative static pages used by Sisk.
 /// </summary>
-public static class DefaultMessagePage
-{
+public static class DefaultMessagePage {
     /// <summary>
     /// Gets or sets the page CSS string used by the page code.
     /// </summary>
@@ -55,10 +54,9 @@ public static class DefaultMessagePage
     /// </summary>
     /// <param name="firstHeader">The static page header text.</param>
     /// <param name="description">The static page description text.</param>
-    public static string CreateDefaultPageHtml(string firstHeader, string description)
-    {
-        firstHeader = HttpUtility.HtmlEncode(firstHeader);
-        description = HttpUtility.HtmlEncode(description);
+    public static string CreateDefaultPageHtml ( string firstHeader, string description ) {
+        firstHeader = HttpUtility.HtmlEncode ( firstHeader );
+        description = HttpUtility.HtmlEncode ( description );
 
         return $$"""
             <!DOCTYPE html>
@@ -77,7 +75,7 @@ public static class DefaultMessagePage
                         <h1>{{firstHeader}}</h1>
                         <p>{{description}}</p>
                         <hr>
-                        <small>Sisk/{{HttpServer.SiskVersion.ToString(3)}}</small>
+                        <small>Sisk/{{HttpServer.SiskVersion.ToString ( 3 )}}</small>
                     </main>
                 </body>
             </html>
@@ -89,13 +87,11 @@ public static class DefaultMessagePage
     /// </summary>
     /// <param name="status">The static page status code.</param>
     /// <param name="longDescription">The static page description text.</param>
-    public static HttpResponse CreateDefaultResponse(in HttpStatusInformation status, string longDescription)
-    {
-        string html = CreateDefaultPageHtml(status.Description, longDescription);
-        return new HttpResponse()
-        {
+    public static HttpResponse CreateDefaultResponse ( in HttpStatusInformation status, string longDescription ) {
+        string html = CreateDefaultPageHtml ( status.Description, longDescription );
+        return new HttpResponse () {
             Status = status,
-            Content = new HtmlContent(html)
+            Content = new HtmlContent ( html )
         };
     }
 }

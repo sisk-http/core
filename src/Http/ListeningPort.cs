@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -11,8 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Sisk.Core.Http
-{
+namespace Sisk.Core.Http {
     /// <summary>
     /// Provides a structure to contain a listener port for an <see cref="ListeningHost"/> instance.
     /// </summary>
@@ -39,8 +38,7 @@ namespace Sisk.Core.Http
     ///         http://182.32.112.223:5251/
     ///     </code>
     /// </example>
-    public readonly struct ListeningPort : IEquatable<ListeningPort>, IParsable<ListeningPort>
-    {
+    public readonly struct ListeningPort : IEquatable<ListeningPort>, IParsable<ListeningPort> {
         /// <summary>
         /// Gets the DNS hostname pattern where this listening port will refer.
         /// </summary>
@@ -69,8 +67,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="ListeningPort"/> instance with default parameters.
         /// </summary>
-        public ListeningPort()
-        {
+        public ListeningPort () {
             this.Hostname = "localhost";
             this.Port = 80;
             this.Secure = false;
@@ -81,8 +78,7 @@ namespace Sisk.Core.Http
         /// Creates an new <see cref="ListeningPort"/> instance with the specified port at the loopback host.
         /// </summary>
         /// <param name="port">The port the server will listen on. If this port is the default HTTPS port (443), the class will have the property <see cref="Secure"/> to true.</param>
-        public ListeningPort(ushort port)
-        {
+        public ListeningPort ( ushort port ) {
             this.Hostname = "localhost";
             this.Port = port;
             this.Secure = this.Port == 443;
@@ -94,8 +90,7 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="port">The port the server will listen on.</param>
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
-        public ListeningPort(ushort port, bool secure)
-        {
+        public ListeningPort ( ushort port, bool secure ) {
             this.Hostname = "localhost";
             this.Port = port;
             this.Secure = secure;
@@ -108,8 +103,7 @@ namespace Sisk.Core.Http
         /// <param name="port">The port the server will listen on.</param>
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
         /// <param name="hostname">The hostname DNS pattern the server will listen to.</param>
-        public ListeningPort(bool secure, string hostname, ushort port)
-        {
+        public ListeningPort ( bool secure, string hostname, ushort port ) {
             this.Hostname = hostname;
             this.Port = port;
             this.Secure = secure;
@@ -124,8 +118,7 @@ namespace Sisk.Core.Http
         /// <param name="secure">Indicates whether the server should listen to this port securely (SSL).</param>
         /// <param name="hostname">The hostname DNS pattern the server will listen to.</param>
         /// <param name="path">The prefix path.</param>
-        public ListeningPort(bool secure, string hostname, ushort port, string path)
-        {
+        public ListeningPort ( bool secure, string hostname, ushort port, string path ) {
             this.Hostname = hostname;
             this.Port = port;
             this.Secure = secure;
@@ -136,30 +129,25 @@ namespace Sisk.Core.Http
         /// Creates an new <see cref="ListeningPort"/> instance with the specified URI.
         /// </summary>
         /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
-        public ListeningPort(string uri)
-        {
-            if (ushort.TryParse(uri, out ushort port))
-            {
+        public ListeningPort ( string uri ) {
+            if (ushort.TryParse ( uri, out ushort port )) {
                 this.Hostname = "localhost";
                 this.Port = port;
                 this.Secure = port == 443;
                 this.Path = "/";
             }
-            else if (Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var uriResult))
-            {
-                if (uriResult.Scheme != "http" && uriResult.Scheme != "https")
-                {
-                    throw new ArgumentException(SR.ListeningPort_Parser_InvalidInput);
+            else if (Uri.TryCreate ( uri, UriKind.RelativeOrAbsolute, out var uriResult )) {
+                if (uriResult.Scheme != "http" && uriResult.Scheme != "https") {
+                    throw new ArgumentException ( SR.ListeningPort_Parser_InvalidInput );
                 }
 
                 this.Hostname = uriResult.Host;
-                this.Port = (ushort)uriResult.Port;
-                this.Secure = string.Compare(uriResult.Scheme, "https", true) == 0;
+                this.Port = (ushort) uriResult.Port;
+                this.Secure = string.Compare ( uriResult.Scheme, "https", true ) == 0;
                 this.Path = uriResult.AbsolutePath;
             }
-            else
-            {
-                throw new ArgumentException(SR.ListeningPort_Parser_InvalidInput);
+            else {
+                throw new ArgumentException ( SR.ListeningPort_Parser_InvalidInput );
             }
         }
 
@@ -167,11 +155,9 @@ namespace Sisk.Core.Http
         /// Determines if another object is equals to this class instance.
         /// </summary>
         /// <param name="obj">The another object which will be used to compare.</param>
-        public override bool Equals(object? obj)
-        {
-            if (obj is ListeningPort p)
-            {
-                return this.Equals(p);
+        public override bool Equals ( object? obj ) {
+            if (obj is ListeningPort p) {
+                return this.Equals ( p );
             }
             return false;
         }
@@ -180,51 +166,44 @@ namespace Sisk.Core.Http
         /// Determines if this <see cref="ListeningPort"/> is equals to another <see cref="ListeningPort"/>.
         /// </summary>
         /// <param name="other">The another object which will be used to compare.</param>
-        public bool Equals(ListeningPort other)
-        {
-            return this.GetHashCode().Equals(other.GetHashCode());
+        public bool Equals ( ListeningPort other ) {
+            return this.GetHashCode ().Equals ( other.GetHashCode () );
         }
 
         /// <summary>
         /// Gets the hash code for this listening port.
         /// </summary>
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(this.Hostname, this.Port, this.Secure, this.Path);
+        public override int GetHashCode () {
+            return HashCode.Combine ( this.Hostname, this.Port, this.Secure, this.Path );
         }
 
         /// <summary>
         /// Gets an <see cref="ListeningPort"/> object with an random insecure port at the default loopback address.
         /// </summary>
-        public static ListeningPort GetRandomPort()
-        {
-            TcpListener l = new TcpListener(IPAddress.Loopback, 0);
-            l.Start();
-            ushort port = (ushort)((IPEndPoint)l.LocalEndpoint).Port;
-            l.Stop();
-            return new ListeningPort(port, false);
+        public static ListeningPort GetRandomPort () {
+            TcpListener l = new TcpListener ( IPAddress.Loopback, 0 );
+            l.Start ();
+            ushort port = (ushort) ((IPEndPoint) l.LocalEndpoint).Port;
+            l.Stop ();
+            return new ListeningPort ( port, false );
         }
 
         /// <summary>
         /// Gets an string representation of this <see cref="ListeningPort"/>.
         /// </summary>
-        public override string ToString()
-        {
-            return this.ToString(true);
+        public override string ToString () {
+            return this.ToString ( true );
         }
 
         /// <summary>
         /// Gets an string representation of this <see cref="ListeningPort"/>.
         /// </summary>
         /// <param name="includePath">Optional. Defines whether the path should be included in the result string.</param>
-        public string ToString(bool includePath = true)
-        {
-            if (includePath)
-            {
-                return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}{this.Path.TrimEnd('/')}/";
+        public string ToString ( bool includePath = true ) {
+            if (includePath) {
+                return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}{this.Path.TrimEnd ( '/' )}/";
             }
-            else
-            {
+            else {
                 return $"{(this.Secure ? "https" : "http")}://{this.Hostname}:{this.Port}/";
             }
         }
@@ -234,9 +213,8 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
-        public static ListeningPort Parse(string s, IFormatProvider? provider)
-        {
-            return new ListeningPort(s);
+        public static ListeningPort Parse ( string s, IFormatProvider? provider ) {
+            return new ListeningPort ( s );
         }
 
         /// <summary>
@@ -245,20 +223,16 @@ namespace Sisk.Core.Http
         /// <param name="s">The string to parse.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
         /// <param name="result">When this method returns, contains the result of successfully parsing s or an undefined value on failure.</param>
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out ListeningPort result)
-        {
-            if (s is null)
-            {
+        public static bool TryParse ( [NotNullWhen ( true )] string? s, IFormatProvider? provider, [MaybeNullWhen ( false )] out ListeningPort result ) {
+            if (s is null) {
                 result = default;
                 return false;
             }
-            try
-            {
-                result = Parse(s, provider);
+            try {
+                result = Parse ( s, provider );
                 return true;
             }
-            catch
-            {
+            catch {
                 result = default;
                 return false;
             }

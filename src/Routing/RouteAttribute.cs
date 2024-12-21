@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -9,14 +9,12 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Sisk.Core.Routing
-{
+namespace Sisk.Core.Routing {
     /// <summary>
     /// Represents an class that, when applied to a method, will be recognized by a router as a route.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class RouteAttribute : Attribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true )]
+    public class RouteAttribute : Attribute {
         /// <summary>
         /// Gets or sets the matching HTTP method. If it is "Any", the route will just use the path expression to be matched, not the HTTP method.
         /// </summary>
@@ -52,8 +50,7 @@ namespace Sisk.Core.Routing
         /// </summary>
         /// <param name="method">The route entry point method.</param>
         /// <param name="path">The route path.</param>
-        public RouteAttribute(RouteMethod method, string path)
-        {
+        public RouteAttribute ( RouteMethod method, string path ) {
             this.Method = method;
             this.Path = path;
         }
@@ -63,16 +60,14 @@ namespace Sisk.Core.Routing
     /// Represents a mapping to an route, which it's path is defined by an regular expression. This attribute
     /// is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public sealed class RegexRouteAttribute : RouteAttribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RegexRouteAttribute : RouteAttribute {
         /// <summary>
         /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with given path.
         /// </summary>
         /// <param name="method">The route entry point method.</param>
         /// <param name="pattern">The Regex pattern which will match the route.</param>
-        public RegexRouteAttribute(RouteMethod method, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) : base(method, pattern)
-        {
+        public RegexRouteAttribute ( RouteMethod method, [StringSyntax ( StringSyntaxAttribute.Regex )] string pattern ) : base ( method, pattern ) {
             base.UseRegex = true;
         }
     }
@@ -80,90 +75,85 @@ namespace Sisk.Core.Routing
     /// <summary>
     /// Represents a mapping to an HTTP GET route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public sealed class RouteGetAttribute : RouteAttribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RouteGetAttribute : RouteAttribute {
         /// <summary>
         /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with given path.
         /// </summary>
         /// <param name="path">The GET route path.</param>
-        public RouteGetAttribute(string path) : base(RouteMethod.Get, path) { }
+        public RouteGetAttribute ( string path ) : base ( RouteMethod.Get, path ) { }
 
         /// <summary>
         /// Creates an new <see cref="RouteGetAttribute"/> attribute instance with an root path (/).
         /// </summary>
-        public RouteGetAttribute() : base(RouteMethod.Get, "/") { }
+        public RouteGetAttribute () : base ( RouteMethod.Get, "/" ) { }
     }
 
     /// <summary>
     /// Represents a mapping to an HTTP POST route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public sealed class RoutePostAttribute : RouteAttribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RoutePostAttribute : RouteAttribute {
         /// <summary>
         /// Creates an new <see cref="RoutePostAttribute"/> attribute instance with given path.
         /// </summary>
         /// <param name="path">The POST route path.</param>
-        public RoutePostAttribute(string path) : base(RouteMethod.Post, path) { }
+        public RoutePostAttribute ( string path ) : base ( RouteMethod.Post, path ) { }
 
         /// <summary>
         /// Creates an new <see cref="RoutePostAttribute"/> attribute instance with an root path (/).
         /// </summary>
-        public RoutePostAttribute() : base(RouteMethod.Post, "/") { }
+        public RoutePostAttribute () : base ( RouteMethod.Post, "/" ) { }
     }
 
     /// <summary>
     /// Represents a mapping to an HTTP PUT route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public sealed class RoutePutAttribute : RouteAttribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RoutePutAttribute : RouteAttribute {
         /// <summary>
         /// Creates an new <see cref="RoutePutAttribute"/> attribute instance with given path.
         /// </summary>
         /// <param name="path">The PUT route path.</param>
-        public RoutePutAttribute(string path) : base(RouteMethod.Put, path) { }
+        public RoutePutAttribute ( string path ) : base ( RouteMethod.Put, path ) { }
 
         /// <summary>
         /// Creates an new <see cref="RoutePutAttribute"/> attribute instance with an root path (/).
         /// </summary>
-        public RoutePutAttribute() : base(RouteMethod.Put, "/") { }
+        public RoutePutAttribute () : base ( RouteMethod.Put, "/" ) { }
     }
 
     /// <summary>
     /// Represents a mapping to an HTTP PATCH route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public sealed class RoutePatchAttribute : RouteAttribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RoutePatchAttribute : RouteAttribute {
         /// <summary>
         /// Creates an new <see cref="RoutePatchAttribute"/> attribute instance with given path.
         /// </summary>
         /// <param name="path">The PATCH route path.</param>
-        public RoutePatchAttribute(string path) : base(RouteMethod.Patch, path) { }
+        public RoutePatchAttribute ( string path ) : base ( RouteMethod.Patch, path ) { }
 
         /// <summary>
         /// Creates an new <see cref="RoutePatchAttribute"/> attribute instance with an root path (/).
         /// </summary>
-        public RoutePatchAttribute() : base(RouteMethod.Patch, "/") { }
+        public RoutePatchAttribute () : base ( RouteMethod.Patch, "/" ) { }
     }
 
     /// <summary>
     /// Represents a mapping to an HTTP DELETE route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public sealed class RouteDeleteAttribute : RouteAttribute
-    {
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RouteDeleteAttribute : RouteAttribute {
         /// <summary>
         /// Creates an new <see cref="RouteDeleteAttribute"/> attribute instance with given path.
         /// </summary>
         /// <param name="path">The DELETE route path.</param>
-        public RouteDeleteAttribute(string path) : base(RouteMethod.Delete, path) { }
+        public RouteDeleteAttribute ( string path ) : base ( RouteMethod.Delete, path ) { }
 
         /// <summary>
         /// Creates an new <see cref="RouteDeleteAttribute"/> attribute instance with an root path (/).
         /// </summary>
-        public RouteDeleteAttribute() : base(RouteMethod.Delete, "/") { }
+        public RouteDeleteAttribute () : base ( RouteMethod.Delete, "/" ) { }
     }
 }

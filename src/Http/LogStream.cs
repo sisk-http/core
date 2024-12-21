@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,21 +7,19 @@
 // File name:   LogStream.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
 using System.Text;
 using System.Threading.Channels;
+using Sisk.Core.Entity;
 
-namespace Sisk.Core.Http
-{
+namespace Sisk.Core.Http {
     /// <summary>
     /// Provides a managed, asynchronous log writer which supports writing safe data to log files or text streams.
     /// </summary>
-    public class LogStream : IDisposable
-    {
-        private readonly Channel<object?> channel = Channel.CreateUnbounded<object?>(new UnboundedChannelOptions() { SingleReader = true });
+    public class LogStream : IDisposable {
+        private readonly Channel<object?> channel = Channel.CreateUnbounded<object?> ( new UnboundedChannelOptions () { SingleReader = true } );
         private readonly Thread consumerThread;
-        internal readonly ManualResetEvent writeEvent = new ManualResetEvent(false);
-        internal readonly ManualResetEvent rotatingPolicyLocker = new ManualResetEvent(true);
+        internal readonly ManualResetEvent writeEvent = new ManualResetEvent ( false );
+        internal readonly ManualResetEvent rotatingPolicyLocker = new ManualResetEvent ( true );
         internal RotatingLogPolicy? rotatingLogPolicy = null;
 
         private string? filePath;
@@ -31,16 +29,14 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets a <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
         /// </summary>
-        public static LogStream ConsoleOutput { get => new LogStream(Console.Out); }
+        public static LogStream ConsoleOutput { get => new LogStream ( Console.Out ); }
 
         /// <summary>
         /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.
         /// </summary>
-        public RotatingLogPolicy RotatingPolicy
-        {
-            get
-            {
-                this.rotatingLogPolicy ??= new RotatingLogPolicy(this);
+        public RotatingLogPolicy RotatingPolicy {
+            get {
+                this.rotatingLogPolicy ??= new RotatingLogPolicy ( this );
                 return this.rotatingLogPolicy;
             }
         }
@@ -68,20 +64,16 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// When setting this method, if the file directory doens't exists, it is created.
         /// </remarks>
-        public string? FilePath
-        {
-            get => this.filePath; set
-            {
-                if (value is not null)
-                {
-                    this.filePath = Path.GetFullPath(value);
+        public string? FilePath {
+            get => this.filePath; set {
+                if (value is not null) {
+                    this.filePath = Path.GetFullPath ( value );
 
-                    string? dirPath = Path.GetDirectoryName(this.filePath);
+                    string? dirPath = Path.GetDirectoryName ( this.filePath );
                     if (dirPath is not null)
-                        Directory.CreateDirectory(dirPath);
+                        Directory.CreateDirectory ( dirPath );
                 }
-                else
-                {
+                else {
                     this.filePath = null;
                 }
             }
@@ -101,18 +93,16 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="LogStream"/> instance with no predefined outputs.
         /// </summary>
-        public LogStream()
-        {
-            this.consumerThread = new Thread(new ThreadStart(this.ProcessQueue));
-            this.consumerThread.Start();
+        public LogStream () {
+            this.consumerThread = new Thread ( new ThreadStart ( this.ProcessQueue ) );
+            this.consumerThread.Start ();
         }
 
         /// <summary>
         /// Creates an new <see cref="LogStream"/> instance with the given TextWriter object.
         /// </summary>
         /// <param name="tw">The <see cref="System.IO.TextWriter"/> instance which this instance will write log to.</param>
-        public LogStream(TextWriter tw) : this()
-        {
+        public LogStream ( TextWriter tw ) : this () {
             this.TextWriter = tw;
         }
 
@@ -120,8 +110,7 @@ namespace Sisk.Core.Http
         /// Creates an new <see cref="LogStream"/> instance with the given relative or absolute file path.
         /// </summary>
         /// <param name="filename">The file path where this instance will write log to.</param>
-        public LogStream(string filename) : this()
-        {
+        public LogStream ( string filename ) : this () {
             this.FilePath = filename;
         }
 
@@ -130,18 +119,17 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="filename">The file path where this instance will write log to.</param>
         /// <param name="tw">The text writer which this instance will write log to.</param>
-        public LogStream(string? filename, TextWriter? tw) : this()
-        {
-            if (filename is not null) this.FilePath = Path.GetFullPath(filename);
+        public LogStream ( string? filename, TextWriter? tw ) : this () {
+            if (filename is not null)
+                this.FilePath = Path.GetFullPath ( filename );
             this.TextWriter = tw;
         }
 
         /// <summary>
         /// Clears the current log queue and blocks the current thread until all content is written to the underlying streams.
         /// </summary>
-        public void Flush()
-        {
-            this.writeEvent.WaitOne();
+        public void Flush () {
+            this.writeEvent.WaitOne ();
         }
 
         /// <summary>
@@ -149,17 +137,14 @@ namespace Sisk.Core.Http
         /// <see cref="LogStream"/> buffering with <see cref="StartBuffering(int)"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown when this LogStream is not buffering.</exception>
-        public string Peek()
-        {
-            if (this._bufferingContent is null)
-            {
-                throw new InvalidOperationException(SR.LogStream_NotBuffering);
+        public string Peek () {
+            if (this._bufferingContent is null) {
+                throw new InvalidOperationException ( SR.LogStream_NotBuffering );
             }
 
-            lock (this._bufferingContent)
-            {
-                string[] lines = this._bufferingContent.ToArray();
-                return string.Join(Environment.NewLine, lines);
+            lock (this._bufferingContent) {
+                string [] lines = this._bufferingContent.ToArray ();
+                return string.Join ( Environment.NewLine, lines );
             }
         }
 
@@ -167,135 +152,116 @@ namespace Sisk.Core.Http
         /// Start buffering all output to an alternate stream in memory for readability with <see cref="Peek"/> later.
         /// </summary>
         /// <param name="lines">The amount of lines to store in the buffer.</param>
-        public void StartBuffering(int lines)
-        {
-            if (this._bufferingContent is not null) return;
-            this._bufferingContent = new CircularBuffer<string>(lines);
+        public void StartBuffering ( int lines ) {
+            if (this._bufferingContent is not null)
+                return;
+            this._bufferingContent = new CircularBuffer<string> ( lines );
         }
 
         /// <summary>
         /// Stops buffering output to the alternative stream.
         /// </summary>
-        public void StopBuffering()
-        {
+        public void StopBuffering () {
             this._bufferingContent = null;
         }
 
-        private async void ProcessQueue()
-        {
+        private async void ProcessQueue () {
             var reader = this.channel.Reader;
-            try
-            {
-                while (!this.isDisposed && await reader.WaitToReadAsync())
-                {
-                    this.writeEvent.Reset();
+            try {
+                while (!this.isDisposed && await reader.WaitToReadAsync ()) {
+                    this.writeEvent.Reset ();
 
-                    while (reader.TryRead(out var item))
-                    {
-                        this.rotatingPolicyLocker.WaitOne();
+                    while (reader.TryRead ( out var item )) {
+                        this.rotatingPolicyLocker.WaitOne ();
 
                         bool gotAnyError = false;
-                        string? dataStr = item?.ToString();
+                        string? dataStr = item?.ToString ();
 
                         if (dataStr is null)
                             continue;
 
-                        try
-                        {
-                            this.TextWriter?.WriteLine(dataStr);
+                        try {
+                            this.TextWriter?.WriteLine ( dataStr );
                         }
-                        catch
-                        {
-                            if (!gotAnyError)
-                            {
-                                await this.channel.Writer.WriteAsync(item);
+                        catch {
+                            if (!gotAnyError) {
+                                await this.channel.Writer.WriteAsync ( item );
                                 gotAnyError = true;
                             }
                         }
 
-                        try
-                        {
+                        try {
                             if (this.filePath is not null)
-                                File.AppendAllText(this.filePath, dataStr + Environment.NewLine, this.Encoding);
+                                File.AppendAllText ( this.filePath, dataStr + Environment.NewLine, this.Encoding );
                         }
-                        catch
-                        {
-                            if (!gotAnyError)
-                            {
-                                await this.channel.Writer.WriteAsync(item);
+                        catch {
+                            if (!gotAnyError) {
+                                await this.channel.Writer.WriteAsync ( item );
                                 gotAnyError = true;
                             }
                         }
 
-                        try
-                        {
-                            this._bufferingContent?.Add(dataStr);
+                        try {
+                            this._bufferingContent?.Add ( dataStr );
                         }
-                        catch
-                        {
-                            if (!gotAnyError)
-                            {
-                                await this.channel.Writer.WriteAsync(item);
+                        catch {
+                            if (!gotAnyError) {
+                                await this.channel.Writer.WriteAsync ( item );
                             }
                         }
                     }
 
-                    this.writeEvent.Set();
+                    this.writeEvent.Set ();
                 }
             }
-            finally
-            {
-                this.writeEvent.Set();
+            finally {
+                this.writeEvent.Set ();
             }
         }
 
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        public virtual void Close() => this.Dispose();
+        public virtual void Close () => this.Dispose ();
 
         /// <summary>
         /// Writes an exception description in the log.
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
-        public virtual void WriteException(Exception exp) => this.WriteException(exp, null);
+        public virtual void WriteException ( Exception exp ) => this.WriteException ( exp, null );
 
         /// <summary>
         /// Writes an exception description in the log.
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
         /// <param name="extraContext">Extra context message to append to the exception message.</param>
-        public virtual void WriteException(Exception exp, string? extraContext = null)
-        {
-            StringBuilder excpStr = new StringBuilder();
-            this.WriteExceptionInternal(excpStr, exp, extraContext, 0);
-            this.WriteLineInternal(excpStr.ToString());
+        public virtual void WriteException ( Exception exp, string? extraContext = null ) {
+            StringBuilder excpStr = new StringBuilder ();
+            this.WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
+            this.WriteLineInternal ( excpStr.ToString () );
         }
 
         /// <summary>
         /// Writes an line-break at the end of the output.
         /// </summary>
-        public void WriteLine()
-        {
-            this.WriteLineInternal(string.Empty);
+        public void WriteLine () {
+            this.WriteLineInternal ( string.Empty );
         }
 
         /// <summary>
         /// Writes the text and concats an line-break at the end into the output.
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
-        public void WriteLine(object? message)
-        {
-            this.WriteLineInternal(message?.ToString() ?? string.Empty);
+        public void WriteLine ( object? message ) {
+            this.WriteLineInternal ( message?.ToString () ?? string.Empty );
         }
 
         /// <summary>
         /// Writes the text and concats an line-break at the end into the output.
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
-        public void WriteLine(string message)
-        {
-            this.WriteLineInternal(message);
+        public void WriteLine ( string message ) {
+            this.WriteLineInternal ( message );
         }
 
         /// <summary>
@@ -303,24 +269,20 @@ namespace Sisk.Core.Http
         /// </summary>
         /// <param name="format">The string format that represents the arguments positions.</param>
         /// <param name="args">An array of objects that represents the string format slots values.</param>
-        public void WriteLine(string format, params object?[] args)
-        {
-            this.WriteLineInternal(string.Format(format, args));
+        public void WriteLine ( string format, params object? [] args ) {
+            this.WriteLineInternal ( string.Format ( format, args ) );
         }
 
         /// <summary>
         /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
         /// </summary>
         /// <param name="line">The line which will be written to the log stream.</param>
-        protected virtual void WriteLineInternal(string line)
-        {
-            if (this.NormalizeEntries)
-            {
-                this.EnqueueMessageLine(line.Normalize().Trim().ReplaceLineEndings());
+        protected virtual void WriteLineInternal ( string line ) {
+            if (this.NormalizeEntries) {
+                this.EnqueueMessageLine ( line.Normalize ().Trim ().ReplaceLineEndings () );
             }
-            else
-            {
-                this.EnqueueMessageLine(line);
+            else {
+                this.EnqueueMessageLine ( line );
             }
         }
 
@@ -333,37 +295,31 @@ namespace Sisk.Core.Http
         /// </remarks>
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="dueTime">The time interval between checks.</param>
-        public LogStream ConfigureRotatingPolicy(long maximumSize, TimeSpan dueTime)
-        {
+        public LogStream ConfigureRotatingPolicy ( long maximumSize, TimeSpan dueTime ) {
             var policy = this.RotatingPolicy;
-            policy.Configure(maximumSize, dueTime);
+            policy.Configure ( maximumSize, dueTime );
             return this;
         }
 
-        void EnqueueMessageLine(string message)
-        {
-            ArgumentNullException.ThrowIfNull(message, nameof(message));
-            _ = this.channel.Writer.WriteAsync(message);
+        void EnqueueMessageLine ( string message ) {
+            ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
+            _ = this.channel.Writer.WriteAsync ( message );
         }
 
-        void WriteExceptionInternal(StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0)
-        {
+        void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
             if (currentDepth == 0)
-                exceptionSbuilder.AppendLine(string.Format(SR.LogStream_ExceptionDump_Header,
-                    context is null ? DateTime.Now.ToString("R") : $"{context}, {DateTime.Now:R}"));
+                exceptionSbuilder.AppendLine ( string.Format ( SR.LogStream_ExceptionDump_Header,
+                    context is null ? DateTime.Now.ToString ( "R" ) : $"{context}, {DateTime.Now:R}" ) );
 
-            exceptionSbuilder.AppendLine(exp.ToString());
+            exceptionSbuilder.AppendLine ( exp.ToString () );
 
-            if (exp.InnerException != null)
-            {
-                if (currentDepth <= 3)
-                {
-                    exceptionSbuilder.AppendLine("+++ inner exception +++");
-                    this.WriteExceptionInternal(exceptionSbuilder, exp.InnerException, null, currentDepth + 1);
+            if (exp.InnerException != null) {
+                if (currentDepth <= 3) {
+                    exceptionSbuilder.AppendLine ( "+++ inner exception +++" );
+                    this.WriteExceptionInternal ( exceptionSbuilder, exp.InnerException, null, currentDepth + 1 );
                 }
-                else
-                {
-                    exceptionSbuilder.AppendLine(SR.LogStream_ExceptionDump_TrimmedFooter);
+                else {
+                    exceptionSbuilder.AppendLine ( SR.LogStream_ExceptionDump_TrimmedFooter );
                 }
             }
         }
@@ -371,17 +327,14 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!this.isDisposed)
-            {
-                if (disposing)
-                {
-                    this.channel.Writer.Complete();
-                    this.Flush();
-                    this.TextWriter?.Dispose();
-                    this.rotatingLogPolicy?.Dispose();
-                    this.consumerThread.Join();
+        protected virtual void Dispose ( bool disposing ) {
+            if (!this.isDisposed) {
+                if (disposing) {
+                    this.channel.Writer.Complete ();
+                    this.Flush ();
+                    this.TextWriter?.Dispose ();
+                    this.rotatingLogPolicy?.Dispose ();
+                    this.consumerThread.Join ();
                 }
 
                 this._bufferingContent = null;
@@ -390,20 +343,18 @@ namespace Sisk.Core.Http
         }
 
         /// <inheritdoc/>
-        ~LogStream()
-        {
+        ~LogStream () {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            this.Dispose(disposing: false);
+            this.Dispose ( disposing: false );
         }
 
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        public void Dispose()
-        {
+        public void Dispose () {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            this.Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            this.Dispose ( disposing: true );
+            GC.SuppressFinalize ( this );
         }
     }
 }

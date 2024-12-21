@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2023 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -12,13 +12,11 @@ using System.Runtime.CompilerServices;
 
 namespace Sisk.Ssl;
 
-static class Logger
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void LogInformation(string? message)
-    {
+static class Logger {
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    public static void LogInformation ( string? message ) {
 #if VERBOSE && DEBUG
-        Debug.WriteLine($"SslProxy~ {message}");
+        Debug.WriteLine ( $"SslProxy~ {message}" );
 #endif
     }
 }

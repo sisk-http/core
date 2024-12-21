@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,8 +7,7 @@
 // File name:   SR.cs
 // Repository:  https://github.com/sisk-http/core
 
-static partial class SR
-{
+static partial class SR {
     public const string MultipartObject_ContentTypeMissing = "Content-Type header cannot be null when retriving a multipart form content";
     public const string MultipartObject_BoundaryMissing = "No boundary was specified for this multipart form content.";
     public const string MultipartObject_EmptyFieldName = "Content-part object position {0} cannot have an empty field name.";
@@ -103,8 +102,7 @@ static partial class SR
     public const string RequiresUnreferencedCode = "This method requires access to unreferenced code, which may break AOT compilation and trimming.";
     public const string RequiresUnreferencedCode__RouterSetObject = "This method requires access to unreferenced code, which may break AOT compilation and trimming. Use the SetObject(Type, Object) or SetObject<TObject>(TObject) overloads instead.";
 
-    public static string Format(string format, params object?[] items)
-    {
-        return String.Format(format, items);
+    public static string Format ( string format, params object? [] items ) {
+        return String.Format ( format, items );
     }
 }

@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -15,14 +15,13 @@ namespace Sisk.Core.Routing;
 /// Indicates that extended class supports router modules, which allows the management of routes,
 /// request handlers and prefixes.
 /// </summary>
-public abstract class RouterModule
-{
+public abstract class RouterModule {
     internal bool _wasSetupCalled = false;
 
     /// <summary>
     /// Gets or sets an list of <see cref="IRequestHandler"/> this <see cref="RouterModule"/> runs.
     /// </summary>
-    public IList<IRequestHandler> RequestHandlers { get; set; } = new List<IRequestHandler>();
+    public IList<IRequestHandler> RequestHandlers { get; set; } = new List<IRequestHandler> ();
 
     /// <summary>
     /// Gets or sets the router prefix for this class. This property overrides any
@@ -35,9 +34,8 @@ public abstract class RouterModule
     /// </summary>
     /// <param name="handler">The <see cref="IRequestHandler"/> instance which will be applied to all registered routes
     /// of this class.</param>
-    protected void HasRequestHandler(IRequestHandler handler)
-    {
-        this.RequestHandlers.Add(handler);
+    protected void HasRequestHandler ( IRequestHandler handler ) {
+        this.RequestHandlers.Add ( handler );
     }
 
     /// <summary>
@@ -48,8 +46,7 @@ public abstract class RouterModule
     /// The base method <see cref="RouterModule.OnSetup(Router)"/> is mandatory to be called on all derived methods.
     /// </remarks>
     /// <param name="parentRouter">The <see cref="Router"/> which is defining routes from the current <see cref="RouterModule"/>.</param>
-    protected virtual void OnSetup(Router parentRouter)
-    {
+    protected virtual void OnSetup ( Router parentRouter ) {
         this._wasSetupCalled = true;
     }
 
@@ -59,13 +56,12 @@ public abstract class RouterModule
     /// be overloaded in the extending class and must not be called directly.
     /// </summary>
     /// <param name="configuringRoute">The route being defined on the router.</param>
-    protected virtual void OnRouteCreating(Route configuringRoute)
-    {
+    protected virtual void OnRouteCreating ( Route configuringRoute ) {
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void CallRouteCreating(Route configuringRoute) => this.OnRouteCreating(configuringRoute);
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    internal void CallRouteCreating ( Route configuringRoute ) => this.OnRouteCreating ( configuringRoute );
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void CallOnSetup(Router parentRouter) => this.OnSetup(parentRouter);
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    internal void CallOnSetup ( Router parentRouter ) => this.OnSetup ( parentRouter );
 }

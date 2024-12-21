@@ -1,120 +1,104 @@
-﻿using Sisk.ManagedHttpListener.HttpSerializer;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpConnection.cs
+// Repository:  https://github.com/sisk-http/core
+
+using Sisk.ManagedHttpListener.HttpSerializer;
 
 namespace Sisk.ManagedHttpListener;
 
-public sealed class HttpConnection : IDisposable
-{
+public sealed class HttpConnection : IDisposable {
     private readonly Stream _connectionStream;
     private bool disposedValue;
 
     public HttpAction Action { get; set; }
 
-    public HttpConnection(Stream connectionStream, HttpAction action)
-    {
-        _connectionStream = connectionStream;
-        Action = action;
+    public HttpConnection ( Stream connectionStream, HttpAction action ) {
+        this._connectionStream = connectionStream;
+        this.Action = action;
     }
 
-    public int HandleConnectionEvents()
-    {
-        ObjectDisposedException.ThrowIf(disposedValue, this);
+    public int HandleConnectionEvents () {
+        ObjectDisposedException.ThrowIf ( this.disposedValue, this );
 
-        Span<byte> memRequestLine = stackalloc byte[8192];
+        while (this._connectionStream.CanRead && !this.disposedValue) {
+            HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream );
+            HttpRequestBase? nextRequest = requestReader.ReadHttpRequest ();
+            Stream? responseStream = null;
 
-        while (_connectionStream.CanRead && !disposedValue)
-        {
-            //try
-            //{
-            using var bufferedStreamSession = new Streams.HttpBufferedReadStream(_connectionStream);
-
-            if (!HttpRequestSerializer.TryReadHttp1Request(
-                        bufferedStreamSession,
-                        memRequestLine,
-                out var method,
-                out var path,
-                out var reqContentLength,
-                out var messageSize,
-                out var headers,
-                out var expectContinue))
-            {
-                Logger.LogInformation($"couldn't read request");
-                return 1;
-            }
-
-            HttpSession.HttpRequest managedRequest = new HttpSession.HttpRequest(method, path, reqContentLength, headers, _connectionStream);
-            HttpSession managedSession = new HttpSession(managedRequest, _connectionStream);
-
-            Action(managedSession);
-
-            if (!managedSession.KeepAlive)
-                managedSession.Response.Headers.Set(("Connection", "Close"));
-
-            Stream? responseStream = managedSession.Response.ResponseStream;
-            if (responseStream is not null)
-            {
-                if (responseStream.CanSeek)
-                {
-                    managedSession.Response.Headers.Set(("Content-Length", responseStream.Length.ToString()));
+            try {
+                if (nextRequest is null) {
+                    Logger.LogInformation ( $"couldn't read request" );
+                    return 1;
                 }
-                else
-                {
-                    // implement chunked-encodind
+
+                HttpSession managedSession = new HttpSession ( nextRequest, this._connectionStream );
+
+                this.Action ( managedSession );
+
+                if (!managedSession.KeepAlive)
+                    managedSession.Response.Headers.Set ( ("Connection", "Close") );
+
+                responseStream = managedSession.Response.ResponseStream;
+                if (responseStream is not null) {
+                    if (responseStream.CanSeek) {
+                        managedSession.Response.Headers.Set ( ("Content-Length", responseStream.Length.ToString ()) );
+                    }
+                    else {
+                        // implement chunked-encodind
+                    }
+                }
+                else {
+                    managedSession.Response.Headers.Set ( ("Content-Length", "0") );
+                }
+
+                if (!HttpResponseSerializer.WriteHttpResponseHeaders (
+                    this._connectionStream,
+                    managedSession.Response.StatusCode,
+                    managedSession.Response.StatusDescription,
+                    managedSession.Response.Headers )) {
+                    Logger.LogInformation ( $"couldn't write response" );
+                    return 2;
+                }
+
+                if (responseStream is not null) {
+                    responseStream.CopyTo ( this._connectionStream );
+                    responseStream.Dispose ();
+                }
+
+                this._connectionStream.Flush ();
+
+                if (!managedSession.KeepAlive) {
+                    break;
                 }
             }
-            else
-            {
-                managedSession.Response.Headers.Set(("Content-Length", "0"));
+            catch (Exception) {
+                ;
             }
-
-            if (!HttpResponseSerializer.TryWriteHttp1Response(
-                _connectionStream,
-                managedSession.Response.StatusCode,
-                managedSession.Response.StatusDescription,
-                managedSession.Response.Headers))
-            {
-                Logger.LogInformation($"couldn't write response");
-                return 2;
+            finally {
+                responseStream?.Dispose ();
             }
-
-            if (responseStream is not null)
-            {
-                responseStream.CopyTo(_connectionStream);
-                responseStream.Dispose();
-            }
-
-            _connectionStream.Flush();
-
-            if (!managedSession.KeepAlive)
-            {
-                break;
-            }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Logger.LogInformation($"unhandled exception: {ex.Message}");
-            //    return 3;
-            //}
         }
 
         return 0;
     }
 
-    private void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                _connectionStream.Dispose();
+    private void Dispose ( bool disposing ) {
+        if (!this.disposedValue) {
+            if (disposing) {
+                this._connectionStream.Dispose ();
             }
 
-            disposedValue = true;
+            this.disposedValue = true;
         }
     }
 
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+    public void Dispose () {
+        this.Dispose ( disposing: true );
+        GC.SuppressFinalize ( this );
     }
 }

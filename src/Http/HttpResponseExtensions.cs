@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,19 +7,18 @@
 // File name:   HttpResponseExtensions.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Entity;
-using Sisk.Core.Helpers;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
+using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
 
 namespace Sisk.Core.Http;
 
 /// <summary>
 /// Provides useful extensions for <see cref="HttpResponse"/> objects.
 /// </summary>
-public static class HttpResponseExtensions
-{
+public static class HttpResponseExtensions {
     /// <summary>
     /// Sets an UTF-8 string as the HTTP response content in this <see cref="HttpResponse"/>.
     /// </summary>
@@ -27,9 +26,8 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="content">The UTF-8 string containing the response body.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithContent<THttpResponse>(this THttpResponse response, string content) where THttpResponse : HttpResponse
-    {
-        response.Content = new StringContent(content);
+    public static THttpResponse WithContent<THttpResponse> ( this THttpResponse response, string content ) where THttpResponse : HttpResponse {
+        response.Content = new StringContent ( content );
         return response;
     }
 
@@ -42,9 +40,8 @@ public static class HttpResponseExtensions
     /// <param name="encoding">The encoding to encode the string message.</param>
     /// <param name="mimeType">The mime-type of the response content.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithContent<THttpResponse>(this THttpResponse response, string content, Encoding? encoding, string mimeType) where THttpResponse : HttpResponse
-    {
-        response.Content = new StringContent(content, encoding, mimeType);
+    public static THttpResponse WithContent<THttpResponse> ( this THttpResponse response, string content, Encoding? encoding, string mimeType ) where THttpResponse : HttpResponse {
+        response.Content = new StringContent ( content, encoding, mimeType );
         return response;
     }
 
@@ -55,8 +52,7 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="content">The HTTP content object.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithContent<THttpResponse>(this THttpResponse response, HttpContent content) where THttpResponse : HttpResponse
-    {
+    public static THttpResponse WithContent<THttpResponse> ( this THttpResponse response, HttpContent content ) where THttpResponse : HttpResponse {
         response.Content = content;
         return response;
     }
@@ -69,9 +65,8 @@ public static class HttpResponseExtensions
     /// <param name="headerName">The name of the header.</param>
     /// <param name="headerValue">The header value.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithHeader<THttpResponse>(this THttpResponse response, string headerName, string headerValue) where THttpResponse : HttpResponse
-    {
-        response.Headers.Add(headerName, headerValue);
+    public static THttpResponse WithHeader<THttpResponse> ( this THttpResponse response, string headerName, string headerValue ) where THttpResponse : HttpResponse {
+        response.Headers.Add ( headerName, headerValue );
         return response;
     }
 
@@ -82,10 +77,9 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="headers">The collection of HTTP headers.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithHeader<THttpResponse>(this THttpResponse response, NameValueCollection headers) where THttpResponse : HttpResponse
-    {
+    public static THttpResponse WithHeader<THttpResponse> ( this THttpResponse response, NameValueCollection headers ) where THttpResponse : HttpResponse {
         foreach (string key in headers.Keys)
-            response.Headers.Add(key, headers[key] ?? string.Empty);
+            response.Headers.Add ( key, headers [ key ] ?? string.Empty );
         return response;
     }
 
@@ -96,9 +90,8 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="headers">The collection of HTTP headers.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithHeader<THttpResponse>(this THttpResponse response, StringKeyStore headers) where THttpResponse : HttpResponse
-    {
-        headers.AddRange(headers);
+    public static THttpResponse WithHeader<THttpResponse> ( this THttpResponse response, StringKeyStore headers ) where THttpResponse : HttpResponse {
+        headers.AddRange ( headers );
         return response;
     }
 
@@ -109,8 +102,7 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="httpStatusCode">The HTTP status code.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithStatus<THttpResponse>(this THttpResponse response, int httpStatusCode) where THttpResponse : HttpResponse
-    {
+    public static THttpResponse WithStatus<THttpResponse> ( this THttpResponse response, int httpStatusCode ) where THttpResponse : HttpResponse {
         response.Status = httpStatusCode;
         return response;
     }
@@ -122,8 +114,7 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="httpStatusCode">The HTTP status code.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithStatus<THttpResponse>(this THttpResponse response, HttpStatusCode httpStatusCode) where THttpResponse : HttpResponse
-    {
+    public static THttpResponse WithStatus<THttpResponse> ( this THttpResponse response, HttpStatusCode httpStatusCode ) where THttpResponse : HttpResponse {
         response.Status = httpStatusCode;
         return response;
     }
@@ -135,8 +126,7 @@ public static class HttpResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="statusInformation">The HTTP status information.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithStatus<THttpResponse>(this THttpResponse response, in HttpStatusInformation statusInformation) where THttpResponse : HttpResponse
-    {
+    public static THttpResponse WithStatus<THttpResponse> ( this THttpResponse response, in HttpStatusInformation statusInformation ) where THttpResponse : HttpResponse {
         response.Status = statusInformation;
         return response;
     }
@@ -155,7 +145,7 @@ public static class HttpResponseExtensions
     /// <param name="secure">Determines if the cookie will only be stored in an secure context.</param>
     /// <param name="httpOnly">Determines if the cookie will be only available in the HTTP context.</param>
     /// <param name="sameSite">The cookie SameSite parameter.</param>
-    public static THttpResponse WithCookie<THttpResponse>(this THttpResponse response,
+    public static THttpResponse WithCookie<THttpResponse> ( this THttpResponse response,
         string name,
         string value,
         DateTime? expires = null,
@@ -164,10 +154,9 @@ public static class HttpResponseExtensions
         string? path = null,
         bool? secure = null,
         bool? httpOnly = null,
-        string? sameSite = null)
-        where THttpResponse : HttpResponse
-    {
-        response.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite));
+        string? sameSite = null )
+        where THttpResponse : HttpResponse {
+        response.Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite ) );
         return response;
     }
 
@@ -177,9 +166,8 @@ public static class HttpResponseExtensions
     /// <typeparam name="THttpResponse">The type which implements <see cref="HttpResponse"/>.</typeparam>
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="cookie">The cookie object.</param>
-    public static THttpResponse WithCookie<THttpResponse>(this THttpResponse response, Cookie cookie) where THttpResponse : HttpResponse
-    {
-        response.Headers.Add(HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue(cookie));
+    public static THttpResponse WithCookie<THttpResponse> ( this THttpResponse response, Cookie cookie ) where THttpResponse : HttpResponse {
+        response.Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( cookie ) );
         return response;
     }
 }

@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -15,12 +15,10 @@ namespace Sisk.Core.Routing;
 /// Represents a mutable type for boxing objects by value or reference in a response from a router.
 /// </summary>
 /// <typeparam name="T">The type of object to be boxed.</typeparam>
-public sealed class ValueResult<T> where T : notnull
-{
+public sealed class ValueResult<T> where T : notnull {
     // <exclude />
     // <inheritdocs />
-    private ValueResult()
-    {
+    private ValueResult () {
     }
 
     /// <summary>
@@ -28,10 +26,9 @@ public sealed class ValueResult<T> where T : notnull
     /// </summary>
     /// <param name="box">The input <see cref="ValueResult{T}"/> instance.</param>
     /// <exclude/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator T(ValueResult<T> box)
-    {
-        return (T)(object)box;
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    public static implicit operator T ( ValueResult<T> box ) {
+        return (T) (object) box;
     }
 
     /// <summary>
@@ -39,10 +36,10 @@ public sealed class ValueResult<T> where T : notnull
     /// </summary>
     /// <param name="value">The input <typeparamref name="T"/> value to wrap.</param>
     /// <exclude/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator ValueResult<T>(T value)
-    {
-        if (value is null) throw new NullReferenceException(SR.ValueResult_Null);
-        return Unsafe.As<ValueResult<T>>(value)!;
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    public static implicit operator ValueResult<T> ( T value ) {
+        if (value is null)
+            throw new NullReferenceException ( SR.ValueResult_Null );
+        return Unsafe.As<ValueResult<T>> ( value )!;
     }
 }

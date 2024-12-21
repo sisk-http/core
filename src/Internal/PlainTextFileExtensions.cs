@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -9,14 +9,10 @@
 
 namespace Sisk.Core.Internal;
 
-internal class PlainTextFileExtensions
-{
-    public static bool IsTextFile(string extension)
-    {
-        for (int i = 0; i < PlainTextExtensions.Length; i++)
-        {
-            if (string.Compare(PlainTextExtensions[i], extension, true) == 0)
-            {
+internal class PlainTextFileExtensions {
+    public static bool IsTextFile ( string extension ) {
+        for (int i = 0; i < PlainTextExtensions.Length; i++) {
+            if (string.Compare ( PlainTextExtensions [ i ], extension, true ) == 0) {
                 return true;
             }
         }
@@ -25,7 +21,7 @@ internal class PlainTextFileExtensions
 
     // list forked from https://github.com/sindresorhus/text-extensions/blob/main/text-extensions.json
     // with some personal additions
-    static readonly string[] PlainTextExtensions = [
+    static readonly string [] PlainTextExtensions = [
         "ada",
         "adb",
         "ads",

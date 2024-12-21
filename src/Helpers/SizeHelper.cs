@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -14,8 +14,7 @@ namespace Sisk.Core.Helpers;
 /// <summary>
 /// Provides useful size-dedicated helper members.
 /// </summary>
-public sealed class SizeHelper
-{
+public sealed class SizeHelper {
     /// <summary>
     /// Represents the number of bytes in one kibibyte (KiB).
     /// This is calculated as 1024 bytes.
@@ -57,43 +56,35 @@ public sealed class SizeHelper
     /// </summary>
     /// <param name="byteCount">The total number of bytes to convert.</param>
     /// <returns>A string representing the byte count in a human-readable format.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string HumanReadableSize(long byteCount) => HumanReadableSize((double)byteCount);
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    public static string HumanReadableSize ( long byteCount ) => HumanReadableSize ( (double) byteCount );
 
     /// <summary>
     /// Converts a byte count into a human-readable string representation.
     /// </summary>
     /// <param name="byteCount">The total number of bytes to convert.</param>
     /// <returns>A string representing the byte count in a human-readable format.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string HumanReadableSize(double byteCount)
-    {
-        if (byteCount < UnitKb)
-        {
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    public static string HumanReadableSize ( double byteCount ) {
+        if (byteCount < UnitKb) {
             return $"{byteCount:n0} bytes";
         }
-        else if (byteCount > UnitKb && byteCount <= UnitMb)
-        {
+        else if (byteCount > UnitKb && byteCount <= UnitMb) {
             return $"{byteCount / UnitKb:n2} KB";
         }
-        else if (byteCount > UnitMb && byteCount <= UnitGb)
-        {
+        else if (byteCount > UnitMb && byteCount <= UnitGb) {
             return $"{byteCount / UnitMb:n2} MB";
         }
-        else if (byteCount > UnitGb && byteCount <= UnitTb)
-        {
+        else if (byteCount > UnitGb && byteCount <= UnitTb) {
             return $"{byteCount / UnitGb:n2} GB";
         }
-        else if (byteCount > UnitTb && byteCount <= UnitPb)
-        {
+        else if (byteCount > UnitTb && byteCount <= UnitPb) {
             return $"{byteCount / UnitTb:n2} TB";
         }
-        else if (byteCount > UnitPb && byteCount <= UnitEb)
-        {
+        else if (byteCount > UnitPb && byteCount <= UnitEb) {
             return $"{byteCount / UnitTb:n2} PB";
         }
-        else
-        {
+        else {
             return $"{byteCount / UnitEb:n2} EB";
         }
     }

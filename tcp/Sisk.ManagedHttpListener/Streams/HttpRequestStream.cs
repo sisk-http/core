@@ -1,54 +1,83 @@
-﻿namespace Sisk.ManagedHttpListener.Streams;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpRequestStream.cs
+// Repository:  https://github.com/sisk-http/core
 
-internal sealed class HttpRequestStream : Stream
-{
-    private readonly Stream _connectionStream;
-    private long _position = 0;
+using Sisk.ManagedHttpListener.HttpSerializer;
 
-    public HttpRequestStream(Stream connectionStream, long contentLength)
-    {
-        _connectionStream = connectionStream;
-        Length = contentLength;
+namespace Sisk.ManagedHttpListener.Streams;
+
+internal class HttpRequestStream : Stream {
+    private Stream s;
+    private HttpRequestBase baseRequest;
+    int read = 0;
+    int bufferedByteLength = 0;
+
+    public HttpRequestStream ( Stream clientStream, HttpRequestBase baseRequest ) {
+        this.s = clientStream;
+        this.baseRequest = baseRequest;
+        this.bufferedByteLength = this.baseRequest.BufferedContent.Length;
     }
 
-    public override bool CanRead => true;
+    public override bool CanRead => this.s.CanRead;
 
     public override bool CanSeek => false;
 
     public override bool CanWrite => false;
 
-    public override long Length { get; }
+    public override long Length => this.baseRequest.ContentLength;
 
-    public override long Position { get => _position; set => throw new NotSupportedException(); }
+    public override long Position { get => this.read; set => this.s.Position = value; }
 
-    public override void Flush()
-    {
-        _connectionStream.Flush();
+    public override void Flush () {
+        this.s.Flush ();
     }
 
-    public override int Read(byte[] buffer, int offset, int count)
-    {
-        if (_position >= Length)
-        {
+    public override int Read ( byte [] buffer, int offset, int count ) {
+        if (this.read >= this.baseRequest.ContentLength) {
             return 0;
         }
-        var r = _connectionStream.Read(buffer, offset, Math.Min(count, (int)Length));
-        _position += r;
-        return r;
+
+        int bufferRead = this.ReadFromBuffer ( buffer, offset, count );
+        if (bufferRead > 0) {
+            this.read += bufferRead;
+            return bufferRead;
+        }
+        else {
+            int streamRead = this.s.Read ( buffer, offset, count );
+            this.read += streamRead;
+            return streamRead;
+        }
     }
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
-        throw new NotSupportedException();
+    int ReadFromBuffer ( byte [] buffer, int offset, int count ) {
+        int requestedRead = count - offset;
+        long availableRead = Math.Min ( this.bufferedByteLength, this.baseRequest.ContentLength ) - this.read;
+
+        if (availableRead <= 0)
+            return 0;
+
+        long toRead = Math.Min ( requestedRead, availableRead );
+
+        int bufferOffset = this.read + this.baseRequest.BufferHeaderIndex;
+        Array.Copy ( this.baseRequest.BufferedContent, bufferOffset, buffer, offset, toRead );
+
+        return (int) toRead;
     }
 
-    public override void SetLength(long value)
-    {
-        throw new NotSupportedException();
+    public override long Seek ( long offset, SeekOrigin origin ) {
+        return this.s.Seek ( offset, origin );
     }
 
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        throw new NotSupportedException();
+    public override void SetLength ( long value ) {
+        this.s.SetLength ( value );
+    }
+
+    public override void Write ( byte [] buffer, int offset, int count ) {
+        this.s.Write ( buffer, offset, count );
     }
 }

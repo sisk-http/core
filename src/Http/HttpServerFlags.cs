@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -9,13 +9,11 @@
 
 using Sisk.Core.Routing;
 
-namespace Sisk.Core.Http
-{
+namespace Sisk.Core.Http {
     /// <summary>
     /// Provides advanced fields for Sisk server behavior.
     /// </summary>
-    public sealed class HttpServerFlags
-    {
+    public sealed class HttpServerFlags {
         /// <summary>
         /// Determines if the HTTP server should drop requests which has content body in GET, OPTIONS, HEAD and TRACE methods.
         ///     <para>
@@ -125,7 +123,7 @@ namespace Sisk.Core.Http
         ///         Default value: <c>TimeSpan.FromSeconds(120)</c>
         ///     </para>
         /// </summary>
-        public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds(120);
+        public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds ( 120 );
 
         /// <summary>
         /// Determines if the new span-based multipart form reader should be used.
@@ -147,8 +145,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="HttpServerFlags"/> instance with default flags values.
         /// </summary>
-        public HttpServerFlags()
-        {
+        public HttpServerFlags () {
         }
     }
 }

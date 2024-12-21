@@ -1,4 +1,13 @@
-﻿using LightJson;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   JsonRpcException.cs
+// Repository:  https://github.com/sisk-http/core
+
+using LightJson;
 
 namespace Sisk.JsonRPC;
 
@@ -6,8 +15,7 @@ namespace Sisk.JsonRPC;
 /// Represents an error that occur during the JSON-RPC application
 /// execution.
 /// </summary>
-public class JsonRpcException : Exception
-{
+public class JsonRpcException : Exception {
     /// <summary>
     /// Gets the error code associated with the JSON-RPC error.
     /// </summary>
@@ -23,10 +31,9 @@ public class JsonRpcException : Exception
     /// with a specified error message.
     /// </summary>
     /// <param name="message">The error message that explains the reason for the exception.</param>
-    public JsonRpcException(string message) : base(message)
-    {
-        Code = 1;
-        Data = null;
+    public JsonRpcException ( string message ) : base ( message ) {
+        this.Code = 1;
+        this.Data = null;
     }
 
     /// <summary>
@@ -36,18 +43,16 @@ public class JsonRpcException : Exception
     /// <param name="message">The error message that explains the reason for the exception.</param>
     /// <param name="code">The error code associated with the JSON-RPC error.</param>
     /// <param name="data">Additional data associated with the error.</param>
-    public JsonRpcException(string message, int code, object? data) : base(message)
-    {
-        Code = code;
-        Data = data;
+    public JsonRpcException ( string message, int code, object? data ) : base ( message ) {
+        this.Code = code;
+        this.Data = data;
     }
 
     /// <summary>
     /// Converts the current <see cref="JsonRpcException"/> into a <see cref="JsonRpcError"/>.
     /// </summary>
     /// <returns>A <see cref="JsonRpcError"/> representing the error details.</returns>
-    public JsonRpcError AsRpcError()
-    {
-        return new JsonRpcError(Code, Message, JsonValue.Serialize(Data));
+    public JsonRpcError AsRpcError () {
+        return new JsonRpcError ( this.Code, this.Message, JsonValue.Serialize ( this.Data ) );
     }
 }

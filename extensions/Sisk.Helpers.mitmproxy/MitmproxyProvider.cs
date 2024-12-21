@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -16,8 +16,7 @@ namespace Sisk.Helpers.Mitmproxy;
 /// <summary>
 /// Represents a handler for integrating mitmproxy into an HTTP server.
 /// </summary>
-public sealed class MitmproxyProvider : HttpServerHandler
-{
+public sealed class MitmproxyProvider : HttpServerHandler {
     private ChildProcessStartInfo MitmdumpProcessInfo = null!;
     private readonly Action<ChildProcessStartInfo>? setupAction;
 
@@ -39,8 +38,7 @@ public sealed class MitmproxyProvider : HttpServerHandler
     /// <summary>
     /// Initializes a new instance of the <see cref="MitmproxyProvider"/> class.
     /// </summary>
-    public MitmproxyProvider()
-    {
+    public MitmproxyProvider () {
         this.ProxyPort = 0;
     }
 
@@ -49,17 +47,14 @@ public sealed class MitmproxyProvider : HttpServerHandler
     /// </summary>
     /// <param name="proxyPort">The port on which the mitmproxy will listen.</param>
     /// <param name="processSetupAction">Optional. An action to configure the child process start information.</param>
-    public MitmproxyProvider(ushort proxyPort, Action<ChildProcessStartInfo>? processSetupAction = null)
-    {
+    public MitmproxyProvider ( ushort proxyPort, Action<ChildProcessStartInfo>? processSetupAction = null ) {
         this.ProxyPort = proxyPort;
         this.setupAction = processSetupAction;
     }
 
     /// <inheritdoc/>
-    protected override void OnServerStarting(HttpServer server)
-    {
-        ChildProcessStartInfo pinfo = new ChildProcessStartInfo()
-        {
+    protected override void OnServerStarting ( HttpServer server ) {
+        ChildProcessStartInfo pinfo = new ChildProcessStartInfo () {
             FileName = "mitmdump"
         };
 
@@ -67,44 +62,38 @@ public sealed class MitmproxyProvider : HttpServerHandler
         pinfo.StdOutputRedirection = outputRedirection;
         pinfo.StdErrorRedirection = outputRedirection;
 
-        if (this.ProxyPort == 0)
-        {
-            this.ProxyPort = (ushort)(server.ServerConfiguration.ListeningHosts[0].Ports[0].Port + 1);
+        if (this.ProxyPort == 0) {
+            this.ProxyPort = (ushort) (server.ServerConfiguration.ListeningHosts [ 0 ].Ports [ 0 ].Port + 1);
         }
 
-        pinfo.Arguments = ["--mode", $"reverse:{server.ListeningPrefixes[0]}", "-p", this.ProxyPort.ToString()];
+        pinfo.Arguments = [ "--mode", $"reverse:{server.ListeningPrefixes [ 0 ]}", "-p", this.ProxyPort.ToString () ];
 
         if (this.setupAction != null)
-            this.setupAction(pinfo);
+            this.setupAction ( pinfo );
 
         this.MitmdumpProcessInfo = pinfo;
     }
 
     /// <inheritdoc/>
-    protected override void OnServerStarted(HttpServer server)
-    {
-        try
-        {
-            this.MitmdumpProcess = ChildProcess.Start(this.MitmdumpProcessInfo);
+    protected override void OnServerStarted ( HttpServer server ) {
+        try {
+            this.MitmdumpProcess = ChildProcess.Start ( this.MitmdumpProcessInfo );
         }
-        catch (Exception e)
-        {
-            Console.WriteLine("Failed to start the mitmproxy. Perhaps you forgot to install it and make " +
-                "mitmdump executable available in your PATH?");
-            Console.WriteLine($"Inner exception: {e.Message}");
-            Environment.Exit(-1);
+        catch (Exception e) {
+            Console.WriteLine ( "Failed to start the mitmproxy. Perhaps you forgot to install it and make " +
+                "mitmdump executable available in your PATH?" );
+            Console.WriteLine ( $"Inner exception: {e.Message}" );
+            Environment.Exit ( -1 );
         }
     }
 
     /// <inheritdoc/>
-    protected override void OnServerStopping(HttpServer server)
-    {
-        this.MitmdumpProcess.Kill();
+    protected override void OnServerStopping ( HttpServer server ) {
+        this.MitmdumpProcess.Kill ();
     }
 
     /// <inheritdoc/>
-    protected override void OnServerStopped(HttpServer server)
-    {
-        this.MitmdumpProcess.Dispose();
+    protected override void OnServerStopped ( HttpServer server ) {
+        this.MitmdumpProcess.Dispose ();
     }
 }

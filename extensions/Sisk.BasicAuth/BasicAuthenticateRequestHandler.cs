@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2023 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,9 +7,9 @@
 // File name:   BasicAuthenticateRequestHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Text;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
-using System.Text;
 
 namespace Sisk.BasicAuth;
 
@@ -22,8 +22,7 @@ namespace Sisk.BasicAuth;
 /// <type>
 /// Class
 /// </type>
-public class BasicAuthenticateRequestHandler : IRequestHandler
-{
+public class BasicAuthenticateRequestHandler : IRequestHandler {
     /// <summary>
     /// Gets or sets when this RequestHandler should run.
     /// </summary>
@@ -59,8 +58,7 @@ public class BasicAuthenticateRequestHandler : IRequestHandler
     /// <type>
     /// Method
     /// </type>
-    public virtual HttpResponse? OnValidating(BasicAuthenticationCredentials credentials, HttpContext context)
-    {
+    public virtual HttpResponse? OnValidating ( BasicAuthenticationCredentials credentials, HttpContext context ) {
         return null;
     }
 
@@ -74,28 +72,22 @@ public class BasicAuthenticateRequestHandler : IRequestHandler
     /// <type>
     /// Method
     /// </type>
-    public HttpResponse? Execute(HttpRequest request, HttpContext context)
-    {
-        string? authorization = request.Headers["Authorization"];
-        if (authorization == null)
-        {
-            return this.CreateUnauthorizedResponse();
+    public HttpResponse? Execute ( HttpRequest request, HttpContext context ) {
+        string? authorization = request.Headers [ "Authorization" ];
+        if (authorization == null) {
+            return this.CreateUnauthorizedResponse ();
         }
-        else
-        {
-            try
-            {
-                var auth = this.ParseAuth(authorization);
-                if (auth == null)
-                {
-                    throw new Exception();
+        else {
+            try {
+                var auth = this.ParseAuth ( authorization );
+                if (auth == null) {
+                    throw new Exception ();
                 }
-                var res = this.OnValidating(auth, context);
+                var res = this.OnValidating ( auth, context );
                 return res;
             }
-            catch (Exception)
-            {
-                return this.CreateUnauthorizedResponse();
+            catch (Exception) {
+                return this.CreateUnauthorizedResponse ();
             }
         }
     }
@@ -110,10 +102,9 @@ public class BasicAuthenticateRequestHandler : IRequestHandler
     /// <type>
     /// Method
     /// </type>
-    public HttpResponse CreateUnauthorizedResponse(string realm)
-    {
-        var unauth = new HttpResponse(System.Net.HttpStatusCode.Unauthorized);
-        unauth.Headers.Add("WWW-Authenticate", $"Basic realm=\"{realm}\"");
+    public HttpResponse CreateUnauthorizedResponse ( string realm ) {
+        var unauth = new HttpResponse ( System.Net.HttpStatusCode.Unauthorized );
+        unauth.Headers.Add ( "WWW-Authenticate", $"Basic realm=\"{realm}\"" );
         return unauth;
     }
 
@@ -126,31 +117,28 @@ public class BasicAuthenticateRequestHandler : IRequestHandler
     /// <type>
     /// Method
     /// </type>
-    public HttpResponse CreateUnauthorizedResponse()
-    {
-        var unauth = new HttpResponse(System.Net.HttpStatusCode.Unauthorized);
-        unauth.Headers.Add("WWW-Authenticate", $"Basic realm=\"{this.Realm}\"");
+    public HttpResponse CreateUnauthorizedResponse () {
+        var unauth = new HttpResponse ( System.Net.HttpStatusCode.Unauthorized );
+        unauth.Headers.Add ( "WWW-Authenticate", $"Basic realm=\"{this.Realm}\"" );
         return unauth;
     }
 
-    private BasicAuthenticationCredentials? ParseAuth(string s)
-    {
-        try
-        {
-            s = s.Substring(s.IndexOf(' ') + 1);
-            byte[] authBytes = Convert.FromBase64String(s);
-            string authString = Encoding.UTF8.GetString(authBytes);
+    private BasicAuthenticationCredentials? ParseAuth ( string s ) {
+        try {
+            s = s.Substring ( s.IndexOf ( ' ' ) + 1 );
+            byte [] authBytes = Convert.FromBase64String ( s );
+            string authString = Encoding.UTF8.GetString ( authBytes );
 
-            int colonIndex = authString.IndexOf(':');
-            if (colonIndex == -1) return null;
+            int colonIndex = authString.IndexOf ( ':' );
+            if (colonIndex == -1)
+                return null;
 
-            string userid = authString.Substring(0, colonIndex);
-            string pass = authString.Substring(colonIndex + 1);
+            string userid = authString.Substring ( 0, colonIndex );
+            string pass = authString.Substring ( colonIndex + 1 );
 
-            return new BasicAuthenticationCredentials(userid, pass);
+            return new BasicAuthenticationCredentials ( userid, pass );
         }
-        catch (Exception)
-        {
+        catch (Exception) {
             return null;
         }
     }

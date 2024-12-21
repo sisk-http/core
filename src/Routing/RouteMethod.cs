@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,14 +7,12 @@
 // File name:   RouteMethod.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Core.Routing
-{
+namespace Sisk.Core.Routing {
     /// <summary>
     /// Represents an HTTP method to be matched in an <see cref="Route"/>.
     /// </summary>
     [Flags]
-    public enum RouteMethod : int
-    {
+    public enum RouteMethod : int {
         /// <summary>
         /// Represents the HTTP GET method.
         /// </summary>

@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -9,9 +9,8 @@
 
 namespace Sisk.Core.Internal;
 
-internal class MimeTypeList
-{
-    public static string[] InlineMimeTypes =
+internal class MimeTypeList {
+    public static string [] InlineMimeTypes =
     [
         "text/html",
         "text/css",
@@ -50,10 +49,8 @@ internal class MimeTypeList
     // i forked this list from somewhere but can't remember where.
     // if someone found the source, please, open an issue and I will put an
     // credit/reference to it here.
-    public static string? ResolveMimeType(string extension)
-    {
-        return extension switch
-        {
+    public static string? ResolveMimeType ( string extension ) {
+        return extension switch {
             "123" => "application/vnd.lotus-1-2-3",
             "1km" => "application/vnd.1000minds.decision-model+xml",
             "3dml" => "text/vnd.in3d.3dml",

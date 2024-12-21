@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -12,8 +12,7 @@ namespace Sisk.Core.Http.Streams;
 /// <summary>
 /// Provides an automatic ping sender for HTTP Event Source connections.
 /// </summary>
-public sealed class HttpStreamPingPolicy
-{
+public sealed class HttpStreamPingPolicy {
     private readonly HttpWebSocket? __ws_parent;
     private readonly HttpRequestEventSource? __sse_parent;
     private Timer? _timer;
@@ -26,59 +25,50 @@ public sealed class HttpStreamPingPolicy
     /// <summary>
     /// Gets or sets the sending interval for each ping message.
     /// </summary>
-    public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds ( 5 );
 
-    internal HttpStreamPingPolicy(HttpRequestEventSource parent)
-    {
+    internal HttpStreamPingPolicy ( HttpRequestEventSource parent ) {
         this.__sse_parent = parent;
     }
-    internal HttpStreamPingPolicy(HttpWebSocket parent)
-    {
+    internal HttpStreamPingPolicy ( HttpWebSocket parent ) {
         this.__ws_parent = parent;
     }
 
     /// <summary>
     /// Starts sending periodic pings to the client.
     /// </summary>
-    public void Start()
-    {
-        this._timer = new Timer(new TimerCallback(this.OnCallback), null, 0, (int)this.Interval.TotalMilliseconds);
+    public void Start () {
+        this._timer = new Timer ( new TimerCallback ( this.OnCallback ), null, 0, (int) this.Interval.TotalMilliseconds );
     }
-    
+
     /// <summary>
     /// Configures and starts sending periodic pings to the client.
     /// </summary>
     /// <param name="dataMessage">The payload message that is sent to the server as a ping message.</param>
     /// <param name="interval">The sending interval for each ping message.</param>
-    public void Start(string dataMessage, TimeSpan interval)
-    {
+    public void Start ( string dataMessage, TimeSpan interval ) {
         this.DataMessage = dataMessage;
         this.Interval = interval;
 
-        this.Start();
+        this.Start ();
     }
 
-    private void OnCallback(object? state)
-    {
-        if (this.__sse_parent != null)
-        {
-            if (!this.__sse_parent.IsActive)
-            {
-                this._timer!.Dispose();
+    private void OnCallback ( object? state ) {
+        if (this.__sse_parent != null) {
+            if (!this.__sse_parent.IsActive) {
+                this._timer!.Dispose ();
                 return;
             }
             this.__sse_parent.hasSentData = true;
-            this.__sse_parent.sendQueue.Add($"event:ping\ndata: {this.DataMessage}\n\n");
-            this.__sse_parent.Flush();
+            this.__sse_parent.sendQueue.Add ( $"event:ping\ndata: {this.DataMessage}\n\n" );
+            this.__sse_parent.Flush ();
         }
-        else if (this.__ws_parent != null)
-        {
-            if (this.__ws_parent.IsClosed)
-            {
-                this._timer!.Dispose();
+        else if (this.__ws_parent != null) {
+            if (this.__ws_parent.IsClosed) {
+                this._timer!.Dispose ();
                 return;
             }
-            this.__ws_parent.Send(this.DataMessage);
+            this.__ws_parent.Send ( this.DataMessage );
         }
     }
 }

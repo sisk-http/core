@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -16,14 +16,12 @@ using System.Net;
 
 namespace Sisk.Core.Internal;
 
-static class HttpStatusDescription
-{
-    internal static string? Get(HttpStatusCode code) =>
-        Get((int)code);
+static class HttpStatusDescription {
+    internal static string? Get ( HttpStatusCode code ) =>
+        Get ( (int) code );
 
-    internal static string Get(int code) =>
-        code switch
-        {
+    internal static string Get ( int code ) =>
+        code switch {
             100 => "Continue",
             101 => "Switching Protocols",
             102 => "Processing",

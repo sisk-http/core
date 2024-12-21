@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -7,13 +7,11 @@
 // File name:   HttpServerExecutionResult.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Core.Http
-{
+namespace Sisk.Core.Http {
     /// <summary>
     /// Represents the results of an request execution on the HTTP server.
     /// </summary>
-    public sealed class HttpServerExecutionResult
-    {
+    public sealed class HttpServerExecutionResult {
         /// <summary>
         /// Gets the <see cref="HttpRequest"/> received in this diagnosis.
         /// </summary>
@@ -60,14 +58,13 @@ namespace Sisk.Core.Http
         /// </summary>
         public TimeSpan Elapsed { get; internal set; }
 
-        internal HttpServerExecutionResult() { }
+        internal HttpServerExecutionResult () { }
     }
 
     /// <summary>
     /// Represents the status of an execution of a request on an <see cref="HttpServer"/>.
     /// </summary>
-    public enum HttpServerExecutionStatus
-    {
+    public enum HttpServerExecutionStatus {
         /// <summary>
         /// Represents that the request was closed by the HTTP server and executed by a router and its response was succesfully delivered.
         /// </summary>

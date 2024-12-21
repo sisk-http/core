@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2023 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -15,8 +15,7 @@ namespace Sisk.Ssl;
 /// <summary>
 /// Provides event handlers and hooks for <see cref="SslProxy"/>.
 /// </summary>
-public sealed class SslProxyServerHandler : HttpServerHandler
-{
+public sealed class SslProxyServerHandler : HttpServerHandler {
     /// <summary>
     /// Gets the <see cref="SslProxy"/> instance used in this server handler.
     /// </summary>
@@ -27,22 +26,19 @@ public sealed class SslProxyServerHandler : HttpServerHandler
     /// specified <see cref="SslProxy"/> instance.
     /// </summary>
     /// <param name="secureProxy">The <see cref="SslProxy"/> instance.</param>
-    public SslProxyServerHandler(SslProxy secureProxy)
-    {
+    public SslProxyServerHandler ( SslProxy secureProxy ) {
         this.SecureProxy = secureProxy;
     }
 
     /// <exclude/>
     /// <inheritdoc/>
-    protected override void OnServerStarted(HttpServer server)
-    {
-        this.SecureProxy.Start();
+    protected override void OnServerStarted ( HttpServer server ) {
+        this.SecureProxy.Start ();
     }
 
     /// <exclude/>
     /// <inheritdoc/>
-    protected override void OnServerStopping(HttpServer server)
-    {
-        this.SecureProxy.Dispose();
+    protected override void OnServerStopping ( HttpServer server ) {
+        this.SecureProxy.Dispose ();
     }
 }

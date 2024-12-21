@@ -1,5 +1,5 @@
 ﻿// The Sisk Framework source code
-// Copyright (c) 2024 PROJECT PRINCIPIUM
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
@@ -9,19 +9,17 @@
 
 using System.Globalization;
 
-namespace Sisk.Core.Http
-{
+namespace Sisk.Core.Http {
     /// <summary>
     /// Provides execution parameters for an <see cref="HttpServer"/>.
     /// </summary>
-    public sealed class HttpServerConfiguration : IDisposable
-    {
+    public sealed class HttpServerConfiguration : IDisposable {
         private long _maximumContentLength = 0;
 
         /// <summary>
         /// Gets or sets advanced flags and configuration settings for the HTTP server.
         /// </summary>
-        public HttpServerFlags Flags { get; set; } = new HttpServerFlags();
+        public HttpServerFlags Flags { get; set; } = new HttpServerFlags ();
 
         /// <summary>
         /// Gets or sets the access logging format for incoming HTTP requests.
@@ -66,15 +64,12 @@ namespace Sisk.Core.Http
         /// <remarks>
         /// Leave it as "0" to set the maximum content length to unlimited.
         /// </remarks> 
-        public long MaximumContentLength
-        {
-            get
-            {
+        public long MaximumContentLength {
+            get {
                 return this._maximumContentLength;
             }
-            set
-            {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
+            set {
+                ArgumentOutOfRangeException.ThrowIfLessThan ( value, 0 );
 
                 this._maximumContentLength = value;
             }
@@ -88,7 +83,7 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Gets or sets the listening hosts repository that the <see cref="HttpServer"/> instance will listen to.
         /// </summary>
-        public ListeningHostRepository ListeningHosts { get; set; } = new ListeningHostRepository();
+        public ListeningHostRepository ListeningHosts { get; set; } = new ListeningHostRepository ();
 
         /// <summary>
         /// Gets or sets whether the server should throw exceptions instead of reporting it on 
@@ -105,26 +100,23 @@ namespace Sisk.Core.Http
         /// <summary>
         /// Creates an new <see cref="HttpServerConfiguration"/> instance with no parameters.
         /// </summary>
-        public HttpServerConfiguration()
-        {
+        public HttpServerConfiguration () {
         }
 
         /// <summary>
         /// Frees the resources and invalidates this instance.
         /// </summary>
-        public void Dispose()
-        {
-            this.ListeningHosts.Clear();
-            this.AccessLogsStream?.Dispose();
-            this.ErrorsLogsStream?.Dispose();
+        public void Dispose () {
+            this.ListeningHosts.Clear ();
+            this.AccessLogsStream?.Dispose ();
+            this.ErrorsLogsStream?.Dispose ();
         }
     }
 
     /// <summary>
     /// Represents the HTTP server action when receiving an request.
     /// </summary>
-    public enum RequestListenAction
-    {
+    public enum RequestListenAction {
         /// <summary>
         /// The server must accept and route the request.
         /// </summary>
