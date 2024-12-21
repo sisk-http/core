@@ -15,43 +15,38 @@ using CommunityToolkit.HighPerformance;
 
 namespace Sisk.ManagedHttpListener.HttpSerializer;
 
-public sealed class HttpRequestReader {
+public sealed class HttpRequestReader ( Stream _stream ) {
 
     const int BUFFER_SIZE = 512;
+    const int BUFFER_LOOKAHEAD_OFFSET = 64;
 
     const byte SPACE = 0x20;
     const byte CARRIAGE_RETURN = 0x0D; //\r
     const byte DOUBLE_DOTS = 0x3A; // :
 
-    const int BUFFER_LOOKAHEAD_OFFSET = 64;
-
-    // do not dispose
-    private readonly Stream _stream;
-
     static Encoding HeaderEncoding = Encoding.UTF8;
-
-    public HttpRequestReader ( Stream stream ) {
-        this._stream = stream;
-    }
 
     public HttpRequestBase? ReadHttpRequest () {
         byte [] buffer = ArrayPool<byte>.Shared.Rent ( BUFFER_SIZE );
         try {
-            int read = this._stream.Read ( buffer );
+            int read = _stream.Read ( buffer );
             if (read == 0)
                 return null;
 
-            return ParseHttpRequest ( ref buffer, read, this._stream );
+            return this.ParseHttpRequest ( ref buffer, read );
+        }
+        catch {
+            return null;
         }
         finally {
-            ArrayPool<byte>.Shared.Return ( buffer );
+            // return the rented buffer on HttpConnection connection close
         }
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public static unsafe HttpRequestBase? ParseHttpRequest ( ref byte [] inputBuffer, int length, Stream requestStream ) {
-        // 
-        bool requestStreamReturnedZero = false;
+    public HttpRequestBase? ParseHttpRequest ( ref byte [] inputBuffer, int length ) {
+        ;
+        bool requestStreamFinished = false;
 
         ReadOnlySpan<byte> buffer = inputBuffer;
 
@@ -110,6 +105,22 @@ public sealed class HttpRequestReader {
                     break;
 
                 case 3:
+                    // checks whether the current buffer has all the request headers. if not, read more data from the buffer
+                    int bufferLength = buffer.Length;
+                    if (i + BUFFER_LOOKAHEAD_OFFSET > bufferLength && !requestStreamFinished) {
+                        ArrayPoolExtensions.Resize ( ArrayPool<byte>.Shared, ref inputBuffer, bufferLength * 2, clearArray: false );
+                        int count = inputBuffer.Length - bufferLength;
+                        int read = _stream.Read ( inputBuffer, bufferLength - 1, count );
+                        if (read > 0) {
+                            buffer = inputBuffer; // recreate the span over the input buffer
+                            firstByte = ref MemoryMarshal.GetReference ( buffer );
+                            length += read;
+                        }
+                        if (read < count) {
+                            requestStreamFinished = true;
+                        }
+                    }
+
                     if (b == CARRIAGE_RETURN) {
                         headerLine = buffer [ (headerLineIndex + 1)..i ];
                         headerLineIndex = i + 1; //+1 includes \LF
@@ -134,21 +145,6 @@ public sealed class HttpRequestReader {
                         headers.Add ( (headerName, headerValue) );
                     }
 
-                    // checks whether the current buffer has all the request headers. if not, read more data from the buffer
-                    int bufferLength = buffer.Length;
-                    if (i + BUFFER_LOOKAHEAD_OFFSET > bufferLength && !requestStreamReturnedZero) {
-                        ArrayPoolExtensions.Resize ( ArrayPool<byte>.Shared, ref inputBuffer, bufferLength * 2, clearArray: false );
-                        int nextRead = requestStream.Read ( inputBuffer, bufferLength - 1, inputBuffer.Length - bufferLength );
-                        if (nextRead > 0) {
-                            buffer = inputBuffer; // recreate the span over the input buffer
-                            firstByte = ref MemoryMarshal.GetReference ( buffer );
-                            length += nextRead;
-                        }
-                        else {
-                            requestStreamReturnedZero = true;
-                        }
-                    }
-
                     break;
             }
 
@@ -162,7 +158,7 @@ public sealed class HttpRequestReader {
             version: HeaderEncoding.GetString ( version ),
             headerEnd: headerSize,
             headers: headers,
-            bufferedContent: inputBuffer,
+            bufferedContent: ref inputBuffer,
             contentLength: contentLength
         );
     }

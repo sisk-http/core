@@ -27,7 +27,7 @@ public class HttpRequestBase {
 
     public byte [] BufferedContent;
 
-    public HttpRequestBase ( string method, string path, string version, List<(string, string)> headers, int headerEnd, long contentLength, byte [] bufferedContent ) {
+    public HttpRequestBase ( string method, string path, string version, List<(string, string)> headers, int headerEnd, long contentLength, ref byte [] bufferedContent ) {
         this.Method = method ?? throw new ArgumentNullException ( nameof ( method ) );
         this.Path = path ?? throw new ArgumentNullException ( nameof ( path ) );
         this.Version = version ?? throw new ArgumentNullException ( nameof ( version ) );

@@ -7,6 +7,7 @@
 // File name:   HttpConnection.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Buffers;
 using Sisk.ManagedHttpListener.HttpSerializer;
 
 namespace Sisk.ManagedHttpListener;
@@ -76,11 +77,10 @@ public sealed class HttpConnection : IDisposable {
                     break;
                 }
             }
-            catch (Exception) {
-                ;
-            }
             finally {
                 responseStream?.Dispose ();
+                if (nextRequest is not null)
+                    ArrayPool<byte>.Shared.Return ( nextRequest.BufferedContent );
             }
         }
 
