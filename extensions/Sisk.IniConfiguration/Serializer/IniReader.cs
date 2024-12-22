@@ -17,6 +17,8 @@ namespace Sisk.IniConfiguration.Serializer;
 public sealed class IniReader : IDisposable {
     internal static readonly StringComparer IniNamingComparer = StringComparer.InvariantCultureIgnoreCase;
 
+    internal const string INITIAL_SECTION_NAME = "__SISKINIGLOBAL__";
+
     private readonly TextReader reader;
     private bool disposedValue;
 
@@ -40,7 +42,7 @@ public sealed class IniReader : IDisposable {
     public IniDocument Read () {
         this.ThrowIfDisposed ();
 
-        string lastSectionName = "__SISKINIGLOBAL__";
+        string lastSectionName = INITIAL_SECTION_NAME;
         List<(string, string)> items = new List<(string, string)> ();
         List<IniSection> creatingSections = new List<IniSection> ();
 

@@ -13,10 +13,11 @@ using System.Runtime.CompilerServices;
 namespace Sisk.ManagedHttpListener;
 
 static class Logger {
+
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public static void LogInformation ( string? message ) {
 #if VERBOSE && DEBUG
-        Debug.WriteLine ( $"Sisk.ManagedHttpListener~ {message}" );
+        Debug.WriteLine ( $"Sisk.ManagedHttpListener [{DateTime.Now:R}] {message}" );
 #endif
     }
 }

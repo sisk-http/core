@@ -15,9 +15,11 @@ using CommunityToolkit.HighPerformance;
 
 namespace Sisk.ManagedHttpListener.HttpSerializer;
 
-public sealed class HttpRequestReader ( Stream _stream ) {
+sealed class HttpRequestReader {
 
-    const int BUFFER_SIZE = 512;
+    Stream _stream;
+    byte [] buffer;
+
     const int BUFFER_LOOKAHEAD_OFFSET = 64;
 
     const byte SPACE = 0x20;
@@ -26,26 +28,37 @@ public sealed class HttpRequestReader ( Stream _stream ) {
 
     static Encoding HeaderEncoding = Encoding.UTF8;
 
-    public HttpRequestBase? ReadHttpRequest () {
-        byte [] buffer = ArrayPool<byte>.Shared.Rent ( BUFFER_SIZE );
-        try {
-            int read = _stream.Read ( buffer );
-            if (read == 0)
-                return null;
+    public HttpRequestReader ( Stream stream, ref byte [] buffer ) {
+        this._stream = stream;
+        this.buffer = buffer;
+    }
 
-            return this.ParseHttpRequest ( ref buffer, read );
+    public async ValueTask<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
+        try {
+
+            int read = await this._stream.ReadAsync ( this.buffer );
+
+            if (read == 0) {
+                return (HttpRequestReadState.StreamZero, null);
+            }
+
+            var request = this.ParseHttpRequest ( ref this.buffer, read );
+            return (HttpRequestReadState.RequestRead, request);
         }
-        catch {
-            return null;
-        }
-        finally {
-            // return the rented buffer on HttpConnection connection close
+        catch (Exception ex) {
+            Logger.LogInformation ( $"HttpRequestReader finished with exception: {ex.Message}" );
+            return (HttpRequestReadState.StreamError, null);
         }
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public HttpRequestBase? ParseHttpRequest ( ref byte [] inputBuffer, int length ) {
-        ;
+
+        const int STEP_READ_METHOD = 0;
+        const int STEP_READ_PATH = 1;
+        const int STEP_READ_VERSION = 2;
+        const int STEP_READ_HEADERS = 3;
+
         bool requestStreamFinished = false;
 
         ReadOnlySpan<byte> buffer = inputBuffer;
@@ -62,7 +75,7 @@ public sealed class HttpRequestReader ( Stream _stream ) {
         // 1 = parse url
         // 2 = parse version
         // 3 = parse header line
-        int step = 0;
+        int step = STEP_READ_METHOD;
 
         int methodIndex = 0;
         int pathIndex = 0;
@@ -71,46 +84,49 @@ public sealed class HttpRequestReader ( Stream _stream ) {
         int headerLineSepIndex = 0;
 
         int headerSize = -1;
+        bool keepAliveEnabled = true;
         long contentLength = 0;
+
         List<(string, string)> headers = new List<(string, string)> ( 16 );
 
         ref byte firstByte = ref MemoryMarshal.GetReference ( buffer );
         for (int i = 0; i < length; i++) {
-            ref byte b = ref Unsafe.Add ( ref firstByte, i );
+            ref byte currentByte = ref Unsafe.Add ( ref firstByte, i );
 
             switch (step) {
-                case 0:
-                    if (b == SPACE) {
+                case STEP_READ_METHOD:
+                    if (currentByte == SPACE) {
                         methodIndex = i;
                         method = buffer [ 0..i ];
-                        step = 1;
+                        step = STEP_READ_PATH;
                     }
                     break;
 
-                case 1:
-                    if (b == SPACE) {
+                case STEP_READ_PATH:
+                    if (currentByte == SPACE) {
                         pathIndex = i;
                         path = buffer [ (methodIndex + 1)..i ];
-                        step = 2;
+                        step = STEP_READ_VERSION;
                     }
                     break;
 
-                case 2:
-                    if (b == CARRIAGE_RETURN) {
+                case STEP_READ_VERSION:
+                    if (currentByte == CARRIAGE_RETURN) {
                         versionIndex = i;
                         version = buffer [ (pathIndex + 1)..i ];
                         headerLineIndex = i + 1; //+1 includes \LF
-                        step = 3;
+                        step = STEP_READ_HEADERS;
                     }
                     break;
 
-                case 3:
+                case STEP_READ_HEADERS:
+
                     // checks whether the current buffer has all the request headers. if not, read more data from the buffer
                     int bufferLength = buffer.Length;
                     if (i + BUFFER_LOOKAHEAD_OFFSET > bufferLength && !requestStreamFinished) {
                         ArrayPoolExtensions.Resize ( ArrayPool<byte>.Shared, ref inputBuffer, bufferLength * 2, clearArray: false );
                         int count = inputBuffer.Length - bufferLength;
-                        int read = _stream.Read ( inputBuffer, bufferLength - 1, count );
+                        int read = this._stream.Read ( inputBuffer, bufferLength - 1, count );
                         if (read > 0) {
                             buffer = inputBuffer; // recreate the span over the input buffer
                             firstByte = ref MemoryMarshal.GetReference ( buffer );
@@ -121,7 +137,7 @@ public sealed class HttpRequestReader ( Stream _stream ) {
                         }
                     }
 
-                    if (b == CARRIAGE_RETURN) {
+                    if (currentByte == CARRIAGE_RETURN) {
                         headerLine = buffer [ (headerLineIndex + 1)..i ];
                         headerLineIndex = i + 1; //+1 includes \LF
 
@@ -141,6 +157,9 @@ public sealed class HttpRequestReader ( Stream _stream ) {
                         if (string.Compare ( headerName, "Content-Length", StringComparison.OrdinalIgnoreCase ) == 0) {
                             contentLength = long.Parse ( headerValue );
                         }
+                        else if (string.Compare ( headerName, "Connection", StringComparison.OrdinalIgnoreCase ) == 0) {
+                            keepAliveEnabled = string.Compare ( headerValue, "close", StringComparison.Ordinal ) != 0;
+                        }
 
                         headers.Add ( (headerName, headerValue) );
                     }
@@ -152,14 +171,17 @@ public sealed class HttpRequestReader ( Stream _stream ) {
                 break;
         }
 
-        return new HttpRequestBase (
-            method: HeaderEncoding.GetString ( method ),
-            path: HeaderEncoding.GetString ( path ),
-            version: HeaderEncoding.GetString ( version ),
-            headerEnd: headerSize,
-            headers: headers,
-            bufferedContent: ref inputBuffer,
-            contentLength: contentLength
-        );
+        return new HttpRequestBase () {
+            BufferedContent = inputBuffer,
+            BufferHeaderIndex = headerSize,
+
+            Headers = headers,
+            Method = HeaderEncoding.GetString ( method ),
+            Path = HeaderEncoding.GetString ( path ),
+            Version = HeaderEncoding.GetString ( version ),
+
+            ContentLength = contentLength,
+            CanKeepAlive = keepAliveEnabled
+        };
     }
 }

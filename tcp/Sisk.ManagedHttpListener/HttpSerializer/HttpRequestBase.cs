@@ -9,31 +9,21 @@
 
 namespace Sisk.ManagedHttpListener.HttpSerializer;
 
-// TODO make this class internal
-public class HttpRequestBase {
-    public string Method;
-    public string Path;
-    public string Version;
+class HttpRequestBase {
+    public required string Method;
+    public required string Path;
+    public required string Version;
 
-    public List<(string, string)> Headers;
+    public required List<(string, string)> Headers;
 
     public long ContentLength;
+
+    public bool CanKeepAlive;
 
     /// <summary>
     /// Gets the index in the <see cref="BufferedContent"/> where the header parsing is terminated, including
     /// the lasts CRLF.
     /// </summary>
     public int BufferHeaderIndex;
-
-    public byte [] BufferedContent;
-
-    public HttpRequestBase ( string method, string path, string version, List<(string, string)> headers, int headerEnd, long contentLength, ref byte [] bufferedContent ) {
-        this.Method = method ?? throw new ArgumentNullException ( nameof ( method ) );
-        this.Path = path ?? throw new ArgumentNullException ( nameof ( path ) );
-        this.Version = version ?? throw new ArgumentNullException ( nameof ( version ) );
-        this.Headers = headers ?? throw new ArgumentNullException ( nameof ( headers ) );
-        this.BufferHeaderIndex = headerEnd;
-        this.ContentLength = contentLength;
-        this.BufferedContent = bufferedContent;
-    }
+    public required byte [] BufferedContent;
 }

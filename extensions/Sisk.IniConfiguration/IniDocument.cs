@@ -13,9 +13,15 @@ using Sisk.IniConfiguration.Serializer;
 namespace Sisk.IniConfiguration;
 
 /// <summary>
-/// Represents an INI configuration document.
+/// Represents an INI document.
 /// </summary>
 public sealed class IniDocument {
+
+    /// <summary>
+    /// Represents an empty <see cref="IniDocument"/> with no entry on it.
+    /// </summary>
+    public static readonly IniDocument Empty = new IniDocument ( Array.Empty<IniSection> () );
+
     /// <summary>
     /// Gets all INI sections defined in this INI document.
     /// </summary>
@@ -24,7 +30,15 @@ public sealed class IniDocument {
     /// <summary>
     /// Gets the global INI section, which is the primary section in the document.
     /// </summary>
-    public IniSection Global { get => this.Sections [ 0 ]; }
+    public IniSection Global {
+        get {
+            if (this.Sections.Count == 0) {
+                return new IniSection ( IniReader.INITIAL_SECTION_NAME, Array.Empty<(string, string)> () );
+            }
+            else
+                return this.Sections [ 0 ];
+        }
+    }
 
     /// <summary>
     /// Creates an new <see cref="IniDocument"/> document from the specified
@@ -43,7 +57,11 @@ public sealed class IniDocument {
     /// </summary>
     /// <param name="filePath">The absolute or relative file path to the INI document.</param>
     /// <param name="encoding">Optional. The encoding used to read the file. Defaults to UTF-8.</param>
-    public static IniDocument FromFile ( string filePath, Encoding? encoding = null ) {
+    /// <param name="throwIfNotExists">Optional. Defines whether this method should throw if the specified file doens't exists or return an empty INI document.</param>
+    public static IniDocument FromFile ( string filePath, Encoding? encoding = null, bool throwIfNotExists = true ) {
+        if (!throwIfNotExists && !File.Exists ( filePath ))
+            return IniDocument.Empty;
+
         using TextReader reader = new StreamReader ( filePath, encoding ?? Encoding.UTF8 );
         using IniReader parser = new IniReader ( reader );
         return parser.Read ();

@@ -12,22 +12,38 @@ using System.Text;
 namespace Sisk.ManagedHttpListener.HttpSerializer;
 
 internal static class HttpResponseSerializer {
-    public static bool WriteHttpResponseHeaders ( Stream outgoingStream, int statusCode, string statusDescription, List<(string, string)> headers ) {
-        try {
-            string protocolLine = $"HTTP/1.1 {statusCode} {statusDescription}\r\n";
-            outgoingStream.Write ( Encoding.ASCII.GetBytes ( protocolLine ) );
 
-            var headerCount = headers.Count;
+    const int RESPONSE_HEADERS_INITIAL_CAPACITY = 128;
+
+    public static async ValueTask<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpResponse response ) {
+        try {
+
+            StringBuilder responseHeaderBuilder = new StringBuilder ( capacity: RESPONSE_HEADERS_INITIAL_CAPACITY );
+            responseHeaderBuilder.Append ( "HTTP/1.1 " );
+            responseHeaderBuilder.Append ( response.StatusCode );
+            responseHeaderBuilder.Append ( ' ' );
+            responseHeaderBuilder.Append ( response.StatusDescription );
+            responseHeaderBuilder.Append ( "\r\n" );
+
+            var headerCount = response.Headers.Count;
             for (int i = 0; i < headerCount; i++) {
-                var header = headers [ i ];
-                string headerLine = $"{header.Item1}: {header.Item2}\r\n";
-                outgoingStream.Write ( Encoding.UTF8.GetBytes ( headerLine ) );
+                var header = response.Headers [ i ];
+                responseHeaderBuilder.Append ( header.Item1 );
+                responseHeaderBuilder.Append ( ": " );
+                responseHeaderBuilder.Append ( header.Item2 );
+                responseHeaderBuilder.Append ( "\r\n" );
             }
 
-            outgoingStream.Write ( Encoding.ASCII.GetBytes ( "\r\n" ) );
+            responseHeaderBuilder.Append ( "\r\n" );
+
+            byte [] responseHeaderBytes = Encoding.UTF8.GetBytes ( responseHeaderBuilder.ToString () );
+
+            await outgoingStream.WriteAsync ( responseHeaderBytes );
+
             return true;
         }
-        catch {
+        catch (Exception ex) {
+            Logger.LogInformation ( $"HttpResponseSerializer finished with exception: {ex.Message}" );
             return false;
         }
     }
