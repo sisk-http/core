@@ -8,8 +8,10 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
+using System.IO.Compression;
 using System.Net.Sockets;
 using Sisk.ManagedHttpListener.HttpSerializer;
+using Sisk.ManagedHttpListener.Streams;
 
 namespace Sisk.ManagedHttpListener;
 
@@ -72,7 +74,8 @@ sealed class HttpConnection : IDisposable {
                         managedSession.Response.Headers.Set ( ("Content-Length", responseStream.Length.ToString ()) );
                     }
                     else {
-                        // implement chunked-encodind
+                        managedSession.Response.Headers.Set ( ("Transfer-Encoding", "chunked") );
+                        responseStream = new HttpChunkedStream ( responseStream );
                     }
                 }
                 else {
