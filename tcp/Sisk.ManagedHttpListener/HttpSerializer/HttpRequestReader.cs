@@ -121,15 +121,18 @@ sealed class HttpRequestReader {
 
                     // checks whether the current buffer has all the request headers. if not, read more data from the buffer
                     int bufferLength = buffer.Length;
-                    if (i + BUFFER_LOOKAHEAD_OFFSET > bufferLength && !requestStreamFinished) {
+
+                    if (!requestStreamFinished && i + BUFFER_LOOKAHEAD_OFFSET > bufferLength) {
                         ArrayPool<byte>.Shared.Resize ( ref inputBuffer, inputBuffer.Length * 2, clearArray: false );
                         int count = inputBuffer.Length - bufferLength;
                         int read = this._stream.Read ( inputBuffer, bufferLength - 1, count );
+
                         if (read > 0) {
                             buffer = inputBuffer; // recreate the span over the input buffer
                             firstByte = ref MemoryMarshal.GetReference ( buffer );
                             length += read;
                         }
+
                         if (read < count) {
                             requestStreamFinished = true;
                         }

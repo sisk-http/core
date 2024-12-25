@@ -57,7 +57,7 @@ sealed class HttpConnection : IDisposable {
                     };
                 }
 
-                Logger.LogInformation ( $"[{this.Id}] Received \"{nextRequest.Method} {nextRequest.Path}\"" );
+                //Logger.LogInformation ( $"[{this.Id}] Received \"{nextRequest.Method} {nextRequest.Path}\"" );
                 HttpSession managedSession = new HttpSession ( nextRequest, this._connectionStream );
 
                 this.Action ( managedSession );
@@ -89,7 +89,7 @@ sealed class HttpConnection : IDisposable {
                     managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
                 }
 
-                if (await HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, managedSession.Response ) == false) {
+                if (!managedSession.ResponseHeadersAlreadySent && !await managedSession.WriteHttpResponseHeaders ()) {
 
                     return HttpConnectionState.ResponseWriteException;
                 }
@@ -103,7 +103,7 @@ sealed class HttpConnection : IDisposable {
 
                 this._connectionStream.Flush ();
 
-                Logger.LogInformation ( $"[{this.Id}] Response sent: {managedSession.Response.StatusCode} {managedSession.Response.StatusDescription}" );
+                //Logger.LogInformation ( $"[{this.Id}] Response sent: {managedSession.Response.StatusCode} {managedSession.Response.StatusDescription}" );
 
                 if (connectionCloseRequested) {
                     break;

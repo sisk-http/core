@@ -15,7 +15,9 @@ internal static class HttpResponseSerializer {
 
     public static async Task<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpResponse response ) {
         try {
-            using var ms = new MemoryStream ( 1024 );
+            const int BUFFER_SIZE = 2048;
+
+            using var ms = new MemoryStream ( BUFFER_SIZE );
             const byte SPACE = 0x20;
 
             ms.Write ( "HTTP/1.1 "u8 );
@@ -36,12 +38,12 @@ internal static class HttpResponseSerializer {
             ms.Write ( "\r\n"u8 );
 
             ms.Position = 0;
-            await ms.CopyToAsync ( outgoingStream );
+            await ms.CopyToAsync ( outgoingStream, BUFFER_SIZE );
 
             return true;
         }
         catch (Exception ex) {
-            Logger.LogInformation ( $"HttpResponseSerializer finished with exception: {ex.Message}" );
+            //Logger.LogInformation ( $"HttpResponseSerializer finished with exception: {ex.Message}" );
             return false;
         }
     }

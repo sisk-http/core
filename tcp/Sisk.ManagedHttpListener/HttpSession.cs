@@ -13,14 +13,30 @@ using Sisk.ManagedHttpListener.Streams;
 namespace Sisk.ManagedHttpListener;
 
 public sealed class HttpSession {
+
+    private Stream _connectionStream;
+    internal bool ResponseHeadersAlreadySent = false;
+
+    internal Task<bool> WriteHttpResponseHeaders () {
+        if (this.ResponseHeadersAlreadySent) {
+            return Task.FromResult ( true );
+        }
+
+        this.ResponseHeadersAlreadySent = true;
+        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this.Response );
+    }
+
+
     public HttpRequest Request { get; }
     public HttpResponse Response { get; }
 
     public bool KeepAlive { get; set; } = true;
 
-    internal HttpSession ( HttpRequestBase baseRequest, Stream contentStream ) {
-        HttpRequestStream requestStream = new HttpRequestStream ( contentStream, baseRequest );
+    internal HttpSession ( HttpRequestBase baseRequest, Stream connectionStream ) {
+        this._connectionStream = connectionStream;
+
+        HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
         this.Request = new HttpRequest ( baseRequest, requestStream );
-        this.Response = new HttpResponse ();
+        this.Response = new HttpResponse ( this, connectionStream );
     }
 }

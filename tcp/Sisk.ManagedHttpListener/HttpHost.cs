@@ -90,7 +90,7 @@ public sealed class HttpHost : IDisposable {
             using (HttpConnection connection = new HttpConnection ( connectionStream, this.ActionHandler )) {
 
                 if (connectionStream is SslStream sslStream && this.HttpsOptions is not null) {
-                    Logger.LogInformation ( $"[{connection.Id}] Begin SSL authenticate" );
+                    //Logger.LogInformation ( $"[{connection.Id}] Begin SSL authenticate" );
                     try {
                         await sslStream.AuthenticateAsServerAsync (
                             serverCertificate: this.HttpsOptions.ServerCertificate,
@@ -99,14 +99,14 @@ public sealed class HttpHost : IDisposable {
                             enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
                     }
                     catch (Exception ex) {
-                        Logger.LogInformation ( $"[{connection.Id}] Failed SSL authenticate: {ex.Message}" );
+                        //Logger.LogInformation ( $"[{connection.Id}] Failed SSL authenticate: {ex.Message}" );
                     }
                 }
 
-                Logger.LogInformation ( $"[{connection.Id}] Begin handle connection" );
+                //Logger.LogInformation ( $"[{connection.Id}] Begin handle connection" );
                 var state = await connection.HandleConnectionEvents ();
 
-                Logger.LogInformation ( $"[{connection.Id}] Ended handling connection with state {state}" );
+                //Logger.LogInformation ( $"[{connection.Id}] Ended handling connection with state {state}" );
 
             }
         }
