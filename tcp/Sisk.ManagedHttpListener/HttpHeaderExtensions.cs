@@ -8,14 +8,19 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Collections;
+using System.Runtime.InteropServices;
+using System.Text;
+using Sisk.ManagedHttpListener.HttpSerializer;
 
 namespace Sisk.ManagedHttpListener;
 
 internal static class HttpHeaderExtensions {
-    public static void Set ( this List<(string, string)> headers, (string, string) header ) {
+    public static void Set ( this List<HttpHeader> headers, in HttpHeader header ) {
         lock (((ICollection) headers).SyncRoot) {
-            for (int i = headers.Count - 1; i >= 0; i--) {
-                if (StringComparer.OrdinalIgnoreCase.Compare ( headers [ i ].Item1, header.Item1 ) == 0) {
+
+            var span = CollectionsMarshal.AsSpan ( headers );
+            for (int i = span.Length - 1; i >= 0; i--) {
+                if (Ascii.EqualsIgnoreCase ( span [ i ].NameBytes.Span, header.NameBytes.Span )) {
                     headers.RemoveAt ( i );
                 }
             }

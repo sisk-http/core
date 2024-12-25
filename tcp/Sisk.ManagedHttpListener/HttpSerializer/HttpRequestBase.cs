@@ -14,7 +14,7 @@ class HttpRequestBase {
     public required string Path;
     public required string Version;
 
-    public required List<(string, string)> Headers;
+    public required HttpHeader [] Headers;
 
     public long ContentLength;
 

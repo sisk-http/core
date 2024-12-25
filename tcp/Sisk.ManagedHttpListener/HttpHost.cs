@@ -63,8 +63,7 @@ public sealed class HttpHost : IDisposable {
         await this.writerQueue.WriteAsync ( client );
     }
 
-    private async Task HandleTcpClient ( object? obj ) {
-        TcpClient client = (TcpClient) obj!;
+    private async Task HandleTcpClient ( TcpClient client ) {
         try {
             { // setup the tcpclient
                 client.NoDelay = true;

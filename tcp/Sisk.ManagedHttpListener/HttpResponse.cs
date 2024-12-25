@@ -7,21 +7,28 @@
 // File name:   HttpResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.ManagedHttpListener.HttpSerializer;
+
 namespace Sisk.ManagedHttpListener;
 
 public sealed class HttpResponse {
     public int StatusCode { get; set; }
     public string StatusDescription { get; set; }
-    public List<(string, string)> Headers { get; set; }
+    public List<HttpHeader> Headers { get; set; }
+
+    public TransferEncoding TransferEncoding { get; set; }
+
+    // MUST SPECIFY ResponseStream OR ResponseBytes, NOT BOTH
     public Stream? ResponseStream { get; set; }
+    public byte []? ResponseBytes { get; set; }
 
     internal HttpResponse () {
         this.StatusCode = 200;
         this.StatusDescription = "Ok";
-        this.Headers = new List<(string, string)>
+        this.Headers = new List<HttpHeader>
             {
-                ("Date", DateTime.Now.ToString("R")),
-                ("Server", "Sisk")
+                new HttpHeader ("Date", DateTime.Now.ToString("R")),
+                new HttpHeader ("Server", "Sisk")
             };
     }
 }

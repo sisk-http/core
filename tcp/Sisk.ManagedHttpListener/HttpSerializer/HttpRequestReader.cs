@@ -11,7 +11,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using CommunityToolkit.HighPerformance;
+using Sisk.ManagedHttpListener.HighPerformance;
 
 namespace Sisk.ManagedHttpListener.HttpSerializer;
 
@@ -26,14 +26,12 @@ sealed class HttpRequestReader {
     const byte CARRIAGE_RETURN = 0x0D; //\r
     const byte DOUBLE_DOTS = 0x3A; // :
 
-    static Encoding HeaderEncoding = Encoding.UTF8;
-
     public HttpRequestReader ( Stream stream, ref byte [] buffer ) {
         this._stream = stream;
         this.buffer = buffer;
     }
 
-    public async ValueTask<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
+    public async Task<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
         try {
 
             int read = await this._stream.ReadAsync ( this.buffer );
@@ -87,7 +85,7 @@ sealed class HttpRequestReader {
         bool keepAliveEnabled = true;
         long contentLength = 0;
 
-        List<(string, string)> headers = new List<(string, string)> ( 16 );
+        List<HttpHeader> headers = new List<HttpHeader> ( 64 );
 
         ref byte firstByte = ref MemoryMarshal.GetReference ( buffer );
         for (int i = 0; i < length; i++) {
@@ -124,7 +122,7 @@ sealed class HttpRequestReader {
                     // checks whether the current buffer has all the request headers. if not, read more data from the buffer
                     int bufferLength = buffer.Length;
                     if (i + BUFFER_LOOKAHEAD_OFFSET > bufferLength && !requestStreamFinished) {
-                        ArrayPoolExtensions.Resize ( ArrayPool<byte>.Shared, ref inputBuffer, bufferLength * 2, clearArray: false );
+                        ArrayPool<byte>.Shared.Resize ( ref inputBuffer, inputBuffer.Length * 2, clearArray: false );
                         int count = inputBuffer.Length - bufferLength;
                         int read = this._stream.Read ( inputBuffer, bufferLength - 1, count );
                         if (read > 0) {
@@ -151,17 +149,14 @@ sealed class HttpRequestReader {
                         headerLineName = headerLine [ 0..headerLineSepIndex ];
                         headerLineValue = headerLine [ (headerLineSepIndex + 2).. ]; // +2 = : and the space
 
-                        string headerName = HeaderEncoding.GetString ( headerLineName );
-                        string headerValue = HeaderEncoding.GetString ( headerLineValue );
-
-                        if (string.Compare ( headerName, "Content-Length", StringComparison.OrdinalIgnoreCase ) == 0) {
-                            contentLength = long.Parse ( headerValue );
+                        if (Ascii.EqualsIgnoreCase ( headerLineName, "Content-Length"u8 )) {
+                            contentLength = long.Parse ( Encoding.ASCII.GetString ( headerLineValue ) );
                         }
-                        else if (string.Compare ( headerName, "Connection", StringComparison.OrdinalIgnoreCase ) == 0) {
-                            keepAliveEnabled = string.Compare ( headerValue, "close", StringComparison.Ordinal ) != 0;
+                        else if (Ascii.EqualsIgnoreCase ( headerLineName, "Connection"u8 )) {
+                            keepAliveEnabled = !headerLineValue.SequenceEqual ( "close"u8 );
                         }
 
-                        headers.Add ( (headerName, headerValue) );
+                        headers.Add ( new HttpHeader ( headerLineName.ToArray (), headerLineValue.ToArray () ) );
                     }
 
                     break;
@@ -175,10 +170,10 @@ sealed class HttpRequestReader {
             BufferedContent = inputBuffer,
             BufferHeaderIndex = headerSize,
 
-            Headers = headers,
-            Method = HeaderEncoding.GetString ( method ),
-            Path = HeaderEncoding.GetString ( path ),
-            Version = HeaderEncoding.GetString ( version ),
+            Headers = headers.ToArray (),
+            Method = Encoding.ASCII.GetString ( method ),
+            Path = Encoding.ASCII.GetString ( path ),
+            Version = Encoding.ASCII.GetString ( version ),
 
             ContentLength = contentLength,
             CanKeepAlive = keepAliveEnabled

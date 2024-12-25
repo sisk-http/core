@@ -13,32 +13,30 @@ namespace Sisk.ManagedHttpListener.HttpSerializer;
 
 internal static class HttpResponseSerializer {
 
-    const int RESPONSE_HEADERS_INITIAL_CAPACITY = 128;
-
-    public static async ValueTask<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpResponse response ) {
+    public static async Task<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpResponse response ) {
         try {
+            using var ms = new MemoryStream ( 1024 );
+            const byte SPACE = 0x20;
 
-            StringBuilder responseHeaderBuilder = new StringBuilder ( capacity: RESPONSE_HEADERS_INITIAL_CAPACITY );
-            responseHeaderBuilder.Append ( "HTTP/1.1 " );
-            responseHeaderBuilder.Append ( response.StatusCode );
-            responseHeaderBuilder.Append ( ' ' );
-            responseHeaderBuilder.Append ( response.StatusDescription );
-            responseHeaderBuilder.Append ( "\r\n" );
+            ms.Write ( "HTTP/1.1 "u8 );
+            ms.Write ( Encoding.UTF8.GetBytes ( response.StatusCode.ToString () ) );
+            ms.WriteByte ( SPACE );
+            ms.Write ( Encoding.UTF8.GetBytes ( response.StatusDescription.ToString () ) );
+            ms.Write ( "\r\n"u8 );
 
-            var headerCount = response.Headers.Count;
-            for (int i = 0; i < headerCount; i++) {
+            for (int i = 0; i < response.Headers.Count; i++) {
                 var header = response.Headers [ i ];
-                responseHeaderBuilder.Append ( header.Item1 );
-                responseHeaderBuilder.Append ( ": " );
-                responseHeaderBuilder.Append ( header.Item2 );
-                responseHeaderBuilder.Append ( "\r\n" );
+
+                ms.Write ( header.NameBytes.Span );
+                ms.Write ( ": "u8 );
+                ms.Write ( header.ValueBytes.Span );
+                ms.Write ( "\r\n"u8 );
             }
 
-            responseHeaderBuilder.Append ( "\r\n" );
+            ms.Write ( "\r\n"u8 );
 
-            byte [] responseHeaderBytes = Encoding.UTF8.GetBytes ( responseHeaderBuilder.ToString () );
-
-            await outgoingStream.WriteAsync ( responseHeaderBytes );
+            ms.Position = 0;
+            await ms.CopyToAsync ( outgoingStream );
 
             return true;
         }

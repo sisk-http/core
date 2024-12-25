@@ -37,9 +37,10 @@ The current status of the implementation is:
 
 | Resource | Status | Notes |
 | ------- | ------ | ----------- |
-| Base HTTP/1.1 Reader | Needs testing | |
-| HTTPS | Needs testing | |
-| Chunked transfer-encoding | Needs testing |  |
+| Base HTTP/1.1 Reader | OK - Needs testing | |
+| HTTPS | OK - Needs testing | |
+| Chunked transfer-encoding | OK - Needs testing | Only for responses. |
+| Gzip transfer encoding | Not implemented | Implement for both request and response. |
 | Expect-100 header | Not implemented | There is already an implementation in Sisk.SslProxy. |
 | SSE/Response content streaming | Not implemented |  |
 | Web Sockets | Not implemented |  |

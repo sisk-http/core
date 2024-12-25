@@ -8,8 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
-using System.IO.Compression;
-using System.Net.Sockets;
 using Sisk.ManagedHttpListener.HttpSerializer;
 using Sisk.ManagedHttpListener.Streams;
 
@@ -35,7 +33,7 @@ sealed class HttpConnection : IDisposable {
         this.Action = action;
     }
 
-    public async ValueTask<HttpConnectionState> HandleConnectionEvents () {
+    public async Task<HttpConnectionState> HandleConnectionEvents () {
         ObjectDisposedException.ThrowIf ( this.disposedValue, this );
 
         bool connectionCloseRequested = false;
@@ -45,6 +43,7 @@ sealed class HttpConnection : IDisposable {
 
             HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream, ref buffer );
             Stream? responseStream = null;
+            byte []? responseBytes = null;
 
             try {
 
@@ -65,21 +64,29 @@ sealed class HttpConnection : IDisposable {
 
                 if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                     connectionCloseRequested = true;
-                    managedSession.Response.Headers.Set ( ("Connection", "close") );
+                    managedSession.Response.Headers.Set ( new HttpHeader ( "Connection", "close" ) );
                 }
 
-                responseStream = managedSession.Response.ResponseStream;
-                if (responseStream is not null) {
-                    if (responseStream.CanSeek) {
-                        managedSession.Response.Headers.Set ( ("Content-Length", responseStream.Length.ToString ()) );
-                    }
-                    else {
-                        managedSession.Response.Headers.Set ( ("Transfer-Encoding", "chunked") );
+                if (managedSession.Response.ResponseStream is Stream { } s) {
+                    responseStream = s;
+
+                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.Chunked ) || !responseStream.CanSeek) {
+                        managedSession.Response.Headers.Set ( new HttpHeader ( "Transfer-Encoding", "chunked" ) );
                         responseStream = new HttpChunkedStream ( responseStream );
                     }
+
+                    else {
+                        managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", responseStream.Length.ToString () ) );
+                    }
                 }
+
+                else if (managedSession.Response.ResponseBytes is byte [] b) {
+                    responseBytes = b;
+                    managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", b.Length.ToString () ) );
+                }
+
                 else {
-                    managedSession.Response.Headers.Set ( ("Content-Length", "0") );
+                    managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
                 }
 
                 if (await HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, managedSession.Response ) == false) {
@@ -87,10 +94,15 @@ sealed class HttpConnection : IDisposable {
                     return HttpConnectionState.ResponseWriteException;
                 }
 
-                if (responseStream is not null)
+                if (responseStream is not null) {
                     await responseStream.CopyToAsync ( this._connectionStream );
+                }
+                else if (responseBytes is not null) {
+                    await this._connectionStream.WriteAsync ( responseBytes );
+                }
 
                 this._connectionStream.Flush ();
+
                 Logger.LogInformation ( $"[{this.Id}] Response sent: {managedSession.Response.StatusCode} {managedSession.Response.StatusDescription}" );
 
                 if (connectionCloseRequested) {

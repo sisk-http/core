@@ -16,7 +16,7 @@ public sealed class HttpRequest {
     public string Method { get; }
     public string Path { get; }
     public long ContentLength { get; }
-    public IReadOnlyList<(string, string)> Headers { get; }
+    public HttpHeader [] Headers { get; }
     public Stream ContentStream { get; }
 
     internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
@@ -24,7 +24,7 @@ public sealed class HttpRequest {
 
         this.Method = request.Method;
         this.Path = request.Path;
-        this.Headers = request.Headers.AsReadOnly ();
+        this.Headers = request.Headers;
         this.ContentStream = requestStream;
     }
 }
