@@ -18,48 +18,121 @@ namespace Sisk.JsonRPC.Documentation;
 public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
 
     /// <summary>
+    /// Gets or sets an boolean indicating if an summary should be exported in the HTML.
+    /// </summary>
+    public bool ExportSummary { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets an optional object to append to the header of the
+    /// exported HTML.
+    /// </summary>
+    public object? Header { get; set; }
+
+    /// <summary>
     /// Gets or sets the CSS styles used in the HTML export.
     /// </summary>
     public string? Style { get; set; } = """
-        * { box-sizing: border-box; }
-        html, body { margin: 0; background-color: #f4f9ff; font-family: Arial }
+        * { box-sizing: border-box; }        
         p, li { line-height: 1.6 }
-        li + li { margin-top: 1em; }
-        .monospaced { font-family: monospace; }
+
+        html, body { 
+            margin: 0;
+            background-color: white;
+            font-size: 16px;
+            font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"
+        }
 
         main {
             background: white;
-            max-width: 800px;
+            max-width: 900px;
+            width: 90vw;
             margin: 30px auto 0 auto;
             padding: 20px 40px;
             border-radius: 14px;
-            border: 1px solid #cbd3da;
+            border: 1px solid #d1d9e0;
         }
 
-        h1 {
-            padding-bottom: .25em;
-            border-bottom: 2px solid #aacae7;
-            font-size: 1.8em;
-            font-weight: medium;
+        h1, h2, h3 {
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        h1, h2 {
+            padding-bottom: .3em;
+            border-bottom: 2px solid #d1d9e0b3;
+        }
+
+        h1 {                    
+            font-size: 2em;                
         }
 
         h2 {
-            padding: 1em 0 .25em 0;
-            border-bottom: 1px solid #aacae7;
-            font-size: 1.4em;
-            font-weight: normal;
+            font-size: 1.5em;
         }
 
-        .details > span {
-            display: inline-block;
-            background-color: #e3e8ed;
-            padding: 1px 6px;
-            font-size: 0.9em;
-            font-weight: bold;
+        h1 a,
+        h2 a {
+            opacity: 0;   
+            color: #000;
+            text-decoration: none !important;
+            user-select: none;
         }
 
-        .details > span:not(:first-child) {
-            margin-left: 5px; 
+        h1:hover a,
+        h2:hover a {
+            opacity: 0.3;
+        }
+
+        h1 a:hover,
+        h2 a:hover {
+            opacity: 1;
+        }
+
+        .paramlist {
+            padding-left: 0;
+            list-style-type: none;
+        }
+
+        .paramtitle {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .paramtitle b {
+            padding: .2em .4em;
+            margin: 0;
+            font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: break-spaces;
+            background-color: #eff1f3;
+            border-radius: 6px;
+        }
+
+        .paramlist li + li {
+            margin-top: 1em;
+            border-top: 1px solid #d8dee4;
+            padding-top: 1.25em;
+        }
+
+        .muted {
+            color: #656d76;
+        }
+
+        .at {
+            color: #9a6700;
+        }
+
+        a {
+            color: #0969da;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
         """;
 
@@ -69,6 +142,10 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
     /// <param name="documentation">The <see cref="JsonRpcDocumentation"/> instance.</param>
     protected string EncodeDocumentationHtml ( JsonRpcDocumentation documentation ) {
         HtmlElement html = new HtmlElement ( "html" );
+
+        string GetMethodIdName ( string name ) {
+            return new string ( name.Where ( char.IsLetterOrDigit ).ToArray () );
+        }
 
         html += new HtmlElement ( "head", head => {
             head += new HtmlElement ( "title", "JSON-RPC 2.0 Application Documentation" );
@@ -83,24 +160,62 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
                 .GroupBy ( g => g.Category );
 
             body += new HtmlElement ( "main", main => {
+
+                if (this.Header is not null) {
+                    main += this.Header;
+                }
+
+                if (this.ExportSummary) {
+                    main += new HtmlElement ( "h1", "Summary" );
+
+                    foreach (var category in methodsGrouped) {
+                        main += new HtmlElement ( "p", (category.Key ?? "Methods") + ":" );
+                        main += new HtmlElement ( "ul", ul => {
+                            foreach (var method in documentation.Methods) {
+                                ul += new HtmlElement ( "li", li => {
+                                    li += new HtmlElement ( "a", method.MethodName )
+                                        .WithAttribute ( "href", $"#{GetMethodIdName ( method.MethodName )}" );
+                                    if (!string.IsNullOrEmpty ( method.Description )) {
+                                        li += new HtmlElement ( "span", $" - {method.Description}" )
+                                            .WithClass ( "muted" );
+                                    }
+                                } );
+                            }
+                        } );
+                    }
+                }
+
                 foreach (var category in methodsGrouped) {
                     main += new HtmlElement ( "h1", category.Key ?? "Methods" );
                     foreach (var method in category) {
                         main += new HtmlElement ( "section", section => {
-                            section += new HtmlElement ( "h2", method.MethodName );
+
+                            section.Id = GetMethodIdName ( method.MethodName );
+
+                            section += new HtmlElement ( "h2", h2 => {
+                                h2 += method.MethodName;
+                                h2 += new HtmlElement ( "a", "🔗" )
+                                    .WithAttribute ( "href", $"#{section.Id}" );
+                            } );
                             section += new HtmlElement ( "p", method.Description ?? "" );
                             section += new HtmlElement ( "p", $"Returns: {method.ReturnType.FullName}" );
                             section += new HtmlElement ( "ul", ulParams => {
+                                ulParams.ClassList.Add ( "paramlist" );
                                 foreach (var param in method.Parameters) {
                                     ulParams += new HtmlElement ( "li", li => {
-                                        li += new HtmlElement ( "b", param.ParameterName )
-                                            .WithClass ( "monospaced" );
-                                        li += new HtmlElement ( "div", param.Description ?? "(no description)" );
-                                        li += new HtmlElement ( "div", paramDetails => {
-                                            paramDetails.WithClass ( "details" );
-                                            paramDetails += new HtmlElement ( "span", param.IsOptional ? "Optional" : "Required" );
-                                            paramDetails += new HtmlElement ( "span", param.ParameterType.FullName );
+                                        li += new HtmlElement ( "div", div => {
+                                            div.ClassList.Add ( "paramtitle" );
+
+                                            div += new HtmlElement ( "b", param.ParameterName );
+
+                                            div += new HtmlElement ( "span", param.ParameterType.FullName )
+                                                    .WithClass ( "muted" );
+
+                                            if (!param.IsOptional)
+                                                div += new HtmlElement ( "span", "Required" ).WithClass ( "at" );
+
                                         } );
+                                        li += new HtmlElement ( "div", param.Description ?? "" );
                                     } );
                                 }
                             } );

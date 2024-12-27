@@ -205,6 +205,12 @@ sendResponse:
 
                         var jsonParameter = jsonValueObject [ paramName ];
 
+                        if (jsonParameter.IsNull && !param.IsOptional && Nullable.GetUnderlyingType ( param.ParameterType ) == null) {
+                            response = new JsonRpcResponse ( null,
+                                new JsonRpcError ( JsonErrorCode.InvalidParams, $"Parameter \"{paramName}\" is required.", JsonValue.Null ), request.Id );
+                            return response;
+                        }
+
                         methodInvokationParameters [ i ] = jsonParameter.MaybeNull ()?.Get ( param.ParameterType );
                     }
                 }
