@@ -44,19 +44,21 @@ dotnet add package Sisk.HttpServer
 ### Packages
 
 In this repository, you have the source code of:
-
+  
   - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
   - [Sisk.SslProxy](extensions/Sisk.SslProxy): an experimental SSL proxy provider for Sisk.
   - [Sisk.IniConfiguration](extensions/Sisk.IniConfiguration): an INI-document configuration provider for Sisk.
   - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
+  - [Sisk.JsonRpc](extensions/Sisk.JsonRPC): this package provides an JSON-RPC 2.0 interface for Sisk projects.
+  - [Sisk.Cadente](extensions/Sisk.Cadente): an experimental "ultrafast" implementation of the HTTP/1.1 protocol in pure C#.
 
 ## Getting started
 
 The Sisk core idea is to create a service that runs on the internet and follows the pattern you define. Moreover, Sisk is a framework that adapts to how you want it to work, not the other way around.
 
-Due to its explicit nature, its behavior is predictable. The main differentiator from ASP.NET is that Sisk can be up and running in very few lines of code, avoiding unnecessary configurations, and requiring the minimum setup to get your server working. Additionally, it does not demand any additional .NET SDK packages to develop, as the base package of .NET 6 is sufficient to start your development with Sisk.
+Due to its explicit nature, its behavior is fully predictable. The main differentiator from ASP.NET is that Sisk can be built and run in very few lines of code, avoiding unnecessary configurations, and requiring the minimum setup to get your server working. Additionally, it does not demand any additional .NET SDK packages to work with, as the base package of .NET is sufficient to start your development with Sisk.
 
-It can handle multiple requests asynchronously, provides useful tools to manage and accelerate web development.
+You can build applications that are not necessarily a complete web application, but that have an web module, such as receiving an OAuth authorization token, hosting a UI to control your application, monitoring logs, etc. Sisk is very flexible and abstract.
 
 ```c#
 using Sisk.Core.Http;
@@ -77,16 +79,16 @@ class Program
 }
 ```
 
-You can learn more about Sisk on its [website](https://www.sisk-framework.org/).
+You can learn more about Sisk on it's [website](https://www.sisk-framework.org/).
 
 ## Main features
 
 Sisk can do web development the way you want. Create MVC, MVVC, SOLID applications, or any other design pattern you're interested in.
 
 - **Flexible**: you're not limited to build an full-featured web application, but it can be an module to your existing project.
-- **Lightweight:** robust projects tested in small, low-cost, low-performance environments and got good results.
+- **Lightweight:** robust projects can be runned in small, low-cost environments and provide a nice performance. The Sisk core server also uses zero dependencies on it's core library. 
 - **Open-source:** the entire Sisk ecosystem is open source, and all the libraries and technologies we use must be open source as well. Sisk is entirely distributed under the MIT License, which allows the commercial development.
-- **Sustainable:** you are the one who makes the project, Sisk gives you the tools. Because it is open source, the community (including you) can maintain, fix bugs and improve Sisk over time.
+- **Sustainable:** the project adapts to the pattern you want. Write MVC, MVVM, Clean-Architecture, OOP, Functional applications... you are in control.
 
 ## Stargazers over time
 
