@@ -7,7 +7,7 @@
 // File name:   HttpRequestBase.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.ManagedHttpListener.HttpSerializer;
+namespace Sisk.Cadente.HttpSerializer;
 
 class HttpRequestBase {
     public required string Method;

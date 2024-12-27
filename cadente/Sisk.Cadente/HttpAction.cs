@@ -7,6 +7,10 @@
 // File name:   HttpAction.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
+/// <summary>
+/// Represents a method that takes an <see cref="HttpSession"/> as a parameter and does not return a value.
+/// </summary>
+/// <param name="session">The HTTP session associated with the action.</param>
 public delegate void HttpAction ( HttpSession session );

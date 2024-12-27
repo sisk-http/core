@@ -9,6 +9,7 @@
 
 using LightJson;
 using Sisk.JsonRPC.Converters;
+using Sisk.JsonRPC.Documentation;
 
 namespace Sisk.JsonRPC;
 
@@ -47,5 +48,12 @@ public sealed class JsonRpcHandler {
         this._jsonOptions.Converters.Add ( new JsonRpcErrorConverter () );
         this._jsonOptions.Converters.Add ( new JsonRpcRequestConverter () );
         this._jsonOptions.Converters.Add ( new JsonRpcResponseConverter () );
+    }
+
+    /// <summary>
+    /// Gets the documentation for this JSON-RPC handler.
+    /// </summary>
+    public JsonRpcDocumentation GetDocumentation () {
+        return DocumentationDescriptor.GetDocumentationDescriptor ( this );
     }
 }

@@ -10,7 +10,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
 static class Logger {
 

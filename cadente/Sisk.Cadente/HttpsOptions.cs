@@ -7,16 +7,14 @@
 // File name:   HttpsOptions.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
+/// <summary>
+/// Represents the options for configuring an HTTPS server.
+/// </summary>
 public sealed class HttpsOptions {
 
     /// <summary>
@@ -39,6 +37,10 @@ public sealed class HttpsOptions {
     /// </summary>
     public bool CheckCertificateRevocation { get; set; } = false;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpsOptions"/> class.
+    /// </summary>
+    /// <param name="certificate">The <see cref="X509Certificate"/> used to encrypt data between the client and the server.</param>
     public HttpsOptions ( X509Certificate certificate ) {
         this.ServerCertificate = certificate;
     }

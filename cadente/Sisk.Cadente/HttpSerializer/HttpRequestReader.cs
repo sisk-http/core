@@ -11,9 +11,9 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Sisk.ManagedHttpListener.HighPerformance;
+using Sisk.Cadente.HighPerformance;
 
-namespace Sisk.ManagedHttpListener.HttpSerializer;
+namespace Sisk.Cadente.HttpSerializer;
 
 sealed class HttpRequestReader {
 

@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
 internal enum HttpConnectionState {
     ConnectionClosed = 0,

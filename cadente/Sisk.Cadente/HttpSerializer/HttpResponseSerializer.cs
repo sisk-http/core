@@ -9,7 +9,7 @@
 
 using System.Text;
 
-namespace Sisk.ManagedHttpListener.HttpSerializer;
+namespace Sisk.Cadente.HttpSerializer;
 
 internal static class HttpResponseSerializer {
 
@@ -42,7 +42,7 @@ internal static class HttpResponseSerializer {
 
             return true;
         }
-        catch (Exception ex) {
+        catch (Exception) {
             //Logger.LogInformation ( $"HttpResponseSerializer finished with exception: {ex.Message}" );
             return false;
         }

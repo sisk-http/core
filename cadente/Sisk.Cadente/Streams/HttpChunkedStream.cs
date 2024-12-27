@@ -14,7 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sisk.ManagedHttpListener.Streams;
+namespace Sisk.Cadente.Streams;
 
 internal class HttpChunkedStream : Stream {
     private Stream _stream;

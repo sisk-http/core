@@ -8,10 +8,10 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
-using Sisk.ManagedHttpListener.HttpSerializer;
-using Sisk.ManagedHttpListener.Streams;
+using Sisk.Cadente.HttpSerializer;
+using Sisk.Cadente.Streams;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
 sealed class HttpConnection : IDisposable {
     private readonly Stream _connectionStream;
@@ -43,7 +43,6 @@ sealed class HttpConnection : IDisposable {
 
             HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream, ref buffer );
             Stream? responseStream = null;
-            byte []? responseBytes = null;
 
             try {
 
@@ -69,36 +68,44 @@ sealed class HttpConnection : IDisposable {
 
                 if (managedSession.Response.ResponseStream is Stream { } s) {
                     responseStream = s;
-
-                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.Chunked ) || !responseStream.CanSeek) {
-                        managedSession.Response.Headers.Set ( new HttpHeader ( "Transfer-Encoding", "chunked" ) );
-                        responseStream = new HttpChunkedStream ( responseStream );
-                    }
-
-                    else {
-                        managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", responseStream.Length.ToString () ) );
-                    }
                 }
-
-                else if (managedSession.Response.ResponseBytes is byte [] b) {
-                    responseBytes = b;
-                    managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", b.Length.ToString () ) );
-                }
-
                 else {
                     managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
                 }
 
-                if (!managedSession.ResponseHeadersAlreadySent && !await managedSession.WriteHttpResponseHeaders ()) {
+                Stream outputStream = this._connectionStream;
+                List<string> transferEncoding = new List<string> ( 4 );
+                if (responseStream is not null) {
 
+                    // create the responsestream pipeline on the
+                    // transfer-encoding header
+                    //
+                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.Chunked )
+                            || !responseStream.CanSeek) {
+                        transferEncoding.Add ( "chunked" );
+                        responseStream = new HttpChunkedStream ( responseStream );
+                    }
+                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.GZip )) {
+                        transferEncoding.Add ( "deflate" );
+                        throw new NotImplementedException ( "GZip is not implemented" );
+                    }
+                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.Deflate )) {
+                        transferEncoding.Add ( "deflate" );
+                        throw new NotImplementedException ( "Deflate is not implemented" );
+                    }
+
+                    if (transferEncoding.Count > 0)
+                        managedSession.Response.Headers.Set ( new HttpHeader ( "Transfer-Encoding", string.Join ( ", ", transferEncoding ) ) );
+                    if (responseStream.CanSeek)
+                        managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", responseStream.Length.ToString () ) );
+                }
+
+                if (!managedSession.ResponseHeadersAlreadySent && !await managedSession.WriteHttpResponseHeaders ()) {
                     return HttpConnectionState.ResponseWriteException;
                 }
 
                 if (responseStream is not null) {
-                    await responseStream.CopyToAsync ( this._connectionStream );
-                }
-                else if (responseBytes is not null) {
-                    await this._connectionStream.WriteAsync ( responseBytes );
+                    await responseStream.CopyToAsync ( outputStream );
                 }
 
                 this._connectionStream.Flush ();

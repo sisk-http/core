@@ -1,0 +1,113 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- supported frameworks -->
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+		<RootNamespace>Sisk.Cadente</RootNamespace>
+		<Configurations>Debug;Release</Configurations>
+	</PropertyGroup>
+
+	<!-- debug info, symbols -->
+	<PropertyGroup>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<!-- aot, build options -->
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
+		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
+
+	<!-- nuget package info -->
+	<PropertyGroup>
+		<PackageId>Sisk.Cadente</PackageId>
+		<Title>Sisk.Cadente</Title>
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.Cadente</Product>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<Description>Cadente is a managed implementation of HTTP/1.1 with SSL support for .NET.</Description>
+		<Summary>Cadente is a managed implementation of HTTP/1.1 with SSL support for .NET.</Summary>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
+		<PackageProjectUrl>https://sisk-framework.org/</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>false</EmbedUntrackedSources>
+	</PropertyGroup>
+
+	<!-- version info -->
+	<PropertyGroup>
+		<AssemblyVersion>0.1.42</AssemblyVersion>
+		<FileVersion>0.1.42</FileVersion>
+		<Version>0.1.42</Version>
+	</PropertyGroup>
+
+	<!-- licensing, readme, signing -->
+	<PropertyGroup>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<SignAssembly>False</SignAssembly>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackRelease>True</PackRelease>
+	</PropertyGroup>
+
+	<!-- source link -->
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+	</ItemGroup>
+
+	<!-- enforce code quality on release -->
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
+		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<!-- package included files -->
+	<ItemGroup>
+		<None Include="..\..\.github\Icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\.nuget\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include=".\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\.nuget\README.html" Link="README.html" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EditorConfigFiles Remove=".\.editorconfig" />
+	</ItemGroup>
+
+	<!-- global imports -->
+	<ItemGroup>
+		<Using Include="System" />
+		<Using Include="System.Collections.Generic" />
+		<Using Include="System.Threading" />
+		<Using Include="System.Threading.Tasks" />
+		<Using Include="System.IO" />
+		<Using Include="System.Net.Http" />
+		<Using Include="System.Linq" />
+	</ItemGroup>
+</Project>

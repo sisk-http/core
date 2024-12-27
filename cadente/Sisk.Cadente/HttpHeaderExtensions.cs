@@ -10,9 +10,9 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Text;
-using Sisk.ManagedHttpListener.HttpSerializer;
+using Sisk.Cadente.HttpSerializer;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
 internal static class HttpHeaderExtensions {
     public static void Set ( this List<HttpHeader> headers, in HttpHeader header ) {

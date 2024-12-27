@@ -7,9 +7,9 @@
 // File name:   HttpRequestStream.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.ManagedHttpListener.HttpSerializer;
+using Sisk.Cadente.HttpSerializer;
 
-namespace Sisk.ManagedHttpListener.Streams;
+namespace Sisk.Cadente.Streams;
 
 internal class HttpRequestStream : Stream {
     private Stream s;

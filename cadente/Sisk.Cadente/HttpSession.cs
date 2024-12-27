@@ -7,11 +7,14 @@
 // File name:   HttpSession.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.ManagedHttpListener.HttpSerializer;
-using Sisk.ManagedHttpListener.Streams;
+using Sisk.Cadente.HttpSerializer;
+using Sisk.Cadente.Streams;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
+/// <summary>
+/// Represents an HTTP session that manages the request and response for a single connection.
+/// </summary>
 public sealed class HttpSession {
 
     private Stream _connectionStream;
@@ -26,10 +29,19 @@ public sealed class HttpSession {
         return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this.Response );
     }
 
-
+    /// <summary>
+    /// Gets the HTTP request associated with this session.
+    /// </summary>
     public HttpRequest Request { get; }
+
+    /// <summary>
+    /// Gets the HTTP response associated with this session.
+    /// </summary>
     public HttpResponse Response { get; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the connection should be kept alive.
+    /// </summary>
     public bool KeepAlive { get; set; } = true;
 
     internal HttpSession ( HttpRequestBase baseRequest, Stream connectionStream ) {

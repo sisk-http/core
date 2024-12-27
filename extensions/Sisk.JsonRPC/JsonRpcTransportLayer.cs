@@ -15,6 +15,7 @@ using LightJson.Serialization;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using Sisk.JsonRPC.Documentation;
 
 namespace Sisk.JsonRPC;
 
@@ -73,7 +74,8 @@ public sealed class JsonRpcTransportLayer {
     }
 
     HttpResponse ImplDescriptor ( HttpRequest request ) {
-        JsonValue result = DocumentationDescriptor.GetDocumentationDescriptor ( this._handler ).AsJsonValue ();
+        var documentation = DocumentationDescriptor.GetDocumentationDescriptor ( this._handler );
+        JsonValue result = new JsonRpcJsonExport ( this._handler._jsonOptions ).EncodeDocumentation ( documentation );
         JsonRpcResponse response = new JsonRpcResponse ( result, null, JsonValue.Null );
 
         return new HttpResponse () {

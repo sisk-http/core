@@ -1,6 +1,6 @@
-# Sisk managed HTTP listener
+# Cadente - The Sisk managed HTTP listener
 
-This folder contains the code for the implementation of the Sisk HTTP/1.1 listener. It is a managed alternative to the [HttpListener](https://learn.microsoft.com/en-us/dotnet/api/system.net.httplistener?view=net-9.0) of .NET. This implementation exists because:
+This folder contains the code for the implementation of the Sisk HTTP/1.1 listener, called Project Cadente. It is a managed alternative to the [HttpListener](https://learn.microsoft.com/en-us/dotnet/api/system.net.httplistener?view=net-9.0) of .NET. This implementation exists because:
 
 - We do not know how long Microsoft will want to maintain HttpListener as a component of .NET.
 - They don't want to detach Kestrel from ASP.NET.
@@ -13,7 +13,7 @@ For now, this implementation does not even have a package or is used in Sisk.Htt
 
 ```csharp
 static void Main ( string [] args ) {
-    HttpHost host = new HttpHost ( 5555, HandleSession );
+    using CadenteHttpListener host = new CadenteHttpListener ( 5555, HandleSession );
     
     // optional properties to run SSL
     host.HttpsOptions = new HttpsOptions ( CertificateUtil.CreateTrustedDevelopmentCertificate () );
@@ -40,10 +40,14 @@ The current status of the implementation is:
 | Base HTTP/1.1 Reader | OK - Needs testing | |
 | HTTPS | OK - Needs testing | |
 | Chunked transfer-encoding | OK - Needs testing | Only for responses. |
+| SSE/Response content streaming | OK - Needs testing |  |
 | Gzip transfer encoding | Not implemented | Implement for both request and response. |
-| Expect-100 header | Not implemented | There is already an implementation in Sisk.SslProxy. |
-| SSE/Response content streaming | Not implemented |  |
+| Deflate transfer encoding | Not implemented | Implement for both request and response. |
+| Brotli transfer encoding | Not implemented | Implement for both request and response. |
+| Handle Expect-100 | Not implemented | There is already an implementation in Sisk.SslProxy. |
 | Web Sockets | Not implemented |  |
+| Trailer headers | - | Will not be implemented. |
+| Pipelining | - | May be implemented later. |
 
 Everything in this project is still super experimental and should never be used in production.
 

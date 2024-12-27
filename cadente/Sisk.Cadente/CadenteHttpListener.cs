@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   HttpHost.cs
+// File name:   CadenteHttpListener.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
@@ -12,11 +12,15 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Channels;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
-public sealed class HttpHost : IDisposable {
+/// <summary>
+/// Represents an HTTP host that listens for incoming TCP connections and handles HTTP requests.
+/// </summary>
+public sealed class CadenteHttpListener : IDisposable {
 
-    const int QUEUE_SIZE = 64;
+    // defines the connection queue size (worker connections)
+    const int QUEUE_SIZE = 512;
 
     private readonly TcpListener _listener;
     private readonly Channel<TcpClient> clientQueue;
@@ -26,12 +30,33 @@ public sealed class HttpHost : IDisposable {
 
     private bool disposedValue;
 
+    /// <summary>
+    /// Gets the action handler for processing HTTP actions.
+    /// </summary>
     public HttpAction ActionHandler { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the host has been disposed.
+    /// </summary>
     public bool IsDisposed { get => this.disposedValue; }
+
+    /// <summary>
+    /// Gets or sets the port on which the HTTP host listens for incoming connections.
+    /// Default is 8080.
+    /// </summary>
     public int Port { get; set; } = 8080;
+
+    /// <summary>
+    /// Gets or sets the options for HTTPS configuration.
+    /// </summary>
     public HttpsOptions? HttpsOptions { get; set; }
 
-    public HttpHost ( int port, HttpAction actionHandler ) {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CadenteHttpListener"/> class with the specified port and action handler.
+    /// </summary>
+    /// <param name="port">The port on which the host will listen for incoming connections.</param>
+    /// <param name="actionHandler">The action handler for processing HTTP actions.</param>
+    public CadenteHttpListener ( int port, HttpAction actionHandler ) {
         this._listener = new TcpListener ( new IPEndPoint ( IPAddress.Any, port ) );
         this.channelConsumerThread = new Thread ( this.ConsumerJobThread );
         this.clientQueue = Channel.CreateBounded<TcpClient> (
@@ -41,10 +66,13 @@ public sealed class HttpHost : IDisposable {
         this.ActionHandler = actionHandler;
     }
 
+    /// <summary>
+    /// Starts the Cadente HTTP host, beginning to listen for incoming connections.
+    /// </summary>
     public void Start () {
         ObjectDisposedException.ThrowIf ( this.disposedValue, this );
 
-        this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
+        this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 3 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
@@ -68,8 +96,8 @@ public sealed class HttpHost : IDisposable {
             { // setup the tcpclient
                 client.NoDelay = true;
 
-                client.ReceiveTimeout = (int) TimeSpan.FromSeconds ( 5 ).TotalMilliseconds;
-                client.SendTimeout = (int) TimeSpan.FromSeconds ( 5 ).TotalMilliseconds;
+                client.ReceiveTimeout = 5_000;
+                client.SendTimeout = 5_000;
 
                 client.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
                 client.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
@@ -98,15 +126,13 @@ public sealed class HttpHost : IDisposable {
                             checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
                             enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
                     }
-                    catch (Exception ex) {
+                    catch (Exception) {
                         //Logger.LogInformation ( $"[{connection.Id}] Failed SSL authenticate: {ex.Message}" );
+                        // TODO drop connection with 401
                     }
                 }
 
-                //Logger.LogInformation ( $"[{connection.Id}] Begin handle connection" );
                 var state = await connection.HandleConnectionEvents ();
-
-                //Logger.LogInformation ( $"[{connection.Id}] Ended handling connection with state {state}" );
 
             }
         }
@@ -134,6 +160,7 @@ public sealed class HttpHost : IDisposable {
         }
     }
 
+    /// <inheritdoc/>
     public void Dispose () {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         this.Dispose ( disposing: true );

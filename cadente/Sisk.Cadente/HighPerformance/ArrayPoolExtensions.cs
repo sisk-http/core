@@ -15,7 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sisk.ManagedHttpListener.HighPerformance;
+namespace Sisk.Cadente.HighPerformance;
 internal static class ArrayPoolExtensions {
 
     // forked from https://github.com/CommunityToolkit/dotnet/blob/main/src/CommunityToolkit.HighPerformance/Extensions/ArrayPoolExtensions.cs

@@ -7,16 +7,38 @@
 // File name:   HttpRequest.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.ManagedHttpListener.HttpSerializer;
-using Sisk.ManagedHttpListener.Streams;
+using Sisk.Cadente.HttpSerializer;
+using Sisk.Cadente.Streams;
 
-namespace Sisk.ManagedHttpListener;
+namespace Sisk.Cadente;
 
+/// <summary>
+/// Represents an HTTP request.
+/// </summary>
 public sealed class HttpRequest {
+    /// <summary>
+    /// Gets the HTTP method (e.g., GET, POST) of the request.
+    /// </summary>
     public string Method { get; }
+
+    /// <summary>
+    /// Gets the path of the requested resource.
+    /// </summary>
     public string Path { get; }
+
+    /// <summary>
+    /// Gets the content length of the request.
+    /// </summary>
     public long ContentLength { get; }
+
+    /// <summary>
+    /// Gets the headers associated with the request.
+    /// </summary>
     public HttpHeader [] Headers { get; }
+
+    /// <summary>
+    /// Gets the stream containing the content of the request.
+    /// </summary>
     public Stream ContentStream { get; }
 
     internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
