@@ -15,17 +15,21 @@ namespace Sisk.JsonRPC.Documentation;
 /// Represents the documentation for JSON-RPC methods.
 /// </summary>
 public sealed class JsonRpcDocumentation {
+
     /// <summary>
     /// Gets the collection of JSON-RPC methods.
     /// </summary>
     public JsonRpcDocumentationMethod [] Methods { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="JsonRpcDocumentation"/> class with the specified methods.
+    /// Gets the used <see cref="JsonRpcDocumentationMetadata"/> for this
+    /// <see cref="JsonRpcDocumentation"/>.
     /// </summary>
-    /// <param name="methods">The array of JSON-RPC methods.</param>
-    internal JsonRpcDocumentation ( JsonRpcDocumentationMethod [] methods ) {
+    public JsonRpcDocumentationMetadata? Metadata { get; }
+
+    internal JsonRpcDocumentation ( JsonRpcDocumentationMethod [] methods, JsonRpcDocumentationMetadata? metadata ) {
         this.Methods = methods;
+        this.Metadata = metadata;
     }
 
     /// <summary>
@@ -48,6 +52,32 @@ public sealed class JsonRpcDocumentation {
     /// Gets an JSON string representation of this <see cref="JsonRpcDocumentation"/>.
     /// </summary>
     public string ExportToJson () => this.ExportToJson ( JsonOptions.Default );
+}
+
+/// <summary>
+/// Represents the documentation metadata for JSON-RPC documentation.
+/// </summary>
+public sealed class JsonRpcDocumentationMetadata {
+    /// <summary>
+    /// Gets or sets the name of the application.
+    /// </summary>
+    public string? ApplicationName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the description of the application.
+    /// </summary>
+    public string? ApplicationDescription { get; set; }
+
+    /// <summary>
+    /// Gets or sets the path where the JSON-RPC service can receive remote procedures.
+    /// </summary>
+    public string? ServicePath { get; set; }
+
+    /// <summary>
+    /// Gets or sets an array of <see cref="HttpMethod"/> that are allowed for the JSON-RPC service at
+    /// <see cref="ServicePath"/>.
+    /// </summary>
+    public string [] AllowedMethods { get; set; } = [ "POST" ];
 }
 
 /// <summary>

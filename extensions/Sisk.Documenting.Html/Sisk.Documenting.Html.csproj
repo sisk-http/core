@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.OpenApi" Version="1.6.22" />
+    <PackageReference Include="TinyComponents" Version="0.5.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+    <ProjectReference Include="..\Sisk.Documenting\Sisk.Documenting.csproj" />
   </ItemGroup>
 
 </Project>

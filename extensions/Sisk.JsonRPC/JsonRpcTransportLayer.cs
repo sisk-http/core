@@ -15,7 +15,6 @@ using LightJson.Serialization;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
-using Sisk.JsonRPC.Documentation;
 
 namespace Sisk.JsonRPC;
 
@@ -44,11 +43,6 @@ public sealed class JsonRpcTransportLayer {
     /// </summary>
     public RouteAction HttpGet { get => new RouteAction ( this.ImplTransportGetHttp ); }
 
-    /// <summary>
-    /// Gets the action to display general help for available web methods.
-    /// </summary>
-    public RouteAction HttpDescriptor { get => new RouteAction ( this.ImplDescriptor ); }
-
     void ImplWebSocket ( object? sender, WebSocketMessage message ) {
         JsonRpcRequest? rpcRequest = null;
         JsonRpcResponse response;
@@ -71,17 +65,6 @@ public sealed class JsonRpcTransportLayer {
             string responseJson = JsonValue.Serialize ( response, this._handler._jsonOptions ).ToString ();
             message.Sender.Send ( responseJson );
         } );
-    }
-
-    HttpResponse ImplDescriptor ( HttpRequest request ) {
-        var documentation = DocumentationDescriptor.GetDocumentationDescriptor ( this._handler );
-        JsonValue result = new JsonRpcJsonExport ( this._handler._jsonOptions ).EncodeDocumentation ( documentation );
-        JsonRpcResponse response = new JsonRpcResponse ( result, null, JsonValue.Null );
-
-        return new HttpResponse () {
-            Status = HttpStatusInformation.Ok,
-            Content = new StringContent ( JsonValue.Serialize ( response, this._handler._jsonOptions ).ToString (), Encoding.UTF8, "application/json" )
-        };
     }
 
     HttpResponse ImplTransportGetHttp ( HttpRequest request ) {

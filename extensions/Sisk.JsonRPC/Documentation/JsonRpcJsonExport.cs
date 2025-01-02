@@ -26,7 +26,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
     /// Creates an new <see cref="JsonRpcJsonExport"/> instance with default parameters.
     /// </summary>
     public JsonRpcJsonExport () {
-        this.JsonOptions = JsonOptions.Default;
+        this.JsonOptions = new JsonOptions () { NamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
     }
 
     /// <summary>
@@ -48,15 +48,15 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
         foreach (var method in documentation.Methods) {
 
             var item = new {
-                name = method.MethodName,
-                description = method.Description,
-                returns = method.ReturnType,
-                parameters = method.Parameters
+                Name = method.MethodName,
+                Description = method.Description,
+                Returns = method.ReturnType,
+                Parameters = method.Parameters
                     .Select ( p => new {
-                        name = p.ParameterName,
-                        typeName = p.ParameterType.Name,
-                        description = p.Description,
-                        isOptional = p.IsOptional
+                        Name = p.ParameterName,
+                        TypeName = p.ParameterType.Name,
+                        Description = p.Description,
+                        IsOptional = p.IsOptional
                     } )
                     .ToArray ()
             };
@@ -64,7 +64,15 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
             arr.Add ( JsonValue.Serialize ( item, this.JsonOptions ) );
         }
 
-        return arr.AsJsonValue ();
+        return this.JsonOptions.Serialize ( new {
+            Metadata = this.Pipe ( documentation.Metadata, m => new {
+                m.ApplicationName,
+                m.ApplicationDescription,
+                m.ServicePath,
+                m.AllowedMethods
+            } ),
+            Methods = arr
+        } );
     }
 
     /// <inheritdoc/>
@@ -72,4 +80,6 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
         string json = this.EncodeDocumentation ( documentation ).ToString ();
         return Encoding.UTF8.GetBytes ( json );
     }
+
+    U Pipe<T, U> ( T value, Func<T, U> transform ) => transform ( value );
 }

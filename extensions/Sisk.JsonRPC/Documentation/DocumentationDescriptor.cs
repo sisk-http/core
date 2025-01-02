@@ -13,7 +13,7 @@ using Sisk.JsonRPC.Annotations;
 namespace Sisk.JsonRPC.Documentation;
 
 internal class DocumentationDescriptor {
-    internal static JsonRpcDocumentation GetDocumentationDescriptor ( JsonRpcHandler handler ) {
+    internal static JsonRpcDocumentation GetDocumentationDescriptor ( JsonRpcHandler handler, JsonRpcDocumentationMetadata? metadata ) {
 
         List<JsonRpcDocumentationMethod> methods = new List<JsonRpcDocumentationMethod> ();
 
@@ -36,6 +36,6 @@ internal class DocumentationDescriptor {
                     .ToArray () ) );
         }
 
-        return new JsonRpcDocumentation ( methods.ToArray () );
+        return new JsonRpcDocumentation ( methods.ToArray (), metadata );
     }
 }

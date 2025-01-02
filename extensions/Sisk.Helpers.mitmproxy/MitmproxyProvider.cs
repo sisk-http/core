@@ -14,24 +14,24 @@ using Sisk.Core.Http.Handlers;
 namespace Sisk.Helpers.Mitmproxy;
 
 /// <summary>
-/// Represents a handler for integrating mitmproxy into an HTTP server.
+/// Provides a MITM proxy server handler.
 /// </summary>
 public sealed class MitmproxyProvider : HttpServerHandler {
     private ChildProcessStartInfo MitmdumpProcessInfo = null!;
     private readonly Action<ChildProcessStartInfo>? setupAction;
 
     /// <summary>
-    /// Gets the <see cref="IChildProcess"/> instance of the mitmdump process.
+    /// Gets the mitmdump process.
     /// </summary>
     public IChildProcess MitmdumpProcess { get; private set; } = null!;
 
     /// <summary>
-    /// Gets the port on which the mitmproxy is listening.
+    /// Gets or sets the proxy port.
     /// </summary>
     public ushort ProxyPort { get; private set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the mitmproxy should run in silent mode.
+    /// Gets or sets a value indicating whether to run the mitmdump process silently.
     /// </summary>
     public bool Silent { get; set; }
 

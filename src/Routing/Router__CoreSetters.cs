@@ -333,7 +333,7 @@ public partial class Router {
                 continue;
             }
 
-            RouteAttribute? routeAttribute = null;
+            List<RouteAttribute> routeAttributes = new List<RouteAttribute> ();
             object [] methodAttributes = method.GetCustomAttributes ( true );
             List<IRequestHandler> methodAttrReqHandlers = new List<IRequestHandler> ( methodAttributes.Length );
 
@@ -348,11 +348,11 @@ public partial class Router {
                     methodAttrReqHandlers.Add ( reqHandlerAttr.Activate () );
                 }
                 else if (attrInstance is RouteAttribute routeAttributeItem) {
-                    routeAttribute = routeAttributeItem;
+                    routeAttributes.Add ( routeAttributeItem );
                 }
             }
 
-            if (routeAttribute is not null) {
+            foreach (var routeAttribute in routeAttributes) {
                 try {
                     string path = routeAttribute.Path;
 

@@ -163,6 +163,20 @@ namespace Sisk.Core.Routing {
             return true;
         }
 
+        int GetMethodHashCode ( MethodInfo? method ) {
+            if (method is null)
+                return 0;
+
+            int carry = HashCode.Combine ( method.Name, method.DeclaringType?.FullName, method.ReturnType, method.IsSpecialName );
+            var methodParams = method.GetParameters ();
+            for (int i = 0; i < methodParams.Length; i++) {
+                var param = methodParams [ i ];
+                carry = HashCode.Combine ( param.Name, param.ParameterType, param.MetadataToken, carry );
+            }
+
+            return carry;
+        }
+
         /// <summary>
         /// Gets or sets the request handlers instances to run before the route's Action.
         /// </summary>
@@ -217,7 +231,9 @@ namespace Sisk.Core.Routing {
 
         /// <inheritdoc/>
         public override int GetHashCode () {
-            return HashCode.Combine ( this.path, this.Method, this.UseRegex );
+            return HashCode.Combine ( this.path, this.Method, this.UseRegex,
+                this.GetMethodHashCode ( this._singleParamCallback?.Method ),
+                this.GetMethodHashCode ( this._parameterlessRouteAction?.Method ) );
         }
 
         /// <inheritdoc/>
@@ -237,14 +253,14 @@ namespace Sisk.Core.Routing {
         public static bool operator == ( Route? left, Route? right ) {
             if (left is null && right is null)
                 return true;
-            return left?.Equals ( right ) == true;
+            if (left is null || right is null)
+                return false;
+            return left.Equals ( right );
         }
 
         /// <inheritdoc/>
         public static bool operator != ( Route? left, Route? right ) {
-            if (left is null && right is null)
-                return false;
-            return !left?.Equals ( right ) == true;
+            return !(left == right);
         }
 
         #region Helper constructors

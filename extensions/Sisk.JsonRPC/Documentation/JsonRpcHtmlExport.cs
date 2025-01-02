@@ -23,6 +23,12 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
     public bool ExportSummary { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets an boolean indicating if the documentation metadata should be exported in the
+    /// HTML.
+    /// </summary>
+    public bool ExportMetadata { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets an optional object to append to the header of the
     /// exported HTML.
     /// </summary>
@@ -88,6 +94,20 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
         h1 a:hover,
         h2 a:hover {
             opacity: 1;
+        }
+
+        hr {
+            border-top: none;
+            border-bottom: 3px solid #d1d9e0;
+        }
+        
+        pre {
+            background-color: #f6f8fa;
+            color: black;
+            padding: 1rem;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
         }
 
         .paramlist {
@@ -163,6 +183,19 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
 
                 if (this.Header is not null) {
                     main += this.Header;
+                }
+
+                if (this.ExportMetadata && documentation.Metadata is { } meta) {
+                    main += new HtmlElement ( "h1", meta.ApplicationName ?? "Application name" );
+                    if (meta.ApplicationDescription is not null) {
+                        foreach (string part in meta.ApplicationDescription.Split ( "\n", StringSplitOptions.RemoveEmptyEntries )) {
+                            main += new HtmlElement ( "p", part );
+                        }
+                    }
+                    main += new HtmlElement ( "p", "Service endpoint:" );
+                    main += new HtmlElement ( "pre",
+                        string.Join ( "\n", meta.AllowedMethods.Select ( method => $"{method} {meta.ServicePath}" ) ) );
+                    main += new HtmlElement ( "hr" ).SelfClosed ();
                 }
 
                 if (this.ExportSummary) {

@@ -53,7 +53,13 @@ public sealed class JsonRpcHandler {
     /// <summary>
     /// Gets the documentation for this JSON-RPC handler.
     /// </summary>
-    public JsonRpcDocumentation GetDocumentation () {
-        return DocumentationDescriptor.GetDocumentationDescriptor ( this );
+    public JsonRpcDocumentation GetDocumentation () => this.GetDocumentation ( null! );
+
+    /// <summary>
+    /// Gets the documentation for this JSON-RPC handler.
+    /// </summary>
+    /// <param name="metadata">The <see cref="JsonRpcDocumentationMetadata"/> to generate in the documentation.</param>
+    public JsonRpcDocumentation GetDocumentation ( JsonRpcDocumentationMetadata metadata ) {
+        return DocumentationDescriptor.GetDocumentationDescriptor ( this, metadata );
     }
 }
