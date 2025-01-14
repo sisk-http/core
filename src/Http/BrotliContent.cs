@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.IO.Compression;
+using Sisk.Core.Helpers;
 
 namespace Sisk.Core.Http;
 
@@ -35,6 +36,7 @@ public sealed class BrotliContent : CompressedContent {
 
     /// <inheritdoc/>
     public override void Setup () {
+        HeaderHelper.CopyHttpHeaders ( this.InnerContent.Headers, this.Headers );
         this.Headers.ContentEncoding.Add ( "br" );
     }
 }
