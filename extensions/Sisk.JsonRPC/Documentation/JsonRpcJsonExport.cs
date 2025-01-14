@@ -66,7 +66,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
 
         return this.JsonOptions.Serialize ( new {
             Metadata = this.Pipe ( documentation.Metadata, m => new {
-                m.ApplicationName,
+                m!.ApplicationName,
                 m.ApplicationDescription,
                 m.ServicePath,
                 m.AllowedMethods
@@ -81,5 +81,9 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
         return Encoding.UTF8.GetBytes ( json );
     }
 
-    U Pipe<T, U> ( T value, Func<T, U> transform ) => transform ( value );
+    U? Pipe<T, U> ( T value, Func<T, U> transform ) {
+        if (value == null)
+            return default;
+        return transform ( value );
+    }
 }

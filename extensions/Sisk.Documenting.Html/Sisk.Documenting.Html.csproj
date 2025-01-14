@@ -7,10 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TinyComponents" Version="0.5.1" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\..\typed-components\src\TinyComponents.csproj" />
     <ProjectReference Include="..\Sisk.Documenting\Sisk.Documenting.csproj" />
   </ItemGroup>
 

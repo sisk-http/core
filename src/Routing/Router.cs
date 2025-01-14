@@ -50,7 +50,8 @@ namespace Sisk.Core.Routing {
                 server.handler.SetupRouter ( this );
                 this.parentServer = server;
 
-                this.CheckForRouteCollisions ();
+                if (this.CheckForRouteCollisions)
+                    this.CheckForRouteCollisionsCore ();
             }
         }
 
@@ -63,6 +64,12 @@ namespace Sisk.Core.Routing {
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
         /// </summary>
         public bool MatchRoutesIgnoreCase { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether this <see cref="Router"/> should check for possible routing
+        /// collisions before starting the HTTP server.
+        /// </summary>
+        public bool CheckForRouteCollisions { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the prefix which will be applied to all next defining routes in this
@@ -239,8 +246,8 @@ namespace Sisk.Core.Routing {
             }
         }
 
-        void CheckForRouteCollisions () // O(n²)
-        {
+        void CheckForRouteCollisionsCore () {
+
             for (int i = 0; i < this._routesList.Count; i++) {
                 Route I = this._routesList [ i ];
 

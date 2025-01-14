@@ -63,6 +63,18 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     public string FormatRequiredText { get; set; } = "Required";
 
     /// <summary>
+    /// Gets or sets an optional object to append to the footer
+    /// of the generated page.
+    /// </summary>
+    public object? Footer { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional object to append to the header
+    /// of the generated page.
+    /// </summary>
+    public object? Header { get; set; }
+
+    /// <summary>
     /// Writes the main title of the API documentation.
     /// </summary>
     /// <param name="documentation">The API documentation to write the title for.</param>
@@ -257,7 +269,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <returns>The hex color code as a string.</returns>
     protected virtual string GetRouteMethodHexColor ( RouteMethod rm ) {
         return rm switch {
-            RouteMethod.Get => "#10f25f",
+            RouteMethod.Get => "#0bc70f",
             RouteMethod.Post => "#f26710",
             RouteMethod.Put => "#3210f2",
             RouteMethod.Patch => "#6319c4",
@@ -322,6 +334,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
                 main += this.WriteMainTitle ( d );
 
+                main += this.Header;
+
                 var groups = d.Endpoints.GroupBy ( e => e.Group );
                 foreach (var item in groups) {
 
@@ -335,6 +349,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                         } );
                     }
                 }
+
+                main += this.Footer;
             } );
         } );
 

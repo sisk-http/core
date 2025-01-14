@@ -7,6 +7,7 @@
 // File name:   JsonRpcServerHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
 
@@ -17,7 +18,7 @@ namespace Sisk.JsonRPC;
 /// for the HTTP server.
 /// </summary>
 public sealed class JsonRpcServerHandler : HttpServerHandler {
-    private readonly JsonRpcHandler _handler;
+    private JsonRpcHandler? _handler;
 
     /// <summary>
     /// Gets or sets the action which will be called in the configuring <see cref="Router"/>
@@ -29,13 +30,17 @@ public sealed class JsonRpcServerHandler : HttpServerHandler {
     /// Creates an new instance of the <see cref="JsonRpcServerHandler"/> class.
     /// </summary>
     public JsonRpcServerHandler () {
-        this._handler = new JsonRpcHandler ();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnServerStarting ( HttpServer server ) {
+        this._handler = new JsonRpcHandler ( server );
     }
 
     /// <inheritdoc/>
     protected override void OnSetupRouter ( Router router ) {
         base.OnSetupRouter ( router );
-        if (ConfigureAction != null)
+        if (ConfigureAction != null && this._handler is not null)
             ConfigureAction ( this, new JsonRpcServerConfigurationEventArgs ( router, this._handler ) );
     }
 }

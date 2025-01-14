@@ -189,7 +189,8 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
                     main += new HtmlElement ( "h1", meta.ApplicationName ?? "Application name" );
                     if (meta.ApplicationDescription is not null) {
                         foreach (string part in meta.ApplicationDescription.Split ( "\n", StringSplitOptions.RemoveEmptyEntries )) {
-                            main += new HtmlElement ( "p", part );
+                            if (!string.IsNullOrWhiteSpace ( part ))
+                                main += new HtmlElement ( "p", part );
                         }
                     }
                     main += new HtmlElement ( "p", "Service endpoint:" );
@@ -231,7 +232,10 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
                                     .WithAttribute ( "href", $"#{section.Id}" );
                             } );
                             section += new HtmlElement ( "p", method.Description ?? "" );
-                            section += new HtmlElement ( "p", $"Returns: {method.ReturnType.FullName}" );
+                            section += new HtmlElement ( "p", p => {
+                                p += "Returns: ";
+                                p += new HtmlElement ( "b", method.ReturnType.FullName );
+                            } );
                             section += new HtmlElement ( "ul", ulParams => {
                                 ulParams.ClassList.Add ( "paramlist" );
                                 foreach (var param in method.Parameters) {
@@ -244,8 +248,12 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
                                             div += new HtmlElement ( "span", param.ParameterType.FullName )
                                                     .WithClass ( "muted" );
 
-                                            if (!param.IsOptional)
+                                            if (param.IsOptional) {
+                                                div += new HtmlElement ( "span", "Optional" ).WithClass ( "muted" );
+                                            }
+                                            else {
                                                 div += new HtmlElement ( "span", "Required" ).WithClass ( "at" );
+                                            }
 
                                         } );
                                         li += new HtmlElement ( "div", param.Description ?? "" );

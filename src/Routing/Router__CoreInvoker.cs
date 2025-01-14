@@ -246,7 +246,9 @@ public partial class Router {
                 result = this.ResolveAction ( actionResult );
             }
             catch (Exception ex) {
-                if (this.parentServer!.ServerConfiguration.ThrowExceptions == false && (ex is not HttpListenerException)) {
+                if (this.parentServer!.ServerConfiguration.ThrowExceptions == false
+                    && (ex is not HttpListenerException) /*the HttpServer__Core should handle HttpListenerException exceptions*/) {
+
                     if (this.CallbackErrorHandler is not null) {
                         handledException = ex;
                         result = this.CallbackErrorHandler ( ex, context );

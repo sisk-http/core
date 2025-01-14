@@ -429,6 +429,13 @@ public class StringKeyStore : IDictionary<string, string []> {
         }
         return nm;
     }
+
+    /// <summary>
+    /// Copies the contents of this <see cref="StringKeyStore"/> into an <see cref="StringValueCollection"/>.
+    /// </summary>
+    public StringValueCollection AsStringValueCollection () {
+        return new StringValueCollection ( this );
+    }
     #endregion
 
     #region Overrides/operators

@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using LightJson;
+using Sisk.Core.Http;
 using Sisk.JsonRPC.Converters;
 using Sisk.JsonRPC.Documentation;
 
@@ -18,6 +19,7 @@ namespace Sisk.JsonRPC;
 /// </summary>
 public sealed class JsonRpcHandler {
     internal readonly JsonOptions _jsonOptions;
+    internal readonly HttpServer _server;
     readonly JsonRpcMethodCollection _methodCollection;
     readonly JsonRpcTransportLayer _transport;
 
@@ -39,10 +41,12 @@ public sealed class JsonRpcHandler {
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonRpcHandler"/> class.
     /// </summary>
-    public JsonRpcHandler () {
+    /// <param name="parentServer">Defines the <see cref="HttpServer"/> where the JSON-RPC instance will run on.</param>
+    public JsonRpcHandler ( HttpServer parentServer ) {
         this._transport = new JsonRpcTransportLayer ( this );
         this._jsonOptions = new JsonOptions ();
         this._methodCollection = new JsonRpcMethodCollection ();
+        this._server = parentServer;
 
         this._jsonOptions.PropertyNameComparer = new JsonSanitizedComparer ();
         this._jsonOptions.Converters.Add ( new JsonRpcErrorConverter () );

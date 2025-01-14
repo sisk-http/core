@@ -18,7 +18,8 @@ using Sisk.Core.Routing;
 namespace Sisk.Core.Http;
 
 public partial class HttpServer {
-    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal static void ApplyHttpContentHeaders ( HttpListenerResponse response, HttpContentHeaders contentHeaders ) {
         // content-length is applied outside this method
         // do not include that here
@@ -60,6 +61,7 @@ public partial class HttpServer {
             response.AppendHeader ( HttpKnownHeaderNames.ContentEncoding, string.Join ( ", ", contentHeaders.ContentEncoding ) );
     }
 
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal static void SetCorsHeaders ( HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders? cors, HttpListenerResponse baseResponse ) {
         if (cors is null)
             return;
@@ -97,6 +99,7 @@ public partial class HttpServer {
             baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString () );
     }
 
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private void UnbindRouters () {
         for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++) {
             var lh = this.ServerConfiguration.ListeningHosts [ i ];
@@ -106,6 +109,7 @@ public partial class HttpServer {
         }
     }
 
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private void BindRouters () {
         for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++) {
             var lh = this.ServerConfiguration.ListeningHosts [ i ];
@@ -148,6 +152,7 @@ public partial class HttpServer {
             Thread.CurrentThread.CurrentUICulture = this.ServerConfiguration.DefaultCultureInfo;
         }
 
+        HttpContent? servedContent = null;
         HttpServerExecutionResult executionResult = new HttpServerExecutionResult () {
             Request = request,
             Response = response,
@@ -254,9 +259,11 @@ public partial class HttpServer {
 
             // get response
             routerResult = matchedListeningHost.Router.Execute ( srContext );
-            executionResult.ServerException = routerResult.Exception;
 
+            executionResult.ServerException = routerResult.Exception;
             response = routerResult.Response;
+            servedContent = response?.Content;
+
             bool routeAllowCors = routerResult.Route?.UseCors ?? true;
 
             if (flag.SendCorsHeaders && routeAllowCors) {
@@ -264,15 +271,17 @@ public partial class HttpServer {
             }
 
             if (response is null || response.internalStatus == HttpResponse.HTTPRESPONSE_EMPTY) {
-                baseResponse.StatusCode = 204;
+                baseResponse.StatusCode = 204/*NoContent*/;
                 executionResult.Status = HttpServerExecutionStatus.NoResponse;
                 goto finishSending;
             }
             else if (response.internalStatus == HttpResponse.HTTPRESPONSE_UNHANDLED_EXCEPTION) {
                 executionResult.Status = HttpServerExecutionStatus.UncaughtExceptionThrown;
-                baseResponse.StatusCode = 500;
+                baseResponse.StatusCode = 500/*InternalServerError*/;
+
                 if (routerResult.Exception is not null)
                     throw routerResult.Exception;
+
                 goto finishSending;
             }
             else if (response.internalStatus == HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ||
@@ -306,53 +315,47 @@ public partial class HttpServer {
                     baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
 
-            try {
-                bool canServeContent;
-                if (flag.PreventResponseContentsInProhibitedMethods) {
-                    canServeContent = request.Method != HttpMethod.Head && request.Method != HttpMethod.Options;
-                }
-                else {
-                    canServeContent = true;
-                }
-
-                if (canServeContent) {
-                    if (response.Content is ByteArrayContent barrayContent) {
-                        ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
-                        byte [] contentBytes = ByteArrayAccessors.UnsafeGetContent ( barrayContent );
-                        int offset = ByteArrayAccessors.UnsafeGetOffset ( barrayContent );
-                        int count = ByteArrayAccessors.UnsafeGetCount ( barrayContent );
-
-                        if (response.SendChunked) {
-                            baseResponse.SendChunked = true;
-                        }
-                        else {
-                            baseResponse.SendChunked = false;
-                            baseResponse.ContentLength64 = count;
-                        }
-
-                        baseResponse.OutputStream.Write ( contentBytes, offset, count );
-                    }
-                    else if (response.Content is HttpContent httpContent) {
-                        ApplyHttpContentHeaders ( baseResponse, httpContent.Headers );
-                        var httpContentStream = httpContent.ReadAsStream (); // the HttpContent.Dispose should dispose this stream
-
-                        if (httpContentStream.CanSeek && !response.SendChunked) {
-                            httpContentStream.Seek ( 0, SeekOrigin.Begin );
-                            baseResponse.SendChunked = false;
-                            baseResponse.ContentLength64 = httpContentStream.Length;
-                        }
-                        else {
-                            baseResponse.SendChunked = true;
-                        }
-
-                        httpContentStream.CopyTo ( baseResponse.OutputStream, flag.RequestStreamCopyBufferSize );
-                    }
-                }
+            bool canServeContent;
+            if (flag.PreventResponseContentsInProhibitedMethods) {
+                canServeContent = request.Method != HttpMethod.Head && request.Method != HttpMethod.Options;
             }
-            finally {
-                response.Content?.Dispose ();
+            else {
+                canServeContent = true;
             }
 
+            if (canServeContent) {
+                if (servedContent is ByteArrayContent barrayContent) {
+                    ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
+                    byte [] contentBytes = ByteArrayAccessors.UnsafeGetContent ( barrayContent );
+                    int offset = ByteArrayAccessors.UnsafeGetOffset ( barrayContent );
+                    int count = ByteArrayAccessors.UnsafeGetCount ( barrayContent );
+
+                    if (response.SendChunked) {
+                        baseResponse.SendChunked = true;
+                    }
+                    else {
+                        baseResponse.SendChunked = false;
+                        baseResponse.ContentLength64 = count;
+                    }
+
+                    baseResponse.OutputStream.Write ( contentBytes, offset, count );
+                }
+                else if (servedContent is HttpContent httpContent) {
+                    ApplyHttpContentHeaders ( baseResponse, httpContent.Headers );
+                    var httpContentStream = httpContent.ReadAsStream (); // the HttpContent.Dispose should dispose this stream
+
+                    if (httpContentStream.CanSeek && !response.SendChunked) {
+                        httpContentStream.Seek ( 0, SeekOrigin.Begin );
+                        baseResponse.SendChunked = false;
+                        baseResponse.ContentLength64 = httpContentStream.Length;
+                    }
+                    else {
+                        baseResponse.SendChunked = true;
+                    }
+
+                    httpContentStream.CopyTo ( baseResponse.OutputStream, flag.RequestStreamCopyBufferSize );
+                }
+            }
 #endregion
 
 finishSending:
@@ -377,20 +380,22 @@ finishSending:
             hasErrorLogging = false;
         }
         catch (HttpListenerException netException) {
+            // often raised when the client connection is closed during content streaming
+            // it's not a real error and the server should deal with this as an client disconnect
             executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
             executionResult.ServerException = netException;
             hasErrorLogging = false;
             hasAccessLogging = false;
         }
         catch (HttpRequestException requestException) {
-            baseResponse.StatusCode = 400;
+            baseResponse.StatusCode = 400/*BadRequest*/;
             executionResult.Status = HttpServerExecutionStatus.MalformedRequest;
             executionResult.ServerException = requestException;
             hasErrorLogging = false;
         }
         catch (Exception ex) {
             if (!this.ServerConfiguration.ThrowExceptions) {
-                baseResponse.StatusCode = 500;
+                baseResponse.StatusCode = 500/*InternalServerError*/;
                 executionResult.ServerException = ex;
                 executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
             }
@@ -399,8 +404,10 @@ finishSending:
             }
         }
         finally {
+
             sw.Stop ();
             executionResult.Elapsed = sw.Elapsed;
+            servedContent?.Dispose ();
 
             if (closeStream) {
                 // Close() would throw an exception if the sent payload length is greater than
@@ -428,8 +435,8 @@ finishSending:
                 logMode = srContext?.MatchedRoute?.LogMode ?? LogOutput.Both;
             }
 
-            bool canAccessLog = logMode.HasFlag ( LogOutput.AccessLog ) && hasAccessLogging;
-            bool canErrorLog = logMode.HasFlag ( LogOutput.ErrorLog ) && hasErrorLogging;
+            bool canAccessLog = hasAccessLogging && logMode.HasFlag ( LogOutput.AccessLog );
+            bool canErrorLog = hasErrorLogging && logMode.HasFlag ( LogOutput.ErrorLog );
 
             if (executionResult.ServerException is not null && canErrorLog) {
                 string entry = LogFormatter.FormatExceptionEntr ( executionResult );

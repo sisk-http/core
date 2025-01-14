@@ -217,8 +217,13 @@ sendResponse:
             response = new JsonRpcResponse ( null, jex.AsRpcError (), request.Id );
         }
         catch (Exception ex) {
-            response = new JsonRpcResponse ( null,
+            if (this._handler._server.ServerConfiguration.ThrowExceptions) {
+                throw;
+            }
+            else {
+                response = new JsonRpcResponse ( null,
                new JsonRpcError ( JsonErrorCode.InternalError, ex.Message, JsonValue.Null ), request?.Id ?? "0" );
+            }
         }
         return response;
     }

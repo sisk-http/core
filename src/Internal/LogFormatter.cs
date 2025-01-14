@@ -14,7 +14,7 @@ using Sisk.Core.Http;
 
 namespace Sisk.Core.Internal;
 
-internal class LogFormatter {
+static class LogFormatter {
     public static string FormatExceptionEntr ( HttpServerExecutionResult executionResult ) {
         StringBuilder errLineBuilder = new StringBuilder ( 128 );
         errLineBuilder.Append ( '[' );
@@ -35,7 +35,7 @@ internal class LogFormatter {
         return errLineBuilder.ToString ();
     }
 
-    public static string FormatAccessLogEntry ( in string format, HttpServerExecutionResult executionResult ) {
+    public static string FormatAccessLogEntry ( string format, HttpServerExecutionResult executionResult ) {
         ReadOnlySpan<char> formatSpan = format.AsSpan ();
         StringBuilder sb = new StringBuilder ( format.Length * 2 );
 
@@ -68,7 +68,7 @@ internal class LogFormatter {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    static string? MatchTermExpression ( ReadOnlySpan<char> term, HttpServerExecutionResult executionResult )
+    static string? MatchTermExpression ( in ReadOnlySpan<char> term, HttpServerExecutionResult executionResult )
         => term switch {
             "dd" => executionResult.Request.RequestedAt.Day.ToString ( "D2" ),
             "dmmm" => executionResult.Request.RequestedAt.ToString ( "MMMM" ),
