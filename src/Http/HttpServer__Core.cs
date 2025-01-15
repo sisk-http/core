@@ -409,6 +409,10 @@ finishSending:
             executionResult.Elapsed = sw.Elapsed;
             servedContent?.Dispose ();
 
+            if (flag.DisposeDisposableContextValues)
+                foreach (var value in srContext.RequestBag.Values)
+                    (value as IDisposable)?.Dispose ();
+
             if (closeStream) {
                 // Close() would throw an exception if the sent payload length is greater than
                 // content length, so it will force close the connection on the Abort() method

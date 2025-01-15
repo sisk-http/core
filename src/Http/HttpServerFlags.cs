@@ -23,6 +23,14 @@ namespace Sisk.Core.Http {
         public bool ThrowContentOnNonSemanticMethods = true;
 
         /// <summary>
+        /// Determines if the HTTP server should dispose all <see cref="IDisposable"/> values in the <see cref="HttpContext"/> bag.
+        ///     <para>
+        ///         Default value: <c>true</c>
+        ///     </para>
+        /// </summary>
+        public bool DisposeDisposableContextValues = true;
+
+        /// <summary>
         /// Determines if the HTTP server should prevent sending body contents in responses when the HTTP request 
         /// method prohibits it.
         ///     <para>
