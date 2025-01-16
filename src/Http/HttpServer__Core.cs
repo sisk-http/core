@@ -19,45 +19,58 @@ namespace Sisk.Core.Http;
 
 public partial class HttpServer {
 
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+
     internal static void ApplyHttpContentHeaders ( HttpListenerResponse response, HttpContentHeaders contentHeaders ) {
         // content-length is applied outside this method
         // do not include that here
 
+        // is faster to count if any headers had been defined into HttpListenerResponse
+        // before iterating them
+
+        Span<string> definedHeaders;
+        if (response.Headers.Count > 0) {
+            definedHeaders = response.Headers.AllKeys;
+        }
+        else {
+            definedHeaders = Span<string>.Empty;
+        }
+
+        var headerComparer = StringComparer.OrdinalIgnoreCase;
+
         if (contentHeaders.ContentType?.ToString () is { } ContentType
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentType )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentType, headerComparer ))
             response.ContentType = ContentType;
 
         if (contentHeaders.ContentRange?.ToString () is { } ContentRange
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentRange )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentRange, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentRange, ContentRange );
 
         if (contentHeaders.ContentMD5 is { } ContentMD5
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentMD5 )?.Length is 0 or null) // rfc1864#section-2
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentMD5, headerComparer )) // rfc1864#section-2
             response.AppendHeader ( HttpKnownHeaderNames.ContentMD5, Convert.ToBase64String ( ContentMD5 ) );
 
         if (contentHeaders.ContentLocation?.ToString () is { } ContentLocation
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentLocation )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLocation, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentLocation, ContentLocation );
 
         if (contentHeaders.ContentDisposition?.ToString () is { } ContentDisposition
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentDisposition )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentDisposition, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentDisposition, ContentDisposition );
 
         if (contentHeaders.LastModified is { } LastModified
-            && response.Headers.GetValues ( HttpKnownHeaderNames.LastModified )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.LastModified, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.LastModified, LastModified.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'" ) );
 
         if (contentHeaders.Expires is { } Expires
-            && response.Headers.GetValues ( HttpKnownHeaderNames.Expires )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.Expires, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.Expires, Expires.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'" ) );
 
         if (contentHeaders.ContentLanguage.Count > 0
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentLanguage )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLanguage, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentLanguage, string.Join ( ", ", contentHeaders.ContentLanguage ) );
 
         if (contentHeaders.ContentEncoding.Count > 0
-            && response.Headers.GetValues ( HttpKnownHeaderNames.ContentEncoding )?.Length is 0 or null)
+            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentEncoding, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentEncoding, string.Join ( ", ", contentHeaders.ContentEncoding ) );
     }
 
@@ -230,7 +243,7 @@ public partial class HttpServer {
                 baseResponse.Headers.Set ( HttpKnownHeaderNames.XPoweredBy, PoweredBy );
 
             long userMaxContentLength = this.ServerConfiguration.MaximumContentLength;
-            bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && baseRequest.ContentLength64 > userMaxContentLength;
+            bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && request.ContentLength > userMaxContentLength;
 
             if (isContentLenOutsideUserBounds) {
                 executionResult.Status = HttpServerExecutionStatus.ContentTooLarge;
@@ -245,7 +258,7 @@ public partial class HttpServer {
                 || request.Method == HttpMethod.Head
                 || request.Method == HttpMethod.Trace
                 || request.Method == HttpMethod.Connect
-                ) && context.Request.ContentLength64 > 0) {
+                ) && request.ContentLength > 0) {
                 executionResult.Status = HttpServerExecutionStatus.ContentServedOnIllegalMethod;
                 baseResponse.StatusCode = 400;
                 return;
@@ -362,7 +375,7 @@ finishSending:
 #region Step 5 - Close streams and send response
 
             executionResult.ResponseSize = response?.CalculedLength ?? baseResponse.ContentLength64;
-            executionResult.RequestSize = baseRequest.ContentLength64;
+            executionResult.RequestSize = request.ContentLength;
             executionResult.Response = response;
 
             if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)

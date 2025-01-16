@@ -55,8 +55,10 @@ public static class CookieHelper {
         bool? secure = null,
         bool? httpOnly = null,
         string? sameSite = null ) {
+
         List<string> syntax = new List<string> ();
         syntax.Add ( $"{HttpUtility.UrlEncode ( name )}={HttpUtility.UrlEncode ( value )}" );
+
         if (expires is not null) {
             syntax.Add ( $"Expires={expires.Value.ToUniversalTime ():r}" );
         }

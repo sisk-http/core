@@ -49,7 +49,7 @@ public static class MimeHelper {
     /// </summary>
     /// <param name="mimeType">The mime-type to evaluate.</param>
     /// <returns>
-    /// <c>true</c> if the content type is an inline content type; otherwise, <c>false</c>.
+    /// <see langword="true"></see> if the content type is an inline content type; otherwise, <see langword="false"></see>.
     /// </returns>
     public static bool IsBrowserKnownInlineMimeType ( string mimeType ) {
         for (int i = 0; i < inlineContentTypesSize; i++) {

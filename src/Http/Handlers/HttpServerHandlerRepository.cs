@@ -7,6 +7,7 @@
 // File name:   HttpServerHandlerRepository.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
@@ -49,7 +50,7 @@ internal class HttpServerHandlerRepository {
             var handler = this.handlers [ i ];
 
             try {
-                action.DynamicInvoke ( handler );
+                action ( handler );
             }
             catch (Exception ex) {
                 if (this.parent.ServerConfiguration.ThrowExceptions == false && this.IsEventBreakable ( eventName ) == false) {
@@ -61,15 +62,16 @@ internal class HttpServerHandlerRepository {
         }
     }
 
-    internal void ServerStarting ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStarting ( val ), HttpServerHandlerActionEvent.ServerStarting );
-    internal void ServerStarted ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStarted ( val ), HttpServerHandlerActionEvent.ServerStarted );
-    internal void SetupRouter ( Router val ) => this.CallEvery ( handler => handler.InvokeOnSetupRouter ( val ), HttpServerHandlerActionEvent.SetupRouter );
-    internal void ContextBagCreated ( TypedValueDictionary val ) => this.CallEvery ( handler => handler.InvokeOnContextBagCreated ( val ), HttpServerHandlerActionEvent.ContextBagCreated );
-    internal void HttpRequestOpen ( HttpRequest val ) => this.CallEvery ( handler => handler.InvokeOnHttpRequestOpen ( val ), HttpServerHandlerActionEvent.HttpRequestOpen );
-    internal void HttpRequestClose ( HttpServerExecutionResult val ) => this.CallEvery ( handler => handler.InvokeOnHttpRequestClose ( val ), HttpServerHandlerActionEvent.HttpRequestClose );
-    internal void Exception ( Exception val ) => this.CallEvery ( handler => handler.InvokeOnException ( val ), HttpServerHandlerActionEvent.Exception );
-    internal void Stopping ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStopping ( val ), HttpServerHandlerActionEvent.Stopping );
-    internal void Stopped ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStopped ( val ), HttpServerHandlerActionEvent.Stopped );
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ServerStarting ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStarting ( val ), HttpServerHandlerActionEvent.ServerStarting );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ServerStarted ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStarted ( val ), HttpServerHandlerActionEvent.ServerStarted );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void SetupRouter ( Router val ) => this.CallEvery ( handler => handler.InvokeOnSetupRouter ( val ), HttpServerHandlerActionEvent.SetupRouter );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ContextBagCreated ( TypedValueDictionary val ) => this.CallEvery ( handler => handler.InvokeOnContextBagCreated ( val ), HttpServerHandlerActionEvent.ContextBagCreated );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void HttpRequestOpen ( HttpRequest val ) => this.CallEvery ( handler => handler.InvokeOnHttpRequestOpen ( val ), HttpServerHandlerActionEvent.HttpRequestOpen );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void HttpRequestClose ( HttpServerExecutionResult val ) => this.CallEvery ( handler => handler.InvokeOnHttpRequestClose ( val ), HttpServerHandlerActionEvent.HttpRequestClose );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Exception ( Exception val ) => this.CallEvery ( handler => handler.InvokeOnException ( val ), HttpServerHandlerActionEvent.Exception );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Stopping ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStopping ( val ), HttpServerHandlerActionEvent.Stopping );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Stopped ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStopped ( val ), HttpServerHandlerActionEvent.Stopped );
 
     internal delegate void HandlerActionBase ( HttpServerHandler handler );
 }

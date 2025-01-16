@@ -39,7 +39,7 @@ namespace Sisk.Core.Http {
         public int Count => this._hosts.Count;
 
         /// <summary>
-        /// Gets an boolean indicating if this <see cref="ListeningHostRepository"/> is read only. This property always returns <c>true</c>.
+        /// Gets an boolean indicating if this <see cref="ListeningHostRepository"/> is read only. This property always returns <see langword="false"></see>.
         /// </summary>
         public bool IsReadOnly => false;
 
@@ -85,7 +85,7 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
-        /// Try to remove a <see cref="ListeningHost"/> from this repository. If the item is removed, this methods returns <c>true</c>.
+        /// Try to remove a <see cref="ListeningHost"/> from this repository. If the item is removed, this methods returns <see langword="true"></see>.
         /// </summary>
         /// <param name="item">The <see cref="ListeningHost"/> to be removed.</param>
         public bool Remove ( ListeningHost item ) {

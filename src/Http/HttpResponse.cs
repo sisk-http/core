@@ -48,7 +48,7 @@ namespace Sisk.Core.Http {
         public HttpContent? Content { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the HTTP response will be sent chunked. When setting this property to <c>true</c>,
+        /// Gets or sets whether the HTTP response will be sent chunked. When setting this property to <see langword="true"></see>,
         /// the Content-Length header is automatically omitted.
         /// </summary>
         /// <remarks>

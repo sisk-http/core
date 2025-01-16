@@ -86,7 +86,7 @@ public sealed class StringValueCollection : StringKeyStore {
     /// <param name="key">The key for which to retrieve the values.</param>
     /// <param name="value">When this method returns, the <see cref="StringValue"/> containing the value, or empty <see cref="StringValue"/>.</param>
     /// <returns>
-    /// <c>true</c> if the key was found; otherwise, <c>false</c>.
+    /// <see langword="true"></see> if the key was found; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool TryGetValue ( string key, out StringValue value ) {
         var sv = this.GetItem ( key );

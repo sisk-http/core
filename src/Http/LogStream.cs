@@ -16,7 +16,7 @@ namespace Sisk.Core.Http {
     /// Provides a managed, asynchronous log writer which supports writing safe data to log files or text streams.
     /// </summary>
     public class LogStream : IDisposable {
-        private readonly Channel<object?> channel = Channel.CreateUnbounded<object?> ( new UnboundedChannelOptions () { SingleReader = true } );
+        private readonly Channel<object?> channel = Channel.CreateUnbounded<object?> ( new UnboundedChannelOptions () { SingleReader = true, SingleWriter = false } );
         private readonly Thread consumerThread;
         internal readonly ManualResetEvent writeEvent = new ManualResetEvent ( false );
         internal readonly ManualResetEvent rotatingPolicyLocker = new ManualResetEvent ( true );

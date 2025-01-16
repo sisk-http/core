@@ -40,18 +40,22 @@ namespace Sisk.Core.Http {
         private StringKeyStore? cookies = null;
         private StringValueCollection? query = null;
         private IPAddress? remoteAddr;
+        private HttpMethod? requestMethod;
 
-        private int currentFrame = 0;
+        private int currentFrame;
 
         internal HttpRequest (
             HttpServer server,
             HttpListenerContext context ) {
+
             this.context = context;
             this.baseServer = server;
             this.contextServerConfiguration = this.baseServer.ServerConfiguration;
             this.listenerResponse = context.Response;
             this.listenerRequest = context.Request;
-            this.RequestedAt = DateTime.Now;
+            this.RequestedAt = DateTime.UtcNow.Add ( HttpServer.environmentUtcOffset );
+
+            this.ContentLength = this.listenerRequest.ContentLength64;
         }
 
         internal string mbConvertCodepage ( string input, Encoding inEnc, Encoding outEnc ) {
@@ -231,7 +235,10 @@ namespace Sisk.Core.Http {
         /// Gets the HTTP request method.
         /// </summary>
         public HttpMethod Method {
-            get => new HttpMethod ( this.listenerRequest.HttpMethod );
+            get {
+                this.requestMethod ??= new HttpMethod ( this.listenerRequest.HttpMethod );
+                return this.requestMethod;
+            }
         }
 
         /// <summary>
@@ -264,9 +271,7 @@ namespace Sisk.Core.Http {
         /// <remarks>
         /// This value can be negative if the content length is unknown.
         /// </remarks>
-        public long ContentLength {
-            get => this.listenerRequest.ContentLength64;
-        }
+        public long ContentLength { get; }
 
         /// <summary>
         /// Gets the HTTP request query value collection.

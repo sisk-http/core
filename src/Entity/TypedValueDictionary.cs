@@ -104,7 +104,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// Returns the default value if the object is not defined.
     /// </summary>
     /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
-    /// <returns>The object of type <typeparamref name="T"/> if it exists; otherwise, <c>null</c>.</returns>
+    /// <returns>The object of type <typeparamref name="T"/> if it exists; otherwise, <see langword="null"></see>.</returns>
     public T? GetOrDefault<T> () where T : notnull {
         if (this.IsSet ( out T value )) {
             return value;

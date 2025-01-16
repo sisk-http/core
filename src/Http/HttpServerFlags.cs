@@ -17,15 +17,16 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Determines if the HTTP server should drop requests which has content body in GET, OPTIONS, HEAD and TRACE methods.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
         public bool ThrowContentOnNonSemanticMethods = true;
 
         /// <summary>
-        /// Determines if the HTTP server should dispose all <see cref="IDisposable"/> values in the <see cref="HttpContext"/> bag.
+        /// Determines if the HTTP server should dispose all <see cref="IDisposable"/> values in the <see cref="HttpContext"/> bag
+        /// when an HTTP session is closed.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
         public bool DisposeDisposableContextValues = true;
@@ -34,7 +35,7 @@ namespace Sisk.Core.Http {
         /// Determines if the HTTP server should prevent sending body contents in responses when the HTTP request 
         /// method prohibits it.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
         public bool PreventResponseContentsInProhibitedMethods = true;
@@ -43,7 +44,7 @@ namespace Sisk.Core.Http {
         /// Determines if the HTTP server should handle requests asynchronously or if
         /// it should limit the request processing to one request per time.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
         public bool AsyncRequestProcessing = true;
@@ -59,7 +60,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Determines if the HTTP server automatically should send CORS headers if set.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
         public bool SendCorsHeaders = true;
@@ -68,7 +69,7 @@ namespace Sisk.Core.Http {
         /// Determines if the HTTP server should automatically send HTTP headers of an pre-processed GET response
         /// if the request is using HEAD method.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
 
@@ -77,7 +78,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Determines if the HTTP server should write log to OPTIONS requests.
         ///     <para>
-        ///         Default value: <c>LogOutput.Both</c>
+        ///         Default value: <see cref="LogOutput.Both"/>
         ///     </para>
         /// </summary>
         public LogOutput OptionsLogMode = LogOutput.Both;
@@ -85,7 +86,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Determines if the HTTP server should send the X-Powered-By header in all responses.
         ///     <para>
-        ///         Default value: <c>true</c>
+        ///         Default value: <see langword="true"></see>
         ///     </para>
         /// </summary>
         public bool SendSiskHeader = true;
@@ -110,7 +111,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Determines if the HTTP server should convert request headers encoding to the content encoding.
         ///     <para>
-        ///         Default value: <c>false</c>
+        ///         Default value: <see langword="false"></see>
         ///     </para>
         /// </summary>
         public bool NormalizeHeadersEncodings = false;
@@ -119,7 +120,7 @@ namespace Sisk.Core.Http {
         /// Determines if the HTTP server should automatically rewrite GET requests to end their path with /. This is 
         /// non-applyable to Regex routes.
         ///     <para>
-        ///         Default value: <c>false</c>
+        ///         Default value: <see langword="false"></see>
         ///     </para>
         /// </summary>
         public bool ForceTrailingSlash = false;
@@ -128,7 +129,7 @@ namespace Sisk.Core.Http {
         /// Determines the maximum amount of time an connection can keep alive without sending or receiving any
         /// data.
         ///     <para>
-        ///         Default value: <c>TimeSpan.FromSeconds(120)</c>
+        ///         Default value: 120 seconds
         ///     </para>
         /// </summary>
         public TimeSpan IdleConnectionTimeout = TimeSpan.FromSeconds ( 120 );
@@ -136,7 +137,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Determines if the new span-based multipart form reader should be used.
         /// <para>
-        ///     Default value: <c>true</c>
+        ///     Default value: <see langword="true"></see>
         /// </para>
         /// </summary>
         public bool EnableNewMultipartFormReader = true;
@@ -145,7 +146,7 @@ namespace Sisk.Core.Http {
         /// Determines if the HTTP server should convert <see cref="IAsyncEnumerable{T}"/> object responses into
         /// an blocking <see cref="IEnumerable{T}"/>.
         /// <para>
-        ///     Default value: <c>true</c>
+        ///     Default value: <see langword="true"></see>
         /// </para>
         /// </summary>
         public bool ConvertIAsyncEnumerableIntoEnumerable = true;

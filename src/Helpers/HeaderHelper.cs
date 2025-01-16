@@ -21,7 +21,7 @@ public static class HeaderHelper {
     /// </summary>
     /// <param name="from">The source <see cref="HttpContentHeaders"/> instance.</param>
     /// <param name="to">The target <see cref="HttpContentHeaders"/> instance.</param>
-    /// <param name="safe">If set to <c>true</c>, headers that are added will be validated (an exception can be throw if an header is invalid). If <c>false</c>, invalid headers could be discarded, but no exception is thrown.</param>
+    /// <param name="safe">If set to <see langword="true"></see>, headers that are added will be validated (an exception can be throw if an header is invalid). If <see langword="false"></see>, invalid headers could be discarded, but no exception is thrown.</param>
     public static void CopyHttpHeaders ( HttpContentHeaders from, HttpContentHeaders to, bool safe = true ) {
         foreach (var header in from) {
             if (safe) {

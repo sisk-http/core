@@ -18,6 +18,11 @@ namespace Sisk.Core.Http {
     /// Provides an lightweight HTTP server powered by Sisk.
     /// </summary>
     public sealed partial class HttpServer : IDisposable {
+
+        // DateTime.Now invokes an system internal call everytime we call it, so it's more performatic
+        // to cache the timezone offset and add it to DateTime.UtcNow everytime we need it
+        internal static TimeSpan environmentUtcOffset;
+
         /// <summary>
         /// Gets the X-Powered-By Sisk header value.
         /// </summary>
@@ -45,6 +50,8 @@ namespace Sisk.Core.Http {
             Version assVersion = System.Reflection.Assembly.GetExecutingAssembly ().GetName ().Version!;
             PoweredBy = $"Sisk/{assVersion.Major}.{assVersion.Minor}";
             SiskVersion = assVersion;
+
+            environmentUtcOffset = DateTimeOffset.Now.Offset;
         }
 
         /// <summary>

@@ -168,7 +168,7 @@ public class StringKeyStore : IDictionary<string, string []> {
 
     /// <summary>
     /// Gets or sets the array of values associated with the specified key.
-    /// Returns <c>null</c> if the key does not exist in the store.
+    /// Returns <see langword="null"></see> if the key does not exist in the store.
     /// </summary>
     public string? this [ string key ] {
         get {
@@ -304,11 +304,11 @@ public class StringKeyStore : IDictionary<string, string []> {
     #region Getters
     /// <summary>
     /// Retrieves the last value associated with the specified key.
-    /// Returns <c>null</c> if the key does not exist.
+    /// Returns <see langword="null"></see> if the key does not exist.
     /// </summary>
     /// <param name="name">The key for which to retrieve the value.</param>
     /// <returns>
-    /// The last value associated with the specified key, or <c>null</c> if the key is not found.
+    /// The last value associated with the specified key, or <see langword="null"></see> if the key is not found.
     /// </returns>
     public string? GetValue ( string name ) {
         if (this.TryGetValue ( name, out var values )) {
@@ -351,7 +351,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     /// </summary>
     /// <param name="key">The key of the value to remove.</param>
     /// <returns>
-    /// <c>true</c> if the key was successfully removed; otherwise, <c>false</c>.
+    /// <see langword="true"></see> if the key was successfully removed; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool Remove ( string key ) {
         this.ThrowIfReadOnly ();
@@ -373,7 +373,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     /// </summary>
     /// <param name="key">The key to locate in the <see cref="StringKeyStore"/>.</param>
     /// <returns>
-    /// <c>true</c> if the <see cref="StringKeyStore"/> contains an element with the specified key; otherwise, <c>false</c>.
+    /// <see langword="true"></see> if the <see cref="StringKeyStore"/> contains an element with the specified key; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool ContainsKey ( string key ) {
         return this.IndexOf ( key ) >= 0;
@@ -391,7 +391,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     /// <param name="key">The key for which to retrieve the values.</param>
     /// <param name="value">When this method returns, contains the array of values associated with the specified key, or an empty array if the key is not found.</param>
     /// <returns>
-    /// <c>true</c> if the key was found and the values were retrieved; otherwise, <c>false</c>.
+    /// <see langword="true"></see> if the key was found and the values were retrieved; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool TryGetValue ( string key, out string [] value ) {
         for (int i = 0; i < this.items.Count; i++) {

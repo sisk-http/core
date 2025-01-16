@@ -7,6 +7,7 @@
 // File name:   HttpServerHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
@@ -21,7 +22,7 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="server">The HTTP server entity which is starting.</param>
     protected virtual void OnServerStarting ( HttpServer server ) { }
-    internal void InvokeOnServerStarting ( HttpServer server ) => this.OnServerStarting ( server );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnServerStarting ( HttpServer server ) => this.OnServerStarting ( server );
 
     /// <summary>
     /// Event that is called immediately after starting the <see cref="HttpServer"/>, when it's
@@ -29,7 +30,7 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="server">The HTTP server entity which is ready.</param>
     protected virtual void OnServerStarted ( HttpServer server ) { }
-    internal void InvokeOnServerStarted ( HttpServer server ) => this.OnServerStarted ( server );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnServerStarted ( HttpServer server ) => this.OnServerStarted ( server );
 
     /// <summary>
     /// Event that is called before the <see cref="HttpServer"/> stop, when it is
@@ -37,7 +38,7 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="server">The HTTP server entity which is stopping.</param>
     protected virtual void OnServerStopping ( HttpServer server ) { }
-    internal void InvokeOnServerStopping ( HttpServer server ) => this.OnServerStopping ( server );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnServerStopping ( HttpServer server ) => this.OnServerStopping ( server );
 
     /// <summary>
     /// Event that is called after the <see cref="HttpServer"/> is stopped, meaning
@@ -45,14 +46,14 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="server">The HTTP server entity which has stopped.</param>
     protected virtual void OnServerStopped ( HttpServer server ) { }
-    internal void InvokeOnServerStopped ( HttpServer server ) => this.OnServerStopped ( server );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnServerStopped ( HttpServer server ) => this.OnServerStopped ( server );
 
     /// <summary>
     /// Event that is called when an <see cref="Router"/> is binded to the HTTP server.
     /// </summary>
     /// <param name="router">The router entity which is binded.</param>
     protected virtual void OnSetupRouter ( Router router ) { }
-    internal void InvokeOnSetupRouter ( Router router ) => this.OnSetupRouter ( router );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnSetupRouter ( Router router ) => this.OnSetupRouter ( router );
 
     /// <summary>
     /// Event that is called when an HTTP context is created within an
@@ -60,7 +61,7 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="contextBag">The creating context bag.</param>
     protected virtual void OnContextBagCreated ( TypedValueDictionary contextBag ) { }
-    internal void InvokeOnContextBagCreated ( TypedValueDictionary contextBag ) => this.OnContextBagCreated ( contextBag );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnContextBagCreated ( TypedValueDictionary contextBag ) => this.OnContextBagCreated ( contextBag );
 
     /// <summary>
     /// Event that is called when an <see cref="HttpRequest"/> is received in the
@@ -68,7 +69,7 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="request">The connecting HTTP request entity.</param>
     protected virtual void OnHttpRequestOpen ( HttpRequest request ) { }
-    internal void InvokeOnHttpRequestOpen ( HttpRequest request ) => this.OnHttpRequestOpen ( request );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnHttpRequestOpen ( HttpRequest request ) => this.OnHttpRequestOpen ( request );
 
     /// <summary>
     /// Event that is called when an <see cref="HttpRequest"/> is closed in the
@@ -76,7 +77,7 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="result">The result of the execution of the request.</param>
     protected virtual void OnHttpRequestClose ( HttpServerExecutionResult result ) { }
-    internal void InvokeOnHttpRequestClose ( HttpServerExecutionResult result ) => this.OnHttpRequestClose ( result );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnHttpRequestClose ( HttpServerExecutionResult result ) => this.OnHttpRequestClose ( result );
 
     /// <summary>
     /// Event that is called when an exception is caught in the HTTP server. This method is called
@@ -84,5 +85,5 @@ public abstract class HttpServerHandler {
     /// </summary>
     /// <param name="exception">The exception object.</param>
     protected virtual void OnException ( Exception exception ) { }
-    internal void InvokeOnException ( Exception exception ) => this.OnException ( exception );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void InvokeOnException ( Exception exception ) => this.OnException ( exception );
 }

@@ -16,14 +16,13 @@ internal class DefaultHttpServerHandler : HttpServerHandler {
     internal List<Action> _serverBootstrapingFunctions = new List<Action> ();
 
     protected override void OnServerStarting ( HttpServer server ) {
-        base.OnServerStarting ( server );
-        foreach (var func in this._serverBootstrapingFunctions) {
+        for (int i = 0; i < this._serverBootstrapingFunctions.Count; i++) {
+            Action? func = this._serverBootstrapingFunctions [ i ];
             func ();
         }
     }
 
     protected override void OnSetupRouter ( Router router ) {
-        base.OnSetupRouter ( router );
         if (this._routerSetup != null)
             this._routerSetup ( router );
     }
