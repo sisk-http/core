@@ -13,10 +13,11 @@ using System.Text.RegularExpressions;
 using Sisk.Core.Entity;
 
 namespace Sisk.Core.Routing {
+
     /// <summary>
     /// Represents an HTTP route to be matched by an <see cref="Router"/>.
     /// </summary>
-    public class Route : IEquatable<Route> {
+    public sealed class Route {
         internal RouteAction? _singleParamCallback;
         internal ParameterlessRouteAction? _parameterlessRouteAction;
 
@@ -163,20 +164,6 @@ namespace Sisk.Core.Routing {
             return true;
         }
 
-        int GetMethodHashCode ( MethodInfo? method ) {
-            if (method is null)
-                return 0;
-
-            int carry = HashCode.Combine ( method.Name, method.DeclaringType?.FullName, method.ReturnType, method.IsSpecialName );
-            var methodParams = method.GetParameters ();
-            for (int i = 0; i < methodParams.Length; i++) {
-                var param = methodParams [ i ];
-                carry = HashCode.Combine ( param.Name, param.ParameterType, param.MetadataToken, carry );
-            }
-
-            return carry;
-        }
-
         /// <summary>
         /// Gets or sets the request handlers instances to run before the route's Action.
         /// </summary>
@@ -228,41 +215,6 @@ namespace Sisk.Core.Routing {
         public override string ToString () {
             return $"[{this.Method.ToString ().ToUpper ()} {this.path}] {this.Name ?? this.Action?.Method.Name ?? "<no action>"}";
         }
-
-        /// <inheritdoc/>
-        public override int GetHashCode () {
-            return HashCode.Combine ( this.path, this.Method, this.UseRegex,
-                this.GetMethodHashCode ( this._singleParamCallback?.Method ),
-                this.GetMethodHashCode ( this._parameterlessRouteAction?.Method ) );
-        }
-
-        /// <inheritdoc/>
-        public override bool Equals ( object? obj ) {
-            if (obj is Route r) {
-                return this.Equals ( r );
-            }
-            return false;
-        }
-
-        /// <inheritdoc/>
-        public bool Equals ( Route? other ) {
-            return this.GetHashCode () == other?.GetHashCode ();
-        }
-
-        /// <inheritdoc/>
-        public static bool operator == ( Route? left, Route? right ) {
-            if (left is null && right is null)
-                return true;
-            if (left is null || right is null)
-                return false;
-            return left.Equals ( right );
-        }
-
-        /// <inheritdoc/>
-        public static bool operator != ( Route? left, Route? right ) {
-            return !(left == right);
-        }
-
         #region Helper constructors
 
         /// <summary>

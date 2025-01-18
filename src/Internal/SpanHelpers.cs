@@ -14,6 +14,10 @@ namespace Sisk.Core.Internal;
 static class SpanHelpers {
 
     public static bool Contains<T> ( in ReadOnlySpan<T> search, T value, IEqualityComparer<T> comparer ) {
+
+        if (search.Length == 0)
+            return false;
+
         ref T first = ref MemoryMarshal.GetReference ( search );
         return Contains ( ref first, value, search.Length, comparer );
     }
@@ -21,9 +25,6 @@ static class SpanHelpers {
     // Adapted from System.Private.CoreLib/src/System/SpanHelpers.T.cs
     // checks if searchSpace contains value using comparer
     static bool Contains<T> ( ref T searchSpace, T value, int length, IEqualityComparer<T> comparer ) {
-
-        if (length == 0)
-            return false;
 
         nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 

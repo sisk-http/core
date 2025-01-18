@@ -260,7 +260,7 @@ namespace Sisk.Core.Routing {
                         I.Method.HasFlag ( J.Method ) ||
                         J.Method.HasFlag ( I.Method );
 
-                    if (I != J && methodMatched && HttpStringInternals.IsRoutePatternMatch ( I.Path, J.Path, this.MatchRoutesIgnoreCase )) {
+                    if (!ReferenceEquals ( I, J ) && methodMatched && HttpStringInternals.IsRoutePatternMatch ( I.Path, J.Path, this.MatchRoutesIgnoreCase )) {
                         throw new ArgumentException ( SR.Format ( SR.Router_Set_Collision, I, J ) );
                     }
                 }
