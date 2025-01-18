@@ -17,7 +17,7 @@ namespace Sisk.Core.Routing {
     /// <summary>
     /// Represents an HTTP route to be matched by an <see cref="Router"/>.
     /// </summary>
-    public sealed class Route {
+    public class Route {
         internal RouteAction? _singleParamCallback;
         internal ParameterlessRouteAction? _parameterlessRouteAction;
 

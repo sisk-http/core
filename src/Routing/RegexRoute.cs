@@ -15,7 +15,7 @@ namespace Sisk.Core.Routing;
 /// Represents an <see cref="Route"/> which it's implementation already enables
 /// <see cref="Route.UseRegex"/>.
 /// </summary>
-public class RegexRoute : Route {
+public sealed class RegexRoute : Route {
     /// <inheritdoc/>
     /// <exclude/>
     public RegexRoute ( RouteMethod method, [StringSyntax ( StringSyntaxAttribute.Regex )] string pattern, RouteAction action ) : base ( method, pattern, action ) {

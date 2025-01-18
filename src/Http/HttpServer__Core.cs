@@ -38,39 +38,39 @@ public partial class HttpServer {
         var headerComparer = StringComparer.OrdinalIgnoreCase;
 
         if (contentHeaders.ContentType?.ToString () is { } ContentType
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentType, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentType, headerComparer ))
             response.ContentType = ContentType;
 
         if (contentHeaders.ContentRange?.ToString () is { } ContentRange
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentRange, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentRange, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentRange, ContentRange );
 
         if (contentHeaders.ContentMD5 is { } ContentMD5
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentMD5, headerComparer )) // rfc1864#section-2
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentMD5, headerComparer )) // rfc1864#section-2
             response.AppendHeader ( HttpKnownHeaderNames.ContentMD5, Convert.ToBase64String ( ContentMD5 ) );
 
         if (contentHeaders.ContentLocation?.ToString () is { } ContentLocation
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLocation, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLocation, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentLocation, ContentLocation );
 
         if (contentHeaders.ContentDisposition?.ToString () is { } ContentDisposition
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentDisposition, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentDisposition, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentDisposition, ContentDisposition );
 
         if (contentHeaders.LastModified is { } LastModified
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.LastModified, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.LastModified, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.LastModified, LastModified.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'" ) );
 
         if (contentHeaders.Expires is { } Expires
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.Expires, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.Expires, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.Expires, Expires.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'" ) );
 
         if (contentHeaders.ContentLanguage.Count > 0
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLanguage, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLanguage, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentLanguage, string.Join ( ", ", contentHeaders.ContentLanguage ) );
 
         if (contentHeaders.ContentEncoding.Count > 0
-            && SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentEncoding, headerComparer ))
+            && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentEncoding, headerComparer ))
             response.AppendHeader ( HttpKnownHeaderNames.ContentEncoding, string.Join ( ", ", contentHeaders.ContentEncoding ) );
     }
 
