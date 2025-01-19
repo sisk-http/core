@@ -39,8 +39,9 @@ namespace Sisk.Core.Http {
         private HttpHeaderCollection? headers = null;
         private StringKeyStore? cookies = null;
         private StringValueCollection? query = null;
-        private IPAddress? remoteAddr;
-        private HttpMethod? requestMethod;
+
+        private IPAddress remoteAddr;
+        private HttpMethod requestMethod;
 
         private int currentFrame;
 
@@ -56,12 +57,23 @@ namespace Sisk.Core.Http {
             this.RequestedAt = DateTime.UtcNow.Add ( HttpServer.environmentUtcOffset );
 
             this.ContentLength = this.listenerRequest.ContentLength64;
+            this.remoteAddr = this.ReadRequestRemoteAddr ();
+            this.requestMethod = new HttpMethod ( this.listenerRequest.HttpMethod );
         }
 
         internal string mbConvertCodepage ( string input, Encoding inEnc, Encoding outEnc ) {
             byte [] tempBytes;
             tempBytes = inEnc.GetBytes ( input );
             return outEnc.GetString ( tempBytes );
+        }
+
+        IPAddress ReadRequestRemoteAddr () {
+            if (this.contextServerConfiguration.ForwardingResolver is { } fr) {
+                return fr.OnResolveClientAddress ( this, this.listenerRequest.RemoteEndPoint );
+            }
+            else {
+                return new IPAddress ( this.listenerRequest.RemoteEndPoint.Address.GetAddressBytes () );
+            }
         }
 
         byte [] ReadRequestStreamContents () {
@@ -235,10 +247,7 @@ namespace Sisk.Core.Http {
         /// Gets the HTTP request method.
         /// </summary>
         public HttpMethod Method {
-            get {
-                this.requestMethod ??= new HttpMethod ( this.listenerRequest.HttpMethod );
-                return this.requestMethod;
-            }
+            get => this.requestMethod;
         }
 
         /// <summary>
@@ -304,14 +313,6 @@ namespace Sisk.Core.Http {
         /// </summary>
         public IPAddress RemoteAddress {
             get {
-                if (this.remoteAddr is null) {
-                    if (this.contextServerConfiguration.ForwardingResolver is { } fr) {
-                        this.remoteAddr = fr.OnResolveClientAddress ( this, this.listenerRequest.RemoteEndPoint );
-                    }
-                    else {
-                        this.remoteAddr = new IPAddress ( this.listenerRequest.RemoteEndPoint.Address.GetAddressBytes () );
-                    }
-                }
                 return this.remoteAddr;
             }
         }

@@ -56,6 +56,9 @@ public sealed class HttpServerHostContextBuilder {
     /// Builds an <see cref="HttpServerHostContext"/> with the specified parameters.
     /// </summary>
     public HttpServerHostContext Build () {
+
+        this._context.HttpServer.handler._default.hostContext = this._context;
+
         if (this.listeningHost.Ports.Count == 0)
             this.listeningHost.Ports.Add ( ListeningPort.GetRandomPort () );
 
@@ -67,7 +70,17 @@ public sealed class HttpServerHostContextBuilder {
     /// </summary>
     /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
     public HttpServerHostContextBuilder UseBootstraper ( Action bootstrapAction ) {
-        this._context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( bootstrapAction );
+        this._context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( (bootstrapAction, "Bootstrap action") );
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an function that will be executed immediately before starting the HTTP server.
+    /// </summary>
+    /// <param name="name">Defines an custom label for the bootstraping action name.</param>
+    /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
+    public HttpServerHostContextBuilder UseBootstraper ( string name, Action bootstrapAction ) {
+        this._context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( (bootstrapAction, name) );
         return this;
     }
 

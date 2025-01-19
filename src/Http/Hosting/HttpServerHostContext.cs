@@ -17,6 +17,7 @@ namespace Sisk.Core.Http.Hosting;
 /// </summary>
 public sealed class HttpServerHostContext : IDisposable {
     internal List<Func<string>> startupMessages = new ();
+    internal bool verbose = true;
 
     /// <summary>
     /// Gets the initialization parameters from the portable configuration file.
@@ -69,6 +70,8 @@ public sealed class HttpServerHostContext : IDisposable {
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
     public void Start ( bool verbose = true, bool preventHault = true ) {
+
+        this.verbose = verbose;
         this.HttpServer.Start ();
 
         if (verbose) {

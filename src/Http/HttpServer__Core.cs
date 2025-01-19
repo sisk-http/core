@@ -197,7 +197,7 @@ public partial class HttpServer {
                 return;
             }
 
-            if (baseRequest.IsLocal == false && this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop) {
+            if (this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop && baseRequest.IsLocal == false) {
                 executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
                 baseResponse.Abort ();
                 return;
