@@ -37,7 +37,6 @@ internal class DefaultHttpServerHandler : HttpServerHandler {
     }
 
     protected override void OnSetupRouter ( Router router ) {
-        if (this._routerSetup != null)
-            this._routerSetup ( router );
+        this._routerSetup?.Invoke ( router );
     }
 }

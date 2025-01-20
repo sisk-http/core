@@ -169,10 +169,10 @@ namespace Sisk.Core.Internal {
             else if (wildcardCount == 1) {
                 string newWildcardPattern = wildcardPattern.Replace ( "*", string.Empty );
 
-                if (wildcardPattern.StartsWith ( "*" )) {
+                if (wildcardPattern.StartsWith ( '*' )) {
                     return subject.EndsWith ( newWildcardPattern, comparer );
                 }
-                else if (wildcardPattern.EndsWith ( "*" )) {
+                else if (wildcardPattern.EndsWith ( '*' )) {
                     return subject.StartsWith ( newWildcardPattern, comparer );
                 }
                 else {

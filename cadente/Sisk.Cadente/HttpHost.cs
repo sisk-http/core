@@ -125,7 +125,7 @@ public sealed class HttpHost : IDisposable {
                             checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
                             enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
                     }
-                    catch (Exception ex) {
+                    catch (Exception) {
                         //Logger.LogInformation ( $"[{connection.Id}] Failed SSL authenticate: {ex.Message}" );
                     }
                 }

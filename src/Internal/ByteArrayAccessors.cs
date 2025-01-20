@@ -9,7 +9,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace Sisk.Core;
+namespace Sisk.Core.Internal;
 
 class ByteArrayAccessors {
     [UnsafeAccessor ( UnsafeAccessorKind.Field, Name = "_content" )]

@@ -237,5 +237,15 @@ namespace Sisk.Core.Http {
                 return false;
             }
         }
+
+        /// <inheritdoc/>
+        public static bool operator == ( ListeningPort left, ListeningPort right ) {
+            return left.Equals ( right );
+        }
+
+        /// <inheritdoc/>
+        public static bool operator != ( ListeningPort left, ListeningPort right ) {
+            return !(left == right);
+        }
     }
 }

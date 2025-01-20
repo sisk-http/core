@@ -81,7 +81,7 @@ namespace Sisk.Core.Http.Streams {
                 HttpServer.SetCorsHeaders ( req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res );
         }
 
-        private void keepAliveTask () {
+        private void KeepAliveTask () {
             while (this.IsActive) {
                 if (this.lastSuccessfullMessage < DateTime.Now - this.keepAlive) {
                     this.Dispose ();
@@ -162,7 +162,9 @@ namespace Sisk.Core.Http.Streams {
                 throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
             }
             this.keepAlive = maximumIdleTolerance;
-            new Task ( this.keepAliveTask ).Start ();
+
+            new Task ( this.KeepAliveTask ).Start ();
+
             this.terminatingMutex.WaitOne ();
         }
 

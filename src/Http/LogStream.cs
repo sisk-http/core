@@ -277,12 +277,12 @@ namespace Sisk.Core.Http {
         /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
         /// </summary>
         /// <param name="line">The line which will be written to the log stream.</param>
-        protected virtual void WriteLineInternal ( string line ) {
+        protected virtual async void WriteLineInternal ( string line ) {
             if (this.NormalizeEntries) {
-                this.EnqueueMessageLine ( line.Normalize ().Trim ().ReplaceLineEndings () );
+                await this.EnqueueMessageLine ( line.Normalize ().Trim ().ReplaceLineEndings () );
             }
             else {
-                this.EnqueueMessageLine ( line );
+                await this.EnqueueMessageLine ( line );
             }
         }
 
@@ -301,9 +301,9 @@ namespace Sisk.Core.Http {
             return this;
         }
 
-        void EnqueueMessageLine ( string message ) {
+        async ValueTask EnqueueMessageLine ( string message ) {
             ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
-            _ = this.channel.Writer.WriteAsync ( message );
+            await this.channel.Writer.WriteAsync ( message );
         }
 
         void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {

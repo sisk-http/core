@@ -51,6 +51,8 @@ public sealed class PathHelper {
         return PathUtility.NormalizedCombine ( false, Path.DirectorySeparatorChar, paths );
     }
 
+    private static readonly char [] pathNormalizationChars = new char [] { '/', '\\' };
+
     /// <summary>
     /// Normalize the given path to use the specified directory separator, trim the last separator and
     /// remove empty entries.
@@ -58,7 +60,7 @@ public sealed class PathHelper {
     /// <param name="path">The path to normalize.</param>
     /// <param name="directorySeparator">The directory separator.</param>
     public static string NormalizePath ( string path, char directorySeparator = '/' ) {
-        string [] parts = path.Split ( new char [] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries );
+        string [] parts = path.Split ( pathNormalizationChars, StringSplitOptions.RemoveEmptyEntries );
         string result = string.Join ( directorySeparator, parts );
         if (path.StartsWith ( '/' ) || path.StartsWith ( '\\' ))
             result = directorySeparator + result;

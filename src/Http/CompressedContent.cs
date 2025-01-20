@@ -65,7 +65,7 @@ public abstract class CompressedContent : HttpContent {
     /// <inheritdoc/>
     protected override sealed void SerializeToStream ( Stream stream, TransportContext? context, CancellationToken cancellationToken ) {
         using var compressStream = this.GetCompressingStream ( stream );
-        using var contentStream = this.InnerContent.ReadAsStream ();
+        using var contentStream = this.InnerContent.ReadAsStream ( cancellationToken );
 
         if (contentStream.CanSeek)
             contentStream.Seek ( 0, SeekOrigin.Begin );

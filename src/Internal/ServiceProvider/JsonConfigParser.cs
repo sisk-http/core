@@ -18,14 +18,14 @@ namespace Sisk.Core.Internal.ServiceProvider {
             string filename = prov.ConfigurationFile;
 
             string fileContents = File.ReadAllText ( filename );
-            ConfigStructureFile? config = System.Text.Json.JsonSerializer.Deserialize ( fileContents, typeof ( ConfigStructureFile ),
+
+            if (System.Text.Json.JsonSerializer.Deserialize ( fileContents, typeof ( ConfigStructureFile ),
                 new SourceGenerationContext ( new System.Text.Json.JsonSerializerOptions () {
                     AllowTrailingCommas = true,
                     PropertyNameCaseInsensitive = true,
                     ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
-                } ) ) as ConfigStructureFile;
+                } ) ) is not ConfigStructureFile config) {
 
-            if (config is null) {
                 throw new Exception ( SR.Provider_ConfigParser_ConfigFileInvalid );
             }
 

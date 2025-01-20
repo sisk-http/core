@@ -133,13 +133,13 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <inheritdoc/>
     /// <exclude/>
     public bool Contains ( KeyValuePair<string, string?> item ) {
-        return this.Keys.Contains ( item.Key ) && this._decorator [ item.Key ] == item.Value;
+        return this.ContainsKey ( item.Key ) && this._decorator [ item.Key ] == item.Value;
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public bool ContainsKey ( string key ) {
-        return this.Keys.Contains ( key );
+        return this.ContainsKey ( key );
     }
 
     /// <inheritdoc/>

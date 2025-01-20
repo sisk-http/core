@@ -37,9 +37,10 @@ public sealed class HttpServerHostContextBuilder {
     internal HttpServerHostContextBuilder () {
         this.router = new Router ();
         this.configuration = new HttpServerConfiguration ();
-        this.listeningHost = new ListeningHost ();
+        this.listeningHost = new ListeningHost {
+            Router = this.router
+        };
 
-        this.listeningHost.Router = this.router;
         this.configuration.ListeningHosts.Add ( this.listeningHost );
 
         this.server = new HttpServer ( this.configuration );

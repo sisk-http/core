@@ -36,8 +36,7 @@ namespace Sisk.Core.Http.Streams {
                     }
                     this._ws.Add ( src );
                 }
-                if (OnWebSocketRegister != null)
-                    OnWebSocketRegister ( this, src );
+                OnWebSocketRegister?.Invoke ( this, src );
             }
         }
 

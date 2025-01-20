@@ -46,7 +46,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     /// <param name="comparer">The comparer used for key equality.</param>
     /// <param name="items">The inner collection to add to this instance.</param>
     public StringKeyStore ( IEqualityComparer<string> comparer, IDictionary<string, string []>? items ) {
-        this.Comparer = StringComparer.CurrentCulture;
+        this.Comparer = comparer;
         this.items = new ();
         if (items != null)
             this.AddRange ( items );

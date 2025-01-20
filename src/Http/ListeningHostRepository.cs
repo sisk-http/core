@@ -49,7 +49,7 @@ namespace Sisk.Core.Http {
         /// <param name="item">The <see cref="ListeningHost"/> to add to this collection.</param>
         public void Add ( ListeningHost item ) {
             if (this.Contains ( item ))
-                throw new ArgumentOutOfRangeException ( SR.ListeningHostRepository_Duplicate );
+                throw new ArgumentException ( SR.ListeningHostRepository_Duplicate, nameof ( item ) );
             this._hosts.Add ( item );
         }
 

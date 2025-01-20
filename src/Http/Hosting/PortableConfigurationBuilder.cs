@@ -64,8 +64,7 @@ public sealed class PortableConfigurationBuilder {
         var pipelineReader = this._pipeline ?? new JsonConfigParser ();
         pipelineReader.ReadConfiguration ( provider );
 
-        if (this._initializerHandler != null)
-            this._initializerHandler ( this._context.Parameters );
+        this._initializerHandler?.Invoke ( this._context.Parameters );
 
         this._context.Parameters.MakeReadonly ();
     }

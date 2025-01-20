@@ -152,8 +152,7 @@ namespace Sisk.Core.Http.Streams {
                     this.waitNextEvent.Set ();
                 }
                 else {
-                    if (OnReceive != null)
-                        OnReceive.Invoke ( this, message );
+                    OnReceive?.Invoke ( this, message );
                 }
             }
         }

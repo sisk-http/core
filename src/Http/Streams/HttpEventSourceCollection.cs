@@ -45,8 +45,7 @@ namespace Sisk.Core.Http.Streams {
                     }
                     this._eventSources.Add ( src );
                 }
-                if (OnEventSourceRegistered != null)
-                    OnEventSourceRegistered ( this, src );
+                OnEventSourceRegistered?.Invoke ( this, src );
             }
         }
 

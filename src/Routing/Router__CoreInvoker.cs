@@ -179,7 +179,6 @@ public partial class Router {
         }
         else if (matchResult == RouteMatchResult.OptionsMatched) {
             HttpResponse corsResponse = new HttpResponse ();
-            corsResponse.Status = HttpStatusCode.OK;
 
             return new RouterExecutionResult ( corsResponse, null, matchResult, null );
         }
@@ -192,9 +191,12 @@ public partial class Router {
             HttpResponse? result = null;
 
             if (flag.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith ( '/' ) && request.Method == HttpMethod.Get) {
-                HttpResponse res = new HttpResponse ();
-                res.Status = HttpStatusCode.TemporaryRedirect;
-                res.Headers.Add ( HttpKnownHeaderNames.Location, request.Path + "/" + request.QueryString );
+                HttpResponse res = new HttpResponse () {
+                    Status = HttpStatusInformation.TemporaryRedirect,
+                    Headers = new () {
+                        Location = $"{request.Path}/{request.QueryString}"
+                    }
+                };
 
                 return new RouterExecutionResult ( res, matchedRoute, matchResult, null );
             }
@@ -202,9 +204,7 @@ public partial class Router {
             this.parentServer?.handler.ContextBagCreated ( context.RequestBag );
 
             #region Before-response handlers
-            HttpResponse? rhResponse;
-            Exception? rhException;
-            if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException )) {
+            if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out HttpResponse? rhResponse, out Exception? rhException )) {
                 return new RouterExecutionResult ( rhResponse, matchedRoute, matchResult, rhException );
             }
             if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException )) {

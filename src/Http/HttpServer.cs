@@ -145,19 +145,15 @@ namespace Sisk.Core.Http {
         ) {
             router = new Router ();
             if (insecureHttpPort == 0) {
-                host = new ListeningHost ();
-                host.Router = router;
-                host.Ports = new ListeningPort []
-                {
-                    ListeningPort.GetRandomPort()
+                host = new ListeningHost {
+                    Router = router,
+                    Ports = [ ListeningPort.GetRandomPort () ]
                 };
             }
             else {
-                host = new ListeningHost ();
-                host.Router = router;
-                host.Ports = new ListeningPort []
-                {
-                    new ListeningPort(false, "localhost", insecureHttpPort)
+                host = new ListeningHost {
+                    Router = router,
+                    Ports = [ new ListeningPort ( false, "localhost", insecureHttpPort ) ]
                 };
             }
             configuration = new HttpServerConfiguration ();

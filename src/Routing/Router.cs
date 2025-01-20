@@ -191,10 +191,8 @@ namespace Sisk.Core.Routing {
                     ref ActionHandler current = ref Unsafe.Add ( ref pointer, i );
 
                     if (actionType.IsAssignableTo ( current.MatchingType )) {
-                        var resultObj = current.Handler ( result );
-                        if (resultObj is null) {
-                            throw new InvalidOperationException ( SR.Format ( SR.Router_Handler_HandlerNotHttpResponse, current.MatchingType.Name ) );
-                        }
+                        var resultObj = current.Handler ( result )
+                            ?? throw new InvalidOperationException ( SR.Format ( SR.Router_Handler_HandlerNotHttpResponse, current.MatchingType.Name ) );
                         response = resultObj;
                         return true;
                     }
