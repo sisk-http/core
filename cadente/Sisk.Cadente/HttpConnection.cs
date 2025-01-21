@@ -10,6 +10,7 @@
 using System.Buffers;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
+using Sisk.Core.Http;
 
 namespace Sisk.Cadente;
 
@@ -63,44 +64,26 @@ sealed class HttpConnection : IDisposable {
 
                 if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                     connectionCloseRequested = true;
-                    managedSession.Response.Headers.Set ( new HttpHeader ( "Connection", "close" ) );
+                    managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
                 }
 
                 if (managedSession.Response.ResponseStream is Stream { } s) {
                     responseStream = s;
                 }
                 else {
-                    managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
+                    managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
                 }
 
                 Stream outputStream = this._connectionStream;
-                List<string> transferEncoding = new List<string> ( 4 );
                 if (responseStream is not null) {
 
-                    // create the responsestream pipeline on the
-                    // transfer-encoding header
-                    //
-                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.Chunked )
-                            || !responseStream.CanSeek) {
-                        transferEncoding.Add ( "chunked" );
+                    if (managedSession.Response.SendChunked || !responseStream.CanSeek) {
+                        managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" );
                         responseStream = new HttpChunkedStream ( responseStream );
                     }
-                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.GZip )) {
-                        transferEncoding.Add ( "deflate" );
-                        throw new NotImplementedException ( "GZip is not implemented" );
-                    }
-                    if (managedSession.Response.TransferEncoding.HasFlag ( TransferEncoding.Deflate )) {
-                        transferEncoding.Add ( "deflate" );
-                        throw new NotImplementedException ( "Deflate is not implemented" );
-                    }
-
-                    if (transferEncoding.Count > 0)
-                        managedSession.Response.Headers.Set ( new HttpHeader ( "Transfer-Encoding", string.Join ( ", ", transferEncoding ) ) );
-                    if (responseStream.CanSeek)
-                        managedSession.Response.Headers.Set ( new HttpHeader ( "Content-Length", responseStream.Length.ToString () ) );
                 }
 
-                if (!managedSession.ResponseHeadersAlreadySent && !await managedSession.WriteHttpResponseHeaders ()) {
+                if (managedSession.ResponseHeadersAlreadySent == false && !await managedSession.WriteHttpResponseHeaders ()) {
                     return HttpConnectionState.ResponseWriteException;
                 }
 
@@ -109,8 +92,6 @@ sealed class HttpConnection : IDisposable {
                 }
 
                 this._connectionStream.Flush ();
-
-                //Logger.LogInformation ( $"[{this.Id}] Response sent: {managedSession.Response.StatusCode} {managedSession.Response.StatusDescription}" );
 
                 if (connectionCloseRequested) {
                     break;

@@ -35,9 +35,9 @@ public sealed class HttpResponse {
     public List<HttpHeader> Headers { get; set; }
 
     /// <summary>
-    /// Gets or sets the transfer encoding for the response.
+    /// Gets or sets an boolean indicating if this <see cref="HttpResponse"/> should be send in chunks or not.
     /// </summary>
-    public TransferEncoding TransferEncoding { get; set; }
+    public bool SendChunked { get; set; }
 
     // MUST SPECIFY ResponseStream OR ResponseBytes, NOT BOTH
     /// <summary>
