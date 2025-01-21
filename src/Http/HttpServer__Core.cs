@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
@@ -146,10 +147,13 @@ public partial class HttpServer {
     private void ProcessRequest ( HttpListenerContext context ) {
         HttpRequest request = null!;
         HttpResponse? response = null;
+
         HttpServerFlags flag = this.ServerConfiguration.Flags;
         Stopwatch sw = Stopwatch.StartNew ();
+
         HttpListenerResponse baseResponse = context.Response;
         HttpListenerRequest baseRequest = context.Request;
+
         HttpContext? srContext = new HttpContext ( this );
         bool closeStream = true;
 
@@ -167,15 +171,12 @@ public partial class HttpServer {
 
         HttpContent? servedContent = null;
         HttpServerExecutionResult executionResult = new HttpServerExecutionResult () {
-            Request = request,
-            Response = response,
             Context = srContext,
             Status = HttpServerExecutionStatus.NoResponse
         };
 
-        // 38480
-
         try {
+
             if (!flag.AsyncRequestProcessing) {
                 Monitor.Enter ( this.httpListener );
             }
@@ -188,22 +189,13 @@ public partial class HttpServer {
             srContext.Request = request;
             request.Context = srContext;
 
-            executionResult.Request = request;
-            executionResult.Context = srContext;
-
-            if (baseRequest.Url is null) {
-                baseResponse.StatusCode = 400;
-                executionResult.Status = HttpServerExecutionStatus.DnsFailed;
-                return;
-            }
-
             if (this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop && baseRequest.IsLocal == false) {
                 executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
                 baseResponse.Abort ();
                 return;
             }
 
-            string dnsSafeHost = baseRequest.Url.Host;
+            string dnsSafeHost = request.Uri.Host;
             if (this.ServerConfiguration.ForwardingResolver is ForwardingResolver fr) {
                 dnsSafeHost = fr.OnResolveRequestHost ( request, dnsSafeHost );
             }
@@ -252,13 +244,15 @@ public partial class HttpServer {
             }
 
             // check for illegal body content requests
-            if (flag.ThrowContentOnNonSemanticMethods && (
-                   request.Method == HttpMethod.Get
-                || request.Method == HttpMethod.Options
-                || request.Method == HttpMethod.Head
-                || request.Method == HttpMethod.Trace
-                || request.Method == HttpMethod.Connect
-                ) && request.ContentLength > 0) {
+            if (flag.ThrowContentOnNonSemanticMethods
+                && request.ContentLength > 0
+                && (
+                Ascii.Equals ( baseRequest.HttpMethod, "GET" ) ||
+                Ascii.Equals ( baseRequest.HttpMethod, "OPTIONS" ) ||
+                Ascii.Equals ( baseRequest.HttpMethod, "HEAD" ) ||
+                Ascii.Equals ( baseRequest.HttpMethod, "TRACE" ) ||
+                Ascii.Equals ( baseRequest.HttpMethod, "CONNECT" ))) {
+
                 executionResult.Status = HttpServerExecutionStatus.ContentServedOnIllegalMethod;
                 baseResponse.StatusCode = 400;
                 return;
@@ -330,7 +324,9 @@ public partial class HttpServer {
 
             bool canServeContent;
             if (flag.PreventResponseContentsInProhibitedMethods) {
-                canServeContent = request.Method != HttpMethod.Head && request.Method != HttpMethod.Options;
+                canServeContent =
+                    (Ascii.Equals ( baseRequest.HttpMethod, "HEAD" ) ||
+                     Ascii.Equals ( baseRequest.HttpMethod, "OPTIONS" )) == false;
             }
             else {
                 canServeContent = true;
@@ -339,9 +335,9 @@ public partial class HttpServer {
             if (canServeContent) {
                 if (servedContent is ByteArrayContent barrayContent) {
                     ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
-                    byte [] contentBytes = ByteArrayAccessors.UnsafeGetContent ( barrayContent );
-                    int offset = ByteArrayAccessors.UnsafeGetOffset ( barrayContent );
-                    int count = ByteArrayAccessors.UnsafeGetCount ( barrayContent );
+                    ref byte [] contentBytes = ref ByteArrayAccessors.UnsafeGetContent ( barrayContent );
+                    ref int offset = ref ByteArrayAccessors.UnsafeGetOffset ( barrayContent );
+                    ref int count = ref ByteArrayAccessors.UnsafeGetCount ( barrayContent );
 
                     if (response.SendChunked) {
                         baseResponse.SendChunked = true;
@@ -373,18 +369,11 @@ public partial class HttpServer {
 
 finishSending:
 #region Step 5 - Close streams and send response
-
-            executionResult.ResponseSize = response?.CalculedLength ?? baseResponse.ContentLength64;
-            executionResult.RequestSize = request.ContentLength;
-            executionResult.Response = response;
+            baseResponse.Close ();
+            closeStream = false;
 
             if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
                 executionResult.Status = HttpServerExecutionStatus.Executed;
-
-            baseResponse.Close ();
-            baseRequest.InputStream.Close ();
-
-            closeStream = false;
             #endregion
         }
         catch (ObjectDisposedException objException) {
@@ -419,7 +408,11 @@ finishSending:
         finally {
 
             sw.Stop ();
+
+            executionResult.ResponseSize = response?.CalculedLength ?? baseResponse.ContentLength64;
+            executionResult.RequestSize = request.ContentLength;
             executionResult.Elapsed = sw.Elapsed;
+
             servedContent?.Dispose ();
 
             if (flag.DisposeDisposableContextValues)

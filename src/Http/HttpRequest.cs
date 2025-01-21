@@ -40,6 +40,7 @@ namespace Sisk.Core.Http {
         private StringKeyStore? cookies = null;
         private StringValueCollection? query = null;
 
+        private Uri requestUri;
         private IPAddress remoteAddr;
         private HttpMethod requestMethod;
 
@@ -56,6 +57,7 @@ namespace Sisk.Core.Http {
             this.listenerRequest = context.Request;
             this.RequestedAt = DateTime.UtcNow.Add ( HttpServer.environmentUtcOffset );
 
+            this.requestUri = context.Request.Url ?? throw new HttpRequestException ( SR.HttpRequest_Error );
             this.ContentLength = this.listenerRequest.ContentLength64;
             this.remoteAddr = this.ReadRequestRemoteAddr ();
             this.requestMethod = new HttpMethod ( this.listenerRequest.HttpMethod );
@@ -202,14 +204,14 @@ namespace Sisk.Core.Http {
         /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
         /// </remarks>
         public string Authority {
-            get => this.listenerRequest.Url!.Authority;
+            get => this.requestUri.Authority;
         }
 
         /// <summary>
         /// Gets the HTTP request path without the query string.
         /// </summary>
         public string Path {
-            get => this.listenerRequest.Url?.AbsolutePath ?? "/";
+            get => this.requestUri.AbsolutePath;
         }
 
         /// <summary>
@@ -226,14 +228,14 @@ namespace Sisk.Core.Http {
         /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
         /// </remarks>
         public string FullUrl {
-            get => this.listenerRequest.Url!.ToString ();
+            get => this.requestUri.ToString ();
         }
 
         /// <summary>
         /// Gets the <see cref="System.Uri"/> component for this HTTP request requested URL.
         /// </summary>
         public Uri Uri {
-            get => this.listenerRequest.Url!;
+            get => this.requestUri;
         }
 
         /// <summary>

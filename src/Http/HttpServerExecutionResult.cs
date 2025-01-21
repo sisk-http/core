@@ -15,13 +15,13 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets the <see cref="HttpRequest"/> received in this diagnosis.
         /// </summary>
-        public HttpRequest Request { get; internal set; } = null!;
+        public HttpRequest Request { get => this.Context.Request; }
 
         /// <summary>
         /// Gets the resulted <see cref="HttpResponse"/> send by the router, if any. This object can be null if the
         /// server didn't sent any response to the client.
         /// </summary>
-        public HttpResponse? Response { get; internal set; }
+        public HttpResponse? Response { get => this.Context.RouterResponse; }
 
         /// <summary>
         /// Gets the <see cref="HttpContext"/> of this execution result.
@@ -94,6 +94,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Represents that the client did not correctly specify a host in the request.
         /// </summary>
+        [Obsolete ( "This field is now obsolete and is not used anywhere." )]
         DnsFailed,
 
         /// <summary>
