@@ -24,7 +24,7 @@ sealed class HttpConnection : IDisposable {
     public readonly int Id = 0;
 #endif
 
-    public const int REQUEST_BUFFER_SIZE = 4096;
+    public const int REQUEST_BUFFER_SIZE = 8192; // buffer dedicated to headers. more than it? return 400.
     public const int RESPONSE_BUFFER_SIZE = 8192;
 
     public HttpAction Action { get; set; }
@@ -38,72 +38,79 @@ sealed class HttpConnection : IDisposable {
         ObjectDisposedException.ThrowIf ( this.disposedValue, this );
 
         bool connectionCloseRequested = false;
-        byte [] buffer = ArrayPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
+        var bufferOwnership = MemoryPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
+        try {
 
-        while (this._connectionStream.CanRead && !this.disposedValue) {
+            while (this._connectionStream.CanRead && !this.disposedValue) {
 
-            HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream, ref buffer );
-            Stream? responseStream = null;
+                HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream, ref bufferOwnership );
+                Stream? responseStream = null;
 
-            try {
+                try {
 
-                var readRequestState = await requestReader.ReadHttpRequest ();
-                var nextRequest = readRequestState.Item2;
+                    var readRequestState = await requestReader.ReadHttpRequest ();
+                    var nextRequest = readRequestState.Item2;
 
-                if (nextRequest is null) {
-                    return readRequestState.Item1 switch {
-                        HttpRequestReadState.StreamZero => HttpConnectionState.ConnectionClosedByStreamRead,
-                        _ => HttpConnectionState.BadRequest
-                    };
-                }
+                    if (nextRequest is null) {
+                        return readRequestState.Item1 switch {
+                            HttpRequestReadState.StreamZero => HttpConnectionState.ConnectionClosedByStreamRead,
+                            _ => HttpConnectionState.BadRequest
+                        };
+                    }
 
-                //Logger.LogInformation ( $"[{this.Id}] Received \"{nextRequest.Method} {nextRequest.Path}\"" );
-                HttpSession managedSession = new HttpSession ( nextRequest, this._connectionStream );
+                    //Logger.LogInformation ( $"[{this.Id}] Received \"{nextRequest.Method} {nextRequest.Path}\"" );
+                    HttpSession managedSession = new HttpSession ( nextRequest, this._connectionStream );
 
-                this.Action ( managedSession );
+                    this.Action ( managedSession );
 
-                if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
-                    connectionCloseRequested = true;
-                    managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
-                }
+                    if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
+                        connectionCloseRequested = true;
+                        managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
+                    }
 
-                if (managedSession.Response.ResponseStream is Stream { } s) {
-                    responseStream = s;
-                }
-                else {
-                    managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
-                }
+                    if (managedSession.Response.ResponseStream is Stream { } s) {
+                        responseStream = s;
+                    }
+                    else {
+                        managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
+                    }
 
-                Stream outputStream = this._connectionStream;
-                if (responseStream is not null) {
+                    Stream outputStream = this._connectionStream;
+                    if (responseStream is not null) {
 
-                    if (managedSession.Response.SendChunked || !responseStream.CanSeek) {
-                        managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" );
-                        responseStream = new HttpChunkedStream ( responseStream );
+                        if (managedSession.Response.SendChunked || !responseStream.CanSeek) {
+                            managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" ) );
+                            responseStream = new HttpChunkedStream ( responseStream );
+                        }
+                        else {
+                            managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, responseStream.Length.ToString () ) );
+                        }
+                    }
+
+                    if (managedSession.ResponseHeadersAlreadySent == false && !await managedSession.WriteHttpResponseHeaders ()) {
+                        return HttpConnectionState.ResponseWriteException;
+                    }
+
+                    if (responseStream is not null) {
+                        await responseStream.CopyToAsync ( outputStream );
+                    }
+
+                    this._connectionStream.Flush ();
+
+                    if (connectionCloseRequested) {
+                        break;
                     }
                 }
-
-                if (managedSession.ResponseHeadersAlreadySent == false && !await managedSession.WriteHttpResponseHeaders ()) {
-                    return HttpConnectionState.ResponseWriteException;
-                }
-
-                if (responseStream is not null) {
-                    await responseStream.CopyToAsync ( outputStream );
-                }
-
-                this._connectionStream.Flush ();
-
-                if (connectionCloseRequested) {
-                    break;
+                finally {
+                    responseStream?.Dispose ();
                 }
             }
-            finally {
-                responseStream?.Dispose ();
-                ArrayPool<byte>.Shared.Return ( buffer );
-            }
+
+            return HttpConnectionState.ConnectionClosed;
         }
-
-        return HttpConnectionState.ConnectionClosed;
+        finally {
+            bufferOwnership.Dispose ();
+        }
     }
 
     private void Dispose ( bool disposing ) {

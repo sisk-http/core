@@ -55,16 +55,17 @@ internal class HttpRequestStream : Stream {
     }
 
     int ReadFromBuffer ( byte [] buffer, int offset, int count ) {
-        int requestedRead = count - offset;
         long availableRead = Math.Min ( this.bufferedByteLength, this.baseRequest.ContentLength ) - this.read;
 
         if (availableRead <= 0)
             return 0;
 
-        long toRead = Math.Min ( requestedRead, availableRead );
+        long toRead = Math.Min ( count, availableRead );
 
-        int bufferOffset = this.read + this.baseRequest.BufferHeaderIndex;
-        Array.Copy ( this.baseRequest.BufferedContent, bufferOffset, buffer, offset, toRead );
+        int bufferOffset = this.read;
+
+        var bufferMemory = new Memory<byte> ( buffer );
+        this.baseRequest.BufferedContent [ bufferOffset.. ].CopyTo ( bufferMemory [ offset..(offset + (int) toRead) ] );
 
         return (int) toRead;
     }

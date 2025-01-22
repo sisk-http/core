@@ -11,36 +11,33 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Sisk.Cadente.HighPerformance;
 
 namespace Sisk.Cadente.HttpSerializer;
 
 sealed class HttpRequestReader {
 
     Stream _stream;
-    byte [] buffer;
-
-    const int BUFFER_LOOKAHEAD_OFFSET = 64;
+    IMemoryOwner<byte> bufferOwnership;
 
     const byte SPACE = 0x20;
     const byte CARRIAGE_RETURN = 0x0D; //\r
     const byte DOUBLE_DOTS = 0x3A; // :
 
-    public HttpRequestReader ( Stream stream, ref byte [] buffer ) {
+    public HttpRequestReader ( Stream stream, ref IMemoryOwner<byte> bufferOwnership ) {
         this._stream = stream;
-        this.buffer = buffer;
+        this.bufferOwnership = bufferOwnership;
     }
 
     public async Task<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
         try {
 
-            int read = await this._stream.ReadAsync ( this.buffer );
+            int read = await this._stream.ReadAsync ( this.bufferOwnership.Memory );
 
             if (read == 0) {
                 return (HttpRequestReadState.StreamZero, null);
             }
 
-            var request = this.ParseHttpRequest ( ref this.buffer, read );
+            var request = this.ParseHttpRequest ( read );
             return (HttpRequestReadState.RequestRead, request);
         }
         catch (Exception ex) {
@@ -50,7 +47,7 @@ sealed class HttpRequestReader {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public HttpRequestBase? ParseHttpRequest ( ref byte [] inputBuffer, int length ) {
+    public HttpRequestBase? ParseHttpRequest ( int length ) {
 
         const int STEP_READ_METHOD = 0;
         const int STEP_READ_PATH = 1;
@@ -59,11 +56,11 @@ sealed class HttpRequestReader {
 
         bool requestStreamFinished = false;
 
-        ReadOnlySpan<byte> buffer = inputBuffer;
+        Memory<byte> memory = this.bufferOwnership.Memory;
+        Span<byte> memSpan = memory.Span;
 
-        ReadOnlySpan<byte> method = null!;
-        ReadOnlySpan<byte> path = null!;
-        ReadOnlySpan<byte> version = null!;
+        ReadOnlyMemory<byte> method = null!;
+        ReadOnlyMemory<byte> path = null!;
 
         ReadOnlySpan<byte> headerLine;
         ReadOnlySpan<byte> headerLineName;
@@ -87,7 +84,7 @@ sealed class HttpRequestReader {
 
         List<HttpHeader> headers = new List<HttpHeader> ( 64 );
 
-        ref byte firstByte = ref MemoryMarshal.GetReference ( buffer );
+        ref byte firstByte = ref MemoryMarshal.GetReference ( memSpan );
         for (int i = 0; i < length; i++) {
             ref byte currentByte = ref Unsafe.Add ( ref firstByte, i );
 
@@ -95,7 +92,7 @@ sealed class HttpRequestReader {
                 case STEP_READ_METHOD:
                     if (currentByte == SPACE) {
                         methodIndex = i;
-                        method = buffer [ 0..i ];
+                        method = memory [ 0..i ];
                         step = STEP_READ_PATH;
                     }
                     break;
@@ -103,7 +100,7 @@ sealed class HttpRequestReader {
                 case STEP_READ_PATH:
                     if (currentByte == SPACE) {
                         pathIndex = i;
-                        path = buffer [ (methodIndex + 1)..i ];
+                        path = memory [ (methodIndex + 1)..i ];
                         step = STEP_READ_VERSION;
                     }
                     break;
@@ -111,7 +108,7 @@ sealed class HttpRequestReader {
                 case STEP_READ_VERSION:
                     if (currentByte == CARRIAGE_RETURN) {
                         versionIndex = i;
-                        version = buffer [ (pathIndex + 1)..i ];
+                        // version = memSpan [ (pathIndex + 1)..i ];
                         headerLineIndex = i + 1; //+1 includes \LF
                         step = STEP_READ_HEADERS;
                     }
@@ -119,27 +116,15 @@ sealed class HttpRequestReader {
 
                 case STEP_READ_HEADERS:
 
-                    // checks whether the current buffer has all the request headers. if not, read more data from the buffer
-                    int bufferLength = buffer.Length;
+                    // checks whether the current buffer has all the request headers. 
+                    if (!requestStreamFinished && i + 32/*BUFFER_LOOKAHEAD_OFFSET*/ > memSpan.Length) {
 
-                    if (!requestStreamFinished && i + BUFFER_LOOKAHEAD_OFFSET > bufferLength) {
-                        ArrayPool<byte>.Shared.Resize ( ref inputBuffer, inputBuffer.Length * 2, clearArray: false );
-                        int count = inputBuffer.Length - bufferLength;
-                        int read = this._stream.Read ( inputBuffer, bufferLength - 1, count );
-
-                        if (read > 0) {
-                            buffer = inputBuffer; // recreate the span over the input buffer
-                            firstByte = ref MemoryMarshal.GetReference ( buffer );
-                            length += read;
-                        }
-
-                        if (read < count) {
-                            requestStreamFinished = true;
-                        }
+                        // headers are too big
+                        return null;
                     }
 
                     if (currentByte == CARRIAGE_RETURN) {
-                        headerLine = buffer [ (headerLineIndex + 1)..i ];
+                        headerLine = memSpan [ (headerLineIndex + 1)..i ];
                         headerLineIndex = i + 1; //+1 includes \LF
 
                         headerLineSepIndex = headerLine.IndexOf ( DOUBLE_DOTS );
@@ -170,13 +155,11 @@ sealed class HttpRequestReader {
         }
 
         return new HttpRequestBase () {
-            BufferedContent = inputBuffer,
-            BufferHeaderIndex = headerSize,
+            BufferedContent = this.bufferOwnership.Memory [ headerSize.. ],
 
             Headers = headers.ToArray (),
-            Method = Encoding.ASCII.GetString ( method ),
-            Path = Encoding.ASCII.GetString ( path ),
-            Version = Encoding.ASCII.GetString ( version ),
+            MethodRef = method,
+            PathRef = path,
 
             ContentLength = contentLength,
             CanKeepAlive = keepAliveEnabled

@@ -21,9 +21,9 @@ internal static class HttpResponseSerializer {
             const byte SPACE = 0x20;
 
             ms.Write ( "HTTP/1.1 "u8 );
-            ms.Write ( Encoding.UTF8.GetBytes ( response.StatusCode.ToString () ) );
+            ms.Write ( Encoding.ASCII.GetBytes ( response.StatusCode.ToString () ) );
             ms.WriteByte ( SPACE );
-            ms.Write ( Encoding.UTF8.GetBytes ( response.StatusDescription.ToString () ) );
+            ms.Write ( Encoding.ASCII.GetBytes ( response.StatusDescription.ToString () ) );
             ms.Write ( "\r\n"u8 );
 
             for (int i = 0; i < response.Headers.Count; i++) {

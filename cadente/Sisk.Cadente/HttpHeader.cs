@@ -9,12 +9,13 @@
 
 using System.Text;
 
-namespace Sisk.Cadente.HttpSerializer;
+namespace Sisk.Cadente;
 
 /// <summary>
 /// Represents an HTTP header, consisting of a name and a value.
 /// </summary>
 public readonly struct HttpHeader {
+
     internal readonly ReadOnlyMemory<byte> NameBytes;
     internal readonly ReadOnlyMemory<byte> ValueBytes;
 
@@ -56,5 +57,12 @@ public readonly struct HttpHeader {
         get {
             return HeaderEncoding.GetString ( this.ValueBytes.Span );
         }
+    }
+
+    /// <summary>
+    /// Gets the string representation of this <see cref="HttpHeader"/>.
+    /// </summary>
+    public override string ToString () {
+        return $"{this.Name}: {this.Value}";
     }
 }

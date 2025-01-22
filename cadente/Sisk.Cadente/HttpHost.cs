@@ -19,7 +19,7 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHost : IDisposable {
 
-    const int QUEUE_SIZE = 256;
+    const int QUEUE_SIZE = 1024;
 
     private readonly TcpListener _listener;
     private readonly Channel<TcpClient> clientQueue;

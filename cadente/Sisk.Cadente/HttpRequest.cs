@@ -16,15 +16,18 @@ namespace Sisk.Cadente;
 /// Represents an HTTP request.
 /// </summary>
 public sealed class HttpRequest {
+
+    private HttpRequestBase _baseRequest;
+
     /// <summary>
     /// Gets the HTTP method (e.g., GET, POST) of the request.
     /// </summary>
-    public string Method { get; }
+    public string Method { get => this._baseRequest.Method; }
 
     /// <summary>
     /// Gets the path of the requested resource.
     /// </summary>
-    public string Path { get; }
+    public string Path { get => this._baseRequest.Path; }
 
     /// <summary>
     /// Gets the content length of the request.
@@ -44,9 +47,8 @@ public sealed class HttpRequest {
     internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
         this.ContentLength = requestStream.Length;
 
-        this.Method = request.Method;
-        this.Path = request.Path;
-        this.Headers = request.Headers;
+        this._baseRequest = request;
+        this.Headers = this._baseRequest.Headers.ToArray ();
         this.ContentStream = requestStream;
     }
 }
