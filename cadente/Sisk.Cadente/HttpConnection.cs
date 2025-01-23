@@ -58,10 +58,9 @@ sealed class HttpConnection : IDisposable {
                         };
                     }
 
-                    //Logger.LogInformation ( $"[{this.Id}] Received \"{nextRequest.Method} {nextRequest.Path}\"" );
                     HttpSession managedSession = new HttpSession ( nextRequest, this._connectionStream );
 
-                    this.Action ( managedSession );
+                    await this.Action ( managedSession );
 
                     if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                         connectionCloseRequested = true;

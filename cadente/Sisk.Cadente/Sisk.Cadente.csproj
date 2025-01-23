@@ -47,7 +47,7 @@
 	<PropertyGroup>
 		<AssemblyVersion>0.1.42</AssemblyVersion>
 		<FileVersion>0.1.42</FileVersion>
-		<Version>0.1.42</Version>
+		<Version>0.1.42-alpha1</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->
@@ -55,7 +55,7 @@
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<SignAssembly>False</SignAssembly>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<PackageIcon>Icon.png</PackageIcon>
+		<PackageIcon>cadente-ico.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackRelease>True</PackRelease>
 	</PropertyGroup>
@@ -77,7 +77,7 @@
 
 	<!-- package included files -->
 	<ItemGroup>
-		<None Include="..\..\.github\Icon.png">
+		<None Include="..\..\.github\cadente-ico.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

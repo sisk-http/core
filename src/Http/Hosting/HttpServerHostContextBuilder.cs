@@ -168,15 +168,6 @@ public sealed class HttpServerHostContextBuilder {
     }
 
     /// <summary>
-    /// Overrides the HTTP server flags with the provided flags.
-    /// </summary>
-    /// <param name="flags">The flags that will be set on the HTTP server.</param>
-    public HttpServerHostContextBuilder UseFlags ( HttpServerFlags flags ) {
-        this._context.ServerConfiguration.Flags = flags;
-        return this;
-    }
-
-    /// <summary>
     /// This method is a shortcut for setting <see cref="HttpServerConfiguration.ForwardingResolver"/>.
     /// </summary>
     /// <param name="resolver">The <see cref="ForwardingResolver"/> object.</param>

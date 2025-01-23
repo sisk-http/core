@@ -130,21 +130,11 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="uri">The URI component that will be parsed to the listening port format.</param>
         public ListeningPort ( string uri ) {
-            if (ushort.TryParse ( uri, out ushort port )) {
-                this.Hostname = "localhost";
-                this.Port = port;
-                this.Secure = port == 443;
-                this.Path = "/";
-            }
-            else if (Uri.TryCreate ( uri, UriKind.RelativeOrAbsolute, out var uriResult )) {
-                if (uriResult.Scheme != "http" && uriResult.Scheme != "https") {
-                    throw new ArgumentException ( SR.ListeningPort_Parser_InvalidInput );
-                }
-
-                this.Hostname = uriResult.Host;
-                this.Port = (ushort) uriResult.Port;
-                this.Secure = string.Compare ( uriResult.Scheme, "https", true ) == 0;
-                this.Path = uriResult.AbsolutePath;
+            if (ParseCore ( uri ) is { } result) {
+                this.Secure = result.secure;
+                this.Hostname = result.hostname;
+                this.Port = result.port;
+                this.Path = result.path;
             }
             else {
                 throw new ArgumentException ( SR.ListeningPort_Parser_InvalidInput );
@@ -212,6 +202,14 @@ namespace Sisk.Core.Http {
         /// Parses a string into a <see cref="ListeningPort"/>.
         /// </summary>
         /// <param name="s">The string to parse.</param>
+        public static ListeningPort Parse ( string s ) {
+            return new ListeningPort ( s );
+        }
+
+        /// <summary>
+        /// Parses a string into a <see cref="ListeningPort"/>.
+        /// </summary>
+        /// <param name="s">The string to parse.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
         public static ListeningPort Parse ( string s, IFormatProvider? provider ) {
             return new ListeningPort ( s );
@@ -228,14 +226,76 @@ namespace Sisk.Core.Http {
                 result = default;
                 return false;
             }
-            try {
-                result = Parse ( s, provider );
+            if (ParseCore ( s ) is { } n) {
+                result = new ListeningPort ( n.secure, n.hostname, n.port, n.path );
                 return true;
             }
-            catch {
+            else {
                 result = default;
                 return false;
             }
+        }
+
+        static (bool secure, string hostname, ushort port, string path)? ParseCore ( string? s ) {
+
+            if (string.IsNullOrEmpty ( s ))
+                return null;
+
+            if (ushort.TryParse ( s, out ushort nport ))
+                return (false, "localhost", nport, "/");
+
+            if (s.StartsWith ( "http", StringComparison.Ordinal )) {
+                int schemeIndex = s.IndexOf ( ':' );
+                if (schemeIndex <= 0)
+                    return null;
+
+                string scheme = s.Substring ( 0, schemeIndex );
+                if (scheme != "http" && scheme != "https")
+                    return null;
+
+                string hostname;
+                ushort port;
+
+                int pathIndex = s.IndexOf ( '/', schemeIndex + 3 );
+                int portIndex = s.IndexOf ( ':', schemeIndex + 3 );
+                if (portIndex < 0) {
+                    // does not includes a port
+                    hostname = s.Substring ( schemeIndex + 3, pathIndex - schemeIndex - 3 );
+                    port = scheme == "http" ? (ushort) 80 : (ushort) 443;
+                }
+                else {
+                    // does includes a port
+                    hostname = s.Substring ( schemeIndex + 3, portIndex - schemeIndex - 3 );
+                    string portStr = pathIndex switch {
+                        -1 => s.Substring ( portIndex + 1 ),
+                        _ => s.Substring ( portIndex + 1, pathIndex - portIndex - 1 )
+                    };
+                    if (!ushort.TryParse ( portStr, out port )) {
+                        return null;
+                    }
+                }
+
+                string path;
+                if (pathIndex < 0) {
+                    path = "/";
+                }
+                else {
+                    path = s.Substring ( pathIndex );
+                }
+
+                return (scheme == "https", hostname, port, path);
+            }
+
+            if (s.Contains ( ':' )) {
+                string [] parts = s.Split ( ':' );
+                if (parts.Length != 2)
+                    return null;
+                if (!ushort.TryParse ( parts [ 1 ], out ushort port ))
+                    return null;
+                return (false, parts [ 0 ], port, "/");
+            }
+
+            return null;
         }
 
         /// <inheritdoc/>

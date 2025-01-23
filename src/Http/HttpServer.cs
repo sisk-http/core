@@ -282,7 +282,7 @@ namespace Sisk.Core.Http {
 
             this._isListening = true;
             this.httpListener.IgnoreWriteExceptions = true;
-            this.httpListener.TimeoutManager.IdleConnection = this.ServerConfiguration.Flags.IdleConnectionTimeout;
+            this.httpListener.TimeoutManager.IdleConnection = this.ServerConfiguration.IdleConnectionTimeout;
 
             this.handler.ServerStarting ( this );
             this.BindRouters ();

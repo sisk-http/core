@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Globalization;
+using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http {
     /// <summary>
@@ -15,11 +16,6 @@ namespace Sisk.Core.Http {
     /// </summary>
     public sealed class HttpServerConfiguration : IDisposable {
         private long _maximumContentLength = 0;
-
-        /// <summary>
-        /// Gets or sets advanced flags and configuration settings for the HTTP server.
-        /// </summary>
-        public HttpServerFlags Flags { get; set; } = new HttpServerFlags ();
 
         /// <summary>
         /// Gets or sets the access logging format for incoming HTTP requests.
@@ -96,6 +92,52 @@ namespace Sisk.Core.Http {
         /// with the HTTP server.
         /// </summary>
         public bool KeepAlive { get; set; } = true;
+
+        // migrated options from HttpServerFlags
+
+        /// <summary>
+        /// Gets or sets the maximum time allowed for an idle connection.
+        /// </summary>
+        public TimeSpan IdleConnectionTimeout { get; set; } = TimeSpan.FromSeconds ( 120 );
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should automatically rewrite GET requests to end
+        /// their path with <c>/</c>. This is applyable only to non-Regex routes.
+        /// </summary>
+        public bool ForceTrailingSlash { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should convert request headers encoding to the content encoding.
+        /// </summary>
+        public bool NormalizeHeadersEncodings = false;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should send the X-Powered-By header in all responses.
+        /// </summary>
+        public bool SendSiskHeader { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the log mode that the HTTP server should use to log OPTIONS requests.
+        /// </summary>
+        public LogOutput OptionsLogMode { get; set; } = LogOutput.Both;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should handle requests asynchronously or if
+        /// it should limit the request processing to one request per time.
+        /// </summary>
+        public bool AsyncRequestProcessing { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should dispose all <see cref="IDisposable"/> values in the <see cref="HttpContext"/> bag
+        /// when an HTTP session is closed.
+        /// </summary>
+        public bool DisposeDisposableContextValues { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether the HTTP server should convert <see cref="IAsyncEnumerable{T}"/> object responses into
+        /// an blocking <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        public bool ConvertIAsyncEnumerableIntoEnumerable = true;
 
         /// <summary>
         /// Creates an new <see cref="HttpServerConfiguration"/> instance with no parameters.

@@ -20,9 +20,9 @@ public sealed class HttpSession {
     private Stream _connectionStream;
     internal bool ResponseHeadersAlreadySent = false;
 
-    internal Task<bool> WriteHttpResponseHeaders () {
+    internal ValueTask<bool> WriteHttpResponseHeaders () {
         if (this.ResponseHeadersAlreadySent) {
-            return Task.FromResult ( true );
+            return ValueTask.FromResult ( true );
         }
 
         this.ResponseHeadersAlreadySent = true;
@@ -32,12 +32,12 @@ public sealed class HttpSession {
     /// <summary>
     /// Gets the HTTP request associated with this session.
     /// </summary>
-    public HttpRequest Request { get; }
+    public HttpSessionRequest Request { get; }
 
     /// <summary>
     /// Gets the HTTP response associated with this session.
     /// </summary>
-    public HttpResponse Response { get; }
+    public HttpSessionResponse Response { get; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the connection should be kept alive.
@@ -48,7 +48,7 @@ public sealed class HttpSession {
         this._connectionStream = connectionStream;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
-        this.Request = new HttpRequest ( baseRequest, requestStream );
-        this.Response = new HttpResponse ( this, connectionStream );
+        this.Request = new HttpSessionRequest ( baseRequest, requestStream );
+        this.Response = new HttpSessionResponse ( this, connectionStream );
     }
 }

@@ -22,6 +22,11 @@ public readonly struct HttpHeader {
     static Encoding HeaderEncoding = Encoding.UTF8;
 
     /// <summary>
+    /// Gets a value indicating whether this <see cref="HttpHeader"/> has any empty value or name.
+    /// </summary>
+    public bool IsEmpty { get => this.NameBytes.IsEmpty || this.ValueBytes.IsEmpty; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="HttpHeader"/> struct with the specified name and value as byte arrays.
     /// </summary>
     /// <param name="nameBytes">The byte array representing the name of the header.</param>

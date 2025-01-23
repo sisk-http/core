@@ -104,7 +104,7 @@ public partial class Router {
             throw new InvalidOperationException ( SR.Router_NotBinded );
 
         HttpRequest request = context.Request;
-        HttpServerFlags flag = this.parentServer!.ServerConfiguration.Flags;
+        HttpServerConfiguration currentConfig = this.parentServer!.ServerConfiguration;
 
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
@@ -137,13 +137,10 @@ public partial class Router {
             bool isMethodMatched = false;
 
             // test method
-            if (flag.TreatHeadAsGetMethod && request.Method == HttpMethod.Head && route.Method == RouteMethod.Get) {
+            if (this.IsMethodMatching ( request.Method.Method, route.Method )) {
                 isMethodMatched = true;
             }
-            else if (this.IsMethodMatching ( request.Method.Method, route.Method )) {
-                isMethodMatched = true;
-            }
-            else if (flag.SendCorsHeaders && request.Method == HttpMethod.Options) {
+            else if (request.Method == HttpMethod.Options) {
                 matchResult = RouteMatchResult.OptionsMatched;
                 break;
             }
@@ -190,7 +187,7 @@ public partial class Router {
             context.MatchedRoute = matchedRoute;
             HttpResponse? result = null;
 
-            if (flag.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith ( '/' ) && request.Method == HttpMethod.Get) {
+            if (currentConfig.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith ( '/' ) && request.Method == HttpMethod.Get) {
                 HttpResponse res = new HttpResponse () {
                     Status = HttpStatusInformation.TemporaryRedirect,
                     Headers = new () {
@@ -237,7 +234,7 @@ public partial class Router {
                     actionResult = actionTask.GetAwaiter ().GetResult ();
                 }
                 else if (matchedRoute._isAsyncEnumerable) {
-                    if (flag.ConvertIAsyncEnumerableIntoEnumerable) {
+                    if (currentConfig.ConvertIAsyncEnumerableIntoEnumerable) {
                         ref IAsyncEnumerable<object> asyncEnumerable = ref Unsafe.As<object, IAsyncEnumerable<object>> ( ref actionResult );
                         actionResult = asyncEnumerable.ToBlockingEnumerable ();
                     }

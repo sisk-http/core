@@ -13,7 +13,7 @@ namespace Sisk.Cadente.HttpSerializer;
 
 internal static class HttpResponseSerializer {
 
-    public static async Task<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpResponse response ) {
+    public static async ValueTask<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpSessionResponse response ) {
         try {
             const int BUFFER_SIZE = 2048;
 
@@ -28,6 +28,9 @@ internal static class HttpResponseSerializer {
 
             for (int i = 0; i < response.Headers.Count; i++) {
                 var header = response.Headers [ i ];
+
+                if (header.IsEmpty)
+                    continue;
 
                 ms.Write ( header.NameBytes.Span );
                 ms.Write ( ": "u8 );

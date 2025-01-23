@@ -15,7 +15,7 @@ namespace Sisk.Cadente;
 /// <summary>
 /// Represents an HTTP request.
 /// </summary>
-public sealed class HttpRequest {
+public sealed class HttpSessionRequest {
 
     private HttpRequestBase _baseRequest;
 
@@ -44,7 +44,7 @@ public sealed class HttpRequest {
     /// </summary>
     public Stream ContentStream { get; }
 
-    internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
+    internal HttpSessionRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
         this.ContentLength = requestStream.Length;
 
         this._baseRequest = request;

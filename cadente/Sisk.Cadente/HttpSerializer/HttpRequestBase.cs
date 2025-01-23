@@ -11,7 +11,7 @@ using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
 
-class HttpRequestBase {
+sealed class HttpRequestBase {
     private string? _method;
     private string? _path;
 

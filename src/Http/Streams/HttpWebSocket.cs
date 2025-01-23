@@ -31,8 +31,8 @@ namespace Sisk.Core.Http.Streams {
         internal bool wasServerClosed = false;
         internal string? identifier = null;
 
+        const int BUFFER_LENGTH = 1024;
         int attempt = 0;
-        readonly int bufferLength = 0;
         long length = 0;
 
         /// <summary>
@@ -80,7 +80,6 @@ namespace Sisk.Core.Http.Streams {
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             this.request = req;
-            this.bufferLength = this.request.baseServer.ServerConfiguration.Flags.WebSocketBufferSize;
             this.identifier = identifier;
             this.pingPolicy = new HttpStreamPingPolicy ( this );
 
@@ -121,7 +120,7 @@ namespace Sisk.Core.Http.Streams {
         internal async void ReceiveTask () {
             while (this.isListening) {
                 this.RecreateAsyncToken ();
-                WebSocketMessage message = new WebSocketMessage ( this, this.bufferLength );
+                WebSocketMessage message = new WebSocketMessage ( this, BUFFER_LENGTH );
 
                 var arrSegment = new ArraySegment<byte> ( message.__msgBytes );
                 WebSocketReceiveResult result;
@@ -291,11 +290,11 @@ namespace Sisk.Core.Http.Streams {
 
             try {
                 int totalLength = buffer.Length;
-                int chunks = (int) Math.Ceiling ( (double) totalLength / this.bufferLength );
+                int chunks = (int) Math.Ceiling ( (double) totalLength / BUFFER_LENGTH );
 
                 for (int i = 0; i < chunks; i++) {
-                    int ca = i * this.bufferLength;
-                    int cb = Math.Min ( ca + this.bufferLength, buffer.Length );
+                    int ca = i * BUFFER_LENGTH;
+                    int cb = Math.Min ( ca + BUFFER_LENGTH, buffer.Length );
 
                     ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
 

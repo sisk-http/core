@@ -74,10 +74,10 @@ namespace Sisk.Core.Http.Streams {
 
             res.AddHeader ( HttpKnownHeaderNames.CacheControl, "no-store, no-cache" );
             res.AddHeader ( HttpKnownHeaderNames.ContentType, "text/event-stream" );
-            if (host.baseServer.ServerConfiguration.Flags.SendSiskHeader)
+            if (host.baseServer.ServerConfiguration.SendSiskHeader)
                 res.AddHeader ( HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy );
 
-            if (host.baseServer.ServerConfiguration.Flags.SendCorsHeaders && host.Context.MatchedRoute?.UseCors == true)
+            if (host.Context.MatchedRoute?.UseCors == true)
                 HttpServer.SetCorsHeaders ( req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res );
         }
 

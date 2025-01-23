@@ -55,7 +55,7 @@ static class LogFormatter {
             }
             else {
                 result = MatchTermExpression ( term, executionResult )
-                    ?? new string ( formatSpan [ currentRange ] );
+                    ?? string.Empty;
             }
 
             sb.Append ( formatSpan [ lastIndexStart..currentRange.Start ] );
@@ -81,7 +81,7 @@ static class LogFormatter {
             "ti" => executionResult.Request.RequestedAt.ToString ( "MM" ),
             "ts" => executionResult.Request.RequestedAt.ToString ( "ss" ),
             "tm" => executionResult.Request.RequestedAt.Millisecond.ToString ( "D3" ),
-            "tz" => $"{TimeZoneInfo.Local.GetUtcOffset ( executionResult.Request.RequestedAt ).TotalHours:00}00",
+            "tz" => $"{HttpServer.environmentUtcOffset.TotalHours:00}00",
 
             "ri" => executionResult.Request.RemoteAddress.ToString (),
             "rm" => executionResult.Request.Method.Method.ToUpper (),

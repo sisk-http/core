@@ -142,7 +142,7 @@ namespace Sisk.Core.Http {
         public HttpHeaderCollection Headers {
             get {
                 if (this.headers is null) {
-                    if (this.contextServerConfiguration.Flags.NormalizeHeadersEncodings) {
+                    if (this.contextServerConfiguration.NormalizeHeadersEncodings) {
                         this.headers = new HttpHeaderCollection ();
                         Encoding entryCodepage = Encoding.GetEncoding ( "ISO-8859-1" );
                         foreach (string headerName in this.listenerRequest.Headers) {

@@ -26,7 +26,7 @@ public sealed class HttpResponseStream {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException ( nameof ( listenerResponse ) );
         this.ResponseStream = new ResponseStreamWriter ( listenerResponse.OutputStream, this );
 
-        if (host.baseServer.ServerConfiguration.Flags.SendCorsHeaders && host.Context.MatchedRoute?.UseCors == true)
+        if (host.Context.MatchedRoute?.UseCors == true)
             HttpServer.SetCorsHeaders ( listenerRequest, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, listenerResponse );
     }
 

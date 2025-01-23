@@ -15,7 +15,7 @@ namespace Sisk.Cadente;
 /// <summary>
 /// Represents an HTTP response.
 /// </summary>
-public sealed class HttpResponse {
+public sealed class HttpSessionResponse {
     private Stream _baseOutputStream;
     private HttpSession _session;
 
@@ -35,7 +35,7 @@ public sealed class HttpResponse {
     public List<HttpHeader> Headers { get; set; }
 
     /// <summary>
-    /// Gets or sets an boolean indicating if this <see cref="HttpResponse"/> should be send in chunks or not.
+    /// Gets or sets an boolean indicating if this <see cref="HttpSessionResponse"/> should be send in chunks or not.
     /// </summary>
     public bool SendChunked { get; set; }
 
@@ -82,7 +82,7 @@ public sealed class HttpResponse {
         return this._baseOutputStream;
     }
 
-    internal HttpResponse ( HttpSession session, Stream httpSessionStream ) {
+    internal HttpSessionResponse ( HttpSession session, Stream httpSessionStream ) {
         this._session = session;
         this._baseOutputStream = httpSessionStream;
 

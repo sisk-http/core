@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Sisk.Core.Entity;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
@@ -148,7 +147,6 @@ public partial class HttpServer {
         HttpRequest request = null!;
         HttpResponse? response = null;
 
-        HttpServerFlags flag = this.ServerConfiguration.Flags;
         Stopwatch sw = Stopwatch.StartNew ();
 
         HttpListenerResponse baseResponse = context.Response;
@@ -159,14 +157,15 @@ public partial class HttpServer {
 
         HttpContext._context.Value = srContext;
 
-        bool hasAccessLogging = this.ServerConfiguration.AccessLogsStream is not null;
-        bool hasErrorLogging = this.ServerConfiguration.ErrorsLogsStream is not null;
+        var currentConfig = this.ServerConfiguration;
+        bool hasAccessLogging = currentConfig.AccessLogsStream is not null;
+        bool hasErrorLogging = currentConfig.ErrorsLogsStream is not null;
 
         Router.RouterExecutionResult? routerResult = null;
 
-        if (this.ServerConfiguration.DefaultCultureInfo is not null) {
-            Thread.CurrentThread.CurrentCulture = this.ServerConfiguration.DefaultCultureInfo;
-            Thread.CurrentThread.CurrentUICulture = this.ServerConfiguration.DefaultCultureInfo;
+        if (currentConfig.DefaultCultureInfo is not null) {
+            Thread.CurrentThread.CurrentCulture = currentConfig.DefaultCultureInfo;
+            Thread.CurrentThread.CurrentUICulture = currentConfig.DefaultCultureInfo;
         }
 
         HttpContent? servedContent = null;
@@ -177,7 +176,7 @@ public partial class HttpServer {
 
         try {
 
-            if (!flag.AsyncRequestProcessing) {
+            if (currentConfig.AsyncRequestProcessing == false) {
                 Monitor.Enter ( this.httpListener );
             }
 
@@ -189,20 +188,20 @@ public partial class HttpServer {
             srContext.Request = request;
             request.Context = srContext;
 
-            if (this.ServerConfiguration.RemoteRequestsAction == RequestListenAction.Drop && baseRequest.IsLocal == false) {
+            if (currentConfig.RemoteRequestsAction == RequestListenAction.Drop && baseRequest.IsLocal == false) {
                 executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
                 baseResponse.Abort ();
                 return;
             }
 
             string dnsSafeHost = request.Uri.Host;
-            if (this.ServerConfiguration.ForwardingResolver is ForwardingResolver fr) {
+            if (currentConfig.ForwardingResolver is ForwardingResolver fr) {
                 dnsSafeHost = fr.OnResolveRequestHost ( request, dnsSafeHost );
             }
 
             // detect the listening host for this listener
             ListeningHost? matchedListeningHost = this._onlyListeningHost
-                ?? this.ServerConfiguration.ListeningHosts.GetRequestMatchingListeningHost ( dnsSafeHost, baseRequest.Url!.AbsolutePath, baseRequest.LocalEndPoint.Port );
+                ?? currentConfig.ListeningHosts.GetRequestMatchingListeningHost ( dnsSafeHost, baseRequest.Url!.AbsolutePath, baseRequest.LocalEndPoint.Port );
 
             if (matchedListeningHost is null) {
                 baseResponse.StatusCode = 400; // Bad Request
@@ -228,33 +227,17 @@ public partial class HttpServer {
 
             #region Step 2 - Request validation
 
-            if (this.ServerConfiguration.IncludeRequestIdHeader)
-                baseResponse.Headers.Set ( flag.HeaderNameRequestId, baseRequest.RequestTraceIdentifier.ToString () );
-
-            if (flag.SendSiskHeader)
+            if (currentConfig.IncludeRequestIdHeader)
+                baseResponse.Headers.Set ( HttpKnownHeaderNames.XRequestID, baseRequest.RequestTraceIdentifier.ToString () );
+            if (currentConfig.SendSiskHeader)
                 baseResponse.Headers.Set ( HttpKnownHeaderNames.XPoweredBy, PoweredBy );
 
-            long userMaxContentLength = this.ServerConfiguration.MaximumContentLength;
+            long userMaxContentLength = currentConfig.MaximumContentLength;
             bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && request.ContentLength > userMaxContentLength;
 
             if (isContentLenOutsideUserBounds) {
                 executionResult.Status = HttpServerExecutionStatus.ContentTooLarge;
                 baseResponse.StatusCode = 413;
-                return;
-            }
-
-            // check for illegal body content requests
-            if (flag.ThrowContentOnNonSemanticMethods
-                && request.ContentLength > 0
-                && (
-                Ascii.Equals ( baseRequest.HttpMethod, "GET" ) ||
-                Ascii.Equals ( baseRequest.HttpMethod, "OPTIONS" ) ||
-                Ascii.Equals ( baseRequest.HttpMethod, "HEAD" ) ||
-                Ascii.Equals ( baseRequest.HttpMethod, "TRACE" ) ||
-                Ascii.Equals ( baseRequest.HttpMethod, "CONNECT" ))) {
-
-                executionResult.Status = HttpServerExecutionStatus.ContentServedOnIllegalMethod;
-                baseResponse.StatusCode = 400;
                 return;
             }
 
@@ -273,7 +256,7 @@ public partial class HttpServer {
 
             bool routeAllowCors = routerResult.Route?.UseCors ?? true;
 
-            if (flag.SendCorsHeaders && routeAllowCors) {
+            if (routeAllowCors) {
                 SetCorsHeaders ( baseRequest, matchedListeningHost.CrossOriginResourceSharingPolicy, baseResponse );
             }
 
@@ -304,7 +287,7 @@ public partial class HttpServer {
 
             baseResponse.StatusCode = response.Status.StatusCode;
             baseResponse.StatusDescription = response.Status.Description;
-            baseResponse.KeepAlive = this.ServerConfiguration.KeepAlive;
+            baseResponse.KeepAlive = currentConfig.KeepAlive;
 
             #endregion
 
@@ -322,48 +305,36 @@ public partial class HttpServer {
                     baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
 
-            bool canServeContent;
-            if (flag.PreventResponseContentsInProhibitedMethods) {
-                canServeContent =
-                    (Ascii.Equals ( baseRequest.HttpMethod, "HEAD" ) ||
-                     Ascii.Equals ( baseRequest.HttpMethod, "OPTIONS" )) == false;
-            }
-            else {
-                canServeContent = true;
-            }
+            if (servedContent is ByteArrayContent barrayContent) {
+                ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
+                ref byte [] contentBytes = ref ByteArrayAccessors.UnsafeGetContent ( barrayContent );
+                ref int offset = ref ByteArrayAccessors.UnsafeGetOffset ( barrayContent );
+                ref int count = ref ByteArrayAccessors.UnsafeGetCount ( barrayContent );
 
-            if (canServeContent) {
-                if (servedContent is ByteArrayContent barrayContent) {
-                    ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
-                    ref byte [] contentBytes = ref ByteArrayAccessors.UnsafeGetContent ( barrayContent );
-                    ref int offset = ref ByteArrayAccessors.UnsafeGetOffset ( barrayContent );
-                    ref int count = ref ByteArrayAccessors.UnsafeGetCount ( barrayContent );
-
-                    if (response.SendChunked) {
-                        baseResponse.SendChunked = true;
-                    }
-                    else {
-                        baseResponse.SendChunked = false;
-                        baseResponse.ContentLength64 = count;
-                    }
-
-                    baseResponse.OutputStream.Write ( contentBytes, offset, count );
+                if (response.SendChunked) {
+                    baseResponse.SendChunked = true;
                 }
-                else if (servedContent is HttpContent httpContent) {
-                    ApplyHttpContentHeaders ( baseResponse, httpContent.Headers );
-                    var httpContentStream = httpContent.ReadAsStream (); // the HttpContent.Dispose should dispose this stream
-
-                    if (httpContentStream.CanSeek && !response.SendChunked) {
-                        httpContentStream.Seek ( 0, SeekOrigin.Begin );
-                        baseResponse.SendChunked = false;
-                        baseResponse.ContentLength64 = httpContentStream.Length;
-                    }
-                    else {
-                        baseResponse.SendChunked = true;
-                    }
-
-                    httpContentStream.CopyTo ( baseResponse.OutputStream, flag.RequestStreamCopyBufferSize );
+                else {
+                    baseResponse.SendChunked = false;
+                    baseResponse.ContentLength64 = count;
                 }
+
+                baseResponse.OutputStream.Write ( contentBytes, offset, count );
+            }
+            else if (servedContent is HttpContent httpContent) {
+                ApplyHttpContentHeaders ( baseResponse, httpContent.Headers );
+                var httpContentStream = httpContent.ReadAsStream (); // the HttpContent.Dispose should dispose this stream
+
+                if (httpContentStream.CanSeek && !response.SendChunked) {
+                    httpContentStream.Seek ( 0, SeekOrigin.Begin );
+                    baseResponse.SendChunked = false;
+                    baseResponse.ContentLength64 = httpContentStream.Length;
+                }
+                else {
+                    baseResponse.SendChunked = true;
+                }
+
+                httpContentStream.CopyTo ( baseResponse.OutputStream );
             }
 #endregion
 
@@ -396,7 +367,7 @@ finishSending:
             hasErrorLogging = false;
         }
         catch (Exception ex) {
-            if (!this.ServerConfiguration.ThrowExceptions) {
+            if (!currentConfig.ThrowExceptions) {
                 baseResponse.StatusCode = 500/*InternalServerError*/;
                 executionResult.ServerException = ex;
                 executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
@@ -415,7 +386,7 @@ finishSending:
 
             servedContent?.Dispose ();
 
-            if (flag.DisposeDisposableContextValues)
+            if (currentConfig.DisposeDisposableContextValues)
                 foreach (var value in srContext.RequestBag.Values)
                     (value as IDisposable)?.Dispose ();
 
@@ -439,7 +410,7 @@ finishSending:
 
             #region Logging
             if (routerResult?.Result == RouteMatchResult.OptionsMatched) {
-                logMode = flag.OptionsLogMode;
+                logMode = currentConfig.OptionsLogMode;
             }
             else {
                 logMode = srContext?.MatchedRoute?.LogMode ?? LogOutput.Both;
@@ -450,11 +421,11 @@ finishSending:
 
             if (executionResult.ServerException is not null && canErrorLog) {
                 string entry = LogFormatter.FormatExceptionEntr ( executionResult );
-                this.ServerConfiguration.ErrorsLogsStream?.WriteLine ( entry );
+                currentConfig.ErrorsLogsStream?.WriteLine ( entry );
             }
 
             if (canAccessLog) {
-                string line = LogFormatter.FormatAccessLogEntry ( this.ServerConfiguration.AccessLogsFormat, executionResult );
+                string line = LogFormatter.FormatAccessLogEntry ( currentConfig.AccessLogsFormat, executionResult );
                 this.ServerConfiguration.AccessLogsStream?.WriteLine ( line );
             }
 
@@ -464,7 +435,7 @@ finishSending:
                 this.isWaitingNextEvent = false;
             }
 
-            if (!flag.AsyncRequestProcessing) {
+            if (!currentConfig.AsyncRequestProcessing) {
                 Monitor.Exit ( this.httpListener );
             }
             #endregion

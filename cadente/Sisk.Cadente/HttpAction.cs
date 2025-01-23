@@ -13,4 +13,4 @@ namespace Sisk.Cadente;
 /// Represents a method that takes an <see cref="HttpSession"/> as a parameter and does not return a value.
 /// </summary>
 /// <param name="session">The HTTP session associated with the action.</param>
-public delegate void HttpAction ( HttpSession session );
+public delegate Task HttpAction ( HttpSession session );
