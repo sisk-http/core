@@ -17,7 +17,7 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpSessionResponse {
     private Stream _baseOutputStream;
-    private HttpSession _session;
+    private HttpHostContext _session;
 
     /// <summary>
     /// Gets or sets the HTTP status code of the response.
@@ -73,7 +73,7 @@ public sealed class HttpSessionResponse {
     /// </summary>
     /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
     /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
-    public async Task<Stream> GetContentStream () {
+    public async Task<Stream> GetResponseStreamAsync () {
         if (await this._session.WriteHttpResponseHeaders () == false) {
             throw new InvalidOperationException ( "Unable to obtain an output stream for the response." );
         }
@@ -82,7 +82,7 @@ public sealed class HttpSessionResponse {
         return this._baseOutputStream;
     }
 
-    internal HttpSessionResponse ( HttpSession session, Stream httpSessionStream ) {
+    internal HttpSessionResponse ( HttpHostContext session, Stream httpSessionStream ) {
         this._session = session;
         this._baseOutputStream = httpSessionStream;
 

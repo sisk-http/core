@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
+using System.Net;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
 using Sisk.Core.Http;
@@ -15,6 +16,8 @@ using Sisk.Core.Http;
 namespace Sisk.Cadente;
 
 sealed class HttpConnection : IDisposable {
+    private readonly HttpHost _host;
+    private readonly IPEndPoint _endpoint;
     private readonly Stream _connectionStream;
     private bool disposedValue;
 
@@ -25,20 +28,22 @@ sealed class HttpConnection : IDisposable {
 #endif
 
     public const int REQUEST_BUFFER_SIZE = 8192; // buffer dedicated to headers. more than it? return 400.
-    public const int RESPONSE_BUFFER_SIZE = 8192;
+    public const int RESPONSE_BUFFER_SIZE = 1024;
 
-    public HttpAction Action { get; set; }
-
-    public HttpConnection ( Stream connectionStream, HttpAction action ) {
+    public HttpConnection ( Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
         this._connectionStream = connectionStream;
-        this.Action = action;
+        this._host = host;
+        this._endpoint = endpoint;
     }
 
     public async Task<HttpConnectionState> HandleConnectionEvents () {
         ObjectDisposedException.ThrowIf ( this.disposedValue, this );
 
         bool connectionCloseRequested = false;
+
+        var responseBuffer = new MemoryStream ( RESPONSE_BUFFER_SIZE );
         var bufferOwnership = MemoryPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
+
         try {
 
             while (this._connectionStream.CanRead && !this.disposedValue) {
@@ -58,9 +63,9 @@ sealed class HttpConnection : IDisposable {
                         };
                     }
 
-                    HttpSession managedSession = new HttpSession ( nextRequest, this._connectionStream );
+                    HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._connectionStream, responseBuffer );
 
-                    await this.Action ( managedSession );
+                    await this._host.InvokeContextCreated ( managedSession );
 
                     if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                         connectionCloseRequested = true;
@@ -108,6 +113,7 @@ sealed class HttpConnection : IDisposable {
             return HttpConnectionState.ConnectionClosed;
         }
         finally {
+            responseBuffer.Dispose ();
             bufferOwnership.Dispose ();
         }
     }

@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   HttpSession.cs
+// File name:   HttpHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Cadente.HttpSerializer;
@@ -15,8 +15,9 @@ namespace Sisk.Cadente;
 /// <summary>
 /// Represents an HTTP session that manages the request and response for a single connection.
 /// </summary>
-public sealed class HttpSession {
+public sealed class HttpHostContext {
 
+    private MemoryStream _responseBuffer;
     private Stream _connectionStream;
     internal bool ResponseHeadersAlreadySent = false;
 
@@ -26,7 +27,7 @@ public sealed class HttpSession {
         }
 
         this.ResponseHeadersAlreadySent = true;
-        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this.Response );
+        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this._responseBuffer, this.Response );
     }
 
     /// <summary>
@@ -44,8 +45,9 @@ public sealed class HttpSession {
     /// </summary>
     public bool KeepAlive { get; set; } = true;
 
-    internal HttpSession ( HttpRequestBase baseRequest, Stream connectionStream ) {
+    internal HttpHostContext ( HttpRequestBase baseRequest, Stream connectionStream, MemoryStream responseBuffer ) {
         this._connectionStream = connectionStream;
+        this._responseBuffer = responseBuffer;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
         this.Request = new HttpSessionRequest ( baseRequest, requestStream );

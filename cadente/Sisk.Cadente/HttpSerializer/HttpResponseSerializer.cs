@@ -13,11 +13,11 @@ namespace Sisk.Cadente.HttpSerializer;
 
 internal static class HttpResponseSerializer {
 
-    public static async ValueTask<bool> WriteHttpResponseHeaders ( Stream outgoingStream, HttpSessionResponse response ) {
+    public static async ValueTask<bool> WriteHttpResponseHeaders ( Stream outgoingStream, MemoryStream ms, HttpSessionResponse response ) {
         try {
-            const int BUFFER_SIZE = 2048;
+            // reset the MS
+            ms.SetLength ( 0 );
 
-            using var ms = new MemoryStream ( BUFFER_SIZE );
             const byte SPACE = 0x20;
 
             ms.Write ( "HTTP/1.1 "u8 );
@@ -41,7 +41,7 @@ internal static class HttpResponseSerializer {
             ms.Write ( "\r\n"u8 );
 
             ms.Position = 0;
-            await ms.CopyToAsync ( outgoingStream, BUFFER_SIZE );
+            await ms.CopyToAsync ( outgoingStream, (int) ms.Length );
 
             return true;
         }

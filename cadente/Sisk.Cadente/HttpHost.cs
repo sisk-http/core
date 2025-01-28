@@ -32,7 +32,7 @@ public sealed class HttpHost : IDisposable {
     /// <summary>
     /// Gets or sets the action handler for HTTP requests.
     /// </summary>
-    public HttpAction ActionHandler { get; }
+    public event HttpContextHandler? ContextCreated;
 
     /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHost"/> has been disposed.
@@ -50,19 +50,17 @@ public sealed class HttpHost : IDisposable {
     /// </summary>
     public HttpsOptions? HttpsOptions { get; set; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="HttpHost"/> class.
-    /// </summary>
-    /// <param name="port">The port number to listen on.</param>
-    /// <param name="actionHandler">The action handler for HTTP requests.</param>
-    public HttpHost ( int port, HttpAction actionHandler ) {
-        this._listener = new TcpListener ( new IPEndPoint ( IPAddress.Any, port ) );
+
+    public HttpHost ( IPEndPoint endpoint ) {
+        this._listener = new TcpListener ( endpoint );
         this.channelConsumerThread = new Thread ( this.ConsumerJobThread );
         this.clientQueue = Channel.CreateBounded<TcpClient> (
             new BoundedChannelOptions ( QUEUE_SIZE ) { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = true } );
         this.readerQueue = this.clientQueue.Reader;
         this.writerQueue = this.clientQueue.Writer;
-        this.ActionHandler = actionHandler;
+    }
+
+    public HttpHost ( int port ) : this ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
     }
 
     /// <summary>
@@ -114,7 +112,7 @@ public sealed class HttpHost : IDisposable {
                 connectionStream = clientStream;
             }
 
-            using (HttpConnection connection = new HttpConnection ( connectionStream, this.ActionHandler )) {
+            using (HttpConnection connection = new HttpConnection ( connectionStream, this, (IPEndPoint) client.Client.RemoteEndPoint! )) {
 
                 if (connectionStream is SslStream sslStream && this.HttpsOptions is not null) {
                     //Logger.LogInformation ( $"[{connection.Id}] Begin SSL authenticate" );
@@ -132,7 +130,7 @@ public sealed class HttpHost : IDisposable {
 
                 //Logger.LogInformation ( $"[{connection.Id}] Begin handle connection" );
                 var state = await connection.HandleConnectionEvents ();
-
+                ;
                 //Logger.LogInformation ( $"[{connection.Id}] Ended handling connection with state {state}" );
 
             }
@@ -159,6 +157,10 @@ public sealed class HttpHost : IDisposable {
 
             this.disposedValue = true;
         }
+    }
+
+    internal Task InvokeContextCreated ( HttpHostContext context ) {
+        return this.ContextCreated!.Invoke ( this, context );
     }
 
     /// <inheritdoc/>
