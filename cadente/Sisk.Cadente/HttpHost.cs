@@ -11,7 +11,6 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Threading.Channels;
 
 namespace Sisk.Cadente;
 
@@ -20,18 +19,18 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHost : IDisposable {
 
-    const int MAX_WORKERS = 65536;
-
     private readonly TcpListener _listener;
-    private readonly Channel<TcpClient> clientQueue;
-    private readonly ChannelWriter<TcpClient> writerQueue;
-    private readonly ChannelReader<TcpClient> readerQueue;
-    private readonly Thread channelConsumerThread;
 
     // internal readonly SemaphoreSlim HostLimiter = new SemaphoreSlim ( 64 );
     private readonly LingerOption tcpLingerOption = new LingerOption ( true, 0 );
 
     private bool disposedValue;
+
+    /// <summary>
+    /// Gets or sets the client queue size of all <see cref="HttpHost"/> instances. This value indicates how many
+    /// connections the server can maintain simultaneously before queueing other connections attempts.
+    /// </summary>
+    public static int QueueSize { get; set; } = 1024;
 
     /// <summary>
     /// Gets or sets the action handler for HTTP requests.
@@ -60,12 +59,6 @@ public sealed class HttpHost : IDisposable {
     /// <param name="endpoint">The <see cref="IPEndPoint"/> to listen on.</param>
     public HttpHost ( IPEndPoint endpoint ) {
         this._listener = new TcpListener ( endpoint );
-        this.channelConsumerThread = new Thread ( this.ConsumerJobThread );
-        this.clientQueue = Channel.CreateBounded<TcpClient> (
-            new BoundedChannelOptions ( MAX_WORKERS ) { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = true } );
-
-        this.readerQueue = this.clientQueue.Reader;
-        this.writerQueue = this.clientQueue.Writer;
     }
 
     /// <summary>
@@ -86,10 +79,8 @@ public sealed class HttpHost : IDisposable {
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
 
-        this._listener.Start ();
+        this._listener.Start ( QueueSize );
         this._listener.BeginAcceptTcpClient ( this.ReceiveClient, null );
-
-        this.channelConsumerThread.Start ();
     }
 
     private async void ReceiveClient ( IAsyncResult result ) {
@@ -97,7 +88,7 @@ public sealed class HttpHost : IDisposable {
         this._listener.BeginAcceptTcpClient ( this.ReceiveClient, null );
         var client = this._listener.EndAcceptTcpClient ( result );
 
-        await this.writerQueue.WriteAsync ( client );
+        await this.HandleTcpClient ( client );
     }
 
     private async Task HandleTcpClient ( TcpClient client ) {
@@ -105,8 +96,8 @@ public sealed class HttpHost : IDisposable {
             { // setup the tcpclient
                 client.NoDelay = true;
 
-                //client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
-                //client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
+                client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
+                client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
 
                 client.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
                 client.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
@@ -148,19 +139,10 @@ public sealed class HttpHost : IDisposable {
         }
     }
 
-    async void ConsumerJobThread () {
-        while (!this.disposedValue && await this.readerQueue.WaitToReadAsync ()) {
-            while (!this.disposedValue && this.readerQueue.TryRead ( out var client )) {
-                _ = this.HandleTcpClient ( client );
-            }
-        }
-    }
-
     private void Dispose ( bool disposing ) {
         if (!this.disposedValue) {
             if (disposing) {
                 this._listener.Dispose ();
-                this.channelConsumerThread.Join ();
             }
 
             this.disposedValue = true;

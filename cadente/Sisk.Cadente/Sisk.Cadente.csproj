@@ -33,8 +33,8 @@
 		<Company>Project Principium</Company>
 		<Product>Sisk.Cadente</Product>
 		<NeutralLanguage>en-US</NeutralLanguage>
-		<Description>Cadente is a managed implementation of HTTP/1.1 with SSL support for .NET.</Description>
-		<Summary>Cadente is a managed implementation of HTTP/1.1 with SSL support for .NET.</Summary>
+		<Description>Cadente is a high-performance managed implementation of HTTP/1.1 with SSL support for .NET.</Description>
+		<Summary>Cadente is a high-performance managed implementation of HTTP/1.1 with SSL support for .NET.</Summary>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 		<PackageProjectUrl>https://sisk-framework.org/</PackageProjectUrl>
@@ -45,9 +45,9 @@
 
 	<!-- version info -->
 	<PropertyGroup>
-		<AssemblyVersion>0.1.42</AssemblyVersion>
-		<FileVersion>0.1.42</FileVersion>
-		<Version>0.1.42-alpha1</Version>
+		<AssemblyVersion>0.1.43</AssemblyVersion>
+		<FileVersion>0.1.43</FileVersion>
+		<Version>0.1.43-alpha2</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->
