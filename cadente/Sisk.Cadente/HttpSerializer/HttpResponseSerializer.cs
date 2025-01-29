@@ -7,46 +7,89 @@
 // File name:   HttpResponseSerializer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
 
 internal static class HttpResponseSerializer {
 
-    public static async ValueTask<bool> WriteHttpResponseHeaders ( Stream outgoingStream, MemoryStream ms, HttpSessionResponse response ) {
+    static ASCIIEncoding _headerDataEncoding = new ASCIIEncoding ();
+
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+    public static int GetResponseHeadersBytes ( scoped Span<byte> buffer, HttpHostContext.HttpResponse response ) {
+
+        const byte _H = (byte) 'H';
+        const byte _T = (byte) 'T';
+        const byte _P = (byte) 'P';
+        const byte _1 = (byte) '1';
+        const byte _DOT = (byte) '.';
+        const byte _SPACE = (byte) ' ';
+        const byte _CR = (byte) '\r';
+        const byte _LF = (byte) '\n';
+        const byte _COLON = (byte) ':';
+        const byte _SLASH = (byte) '/';
+
+        // HTTP/1.1
+        buffer [ 0 ] = _H;
+        buffer [ 1 ] = _T;
+        buffer [ 2 ] = _T;
+        buffer [ 3 ] = _P;
+        buffer [ 4 ] = _SLASH;
+        buffer [ 5 ] = _1;
+        buffer [ 6 ] = _DOT;
+        buffer [ 7 ] = _1;
+        buffer [ 8 ] = _SPACE;
+
+        int position = 9;
+
+        int statusCodeCount = _headerDataEncoding.GetBytes ( response.StatusCode.ToString (), buffer [ position.. ] );
+        position += statusCodeCount;
+
+        buffer [ position++ ] = _SPACE;
+
+        int statusReasonCode = _headerDataEncoding.GetBytes ( response.StatusDescription, buffer [ position.. ] );
+        position += statusReasonCode;
+
+        buffer [ position++ ] = _CR;
+        buffer [ position++ ] = _LF;
+
+        var headersSpan = CollectionsMarshal.AsSpan ( response.Headers );
+        ref HttpHeader headerPointer = ref MemoryMarshal.GetReference ( headersSpan );
+        for (int i = 0; i < headersSpan.Length; i++) {
+            ref HttpHeader header = ref Unsafe.Add ( ref headerPointer, i );
+
+            if (header.IsEmpty)
+                continue;
+
+            header.NameBytes.Span.CopyTo ( buffer [ position.. ] );
+            position += header.NameBytes.Length;
+
+            buffer [ position++ ] = _COLON;
+            buffer [ position++ ] = _SPACE;
+
+            header.ValueBytes.Span.CopyTo ( buffer [ position.. ] );
+            position += header.ValueBytes.Length;
+
+            buffer [ position++ ] = _CR;
+            buffer [ position++ ] = _LF;
+        }
+
+        buffer [ position++ ] = _CR;
+        buffer [ position++ ] = _LF;
+
+        return position;
+    }
+
+    public static bool WriteHttpResponseHeaders ( Stream outgoingStream, in Span<byte> buffer, HttpHostContext.HttpResponse response ) {
         try {
-            // reset the MS
-            ms.SetLength ( 0 );
-
-            const byte SPACE = 0x20;
-
-            ms.Write ( "HTTP/1.1 "u8 );
-            ms.Write ( Encoding.ASCII.GetBytes ( response.StatusCode.ToString () ) );
-            ms.WriteByte ( SPACE );
-            ms.Write ( Encoding.ASCII.GetBytes ( response.StatusDescription.ToString () ) );
-            ms.Write ( "\r\n"u8 );
-
-            for (int i = 0; i < response.Headers.Count; i++) {
-                var header = response.Headers [ i ];
-
-                if (header.IsEmpty)
-                    continue;
-
-                ms.Write ( header.NameBytes.Span );
-                ms.Write ( ": "u8 );
-                ms.Write ( header.ValueBytes.Span );
-                ms.Write ( "\r\n"u8 );
-            }
-
-            ms.Write ( "\r\n"u8 );
-
-            ms.Position = 0;
-            await ms.CopyToAsync ( outgoingStream, (int) ms.Length );
+            int headerSize = GetResponseHeadersBytes ( buffer, response );
+            outgoingStream.Write ( buffer [ 0..headerSize ] );
 
             return true;
         }
         catch (Exception) {
-            //Logger.LogInformation ( $"HttpResponseSerializer finished with exception: {ex.Message}" );
             return false;
         }
     }

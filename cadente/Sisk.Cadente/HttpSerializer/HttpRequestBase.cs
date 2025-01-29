@@ -14,6 +14,7 @@ namespace Sisk.Cadente.HttpSerializer;
 sealed class HttpRequestBase {
     private string? _method;
     private string? _path;
+    private HttpHeader []? _headers;
 
     public required ReadOnlyMemory<byte> MethodRef;
     public required ReadOnlyMemory<byte> PathRef;
@@ -31,6 +32,13 @@ sealed class HttpRequestBase {
         get {
             this._path ??= Encoding.ASCII.GetString ( this.PathRef.Span );
             return this._path;
+        }
+    }
+
+    public HttpHeader [] HeadersAR {
+        get {
+            this._headers ??= this.Headers.ToArray ();
+            return this._headers;
         }
     }
 

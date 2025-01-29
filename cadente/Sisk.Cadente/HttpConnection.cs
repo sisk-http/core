@@ -28,7 +28,7 @@ sealed class HttpConnection : IDisposable {
 #endif
 
     public const int REQUEST_BUFFER_SIZE = 8192; // buffer dedicated to headers. more than it? return 400.
-    public const int RESPONSE_BUFFER_SIZE = 1024;
+    public const int RESPONSE_BUFFER_SIZE = 4096;
 
     public HttpConnection ( Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
         this._connectionStream = connectionStream;
@@ -37,18 +37,16 @@ sealed class HttpConnection : IDisposable {
     }
 
     public async Task<HttpConnectionState> HandleConnectionEvents () {
-        ObjectDisposedException.ThrowIf ( this.disposedValue, this );
-
         bool connectionCloseRequested = false;
 
-        var responseBuffer = new MemoryStream ( RESPONSE_BUFFER_SIZE );
-        var bufferOwnership = MemoryPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
+        var requestBuffer = MemoryPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
+        var responseHeadersBuffer = MemoryPool<byte>.Shared.Rent ( RESPONSE_BUFFER_SIZE );
 
         try {
 
             while (this._connectionStream.CanRead && !this.disposedValue) {
 
-                HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream, ref bufferOwnership );
+                HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream, ref requestBuffer );
                 Stream? responseStream = null;
 
                 try {
@@ -63,9 +61,9 @@ sealed class HttpConnection : IDisposable {
                         };
                     }
 
-                    HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._connectionStream, responseBuffer );
+                    HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._connectionStream, responseHeadersBuffer );
 
-                    await this._host.InvokeContextCreated ( managedSession );
+                    this._host.InvokeContextCreated ( managedSession );
 
                     if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                         connectionCloseRequested = true;
@@ -91,7 +89,7 @@ sealed class HttpConnection : IDisposable {
                         }
                     }
 
-                    if (managedSession.ResponseHeadersAlreadySent == false && !await managedSession.WriteHttpResponseHeaders ()) {
+                    if (managedSession.ResponseHeadersAlreadySent == false && !managedSession.WriteHttpResponseHeaders ()) {
                         return HttpConnectionState.ResponseWriteException;
                     }
 
@@ -113,8 +111,8 @@ sealed class HttpConnection : IDisposable {
             return HttpConnectionState.ConnectionClosed;
         }
         finally {
-            responseBuffer.Dispose ();
-            bufferOwnership.Dispose ();
+            responseHeadersBuffer.Dispose ();
+            requestBuffer.Dispose ();
         }
     }
 

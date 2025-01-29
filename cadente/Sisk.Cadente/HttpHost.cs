@@ -10,6 +10,7 @@
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
 namespace Sisk.Cadente;
@@ -19,13 +20,16 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHost : IDisposable {
 
-    const int QUEUE_SIZE = 1024;
+    const int MAX_WORKERS = 65536;
 
     private readonly TcpListener _listener;
     private readonly Channel<TcpClient> clientQueue;
     private readonly ChannelWriter<TcpClient> writerQueue;
     private readonly ChannelReader<TcpClient> readerQueue;
     private readonly Thread channelConsumerThread;
+
+    // internal readonly SemaphoreSlim HostLimiter = new SemaphoreSlim ( 64 );
+    private readonly LingerOption tcpLingerOption = new LingerOption ( true, 0 );
 
     private bool disposedValue;
 
@@ -40,26 +44,34 @@ public sealed class HttpHost : IDisposable {
     public bool IsDisposed { get => this.disposedValue; }
 
     /// <summary>
-    /// Gets or sets the port number to listen on.
-    /// </summary>
-    public int Port { get; set; } = 8080;
-
-    /// <summary>
     /// Gets or sets the HTTPS options for secure connections. Setting an <see cref="Sisk.Cadente.HttpsOptions"/> object in this
     /// property, the <see cref="Sisk.Cadente.HttpHost"/> will use HTTPS instead of HTTP.
     /// </summary>
     public HttpsOptions? HttpsOptions { get; set; }
 
+    /// <summary>
+    /// Gets the <see cref="HttpHostTimeoutManager"/> for this <see cref="HttpHost"/>.
+    /// </summary>
+    public HttpHostTimeoutManager TimeoutManager { get; } = new HttpHostTimeoutManager ();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpHost"/> class using the specified <see cref="IPEndPoint"/>.
+    /// </summary>
+    /// <param name="endpoint">The <see cref="IPEndPoint"/> to listen on.</param>
     public HttpHost ( IPEndPoint endpoint ) {
         this._listener = new TcpListener ( endpoint );
         this.channelConsumerThread = new Thread ( this.ConsumerJobThread );
         this.clientQueue = Channel.CreateBounded<TcpClient> (
-            new BoundedChannelOptions ( QUEUE_SIZE ) { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = true } );
+            new BoundedChannelOptions ( MAX_WORKERS ) { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = true } );
+
         this.readerQueue = this.clientQueue.Reader;
         this.writerQueue = this.clientQueue.Writer;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpHost"/> class using the specified port on the loopback address.
+    /// </summary>
+    /// <param name="port">The port number to listen on.</param>
     public HttpHost ( int port ) : this ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
     }
 
@@ -82,8 +94,8 @@ public sealed class HttpHost : IDisposable {
 
     private async void ReceiveClient ( IAsyncResult result ) {
 
-        var client = this._listener.EndAcceptTcpClient ( result );
         this._listener.BeginAcceptTcpClient ( this.ReceiveClient, null );
+        var client = this._listener.EndAcceptTcpClient ( result );
 
         await this.writerQueue.WriteAsync ( client );
     }
@@ -93,13 +105,13 @@ public sealed class HttpHost : IDisposable {
             { // setup the tcpclient
                 client.NoDelay = true;
 
-                client.ReceiveTimeout = (int) TimeSpan.FromSeconds ( 5 ).TotalMilliseconds;
-                client.SendTimeout = (int) TimeSpan.FromSeconds ( 5 ).TotalMilliseconds;
+                //client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
+                //client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
 
                 client.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
                 client.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
 
-                client.LingerState = new LingerOption ( true, 0 ); // immediately close client after connection handling
+                client.LingerState = this.tcpLingerOption;
             }
 
             Stream connectionStream;
@@ -114,25 +126,21 @@ public sealed class HttpHost : IDisposable {
 
             using (HttpConnection connection = new HttpConnection ( connectionStream, this, (IPEndPoint) client.Client.RemoteEndPoint! )) {
 
-                if (connectionStream is SslStream sslStream && this.HttpsOptions is not null) {
-                    //Logger.LogInformation ( $"[{connection.Id}] Begin SSL authenticate" );
+                if (connectionStream is SslStream sslStream) {
                     try {
                         await sslStream.AuthenticateAsServerAsync (
-                            serverCertificate: this.HttpsOptions.ServerCertificate,
+                            serverCertificate: this.HttpsOptions!.ServerCertificate,
                             clientCertificateRequired: this.HttpsOptions.ClientCertificateRequired,
                             checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
                             enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
                     }
                     catch (Exception) {
-                        //Logger.LogInformation ( $"[{connection.Id}] Failed SSL authenticate: {ex.Message}" );
+                        return;
                     }
                 }
 
-                //Logger.LogInformation ( $"[{connection.Id}] Begin handle connection" );
                 var state = await connection.HandleConnectionEvents ();
                 ;
-                //Logger.LogInformation ( $"[{connection.Id}] Ended handling connection with state {state}" );
-
             }
         }
         finally {
@@ -159,8 +167,9 @@ public sealed class HttpHost : IDisposable {
         }
     }
 
-    internal Task InvokeContextCreated ( HttpHostContext context ) {
-        return this.ContextCreated!.Invoke ( this, context );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    internal void InvokeContextCreated ( HttpHostContext context ) {
+        this.ContextCreated!.Invoke ( this, context );
     }
 
     /// <inheritdoc/>
