@@ -39,8 +39,8 @@ sealed class HttpConnection : IDisposable {
     public async Task<HttpConnectionState> HandleConnectionEvents () {
         bool connectionCloseRequested = false;
 
-        var requestBuffer = MemoryPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
-        var responseHeadersBuffer = MemoryPool<byte>.Shared.Rent ( RESPONSE_BUFFER_SIZE );
+        var requestBuffer = ArrayPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
+        var responseHeadersBuffer = ArrayPool<byte>.Shared.Rent ( RESPONSE_BUFFER_SIZE );
 
         try {
 
@@ -111,8 +111,8 @@ sealed class HttpConnection : IDisposable {
             return HttpConnectionState.ConnectionClosed;
         }
         finally {
-            responseHeadersBuffer.Dispose ();
-            requestBuffer.Dispose ();
+            ArrayPool<byte>.Shared.Return ( responseHeadersBuffer );
+            ArrayPool<byte>.Shared.Return ( requestBuffer );
         }
     }
 

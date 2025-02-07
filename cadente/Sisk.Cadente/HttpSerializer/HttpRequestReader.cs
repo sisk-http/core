@@ -7,7 +7,6 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,21 +16,21 @@ namespace Sisk.Cadente.HttpSerializer;
 sealed class HttpRequestReader {
 
     Stream _stream;
-    IMemoryOwner<byte> bufferOwnership;
+    byte [] buffer;
 
     const byte SPACE = 0x20;
     const byte CARRIAGE_RETURN = 0x0D; //\r
     const byte DOUBLE_DOTS = 0x3A; // :
 
-    public HttpRequestReader ( Stream stream, ref IMemoryOwner<byte> bufferOwnership ) {
+    public HttpRequestReader ( Stream stream, ref byte [] bufferOwnership ) {
         this._stream = stream;
-        this.bufferOwnership = bufferOwnership;
+        this.buffer = bufferOwnership;
     }
 
     public async Task<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
         try {
 
-            int read = await this._stream.ReadAsync ( this.bufferOwnership.Memory );
+            int read = await this._stream.ReadAsync ( this.buffer );
 
             if (read == 0) {
                 return (HttpRequestReadState.StreamZero, null);
@@ -56,7 +55,7 @@ sealed class HttpRequestReader {
 
         bool requestStreamFinished = false;
 
-        Memory<byte> memory = this.bufferOwnership.Memory;
+        Memory<byte> memory = this.buffer;
         Span<byte> memSpan = memory.Span;
 
         ReadOnlyMemory<byte> method = null!;
@@ -80,6 +79,7 @@ sealed class HttpRequestReader {
 
         int headerSize = -1;
         bool keepAliveEnabled = true;
+        bool expect100 = false;
         long contentLength = 0;
 
         List<HttpHeader> headers = new List<HttpHeader> ( 64 );
@@ -141,7 +141,10 @@ sealed class HttpRequestReader {
                             contentLength = long.Parse ( Encoding.ASCII.GetString ( headerLineValue ) );
                         }
                         else if (Ascii.EqualsIgnoreCase ( headerLineName, "Connection"u8 )) {
-                            keepAliveEnabled = !headerLineValue.SequenceEqual ( "close"u8 );
+                            keepAliveEnabled = !Ascii.Equals ( headerLineValue, "close"u8 );
+                        }
+                        else if (Ascii.EqualsIgnoreCase ( headerLineName, "Expect"u8 )) {
+                            expect100 = Ascii.Equals ( headerLineValue, "100-continue"u8 );
                         }
 
                         headers.Add ( new HttpHeader ( headerLineName.ToArray (), headerLineValue.ToArray () ) );
@@ -155,14 +158,16 @@ sealed class HttpRequestReader {
         }
 
         return new HttpRequestBase () {
-            BufferedContent = this.bufferOwnership.Memory [ headerSize.. ],
+            BufferedContent = expect100 ? Memory<byte>.Empty : memory [ headerSize.. ],
 
             Headers = headers.ToArray (),
             MethodRef = method,
             PathRef = path,
 
             ContentLength = contentLength,
-            CanKeepAlive = keepAliveEnabled
+            CanKeepAlive = keepAliveEnabled,
+
+            IsExpecting100 = expect100
         };
     }
 }

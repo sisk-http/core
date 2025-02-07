@@ -16,6 +16,13 @@ sealed class HttpRequestBase {
     private string? _path;
     private HttpHeader []? _headers;
 
+    public bool IsExpecting100;
+
+    public long ContentLength;
+    public bool CanKeepAlive;
+
+    public required ReadOnlyMemory<byte> BufferedContent;
+
     public required ReadOnlyMemory<byte> MethodRef;
     public required ReadOnlyMemory<byte> PathRef;
 
@@ -41,9 +48,4 @@ sealed class HttpRequestBase {
             return this._headers;
         }
     }
-
-    public long ContentLength;
-    public bool CanKeepAlive;
-
-    public required ReadOnlyMemory<byte> BufferedContent;
 }

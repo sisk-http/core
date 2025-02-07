@@ -7,7 +7,6 @@
 // File name:   HttpHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Sisk.Cadente.HttpSerializer;
@@ -20,7 +19,7 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHostContext {
 
-    private IMemoryOwner<byte> _responseBuffer;
+    private byte [] _responseBuffer;
     private Stream _connectionStream;
 
     internal bool ResponseHeadersAlreadySent = false;
@@ -32,7 +31,7 @@ public sealed class HttpHostContext {
         }
 
         this.ResponseHeadersAlreadySent = true;
-        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this._responseBuffer.Memory.Span, this.Response );
+        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this._responseBuffer, this.Response );
     }
 
     /// <summary>
@@ -50,7 +49,7 @@ public sealed class HttpHostContext {
     /// </summary>
     public bool KeepAlive { get; set; } = true;
 
-    internal HttpHostContext ( HttpRequestBase baseRequest, Stream connectionStream, IMemoryOwner<byte> responseBuffer ) {
+    internal HttpHostContext ( HttpRequestBase baseRequest, Stream connectionStream, byte [] responseBuffer ) {
         this._connectionStream = connectionStream;
         this._responseBuffer = responseBuffer;
 
@@ -64,6 +63,7 @@ public sealed class HttpHostContext {
     /// </summary>
     public sealed class HttpRequest {
 
+        bool wasExpectationSent = false;
         private HttpRequestStream _requestStream;
         private HttpRequestBase _baseRequest;
 
@@ -91,6 +91,14 @@ public sealed class HttpHostContext {
         /// Gets the stream containing the content of the request.
         /// </summary>
         public Stream GetRequestStream () {
+
+            if (this._baseRequest.IsExpecting100 && !this.wasExpectationSent) {
+                this.wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( this._requestStream );
+
+                if (!this.wasExpectationSent)
+                    throw new InvalidOperationException ( "Unable to obtain the input stream for the request." );
+            }
+
             return this._requestStream;
         }
 
@@ -150,7 +158,7 @@ public sealed class HttpHostContext {
             this.Headers.Set ( new HttpHeader ( "Cache-Control", "no-cache" ) );
 
             if (this._session.WriteHttpResponseHeaders () == false) {
-                throw new InvalidOperationException ( "Unable to obtain an output stream for the response." );
+                throw new InvalidOperationException ( "Unable to obtain the output stream for the response." );
             }
 
             return new HttpEventStreamWriter ( this._baseOutputStream, encoding );
