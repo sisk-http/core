@@ -1,16 +1,7 @@
-﻿// The Sisk Framework source code
-// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
-//
-// The code below is licensed under the MIT license as
-// of the date of its publication, available at
-//
-// File name:   IniDocument.cs
-// Repository:  https://github.com/sisk-http/core
+﻿using System.Text;
+using Sisk.IniConfiguration.Core.Serialization;
 
-using System.Text;
-using Sisk.IniConfiguration.Serializer;
-
-namespace Sisk.IniConfiguration;
+namespace Sisk.IniConfiguration.Core;
 
 /// <summary>
 /// Represents an INI document.
@@ -25,19 +16,13 @@ public sealed class IniDocument {
     /// <summary>
     /// Gets all INI sections defined in this INI document.
     /// </summary>
-    public IList<IniSection> Sections { get; }
+    public IniSectionCollection Sections { get; }
 
     /// <summary>
     /// Gets the global INI section, which is the primary section in the document.
     /// </summary>
     public IniSection Global {
-        get {
-            if (this.Sections.Count == 0) {
-                return new IniSection ( IniReader.INITIAL_SECTION_NAME, Array.Empty<(string, string)> () );
-            }
-            else
-                return this.Sections [ 0 ];
-        }
+        get => this.Sections.GetGlobal ();
     }
 
     /// <summary>
@@ -89,8 +74,21 @@ public sealed class IniDocument {
         return parser.Read ();
     }
 
-    internal IniDocument ( IniSection [] sections ) {
-        this.Sections = IniSection.MergeIniSections ( sections );
+    /// <summary>
+    /// Creates an new <see cref="IniDocument"/> instance from the
+    /// specified <see cref="IniSection"/> collection.
+    /// </summary>
+    /// <param name="sections">The list of <see cref="IniSection"/>.</param>
+    public IniDocument ( IEnumerable<IniSection> sections ) {
+        this.Sections = new IniSectionCollection ( sections );
+    }
+
+    /// <summary>
+    /// Creates an new empty <see cref="IniDocument"/> instance with no
+    /// INI sections added to it.
+    /// </summary>
+    public IniDocument () {
+        this.Sections = new IniSectionCollection ();
     }
 
     /// <summary>
@@ -105,5 +103,16 @@ public sealed class IniDocument {
                 return section;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Gets the INI document string from this <see cref="IniDocument"/>.
+    /// </summary>
+    public override string ToString () {
+        using (var sw = new StringWriter ())
+        using (var iw = new IniWriter ( sw )) {
+            iw.Write ( this );
+            return sw.ToString ();
+        }
     }
 }

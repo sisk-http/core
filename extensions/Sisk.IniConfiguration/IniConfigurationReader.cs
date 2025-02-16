@@ -9,7 +9,8 @@
 
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
-using Sisk.IniConfiguration.Serializer;
+using Sisk.IniConfiguration.Core;
+using Sisk.IniConfiguration.Core.Serialization;
 
 namespace Sisk.IniConfiguration;
 

@@ -16,14 +16,24 @@ namespace Sisk.Core.Routing;
 /// <see cref="Route.UseRegex"/>.
 /// </summary>
 public sealed class RegexRoute : Route {
-    /// <inheritdoc/>
-    /// <exclude/>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RegexRoute"/> class.
+    /// </summary>
+    /// <param name="method">The HTTP method for this route.</param>
+    /// <param name="pattern">The regular expression pattern for this route.</param>
+    /// <param name="action">The action to be executed when this route is matched.</param>
     public RegexRoute ( RouteMethod method, [StringSyntax ( StringSyntaxAttribute.Regex )] string pattern, RouteAction action ) : base ( method, pattern, action ) {
         this.UseRegex = true;
     }
 
-    /// <inheritdoc/>
-    /// <exclude/>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RegexRoute"/> class.
+    /// </summary>
+    /// <param name="method">The HTTP method for this route.</param>
+    /// <param name="pattern">The regular expression pattern for this route.</param>
+    /// <param name="name">The name of this route.</param>
+    /// <param name="action">The action to be executed when this route is matched.</param>
+    /// <param name="beforeCallback">The callback to be executed before the action.</param>
     public RegexRoute ( RouteMethod method, [StringSyntax ( StringSyntaxAttribute.Regex )] string pattern, string? name, RouteAction action, IRequestHandler []? beforeCallback ) : base ( method, pattern, name, action, beforeCallback ) {
         this.UseRegex = true;
     }

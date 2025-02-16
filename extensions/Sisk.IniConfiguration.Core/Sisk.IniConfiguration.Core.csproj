@@ -7,13 +7,13 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 
-		<Title>Sisk.IniConfiguration</Title>
-		<PackageId>Sisk.IniConfiguration</PackageId>
+		<Title>Sisk.IniConfiguration.Core</Title>
+		<PackageId>Sisk.IniConfiguration.Core</PackageId>
 
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
-		<Product>Sisk.IniConfiguration</Product>
-		<Description>This package provides an INI configuration provider for Sisk projects.</Description>
+		<Product>Sisk.IniConfiguration.Core</Product>
+		<Description>Provides the core readers and writers for INI-based document files.</Description>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -50,11 +50,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
-		<ProjectReference Include="..\Sisk.IniConfiguration.Core\Sisk.IniConfiguration.Core.csproj" />
 	</ItemGroup>
 
 </Project>

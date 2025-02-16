@@ -93,8 +93,6 @@ namespace Sisk.Core.Http {
         /// </summary>
         public bool KeepAlive { get; set; } = true;
 
-        // migrated options from HttpServerFlags
-
         /// <summary>
         /// Gets or sets the maximum time allowed for an idle connection.
         /// </summary>
@@ -109,7 +107,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets or sets whether the HTTP server should convert request headers encoding to the content encoding.
         /// </summary>
-        public bool NormalizeHeadersEncodings = false;
+        public bool NormalizeHeadersEncodings { get; set; } = false;
 
         /// <summary>
         /// Gets or sets whether the HTTP server should send the X-Powered-By header in all responses.
@@ -137,7 +135,7 @@ namespace Sisk.Core.Http {
         /// Gets or sets whether the HTTP server should convert <see cref="IAsyncEnumerable{T}"/> object responses into
         /// an blocking <see cref="IEnumerable{T}"/>.
         /// </summary>
-        public bool ConvertIAsyncEnumerableIntoEnumerable = true;
+        public bool ConvertIAsyncEnumerableIntoEnumerable { get; set; } = true;
 
         /// <summary>
         /// Creates an new <see cref="HttpServerConfiguration"/> instance with no parameters.

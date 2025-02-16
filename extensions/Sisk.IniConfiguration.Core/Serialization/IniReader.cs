@@ -1,21 +1,17 @@
-﻿// The Sisk Framework source code
-// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
-//
-// The code below is licensed under the MIT license as
-// of the date of its publication, available at
-//
-// File name:   IniReader.cs
-// Repository:  https://github.com/sisk-http/core
+﻿using System.Text;
 
-using System.Text;
-
-namespace Sisk.IniConfiguration.Serializer;
+namespace Sisk.IniConfiguration.Core.Serialization;
 
 /// <summary>
 /// Provides an INI-document reader and parser.
 /// </summary>
 public sealed class IniReader : IDisposable {
-    internal static readonly StringComparer IniNamingComparer = StringComparer.InvariantCultureIgnoreCase;
+
+    /// <summary>
+    /// Gets or sets the default <see cref="StringComparer"/> used by the INI reader and instances 
+    /// to compare key names.
+    /// </summary>
+    public static StringComparer IniNamingComparer { get; set; } = StringComparer.InvariantCultureIgnoreCase;
 
     internal const string INITIAL_SECTION_NAME = "__SISKINIGLOBAL__";
 
@@ -43,8 +39,8 @@ public sealed class IniReader : IDisposable {
         this.ThrowIfDisposed ();
 
         string lastSectionName = INITIAL_SECTION_NAME;
-        List<(string, string)> items = new List<(string, string)> ();
-        List<IniSection> creatingSections = new List<IniSection> ();
+        List<KeyValuePair<string, string>> items = new ();
+        List<IniSection> creatingSections = new ();
 
         int read = 0;
         while ((read = this.reader.Peek ()) >= 0) {
@@ -78,7 +74,7 @@ public sealed class IniReader : IDisposable {
                     break;
 
                 if ((string.IsNullOrWhiteSpace ( propertyName ) && string.IsNullOrWhiteSpace ( propertyValue )) == false)
-                    items.Add ( (propertyName.Trim (), propertyValue) );
+                    items.Add ( new ( propertyName.Trim (), propertyValue ) );
 
                 this.SkipWhiteSpace ();
             }
@@ -183,3 +179,4 @@ readNext:
         GC.SuppressFinalize ( this );
     }
 }
+

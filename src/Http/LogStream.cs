@@ -183,7 +183,9 @@ namespace Sisk.Core.Http {
                         try {
                             this.TextWriter?.WriteLine ( dataStr );
                         }
-                        catch {
+                        catch (Exception ex) {
+                            Console.WriteLine ( this.GetExceptionEntry ( ex, "Exception raised from the LogStream TextWriter instance" ) );
+
                             if (!gotAnyError) {
                                 await this.channel.Writer.WriteAsync ( item );
                                 gotAnyError = true;
@@ -194,7 +196,9 @@ namespace Sisk.Core.Http {
                             if (this.filePath is not null)
                                 File.AppendAllText ( this.filePath, dataStr + Environment.NewLine, this.Encoding );
                         }
-                        catch {
+                        catch (Exception ex) {
+                            Console.WriteLine ( this.GetExceptionEntry ( ex, "Exception raised from the LogStream FilePath instance" ) );
+
                             if (!gotAnyError) {
                                 await this.channel.Writer.WriteAsync ( item );
                                 gotAnyError = true;
@@ -204,7 +208,9 @@ namespace Sisk.Core.Http {
                         try {
                             this._bufferingContent?.Add ( dataStr );
                         }
-                        catch {
+                        catch (Exception ex) {
+                            Console.WriteLine ( this.GetExceptionEntry ( ex, "Exception raised from the LogStream BufferingContent instance" ) );
+
                             if (!gotAnyError) {
                                 await this.channel.Writer.WriteAsync ( item );
                             }
@@ -322,6 +328,12 @@ namespace Sisk.Core.Http {
                     exceptionSbuilder.AppendLine ( SR.LogStream_ExceptionDump_TrimmedFooter );
                 }
             }
+        }
+
+        string GetExceptionEntry ( Exception exception, string? context = null ) {
+            StringBuilder exceptionSbuilder = new StringBuilder ();
+            this.WriteExceptionInternal ( exceptionSbuilder, exception, context, 0 );
+            return exceptionSbuilder.ToString ();
         }
 
         /// <summary>

@@ -38,6 +38,12 @@ public static class SslProxyExtensions {
         bool clientCertificateRequired = false,
         object? proxyAuthorization = null,
         bool onlyUseIPv4 = false ) {
+
+        if (builder.ServerConfiguration.ListeningHosts.Count == 0 ||
+            builder.ServerConfiguration.ListeningHosts [ 0 ].Ports.Count == 0) {
+            throw new ArgumentException ( "Couldn't start the SslProxy: the server ListeningHost ins't configured yet." );
+        }
+
         var primaryHost = builder.ServerConfiguration.ListeningHosts [ 0 ];
         var primaryPort = primaryHost.Ports [ 0 ];
         var usableHosts = primaryHost.Ports.Select ( p => p.Hostname );

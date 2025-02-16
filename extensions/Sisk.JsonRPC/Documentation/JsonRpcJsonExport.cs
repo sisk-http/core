@@ -50,7 +50,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
             var item = new {
                 Name = method.MethodName,
                 Description = method.Description,
-                Returns = method.ReturnType,
+                Returns = method.ReturnType.Name,
                 Parameters = method.Parameters
                     .Select ( p => new {
                         Name = p.ParameterName,

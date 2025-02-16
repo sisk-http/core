@@ -53,12 +53,12 @@ public sealed class HttpServerHostContext : IDisposable {
     /// <summary>
     /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    public LogStream? AccessLogs { get => this.ServerConfiguration?.AccessLogsStream; }
+    public LogStream? AccessLogs { get => this.ServerConfiguration.AccessLogsStream; }
 
     /// <summary>
     /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    public LogStream? ErrorLogs { get => this.ServerConfiguration?.ErrorsLogsStream; }
+    public LogStream? ErrorLogs { get => this.ServerConfiguration.ErrorsLogsStream; }
 
     internal HttpServerHostContext ( HttpServer httpServer ) {
         this.HttpServer = httpServer ?? throw new ArgumentNullException ( nameof ( httpServer ) );
