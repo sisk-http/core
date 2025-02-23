@@ -7,8 +7,7 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Buffers;
 using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
@@ -16,11 +15,14 @@ namespace Sisk.Cadente.HttpSerializer;
 sealed class HttpRequestReader {
 
     Stream _stream;
-    byte [] buffer;
+    Memory<byte> buffer;
 
-    const byte SPACE = 0x20;
-    const byte CARRIAGE_RETURN = 0x0D; //\r
-    const byte DOUBLE_DOTS = 0x3A; // :
+    const byte SPACE = (byte) ' ';
+    const byte LINE_FEED = (byte) '\n';
+    const byte COLON = (byte) ':';
+
+    private static ReadOnlySpan<byte> RequestLineDelimiters => [ LINE_FEED, 0 ];
+    private static ReadOnlySpan<byte> RequestHeaderLineSpaceDelimiters => [ SPACE, 0 ];
 
     public HttpRequestReader ( Stream stream, ref byte [] bufferOwnership ) {
         this._stream = stream;
@@ -29,7 +31,6 @@ sealed class HttpRequestReader {
 
     public async Task<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
         try {
-
             int read = await this._stream.ReadAsync ( this.buffer );
 
             if (read == 0) {
@@ -45,124 +46,58 @@ sealed class HttpRequestReader {
         }
     }
 
-    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public HttpRequestBase? ParseHttpRequest ( int length ) {
+    HttpRequestBase? ParseHttpRequest ( int length ) {
 
-        const int STEP_READ_METHOD = 0;
-        const int STEP_READ_PATH = 1;
-        const int STEP_READ_VERSION = 2;
-        const int STEP_READ_HEADERS = 3;
+        ReadOnlyMemory<byte> bufferPart = this.buffer [ 0..length ];
+        SequenceReader<byte> reader = new SequenceReader<byte> ( new ReadOnlySequence<byte> ( bufferPart ) );
 
-        bool requestStreamFinished = false;
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> method, RequestHeaderLineSpaceDelimiters, advancePastDelimiter: true )) {
+            return null;
+        }
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> path, RequestHeaderLineSpaceDelimiters, advancePastDelimiter: true )) {
+            return null;
+        }
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> protocol, RequestHeaderLineSpaceDelimiters, advancePastDelimiter: true )) {
+            return null;
+        }
 
-        Memory<byte> memory = this.buffer;
-        Span<byte> memSpan = memory.Span;
-
-        ReadOnlyMemory<byte> method = null!;
-        ReadOnlyMemory<byte> path = null!;
-
-        ReadOnlySpan<byte> headerLine;
-        ReadOnlySpan<byte> headerLineName;
-        ReadOnlySpan<byte> headerLineValue;
-
-        // 0 = parse method
-        // 1 = parse url
-        // 2 = parse version
-        // 3 = parse header line
-        int step = STEP_READ_METHOD;
-
-        int methodIndex = 0;
-        int pathIndex = 0;
-        int versionIndex = 0;
-        int headerLineIndex = 0;
-        int headerLineSepIndex = 0;
-
-        int headerSize = -1;
+        long contentLength = 0;
         bool keepAliveEnabled = true;
         bool expect100 = false;
-        long contentLength = 0;
 
-        List<HttpHeader> headers = new List<HttpHeader> ( 64 );
+        List<HttpHeader> headers = new List<HttpHeader> ( 32 );
+        while (reader.TryReadToAny ( out ReadOnlySpan<byte> headerLine, RequestLineDelimiters, advancePastDelimiter: true )) {
 
-        ref byte firstByte = ref MemoryMarshal.GetReference ( memSpan );
-        for (int i = 0; i < length; i++) {
-            ref byte currentByte = ref Unsafe.Add ( ref firstByte, i );
-
-            switch (step) {
-                case STEP_READ_METHOD:
-                    if (currentByte == SPACE) {
-                        methodIndex = i;
-                        method = memory [ 0..i ];
-                        step = STEP_READ_PATH;
-                    }
-                    break;
-
-                case STEP_READ_PATH:
-                    if (currentByte == SPACE) {
-                        pathIndex = i;
-                        path = memory [ (methodIndex + 1)..i ];
-                        step = STEP_READ_VERSION;
-                    }
-                    break;
-
-                case STEP_READ_VERSION:
-                    if (currentByte == CARRIAGE_RETURN) {
-                        versionIndex = i;
-                        // version = memSpan [ (pathIndex + 1)..i ];
-                        headerLineIndex = i + 1; //+1 includes \LF
-                        step = STEP_READ_HEADERS;
-                    }
-                    break;
-
-                case STEP_READ_HEADERS:
-
-                    // checks whether the current buffer has all the request headers. 
-                    if (!requestStreamFinished && i + 32/*BUFFER_LOOKAHEAD_OFFSET*/ > memSpan.Length) {
-
-                        // headers are too big
-                        return null;
-                    }
-
-                    if (currentByte == CARRIAGE_RETURN) {
-                        headerLine = memSpan [ (headerLineIndex + 1)..i ];
-                        headerLineIndex = i + 1; //+1 includes \LF
-
-                        headerLineSepIndex = headerLine.IndexOf ( DOUBLE_DOTS );
-                        if (headerLineSepIndex < 0) {
-                            // finished header parsing
-                            headerSize = i + 2;
-                            break;
-                        }
-
-                        headerLineName = headerLine [ 0..headerLineSepIndex ];
-                        headerLineValue = headerLine [ (headerLineSepIndex + 2).. ]; // +2 = : and the space
-
-                        if (Ascii.EqualsIgnoreCase ( headerLineName, "Content-Length"u8 )) {
-                            contentLength = long.Parse ( Encoding.ASCII.GetString ( headerLineValue ) );
-                        }
-                        else if (Ascii.EqualsIgnoreCase ( headerLineName, "Connection"u8 )) {
-                            keepAliveEnabled = !Ascii.Equals ( headerLineValue, "close"u8 );
-                        }
-                        else if (Ascii.EqualsIgnoreCase ( headerLineName, "Expect"u8 )) {
-                            expect100 = Ascii.Equals ( headerLineValue, "100-continue"u8 );
-                        }
-
-                        headers.Add ( new HttpHeader ( headerLineName.ToArray (), headerLineValue.ToArray () ) );
-                    }
-
-                    break;
+            int headerLineSepIndex = headerLine.IndexOf ( COLON );
+            if (headerLineSepIndex < 0) {
+                break;
             }
 
-            if (headerSize >= 0)
-                break;
+            ReadOnlySpan<byte> headerLineName = headerLine [ 0..headerLineSepIndex ];
+
+            // + 2 below includes the ": " from the header line, and
+            //  ^1 removes the trailing \r
+            ReadOnlySpan<byte> headerLineValue = headerLine [ (headerLineSepIndex + 2)..^1 ];
+
+            if (Ascii.EqualsIgnoreCase ( headerLineName, "Content-Length"u8 )) {
+                contentLength = long.Parse ( Encoding.ASCII.GetString ( headerLineValue ) );
+            }
+            else if (Ascii.EqualsIgnoreCase ( headerLineName, "Connection"u8 )) {
+                keepAliveEnabled = !Ascii.Equals ( headerLineValue, "close"u8 );
+            }
+            else if (Ascii.EqualsIgnoreCase ( headerLineName, "Expect"u8 )) {
+                expect100 = Ascii.Equals ( headerLineValue, "100-continue"u8 );
+            }
+
+            headers.Add ( new HttpHeader ( headerLineName.ToArray (), headerLineValue.ToArray () ) );
         }
 
         return new HttpRequestBase () {
-            BufferedContent = expect100 ? Memory<byte>.Empty : memory [ headerSize.. ],
+            BufferedContent = expect100 ? Memory<byte>.Empty : bufferPart [ (int) reader.Consumed.. ],
 
             Headers = headers.ToArray (),
-            MethodRef = method,
-            PathRef = path,
+            MethodRef = method.ToArray (),
+            PathRef = path.ToArray (),
 
             ContentLength = contentLength,
             CanKeepAlive = keepAliveEnabled,
