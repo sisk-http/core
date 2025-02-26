@@ -7,6 +7,7 @@
 // File name:   HttpHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Sisk.Cadente.HttpSerializer;
@@ -19,9 +20,7 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHostContext {
 
-    private byte [] _responseBuffer;
     private Stream _connectionStream;
-
     internal bool ResponseHeadersAlreadySent = false;
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -31,7 +30,7 @@ public sealed class HttpHostContext {
         }
 
         this.ResponseHeadersAlreadySent = true;
-        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this._responseBuffer, this.Response );
+        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this.Response );
     }
 
     /// <summary>
@@ -49,9 +48,8 @@ public sealed class HttpHostContext {
     /// </summary>
     public bool KeepAlive { get; set; } = true;
 
-    internal HttpHostContext ( HttpRequestBase baseRequest, Stream connectionStream, byte [] responseBuffer ) {
+    internal HttpHostContext ( HttpRequestBase baseRequest, IPEndPoint clientEndpoint, Stream connectionStream ) {
         this._connectionStream = connectionStream;
-        this._responseBuffer = responseBuffer;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
         this.Request = new HttpRequest ( baseRequest, requestStream );

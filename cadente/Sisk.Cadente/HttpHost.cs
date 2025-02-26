@@ -20,10 +20,6 @@ namespace Sisk.Cadente;
 public sealed class HttpHost : IDisposable {
 
     private readonly TcpListener _listener;
-
-    // internal readonly SemaphoreSlim HostLimiter = new SemaphoreSlim ( 64 );
-    private readonly LingerOption tcpLingerOption = new LingerOption ( true, 0 );
-
     private bool disposedValue;
 
     /// <summary>
@@ -74,10 +70,16 @@ public sealed class HttpHost : IDisposable {
     public void Start () {
         ObjectDisposedException.ThrowIf ( this.disposedValue, this );
 
+        this._listener.Server.NoDelay = true;
+        this._listener.Server.LingerState = new LingerOption ( true, 0 );
+        this._listener.Server.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
+        this._listener.Server.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
+
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
         this._listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
+        this._listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
 
         this._listener.Start ( QueueSize );
         this._listener.BeginAcceptTcpClient ( this.ReceiveClient, null );
@@ -93,17 +95,8 @@ public sealed class HttpHost : IDisposable {
 
     private async Task HandleTcpClient ( TcpClient client ) {
         try {
-            { // setup the tcpclient
-                client.NoDelay = true;
-
-                client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
-                client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
-
-                client.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
-                client.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
-
-                client.LingerState = this.tcpLingerOption;
-            }
+            client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
+            client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
 
             Stream connectionStream;
             Stream clientStream = client.GetStream ();

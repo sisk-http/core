@@ -40,7 +40,6 @@ sealed class HttpConnection : IDisposable {
         bool connectionCloseRequested = false;
 
         var requestBuffer = ArrayPool<byte>.Shared.Rent ( REQUEST_BUFFER_SIZE );
-        var responseHeadersBuffer = ArrayPool<byte>.Shared.Rent ( RESPONSE_BUFFER_SIZE );
 
         try {
 
@@ -50,7 +49,6 @@ sealed class HttpConnection : IDisposable {
                 Stream? responseStream = null;
 
                 try {
-
                     var readRequestState = await requestReader.ReadHttpRequest ();
                     var nextRequest = readRequestState.Item2;
 
@@ -61,8 +59,7 @@ sealed class HttpConnection : IDisposable {
                         };
                     }
 
-                    HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._connectionStream, responseHeadersBuffer );
-
+                    HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._endpoint, this._connectionStream );
                     this._host.InvokeContextCreated ( managedSession );
 
                     if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
@@ -81,6 +78,7 @@ sealed class HttpConnection : IDisposable {
                     if (responseStream is not null) {
 
                         if (managedSession.Response.SendChunked || !responseStream.CanSeek) {
+
                             managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" ) );
                             responseStream = new HttpChunkedStream ( responseStream );
                         }
@@ -111,7 +109,6 @@ sealed class HttpConnection : IDisposable {
             return HttpConnectionState.ConnectionClosed;
         }
         finally {
-            ArrayPool<byte>.Shared.Return ( responseHeadersBuffer );
             ArrayPool<byte>.Shared.Return ( requestBuffer );
         }
     }

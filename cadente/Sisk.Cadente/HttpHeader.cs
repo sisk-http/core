@@ -7,6 +7,7 @@
 // File name:   HttpHeader.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Sisk.Cadente;
@@ -14,7 +15,7 @@ namespace Sisk.Cadente;
 /// <summary>
 /// Represents an HTTP header, consisting of a name and a value.
 /// </summary>
-public readonly struct HttpHeader {
+public readonly struct HttpHeader : IEquatable<HttpHeader> {
 
     internal readonly ReadOnlyMemory<byte> NameBytes;
     internal readonly ReadOnlyMemory<byte> ValueBytes;
@@ -31,7 +32,7 @@ public readonly struct HttpHeader {
     /// </summary>
     /// <param name="nameBytes">The byte array representing the name of the header.</param>
     /// <param name="valueBytes">The byte array representing the value of the header.</param>
-    public HttpHeader ( ReadOnlyMemory<byte> nameBytes, ReadOnlyMemory<byte> valueBytes ) {
+    public HttpHeader ( in ReadOnlyMemory<byte> nameBytes, in ReadOnlyMemory<byte> valueBytes ) {
         this.NameBytes = nameBytes;
         this.ValueBytes = valueBytes;
     }
@@ -69,5 +70,26 @@ public readonly struct HttpHeader {
     /// </summary>
     public override string ToString () {
         return $"{this.Name}: {this.Value}";
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals ( [NotNullWhen ( true )] object? obj ) {
+        if (obj is HttpHeader other) {
+            return this.Equals ( other );
+        }
+        else {
+            return object.Equals ( this, obj );
+        }
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode () {
+        return HashCode.Combine ( this.NameBytes, this.ValueBytes );
+    }
+
+    /// <inheritdoc/>
+    public bool Equals ( HttpHeader other ) {
+        return this.NameBytes.Span.SequenceEqual ( other.NameBytes.Span ) &&
+               this.ValueBytes.Span.SequenceEqual ( other.ValueBytes.Span );
     }
 }

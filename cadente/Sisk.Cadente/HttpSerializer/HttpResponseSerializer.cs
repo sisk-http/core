@@ -82,10 +82,12 @@ internal static class HttpResponseSerializer {
         return position;
     }
 
-    public static bool WriteHttpResponseHeaders ( Stream outgoingStream, in Span<byte> buffer, HttpHostContext.HttpResponse response ) {
+    public static bool WriteHttpResponseHeaders ( Stream outgoingStream, HttpHostContext.HttpResponse response ) {
         try {
-            int headerSize = GetResponseHeadersBytes ( buffer, response );
-            outgoingStream.Write ( buffer [ 0..headerSize ] );
+            Span<byte> responseBuffer = stackalloc byte [ HttpConnection.RESPONSE_BUFFER_SIZE ];
+
+            int headerSize = GetResponseHeadersBytes ( responseBuffer, response );
+            outgoingStream.Write ( responseBuffer [ 0..headerSize ] );
 
             return true;
         }
