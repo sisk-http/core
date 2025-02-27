@@ -7,7 +7,7 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
@@ -15,7 +15,6 @@ namespace Sisk.Cadente.HttpSerializer;
 sealed class HttpRequestReader {
 
     Stream _stream;
-    Memory<byte> buffer;
 
     const byte SPACE = (byte) ' ';
     const byte LINE_FEED = (byte) '\n';
@@ -24,32 +23,29 @@ sealed class HttpRequestReader {
     private static ReadOnlySpan<byte> RequestLineDelimiters => [ LINE_FEED, 0 ];
     private static ReadOnlySpan<byte> RequestHeaderLineSpaceDelimiters => [ SPACE, 0 ];
 
-    public HttpRequestReader ( Stream stream, ref byte [] bufferOwnership ) {
+    public HttpRequestReader ( Stream stream ) {
         this._stream = stream;
-        this.buffer = bufferOwnership;
     }
 
-    public async Task<(HttpRequestReadState, HttpRequestBase?)> ReadHttpRequest () {
+    public bool TryReadHttpRequest ( [NotNullWhen ( true )] out HttpRequestBase? request ) {
         try {
-            int read = await this._stream.ReadAsync ( this.buffer );
 
-            if (read == 0) {
-                return (HttpRequestReadState.StreamZero, null);
-            }
+            Span<byte> buffer = stackalloc byte [ HttpConnection.REQUEST_BUFFER_SIZE ];
+            int read = this._stream.Read ( buffer );
 
-            var request = this.ParseHttpRequest ( read );
-            return (HttpRequestReadState.RequestRead, request);
+            request = this.ParseHttpRequest ( buffer [ ..read ] );
+            return request != null;
         }
         catch (Exception ex) {
             Logger.LogInformation ( $"HttpRequestReader finished with exception: {ex.Message}" );
-            return (HttpRequestReadState.StreamError, null);
+            request = null;
+            return false;
         }
     }
 
-    HttpRequestBase? ParseHttpRequest ( int length ) {
+    HttpRequestBase? ParseHttpRequest ( scoped ReadOnlySpan<byte> buffer ) {
 
-        ReadOnlyMemory<byte> bufferPart = this.buffer [ 0..length ];
-        SequenceReader<byte> reader = new SequenceReader<byte> ( new ReadOnlySequence<byte> ( bufferPart ) );
+        SpanReader<byte> reader = new SpanReader<byte> ( buffer );
 
         if (!reader.TryReadToAny ( out ReadOnlySpan<byte> method, RequestHeaderLineSpaceDelimiters, advancePastDelimiter: true )) {
             return null;
@@ -57,7 +53,7 @@ sealed class HttpRequestReader {
         if (!reader.TryReadToAny ( out ReadOnlySpan<byte> path, RequestHeaderLineSpaceDelimiters, advancePastDelimiter: true )) {
             return null;
         }
-        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> protocol, RequestHeaderLineSpaceDelimiters, advancePastDelimiter: true )) {
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> protocol, RequestLineDelimiters, advancePastDelimiter: true )) {
             return null;
         }
 
@@ -93,7 +89,7 @@ sealed class HttpRequestReader {
         }
 
         return new HttpRequestBase () {
-            BufferedContent = expect100 ? Memory<byte>.Empty : bufferPart [ (int) reader.Consumed.. ],
+            BufferedContent = expect100 ? Memory<byte>.Empty : buffer [ reader.Consumed.. ].ToArray (),
 
             Headers = headers.ToArray (),
             MethodRef = method.ToArray (),

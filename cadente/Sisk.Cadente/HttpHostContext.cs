@@ -48,7 +48,13 @@ public sealed class HttpHostContext {
     /// </summary>
     public bool KeepAlive { get; set; } = true;
 
+    /// <summary>
+    /// Gets the remote client endpoint.
+    /// </summary>
+    public IPEndPoint ClientEndpoint { get; }
+
     internal HttpHostContext ( HttpRequestBase baseRequest, IPEndPoint clientEndpoint, Stream connectionStream ) {
+        this.ClientEndpoint = clientEndpoint;
         this._connectionStream = connectionStream;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );

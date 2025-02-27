@@ -12,6 +12,13 @@ namespace Sisk.Core.Entity {
     /// Provides a class to provide Cross Origin response headers for when communicating with a browser.
     /// </summary>
     public sealed class CrossOriginResourceSharingHeaders {
+
+        /// <summary>
+        /// When applied to the <see cref="AllowOrigin"/> property, the HTTP server automatically applies
+        /// the incoming request Origin header value to the Access-Control-Allow-Origin header.
+        /// </summary>
+        public const string AutoAllowOrigin = "<SISK_AUTO_ALLOW_ORIGIN_NAME>";
+
         /// <summary>
         /// Gets an instance of an empty CrossOriginResourceSharingHeaders.
         /// </summary>
@@ -62,11 +69,36 @@ namespace Sisk.Core.Entity {
         /// </summary>
         public CrossOriginResourceSharingHeaders () {
             this.ExposeHeaders = Array.Empty<string> ();
-            this.AllowOrigin = null;
             this.AllowOrigins = Array.Empty<string> ();
             this.AllowMethods = Array.Empty<string> ();
             this.AllowHeaders = Array.Empty<string> ();
+            this.AllowOrigin = null;
             this.MaxAge = TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CrossOriginResourceSharingHeaders"/> class with the specified CORS headers.
+        /// </summary>
+        /// <param name="allowOrigin">The value of the Access-Control-Allow-Origin header.</param>
+        /// <param name="allowOrigins">The values of the Access-Control-Allow-Origin header.</param>
+        /// <param name="allowMethods">The values of the Access-Control-Allow-Methods header.</param>
+        /// <param name="allowHeaders">The values of the Access-Control-Allow-Headers header.</param>
+        /// <param name="exposeHeaders">The values of the Access-Control-Expose-Headers header.</param>
+        /// <param name="maxAge">The value of the Access-Control-Max-Age header.</param>
+        public CrossOriginResourceSharingHeaders (
+            string? allowOrigin = null,
+            string []? allowOrigins = null,
+            string []? allowMethods = null,
+            string []? allowHeaders = null,
+            string []? exposeHeaders = null,
+            TimeSpan? maxAge = null ) {
+
+            this.ExposeHeaders = exposeHeaders ?? Array.Empty<string> ();
+            this.AllowOrigins = allowOrigins ?? Array.Empty<string> ();
+            this.AllowHeaders = allowHeaders ?? Array.Empty<string> ();
+            this.AllowMethods = allowMethods ?? Array.Empty<string> ();
+            this.AllowOrigin = allowOrigin;
+            this.MaxAge = maxAge ?? TimeSpan.Zero;
         }
 
         /// <summary>

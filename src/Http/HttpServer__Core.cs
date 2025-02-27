@@ -85,7 +85,19 @@ public partial class HttpServer {
         if (cors.AllowMethods.Length > 0)
             baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowMethods, string.Join ( ", ", cors.AllowMethods ) );
 
-        if (cors.AllowOrigins?.Length > 0) {
+        if (cors.AllowOrigin is { } allowOriginValue) {
+
+            if (allowOriginValue == CrossOriginResourceSharingHeaders.AutoAllowOrigin) {
+
+                string? requestOrigin = baseRequest.Headers [ HttpKnownHeaderNames.Origin ];
+                if (requestOrigin != null)
+                    baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, requestOrigin );
+            }
+            else {
+                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin );
+            }
+        }
+        else if (cors.AllowOrigins?.Length > 0) {
             string? origin = baseRequest.Headers [ HttpKnownHeaderNames.Origin ];
 
             if (origin is not null) {
@@ -97,9 +109,6 @@ public partial class HttpServer {
                     }
                 }
             }
-        }
-        else if (cors.AllowOrigin is not null) {
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin );
         }
 
         if (cors.AllowCredentials == true)
@@ -162,11 +171,6 @@ public partial class HttpServer {
         bool hasErrorLogging = currentConfig.ErrorsLogsStream is not null;
 
         Router.RouterExecutionResult? routerResult = null;
-
-        if (currentConfig.DefaultCultureInfo is not null) {
-            Thread.CurrentThread.CurrentCulture = currentConfig.DefaultCultureInfo;
-            Thread.CurrentThread.CurrentUICulture = currentConfig.DefaultCultureInfo;
-        }
 
         HttpContent? servedContent = null;
         HttpServerExecutionResult executionResult = new HttpServerExecutionResult () {

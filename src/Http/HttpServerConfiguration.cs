@@ -26,6 +26,10 @@ namespace Sisk.Core.Http {
         /// Gets or sets the default <see cref="CultureInfo"/> object which the HTTP server will apply to the request
         /// handlers and callbacks thread.
         /// </summary>
+        /// <remarks>
+        /// This property is obsolete. Use <see cref="CultureInfo.DefaultThreadCurrentCulture"/> instead.
+        /// </remarks>
+        [Obsolete ( "This property is obsolete and changing it will have no effect. Use CultureInfo.DefaultThreadCurrentCulture instead." )]
         public CultureInfo? DefaultCultureInfo { get; set; }
 
         /// <summary>

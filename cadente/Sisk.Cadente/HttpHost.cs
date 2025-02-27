@@ -143,8 +143,9 @@ public sealed class HttpHost : IDisposable {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal void InvokeContextCreated ( HttpHostContext context ) {
-        this.ContextCreated?.Invoke ( this, context );
+    internal async ValueTask InvokeContextCreated ( HttpHostContext context ) {
+        if (ContextCreated != null)
+            await ContextCreated.Invoke ( this, context );
     }
 
     /// <inheritdoc/>

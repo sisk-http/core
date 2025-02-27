@@ -159,11 +159,12 @@ public sealed class HttpServerHostContextBuilder {
     }
 
     /// <summary>
-    /// Overrides the <see cref="HttpServerConfiguration.DefaultCultureInfo"/> property in the HTTP server configuration.
+    /// Changes the default thread current culture through <see cref="CultureInfo.DefaultThreadCurrentCulture"/>.
     /// </summary>
     /// <param name="locale">The default <see cref="CultureInfo"/> object which the HTTP server will apply to the request handlers and callbacks thread.</param>
     public HttpServerHostContextBuilder UseLocale ( CultureInfo locale ) {
-        this._context.ServerConfiguration.DefaultCultureInfo = locale;
+        CultureInfo.DefaultThreadCurrentCulture = locale;
+        CultureInfo.DefaultThreadCurrentUICulture = locale;
         return this;
     }
 

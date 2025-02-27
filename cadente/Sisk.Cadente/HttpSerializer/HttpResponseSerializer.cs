@@ -15,7 +15,7 @@ namespace Sisk.Cadente.HttpSerializer;
 
 internal static class HttpResponseSerializer {
 
-    static ASCIIEncoding _headerDataEncoding = new ASCIIEncoding ();
+    static Encoding _headerDataEncoding = Encoding.ASCII;
 
     const byte _H = (byte) 'H';
     const byte _T = (byte) 'T';
@@ -32,17 +32,17 @@ internal static class HttpResponseSerializer {
     public static int GetResponseHeadersBytes ( scoped Span<byte> buffer, HttpHostContext.HttpResponse response ) {
 
         // HTTP/1.1
-        buffer [ 0 ] = _H;
-        buffer [ 1 ] = _T;
-        buffer [ 2 ] = _T;
-        buffer [ 3 ] = _P;
-        buffer [ 4 ] = _SLASH;
-        buffer [ 5 ] = _1;
-        buffer [ 6 ] = _DOT;
-        buffer [ 7 ] = _1;
-        buffer [ 8 ] = _SPACE;
+        int position = 0;
 
-        int position = 9;
+        buffer [ position++ ] = _H;
+        buffer [ position++ ] = _T;
+        buffer [ position++ ] = _T;
+        buffer [ position++ ] = _P;
+        buffer [ position++ ] = _SLASH;
+        buffer [ position++ ] = _1;
+        buffer [ position++ ] = _DOT;
+        buffer [ position++ ] = _1;
+        buffer [ position++ ] = _SPACE;
 
         int statusCodeCount = _headerDataEncoding.GetBytes ( response.StatusCode.ToString (), buffer [ position.. ] );
         position += statusCodeCount;

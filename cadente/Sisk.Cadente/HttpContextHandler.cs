@@ -14,4 +14,4 @@ namespace Sisk.Cadente;
 /// </summary>
 /// <param name="sender">The <see cref="HttpHost"/> which created the <see cref="HttpHostContext"/> object.</param>
 /// <param name="session">The HTTP session associated with the action.</param>
-public delegate void HttpContextHandler ( HttpHost sender, HttpHostContext session );
+public delegate Task HttpContextHandler ( HttpHost sender, HttpHostContext session );
