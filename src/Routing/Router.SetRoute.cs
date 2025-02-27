@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   Router__CoreSetters.cs
+// File name:   Router.SetRoute.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Diagnostics.CodeAnalysis;
@@ -414,7 +414,7 @@ public partial class Router {
             bool methodMatch =
                 method == RouteMethod.Any || r.Method == RouteMethod.Any ||
                 method == r.Method;
-            bool pathMatch = HttpStringInternals.IsRoutePatternMatch ( r.Path, path, this.MatchRoutesIgnoreCase );
+            bool pathMatch = HttpStringInternals.IsRoutePatternMatch ( r.Path, path, this.MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal );
 
             if (pathMatch & methodMatch) {
                 return r;

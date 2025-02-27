@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   Router__CoreInvoker.cs
+// File name:   Router.Invoker.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Collections.Specialized;
@@ -35,7 +35,7 @@ public partial class Router {
         return false;
     }
 
-    private Internal.HttpStringInternals.PathMatchResult TestRouteMatchUsingRegex ( Route route, string requestPath ) {
+    private RouteMatch TestRouteMatchUsingRegex ( Route route, string requestPath ) {
         route.routeRegex ??= new Regex ( route.Path, this.MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None );
 
         var test = route.routeRegex.Match ( requestPath );
@@ -47,10 +47,10 @@ public partial class Router {
                     continue;
                 query.Add ( group.Name, group.Value );
             }
-            return new HttpStringInternals.PathMatchResult ( true, query );
+            return new RouteMatch ( true, query );
         }
         else {
-            return new HttpStringInternals.PathMatchResult ( false, null );
+            return new RouteMatch ( false, null );
         }
     }
 
@@ -119,17 +119,18 @@ public partial class Router {
             ref Route route = ref Unsafe.Add ( ref rPointer, i );
 
             // test path
-            HttpStringInternals.PathMatchResult pathTest;
+            RouteMatch pathTest;
             string reqUrlTest = request.Path;
 
             if (route.UseRegex) {
                 pathTest = this.TestRouteMatchUsingRegex ( route, reqUrlTest );
             }
             else {
-                pathTest = HttpStringInternals.IsReqPathMatch ( route.Path, reqUrlTest, this.MatchRoutesIgnoreCase );
+                pathTest = HttpStringInternals.IsReqPathMatch ( route.Path, reqUrlTest,
+                    this.MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal );
             }
 
-            if (!pathTest.IsMatched) {
+            if (!pathTest.Success) {
                 continue;
             }
 
@@ -146,15 +147,15 @@ public partial class Router {
             }
 
             if (isMethodMatched) {
-                if (pathTest.PathParameters is not null) {
-                    var keys = pathTest.PathParameters.Keys;
+                if (pathTest.Parameters is not null) {
+                    var keys = pathTest.Parameters.Keys;
 
                     for (int j = 0; j < keys.Count; j++) {
                         string? name = keys [ j ];
                         if (string.IsNullOrEmpty ( name ))
                             continue;
 
-                        string? value = pathTest.PathParameters [ name ];
+                        string? value = pathTest.Parameters [ name ];
                         if (string.IsNullOrEmpty ( value ))
                             continue;
 

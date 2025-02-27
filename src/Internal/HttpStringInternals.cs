@@ -13,7 +13,6 @@ using Sisk.Core.Routing;
 
 namespace Sisk.Core.Internal {
     internal static class HttpStringInternals {
-        public record struct PathMatchResult ( bool IsMatched, NameValueCollection? PathParameters );
 
         const char ROUTE_SEPARATOR = '/';
         const char ROUTE_GROUP_START = '<';
@@ -24,7 +23,7 @@ namespace Sisk.Core.Internal {
         /// <summary>
         /// Asserts if the specified route pattern is valid or not. (NOT FOR REGEX ROUTES)
         /// </summary>
-        public static void AssertRoute ( ReadOnlySpan<char> route ) {
+        public static void AssertRoute ( in ReadOnlySpan<char> route ) {
             if (route == Route.AnyPath) {
                 return;
             }
@@ -60,7 +59,7 @@ namespace Sisk.Core.Internal {
         /// <summary>
         /// Test if two routes matches their patterns, by comparing two <see cref="Route"/>s.
         /// </summary>
-        public static bool IsRoutePatternMatch ( ReadOnlySpan<char> routeA, ReadOnlySpan<char> routeB, bool ignoreCase ) {
+        public static bool IsRoutePatternMatch ( in ReadOnlySpan<char> routeA, in ReadOnlySpan<char> routeB, StringComparison comparer ) {
             if (IsRouteAnyPath ( routeA ) || IsRouteAnyPath ( routeB )) {
                 return true;
             }
@@ -95,7 +94,7 @@ namespace Sisk.Core.Internal {
                 else if (isPathBQuery && aPtt.Length > 0) {
                     matchCount++;
                 }
-                else if (aPtt.CompareTo ( bPtt, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal ) == 0) {
+                else if (aPtt.CompareTo ( bPtt, comparer ) == 0) {
                     matchCount++;
                 }
             }
@@ -107,9 +106,9 @@ namespace Sisk.Core.Internal {
         /// Tests if one request path matches the specified route pattern, by comparing one ROUTE PATH and one REQUEST PATH. This
         /// method allocates route parameters.
         /// </summary>
-        public static PathMatchResult IsReqPathMatch ( ReadOnlySpan<char> pathPattern, ReadOnlySpan<char> requestPath, bool ignoreCase ) {
+        public static RouteMatch IsReqPathMatch ( in ReadOnlySpan<char> pathPattern, in ReadOnlySpan<char> requestPath, StringComparison comparer ) {
             if (IsRouteAnyPath ( pathPattern )) {
-                return new PathMatchResult ( true, null );
+                return new RouteMatch ( true, null );
             }
 
             NameValueCollection? pathParams = null;
@@ -124,7 +123,7 @@ namespace Sisk.Core.Internal {
             int splnB = requestPath.Split ( requestPathParts, ROUTE_SEPARATOR, StringSplitOptions.RemoveEmptyEntries );
 
             if (splnA != splnB) {
-                return new PathMatchResult ( false, pathParams );
+                return new RouteMatch ( false, pathParams );
             }
 
             for (int i = 0; i < splnA; i++) {
@@ -140,13 +139,13 @@ namespace Sisk.Core.Internal {
                     pathParams.Add ( queryValueName, new string ( reqsPtt ) );
                 }
                 else {
-                    if (pathPtt.CompareTo ( reqsPtt, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal ) != 0) {
-                        return new PathMatchResult ( false, pathParams );
+                    if (pathPtt.CompareTo ( reqsPtt, comparer ) != 0) {
+                        return new RouteMatch ( false, pathParams );
                     }
                 }
             }
 
-            return new PathMatchResult ( true, pathParams );
+            return new RouteMatch ( true, pathParams );
         }
 
         public static bool IsDnsMatch ( in string wildcardPattern, string subject ) {
