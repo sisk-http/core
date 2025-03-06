@@ -13,6 +13,12 @@ namespace Sisk.Documenting.Html;
 public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
     /// <summary>
+    /// Creates an new instance of the <see cref="HtmlDocumentationExporter"/> class.
+    /// </summary>
+    public HtmlDocumentationExporter () {
+    }
+
+    /// <summary>
     /// Gets or sets the title of the HTML page.
     /// </summary>
     public string PageTitle { get; set; } = "API documentation";
@@ -63,23 +69,29 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     public string FormatRequiredText { get; set; } = "Required";
 
     /// <summary>
-    /// Gets or sets an optional object to append to the footer
-    /// of the generated page.
+    /// Gets or sets an optional object to append after the generated contents, right at the end of the <c>&lt;main&gt;</c>
+    /// tag of the generated page.
     /// </summary>
     public object? Footer { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional object to append to the header
-    /// of the generated page.
+    /// Gets or sets an optional object to append after the main title, at the beginning of the <c>&lt;main&gt;</c>
+    /// tag of the generated page.
     /// </summary>
     public object? Header { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional object to append inside the <c>&lt;head&gt;</c>
+    /// tag of the generated page.
+    /// </summary>
+    public object? Head { get; set; }
 
     /// <summary>
     /// Writes the main title of the API documentation.
     /// </summary>
     /// <param name="documentation">The API documentation to write the title for.</param>
     /// <returns>The HTML element representing the main title.</returns>
-    protected virtual HtmlElement WriteMainTitle ( ApiDocumentation documentation ) {
+    protected virtual HtmlElement? WriteMainTitle ( ApiDocumentation documentation ) {
         return HtmlElement.Fragment ( fragment => {
             fragment += new HtmlElement ( "h1", documentation.ApplicationName ?? "Application name" )
                 .WithClass ( "app-title" );
@@ -107,6 +119,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
             details += new HtmlElement ( "h3", endpoint.Name );
             details += this.CreateParagraphs ( endpoint.Description );
+
+            details += this.CreateCodeBlock ( $"{endpoint.RouteMethod.ToString ().ToUpper ()} {endpoint.Path}", null );
 
             if (endpoint.Headers.Length > 0) {
                 details += new HtmlElement ( "div", div => {
@@ -251,15 +265,11 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <param name="text">The text to display in the paragraphs, or null for no paragraphs.</param>
     /// <returns>The HTML element representing the paragraphs, or null if no text is provided.</returns>
     [return: NotNullIfNotNull ( nameof ( text ) )]
-    protected virtual HtmlElement? CreateParagraphs ( string? text ) {
+    protected virtual object? CreateParagraphs ( string? text ) {
         if (text is null)
             return null;
 
-        return HtmlElement.Fragment ( fragment => {
-            foreach (var s in text.Split ( '\n', StringSplitOptions.RemoveEmptyEntries )) {
-                fragment += new HtmlElement ( "p", s );
-            }
-        } );
+        return new MarkdownText ( text );
     }
 
     /// <summary>
