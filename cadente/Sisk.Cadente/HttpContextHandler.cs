@@ -15,3 +15,10 @@ namespace Sisk.Cadente;
 /// <param name="sender">The <see cref="HttpHost"/> which created the <see cref="HttpHostContext"/> object.</param>
 /// <param name="session">The HTTP session associated with the action.</param>
 public delegate Task HttpContextHandler ( HttpHost sender, HttpHostContext session );
+
+/// <summary>
+/// Represents a method that takes an <see cref="HttpHostClientContext"/> as a parameter and does not return a value.
+/// </summary>
+/// <param name="sender">The <see cref="HttpHost"/> which created the <see cref="HttpHostContext"/> object.</param>
+/// <param name="context">The HTTP context associated with the action.</param>
+public delegate Task HttpClientContextHandler ( HttpHost sender, HttpHostClientContext context );

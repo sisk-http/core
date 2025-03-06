@@ -34,6 +34,11 @@ public sealed class HttpHost : IDisposable {
     public event HttpContextHandler? ContextCreated;
 
     /// <summary>
+    /// Gets or sets the action handler for incoming HTTP clients.
+    /// </summary>
+    public event HttpClientContextHandler? ClientCreated;
+
+    /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHost"/> has been disposed.
     /// </summary>
     public bool IsDisposed { get => this.disposedValue; }
@@ -108,7 +113,10 @@ public sealed class HttpHost : IDisposable {
                 connectionStream = clientStream;
             }
 
-            using (HttpConnection connection = new HttpConnection ( connectionStream, this, (IPEndPoint) client.Client.RemoteEndPoint! )) {
+            IPEndPoint clientEndpoint = (IPEndPoint) client.Client.RemoteEndPoint!;
+            using HttpHostClientContext clientContext = new HttpHostClientContext ( client, this, clientEndpoint );
+
+            using (HttpConnection connection = new HttpConnection ( clientContext, connectionStream, this, clientEndpoint )) {
 
                 if (connectionStream is SslStream sslStream) {
                     try {
@@ -117,6 +125,8 @@ public sealed class HttpHost : IDisposable {
                             clientCertificateRequired: this.HttpsOptions.ClientCertificateRequired,
                             checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
                             enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
+
+                        clientContext.RemoteCertificate = sslStream.RemoteCertificate;
                     }
                     catch (Exception) {
                         return;
@@ -144,6 +154,8 @@ public sealed class HttpHost : IDisposable {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal async ValueTask InvokeContextCreated ( HttpHostContext context ) {
+        if (!this.disposedValue)
+            return;
         if (ContextCreated != null)
             await ContextCreated.Invoke ( this, context );
     }

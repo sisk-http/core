@@ -18,6 +18,7 @@ sealed class HttpConnection : IDisposable {
     private readonly HttpHost _host;
     private readonly IPEndPoint _endpoint;
     private readonly Stream _connectionStream;
+    private readonly HttpHostClientContext _clientContext;
     private bool disposedValue;
 
 #if DEBUG
@@ -30,7 +31,8 @@ sealed class HttpConnection : IDisposable {
     public const int REQUEST_BUFFER_SIZE = 8192;
     public const int RESPONSE_BUFFER_SIZE = 4096;
 
-    public HttpConnection ( Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
+    public HttpConnection ( HttpHostClientContext clientContext, Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
+        this._clientContext = clientContext;
         this._connectionStream = connectionStream;
         this._host = host;
         this._endpoint = endpoint;
@@ -50,6 +52,7 @@ sealed class HttpConnection : IDisposable {
                 }
 
                 HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._endpoint, this._connectionStream );
+                await this._clientContext.InvokeContextCreated ( managedSession );
                 await this._host.InvokeContextCreated ( managedSession );
 
                 if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
