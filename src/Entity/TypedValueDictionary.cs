@@ -130,6 +130,22 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     }
 
     /// <summary>
+    /// Gets a singleton previously defined in this context bag via its type <typeparamref name="T"/>.
+    /// If it does not exist, it adds the object to the context bag by creating a new instance of <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the object defined in this context bag. It must have a public parameterless constructor.</typeparam>
+    /// <returns>The object of type <typeparamref name="T"/> from the context bag.</returns>
+    public T GetOrAdd<T> () where T : notnull, new() {
+        if (this.IsSet ( out T value )) {
+            return value;
+        }
+        else {
+            value = new T ();
+            return this.Set ( value );
+        }
+    }
+
+    /// <summary>
     /// Asynchronously gets a singleton previously defined in this context bag via its type <typeparamref name="T"/>.
     /// If it does not exist, it adds the object to the context bag using the provided asynchronous <paramref name="getter"/> function.
     /// </summary>

@@ -57,7 +57,8 @@ public partial class Router {
     internal bool InvokeRequestHandlerGroup ( RequestHandlerExecutionMode mode, Span<IRequestHandler> baseLists, Span<IRequestHandler> bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception ) {
         for (int i = 0; i < baseLists.Length; i++) {
             var rh = baseLists [ i ];
-            if (rh.ExecutionMode == mode) {
+
+            if (rh.ExecutionMode.HasFlag ( mode )) {
                 HttpResponse? response = this.InvokeHandler ( rh, request, context, bypassList, out exception );
                 if (response is not null) {
                     result = response;

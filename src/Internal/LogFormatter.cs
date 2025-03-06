@@ -78,7 +78,7 @@ static class LogFormatter {
 
             "th" => executionResult.Request.RequestedAt.ToString ( "hh" ),
             "tH" => executionResult.Request.RequestedAt.ToString ( "HH" ),
-            "ti" => executionResult.Request.RequestedAt.ToString ( "MM" ),
+            "ti" => executionResult.Request.RequestedAt.ToString ( "mm" ),
             "ts" => executionResult.Request.RequestedAt.ToString ( "ss" ),
             "tm" => executionResult.Request.RequestedAt.Millisecond.ToString ( "D3" ),
             "tz" => $"{HttpServer.environmentUtcOffset.TotalHours:00}00",

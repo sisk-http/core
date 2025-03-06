@@ -31,15 +31,16 @@ namespace Sisk.Core.Routing {
     /// <summary>
     /// Defines when the <see cref="IRequestHandler"/> object should be executed.
     /// </summary>
+    [Flags]
     public enum RequestHandlerExecutionMode {
         /// <summary>
         /// Indicates that the handler must be executed before the router calls the route action and after request contents is loaded.
         /// </summary>
-        BeforeResponse,
+        BeforeResponse = 1 << 1,
 
         /// <summary>
         /// Indicates that the handler must be executed after the route action execution.
         /// </summary>
-        AfterResponse
+        AfterResponse = 1 << 2
     }
 }

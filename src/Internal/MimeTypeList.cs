@@ -25,6 +25,8 @@ internal class MimeTypeList {
         "image/webp",
         "image/bmp",
         "image/avif",
+        "image/x-icon",
+        "image/vnd.microsoft.icon",
 
         "audio/mpeg",
         "audio/wav",
@@ -34,6 +36,9 @@ internal class MimeTypeList {
         "video/webm",
         "video/ogg",
 
+        "model/gltf+json",
+        "model/gltf-binary",
+
         "font/woff2",
         "application/font-woff",
 
@@ -42,7 +47,7 @@ internal class MimeTypeList {
         "application/xml",
         "application/pdf",
         "application/xhtml+xml",
-        "application/wasm"
+        "application/mathml+xml"
     ];
 
 
