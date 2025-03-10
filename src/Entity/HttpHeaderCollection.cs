@@ -16,7 +16,7 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an collection of HTTP headers with their name and values.
 /// </summary>
-public sealed class HttpHeaderCollection : StringKeyStore {
+public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     static readonly StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
 
     /// <summary>
@@ -357,7 +357,7 @@ public sealed class HttpHeaderCollection : StringKeyStore {
     /// <para>Used to send cookies from the server to the client, allowing the server to store state information on the client.</para>
     /// </summary>
     /// <remarks>
-    /// Note: setting this property, it will override all previous Set-Cookie headers. Use the <see cref="StringKeyStore.Add(string, string)"/> method
+    /// Note: setting this property, it will override all previous Set-Cookie headers. Use the <see cref="StringKeyStoreCollection.Add(string, string)"/> method
     /// to add more than one Set-Cookie header or use the <see cref="HttpResponse.SetCookie(string, string)"/> method.
     /// </remarks>
     public string? SetCookie { get => this [ Header.SetCookie ]; set => this [ Header.SetCookie ] = value; }

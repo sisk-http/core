@@ -8,10 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
-using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Channels;
+using Sisk.Cadente;
 
 namespace Sisk.Ssl;
 
@@ -20,17 +19,8 @@ namespace Sisk.Ssl;
 /// gateway.
 /// </summary>
 public sealed class SslProxy : IDisposable {
-    private readonly TcpListener listener;
+    private readonly HttpHost host;
     private readonly IPEndPoint remoteEndpoint;
-    private readonly Channel<TcpClient> clientQueue;
-    private readonly Thread channelConsumerThread;
-    private bool disposedValue;
-
-    /// <summary>
-    /// Gets or sets the maximum of open TCP connections this <see cref="SslProxy"/> can mantain
-    /// open at the same time.
-    /// </summary>
-    public int MaxOpenConnections { get; set; } = Int32.MaxValue;
 
     /// <summary>
     /// Gets or sets the Proxy-Authorization header value for creating an trusted gateway between
@@ -86,70 +76,26 @@ public sealed class SslProxy : IDisposable {
     /// <param name="certificate">The SSL/TLS certificate used by the proxy server.</param>
     /// <param name="remoteEndpoint">The remote endpoint to which the proxy server forwards traffic.</param>
     public SslProxy ( int sslListeningPort, X509Certificate certificate, IPEndPoint remoteEndpoint ) {
-        this.listener = new TcpListener ( IPAddress.Any, sslListeningPort );
+        this.host = new HttpHost ( new IPEndPoint ( IPAddress.Any, sslListeningPort ) );
         this.remoteEndpoint = remoteEndpoint;
         this.ServerCertificate = certificate;
-        this.channelConsumerThread = new Thread ( this.ConsumerJobThread );
-        this.clientQueue = Channel.CreateBounded<TcpClient> (
-            new BoundedChannelOptions ( this.MaxOpenConnections ) { SingleReader = true, SingleWriter = false } );
     }
 
     /// <summary>
     /// Starts the <see cref="SslProxy"/> and start routing traffic to the set remote endpoint.
     /// </summary>
     public void Start () {
-        if (this.KeepAliveEnabled) {
-            this.listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
-            this.listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
-            this.listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
-            this.listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
-        }
+        this.host.Handler = new SslProxyContextHandler ( this );
+        this.host.HttpsOptions = new HttpsOptions ( this.ServerCertificate ) {
+            AllowedProtocols = this.AllowedProtocols,
+            ClientCertificateRequired = this.ClientCertificateRequired
+        };
 
-        this.channelConsumerThread.Start ();
-        this.listener.Start ();
-        this.listener.BeginAcceptTcpClient ( this.ReceiveClientAsync, null );
-    }
-
-    async void ReceiveClientAsync ( IAsyncResult ar ) {
-        var client = this.listener.EndAcceptTcpClient ( ar );
-        this.listener.BeginAcceptTcpClient ( this.ReceiveClientAsync, null );
-
-        if (!this.disposedValue)
-            await this.clientQueue.Writer.WriteAsync ( client );
-    }
-
-    async void ConsumerJobThread () {
-        var reader = this.clientQueue.Reader;
-        while (!this.disposedValue && await reader.WaitToReadAsync ()) {
-            while (reader.TryRead ( out var client )) {
-                new Thread ( delegate () { this.HandleTcpClient ( client ); } ).Start ();
-            }
-        }
-    }
-
-    void HandleTcpClient ( TcpClient client ) {
-        using var gatewayClient = new TcpClient ();
-        using var connection = new HttpConnection ( this, client );
-
-        connection.HandleConnection ();
-    }
-
-    private void Dispose ( bool disposing ) {
-        if (!this.disposedValue) {
-            if (disposing) {
-                this.clientQueue.Writer.Complete ();
-                this.listener.Stop ();
-                this.listener.Dispose ();
-            }
-
-            this.disposedValue = true;
-        }
+        this.host.Start ();
     }
 
     /// <inheritdoc/>
     public void Dispose () {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        this.Dispose ( disposing: true );
-        GC.SuppressFinalize ( this );
+        this.host.Dispose ();
     }
 }

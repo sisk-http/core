@@ -43,7 +43,7 @@ public partial class Router {
             NameValueCollection query = new NameValueCollection ();
             for (int i = 0; i < test.Groups.Count; i++) {
                 Group group = test.Groups [ i ];
-                if (group.Index.ToString () == group.Name)
+                if (group.Index.ToString ( provider: null ) == group.Name)
                     continue;
                 query.Add ( group.Name, group.Value );
             }
@@ -224,7 +224,7 @@ public partial class Router {
                     actionResult = matchedRoute._singleParamCallback ( request );
                 }
                 else {
-                    throw new ArgumentException ( string.Format ( SR.Router_NoRouteActionDefined, matchedRoute ) );
+                    throw new ArgumentException ( SR.Format ( SR.Router_NoRouteActionDefined, matchedRoute ) );
                 }
 
                 if (matchedRoute._isAsyncTask) {

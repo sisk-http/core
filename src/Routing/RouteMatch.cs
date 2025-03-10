@@ -22,15 +22,10 @@ public sealed class RouteMatch {
     public bool Success { get; }
 
     /// <summary>
-    /// Gets a collection of parameters extracted from the route, or <c>null</c> if the route matching operation was not successful.
+    /// Gets a collection of parameters extracted from the route, or <see langword="null" /> if the route matching operation was not successful.
     /// </summary>
     public NameValueCollection? Parameters { get; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RouteMatch"/> class.
-    /// </summary>
-    /// <param name="success">A value indicating whether the route matching operation was successful.</param>
-    /// <param name="parameters">A collection of parameters extracted from the route, or <c>null</c> if the route matching operation was not successful.</param>
     internal RouteMatch ( bool success, NameValueCollection? parameters ) {
         this.Success = success;
         this.Parameters = parameters;

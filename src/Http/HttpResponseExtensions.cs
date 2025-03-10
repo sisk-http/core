@@ -90,7 +90,7 @@ public static class HttpResponseExtensions {
     /// <param name="response">The <see cref="HttpResponse"/> object.</param>
     /// <param name="headers">The collection of HTTP headers.</param>
     /// <returns>The self <typeparamref name="THttpResponse"/> object.</returns>
-    public static THttpResponse WithHeader<THttpResponse> ( this THttpResponse response, StringKeyStore headers ) where THttpResponse : HttpResponse {
+    public static THttpResponse WithHeader<THttpResponse> ( this THttpResponse response, StringKeyStoreCollection headers ) where THttpResponse : HttpResponse {
         headers.AddRange ( headers );
         return response;
     }

@@ -27,7 +27,7 @@ public sealed class IniWriter : IDisposable {
     private readonly TextWriter writer;
 
     /// <summary>
-    /// Gets or sets the behavior for writing new lines.
+    /// Gets or sets the behavior for writing new lines inside properties values.
     /// </summary>
     public IniWritingNewLineBehavior NewLineBehavior { get; set; } = IniWritingNewLineBehavior.Quote;
 
@@ -99,7 +99,7 @@ public sealed class IniWriter : IDisposable {
             }
 
             if (escapeNewLineEndings)
-                carry = carry.Replace ( "\n", "\\n" );
+                carry = carry.Replace ( "\n", "\\n" ).Replace ( "\r", "\\r" );
 
             if (quoteValue)
                 carry = carry.Contains ( Token.STRING_QUOTE_1 ) ?

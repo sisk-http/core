@@ -7,11 +7,13 @@
 // File name:   HttpWebSocketConnectionCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections;
+
 namespace Sisk.Core.Http.Streams {
     /// <summary>
     /// Provides a managed object to manage <see cref="HttpWebSocket"/> connections.
     /// </summary>
-    public sealed class HttpWebSocketConnectionCollection {
+    public sealed class HttpWebSocketConnectionCollection : IReadOnlyCollection<HttpWebSocket> {
         internal List<HttpWebSocket> _ws = new List<HttpWebSocket> ();
 
         /// <summary>
@@ -27,10 +29,10 @@ namespace Sisk.Core.Http.Streams {
         internal HttpWebSocketConnectionCollection () { }
 
         internal void RegisterWebSocket ( HttpWebSocket src ) {
-            if (src.identifier != null) {
+            if (src._identifier != null) {
                 lock (this._ws) {
                     // close another websockets with same identifier
-                    HttpWebSocket [] wsId = this.Find ( s => s == src.identifier );
+                    HttpWebSocket [] wsId = this.Find ( s => s == src._identifier );
                     foreach (HttpWebSocket ws in wsId) {
                         ws.Close ();
                     }
@@ -54,7 +56,7 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="identifier">The Web Socket identifier.</param>
         public HttpWebSocket? GetByIdentifier ( string identifier ) {
             lock (this._ws) {
-                HttpWebSocket? src = this._ws.Where ( es => !es.isClosed && es.Identifier == identifier ).FirstOrDefault ();
+                HttpWebSocket? src = this._ws.Where ( es => !es._isClosed && es.Identifier == identifier ).FirstOrDefault ();
                 return src;
             }
         }
@@ -83,6 +85,9 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public int ActiveConnections { get => this._ws.Count; }
 
+        /// <inheritdoc/>
+        public int Count => ((IReadOnlyCollection<HttpWebSocket>) this._ws).Count;
+
         /// <summary>
         /// Closes all registered and active <see cref="HttpWebSocket"/> in this collections.
         /// </summary>
@@ -91,6 +96,16 @@ namespace Sisk.Core.Http.Streams {
                 foreach (HttpWebSocket es in this._ws)
                     es.Close ();
             }
+        }
+
+        /// <inheritdoc/>
+        public IEnumerator<HttpWebSocket> GetEnumerator () {
+            return ((IEnumerable<HttpWebSocket>) this._ws).GetEnumerator ();
+        }
+
+        /// <inheritdoc/>
+        IEnumerator IEnumerable.GetEnumerator () {
+            return ((IEnumerable) this._ws).GetEnumerator ();
         }
     }
 

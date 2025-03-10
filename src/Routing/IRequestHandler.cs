@@ -14,6 +14,7 @@ namespace Sisk.Core.Routing {
     /// Represents an interface that is executed before a request.
     /// </summary>
     public interface IRequestHandler {
+
         /// <summary>
         /// This method is called by the <see cref="Router"/> before executing a request when the <see cref="Route"/> instantiates an object that implements this interface. If it returns
         /// a <see cref="HttpResponse"/> object, the route action is not called and all execution of the route is stopped. If it returns "null", the execution is continued.
@@ -23,24 +24,29 @@ namespace Sisk.Core.Routing {
         HttpResponse? Execute ( HttpRequest request, HttpContext context );
 
         /// <summary>
-        /// Gets or sets when this RequestHandler should run.
+        /// Gets or sets when this <see cref="IRequestHandler"/> should run.
         /// </summary>
         RequestHandlerExecutionMode ExecutionMode { get; init; }
     }
 
     /// <summary>
-    /// Defines when the <see cref="IRequestHandler"/> object should be executed.
+    /// Defines when the <see cref="IRequestHandler"/> should be executed.
     /// </summary>
     [Flags]
     public enum RequestHandlerExecutionMode {
         /// <summary>
-        /// Indicates that the handler must be executed before the router calls the route action and after request contents is loaded.
+        /// Indicates that the request handler should be executed before the route action.
         /// </summary>
         BeforeResponse = 1 << 1,
 
         /// <summary>
-        /// Indicates that the handler must be executed after the route action execution.
+        /// Indicates that the request handler should be executed after the route action.
         /// </summary>
-        AfterResponse = 1 << 2
+        AfterResponse = 1 << 2,
+
+        /// <summary>
+        /// Indicates that the request handler should be executed before and after the route action.
+        /// </summary>
+        Both = BeforeResponse | AfterResponse
     }
 }

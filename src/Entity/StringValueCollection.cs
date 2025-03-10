@@ -14,7 +14,7 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents an collection of <see cref="StringValue"/>.
 /// </summary>
-public sealed class StringValueCollection : StringKeyStore {
+public sealed class StringValueCollection : StringKeyStoreCollection {
     internal string paramName;
 
     /// <summary>

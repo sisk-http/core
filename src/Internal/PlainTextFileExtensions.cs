@@ -9,10 +9,10 @@
 
 namespace Sisk.Core.Internal;
 
-internal class PlainTextFileExtensions {
+static class PlainTextFileExtensions {
     public static bool IsTextFile ( string extension ) {
         for (int i = 0; i < PlainTextExtensions.Length; i++) {
-            if (string.Compare ( PlainTextExtensions [ i ], extension, true ) == 0) {
+            if (string.Equals ( PlainTextExtensions [ i ], extension, StringComparison.OrdinalIgnoreCase )) {
                 return true;
             }
         }

@@ -17,7 +17,7 @@ namespace Sisk.Core.Http.Hosting;
 /// </summary>
 public sealed class InitializationParameterCollection : IDictionary<string, string?> {
     private readonly NameValueCollection _decorator = new NameValueCollection ();
-    private bool _isReadonly = false;
+    private bool _isReadonly;
 
     /// <summary>
     /// Gets an instance of <see cref="NameValueCollection"/> with the values of this class.
@@ -33,7 +33,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <param name="parameterName">The parameter name which will be evaluated.</param>
     public void EnsureNotNullOrEmpty ( string parameterName ) {
         if (string.IsNullOrEmpty ( this._decorator [ parameterName ] ))
-            throw new ArgumentException ( string.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
+            throw new ArgumentException ( SR.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <param name="parameterName">The parameter name which will be evaluated.</param>
     public void EnsureNotNull ( string parameterName ) {
         if (string.IsNullOrEmpty ( this._decorator [ parameterName ] ))
-            throw new ArgumentException ( string.Format ( SR.InitializationParameterCollection_NullParameter, parameterName ) );
+            throw new ArgumentException ( SR.Format ( SR.InitializationParameterCollection_NullParameter, parameterName ) );
     }
 
     /// <inheritdoc/>
@@ -90,13 +90,13 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
         string? value = this [ parameterName ];
 
         if (option == GetValueOption.NotNull && value is null)
-            throw new ArgumentException ( string.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
+            throw new ArgumentException ( SR.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
 
         if (option == GetValueOption.NotNullOrEmpty && string.IsNullOrEmpty ( value ))
-            throw new ArgumentException ( string.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
+            throw new ArgumentException ( SR.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
 
         if (option == GetValueOption.NotNullOrWhiteSpace && string.IsNullOrWhiteSpace ( value ))
-            throw new ArgumentException ( string.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
+            throw new ArgumentException ( SR.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
 
         return value!;
     }

@@ -101,7 +101,6 @@ namespace Sisk.Core.Routing {
                     this._singleParamCallback = null;
                     this._isAsyncTask = false;
                     this._isAsyncEnumerable = false;
-                    return;
                 }
                 else if (!this.TrySetRouteAction ( value.Method, value.Target, out Exception? ex )) {
                     throw ex;
@@ -125,7 +124,7 @@ namespace Sisk.Core.Routing {
 
             Exception? CheckAsyncReturnParameters ( Type asyncOutType ) {
                 if (asyncOutType.GenericTypeArguments.Length == 0) {
-                    return new InvalidOperationException ( string.Format ( SR.Route_Action_AsyncMissingGenericType, this ) );
+                    return new InvalidOperationException ( SR.Format ( SR.Route_Action_AsyncMissingGenericType, this ) );
                 }
                 else {
                     Type genericAssignType = asyncOutType.GenericTypeArguments [ 0 ];
@@ -135,6 +134,9 @@ namespace Sisk.Core.Routing {
                 }
                 return null;
             }
+
+            this._isAsyncTask = false;
+            this._isAsyncEnumerable = false;
 
             var retType = method.ReturnType;
             if (retType.IsValueType) {
@@ -155,17 +157,13 @@ namespace Sisk.Core.Routing {
                     return false;
                 }
             }
-            else {
-                this._isAsyncTask = false;
-                this._isAsyncEnumerable = false;
-            }
 
             ex = null;
             return true;
         }
 
         /// <summary>
-        /// Gets or sets the request handlers instances to run before the route's Action.
+        /// Gets or sets the request handlers instances to run before the route action.
         /// </summary>
         public IRequestHandler [] RequestHandlers { get; set; } = Array.Empty<IRequestHandler> ();
 
@@ -193,13 +191,13 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
         /// <param name="name">The route name. It allows it to be found by other routes and makes it easier to create links.</param>
         /// <param name="action">The function that is called after the route is matched with the request.</param>
-        /// <param name="beforeCallback">The RequestHandlers to run before the route's Action.</param>
-        public Route ( RouteMethod method, string path, string? name, Delegate? action, IRequestHandler []? beforeCallback ) {
+        /// <param name="handlers">The RequestHandlers to run before the route's Action.</param>
+        public Route ( RouteMethod method, string path, string? name, Delegate? action, IRequestHandler []? handlers ) {
             this.Method = method;
             this.path = path;
             this.Name = name;
             this.Action = action;
-            this.RequestHandlers = beforeCallback ?? Array.Empty<IRequestHandler> ();
+            this.RequestHandlers = handlers ?? Array.Empty<IRequestHandler> ();
         }
 
         /// <summary>
@@ -213,7 +211,7 @@ namespace Sisk.Core.Routing {
         /// Gets an string notation for this <see cref="Route"/> object.
         /// </summary>
         public override string ToString () {
-            return $"[{this.Method.ToString ().ToUpper ()} {this.path}] {this.Name ?? this.Action?.Method.Name ?? "<no action>"}";
+            return $"[{this.Method.ToString ().ToUpperInvariant ()} {this.path}] {this.Name ?? this.Action?.Method.Name ?? "<no action>"}";
         }
         #region Helper constructors
 
@@ -223,7 +221,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for GET requests.</returns>
-        public static Route Get ( string path, RouteAction action ) => new Route ( RouteMethod.Get, path, action );
+        public static Route Get ( string path, Delegate? action ) => new Route ( RouteMethod.Get, path, action );
 
         /// <summary>
         /// Creates a route that responds to HTTP POST requests.
@@ -231,7 +229,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for POST requests.</returns>
-        public static Route Post ( string path, RouteAction action ) => new Route ( RouteMethod.Post, path, action );
+        public static Route Post ( string path, Delegate? action ) => new Route ( RouteMethod.Post, path, action );
 
         /// <summary>
         /// Creates a route that responds to HTTP PUT requests.
@@ -239,7 +237,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for PUT requests.</returns>
-        public static Route Put ( string path, RouteAction action ) => new Route ( RouteMethod.Put, path, action );
+        public static Route Put ( string path, Delegate? action ) => new Route ( RouteMethod.Put, path, action );
 
         /// <summary>
         /// Creates a route that responds to HTTP PATCH requests.
@@ -247,7 +245,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for PATCH requests.</returns>
-        public static Route Patch ( string path, RouteAction action ) => new Route ( RouteMethod.Patch, path, action );
+        public static Route Patch ( string path, Delegate? action ) => new Route ( RouteMethod.Patch, path, action );
 
         /// <summary>
         /// Creates a route that responds to HTTP HEAD requests.
@@ -255,7 +253,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for HEAD requests.</returns>
-        public static Route Head ( string path, RouteAction action ) => new Route ( RouteMethod.Head, path, action );
+        public static Route Head ( string path, Delegate? action ) => new Route ( RouteMethod.Head, path, action );
 
         /// <summary>
         /// Creates a route that responds to any HTTP request method.
@@ -263,7 +261,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for any request method.</returns>
-        public static Route Any ( string path, RouteAction action ) => new Route ( RouteMethod.Any, path, action );
+        public static Route Any ( string path, Delegate? action ) => new Route ( RouteMethod.Any, path, action );
 
         /// <summary>
         /// Creates a route that responds to HTTP DELETE requests.
@@ -271,7 +269,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for DELETE requests.</returns>
-        public static Route Delete ( string path, RouteAction action ) => new Route ( RouteMethod.Delete, path, action );
+        public static Route Delete ( string path, Delegate? action ) => new Route ( RouteMethod.Delete, path, action );
 
         /// <summary>
         /// Creates a route that responds to HTTP OPTIONS requests.
@@ -279,7 +277,7 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The URL path for the route.</param>
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for OPTIONS requests.</returns>
-        public static Route Options ( string path, RouteAction action ) => new Route ( RouteMethod.Options, path, action );
+        public static Route Options ( string path, Delegate? action ) => new Route ( RouteMethod.Options, path, action );
         #endregion
     }
 

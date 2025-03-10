@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   HttpResponseStream.cs
+// File name:   HttpResponseStreamManager.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
@@ -15,14 +15,14 @@ namespace Sisk.Core.Http.Streams;
 /// <summary>
 /// Represents a way to manage HTTP requests with their output streams, without relying on synchronous content.
 /// </summary>
-public sealed class HttpResponseStream {
+public sealed class HttpResponseStreamManager {
     internal HttpListenerResponse listenerResponse;
-    private bool hasSentData = false;
+    private bool hasSentData;
 
     // calculated on chunked encoding, but set on SetContentLength
     internal long calculatedLength;
 
-    internal HttpResponseStream ( HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host ) {
+    internal HttpResponseStreamManager ( HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host ) {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException ( nameof ( listenerResponse ) );
         this.ResponseStream = new ResponseStreamWriter ( listenerResponse.OutputStream, this );
 
@@ -76,10 +76,10 @@ public sealed class HttpResponseStream {
         }
         if (this.hasSentData)
             throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
-        if (string.Compare ( headerName, HttpKnownHeaderNames.ContentLength, true ) == 0) {
-            this.SetContentLength ( long.Parse ( _value ) );
+        if (string.Equals ( headerName, HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase )) {
+            this.SetContentLength ( long.Parse ( _value, null ) );
         }
-        else if (string.Compare ( headerName, HttpKnownHeaderNames.ContentType, true ) == 0) {
+        else if (string.Equals ( headerName, HttpKnownHeaderNames.ContentType, StringComparison.OrdinalIgnoreCase )) {
             this.listenerResponse.ContentType = _value;
         }
         else {
@@ -190,11 +190,11 @@ public sealed class HttpResponseStream {
     #endregion
 }
 
-internal class ResponseStreamWriter : Stream {
+internal sealed class ResponseStreamWriter : Stream {
     private readonly Stream BaseStream;
-    private readonly HttpResponseStream Parent;
+    private readonly HttpResponseStreamManager Parent;
 
-    public ResponseStreamWriter ( Stream baseStream, HttpResponseStream parent ) {
+    public ResponseStreamWriter ( Stream baseStream, HttpResponseStreamManager parent ) {
         this.BaseStream = baseStream;
         this.Parent = parent;
     }

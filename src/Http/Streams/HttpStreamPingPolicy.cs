@@ -12,7 +12,7 @@ namespace Sisk.Core.Http.Streams;
 /// <summary>
 /// Provides an automatic ping sender for HTTP Event Source connections.
 /// </summary>
-public sealed class HttpStreamPingPolicy {
+public sealed class HttpStreamPingPolicy : IDisposable {
     private readonly HttpWebSocket? __ws_parent;
     private readonly HttpRequestEventSource? __sse_parent;
     private Timer? _timer;
@@ -70,5 +70,10 @@ public sealed class HttpStreamPingPolicy {
             }
             this.__ws_parent.Send ( this.DataMessage );
         }
+    }
+
+    /// <inheritdoc/>
+    public void Dispose () {
+        this._timer?.Dispose ();
     }
 }

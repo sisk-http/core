@@ -18,8 +18,8 @@ namespace Sisk.Core.Http.Hosting;
 public sealed class PortableConfigurationBuilder {
     private readonly HttpServerHostContext _context;
     private string _filename = "service-config.json";
-    private bool _createIfDontExists = false;
-    private IConfigurationReader? _pipeline = null;
+    private bool _createIfDontExists;
+    private IConfigurationReader? _pipeline;
     private ConfigurationFileLookupDirectory _fileLookupDirectory = ConfigurationFileLookupDirectory.CurrentDirectory;
 
     Action<InitializationParameterCollection>? _initializerHandler;
@@ -55,7 +55,7 @@ public sealed class PortableConfigurationBuilder {
                 foundFile = absoluteFilePath;
             }
             else {
-                throw new ArgumentException ( string.Format ( SR.Provider_ConfigParser_ConfigFileNotFound, this._filename ) );
+                throw new ArgumentException ( SR.Format ( SR.Provider_ConfigParser_ConfigFileNotFound, this._filename ) );
             }
         }
 

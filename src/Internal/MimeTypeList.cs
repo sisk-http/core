@@ -9,7 +9,7 @@
 
 namespace Sisk.Core.Internal;
 
-internal class MimeTypeList {
+static class MimeTypeList {
     public static string [] InlineMimeTypes =
     [
         "text/html",

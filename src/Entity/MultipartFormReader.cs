@@ -18,7 +18,7 @@ internal sealed class MultipartFormReader {
     readonly byte [] boundaryBytes;
     readonly byte [] bytes;
     readonly byte [] nlbytes;
-    int position = 0;
+    int position;
     readonly Encoding encoder;
     readonly bool debugEnabled;
 
@@ -81,7 +81,7 @@ internal sealed class MultipartFormReader {
                 continue;
             }
 
-            var cdispositionValues = StringKeyStore.FromCookieString ( contentDisposition );
+            var cdispositionValues = StringKeyStoreCollection.FromCookieString ( contentDisposition );
 
             string? formItemName = cdispositionValues [ "name" ]?.Trim ( SharedChars.DoubleQuote );
             string? formFilename = cdispositionValues [ "filename" ]?.Trim ( SharedChars.DoubleQuote );

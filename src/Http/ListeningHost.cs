@@ -55,7 +55,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets or sets a label for this Listening Host.
         /// </summary>
-        public string? Label { get; set; } = null;
+        public string? Label { get; set; }
 
         /// <summary>
         /// Gets or sets the list of <see cref="ListeningPort"/> that this host will listen on.
@@ -111,7 +111,7 @@ namespace Sisk.Core.Http {
                 if (!port.Path.StartsWith ( '/' )) {
                     throw new InvalidOperationException ( SR.ListeningHost_NotReady_InvalidPath );
                 }
-                if (port.Path.CompareTo ( firstPath ) != 0) {
+                if (!port.Path.Equals ( firstPath, StringComparison.OrdinalIgnoreCase )) {
                     throw new InvalidOperationException ( SR.ListeningHost_NotReady_DifferentPath );
                 }
             }

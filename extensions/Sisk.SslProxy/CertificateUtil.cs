@@ -50,11 +50,12 @@ public static class CertificateUtil {
     /// </summary>
     /// <param name="dnsNames">The certificate DNS names.</param>
     public static X509Certificate2 CreateTrustedDevelopmentCertificate ( params string [] dnsNames ) {
+        int dnsHash = ComputeArrayHash ( dnsNames );
         X509Certificate2 x509Certificate2;
         using (var store = new X509Store ( StoreName.Root, StoreLocation.CurrentUser )) {
             store.Open ( OpenFlags.ReadWrite );
 
-            var siskCert = store.Certificates.FirstOrDefault ( c => c.Issuer.Contains ( $"Sisk Development CA {ComputeArrayHash ( dnsNames )}" ) );
+            var siskCert = store.Certificates.FirstOrDefault ( c => c.Issuer.Contains ( $"Sisk Development CA {dnsHash}" ) );
             if (siskCert is null) {
                 x509Certificate2 = CreateDevelopmentCertificate ( dnsNames );
                 store.Add ( x509Certificate2 );

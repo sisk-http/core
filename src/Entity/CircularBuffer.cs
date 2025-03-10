@@ -19,8 +19,8 @@ namespace Sisk.Core.Entity;
 public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     private T [] items;
 
-    int capacity = 0,
-        addedItems = 0;
+    int capacity,
+        addedItems;
 
     /// <summary>
     /// Creates an new instance of the <see cref="CircularBuffer{T}"/> with the specified

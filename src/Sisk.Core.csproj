@@ -14,7 +14,7 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
-	
+
 	<!-- aot, build options -->
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
@@ -23,6 +23,8 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
 		<IsAotCompatible>true</IsAotCompatible>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<AnalysisMode>Recommended</AnalysisMode>
 	</PropertyGroup>
 
 	<!-- nuget package info -->
@@ -45,9 +47,9 @@
 
 	<!-- version info -->
 	<PropertyGroup>
-		<AssemblyVersion>1.4.1</AssemblyVersion>
-		<FileVersion>1.4.1</FileVersion>
-		<Version>1.4.1</Version>
+		<AssemblyVersion>1.4.2</AssemblyVersion>
+		<FileVersion>1.4.2</FileVersion>
+		<Version>1.4.2</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->

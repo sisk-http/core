@@ -96,7 +96,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
         if (this.IsSet ( out T value )) {
             return value;
         }
-        throw new ArgumentException ( string.Format ( SR.HttpContextBagRepository_UndefinedDynamicProperty, typeof ( T ).FullName ) );
+        throw new ArgumentException ( SR.Format ( SR.HttpContextBagRepository_UndefinedDynamicProperty, typeof ( T ).FullName ) );
     }
 
     /// <summary>

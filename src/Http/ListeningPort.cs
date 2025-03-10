@@ -249,7 +249,7 @@ namespace Sisk.Core.Http {
                 if (schemeIndex <= 0)
                     return null;
 
-                string scheme = s.Substring ( 0, schemeIndex );
+                string scheme = s [ ..schemeIndex ];
                 if (scheme != "http" && scheme != "https")
                     return null;
 
@@ -267,7 +267,7 @@ namespace Sisk.Core.Http {
                     // does includes a port
                     hostname = s.Substring ( schemeIndex + 3, portIndex - schemeIndex - 3 );
                     string portStr = pathIndex switch {
-                        -1 => s.Substring ( portIndex + 1 ),
+                        -1 => s [ (portIndex + 1).. ],
                         _ => s.Substring ( portIndex + 1, pathIndex - portIndex - 1 )
                     };
                     if (!ushort.TryParse ( portStr, out port )) {
@@ -280,7 +280,7 @@ namespace Sisk.Core.Http {
                     path = "/";
                 }
                 else {
-                    path = s.Substring ( pathIndex );
+                    path = s [ pathIndex.. ];
                 }
 
                 return (scheme == "https", hostname, port, path);

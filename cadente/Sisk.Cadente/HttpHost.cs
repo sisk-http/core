@@ -29,14 +29,9 @@ public sealed class HttpHost : IDisposable {
     public static int QueueSize { get; set; } = 1024;
 
     /// <summary>
-    /// Gets or sets the action handler for HTTP requests.
+    /// Gets or sets an <see cref="HttpHostHandler"/> instance for this <see cref="HttpHost"/>.
     /// </summary>
-    public event HttpContextHandler? ContextCreated;
-
-    /// <summary>
-    /// Gets or sets the action handler for incoming HTTP clients.
-    /// </summary>
-    public event HttpClientContextHandler? ClientCreated;
+    public HttpHostHandler? Handler { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHost"/> has been disposed.
@@ -103,6 +98,9 @@ public sealed class HttpHost : IDisposable {
             client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
             client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
 
+            if (this.Handler is null)
+                return;
+
             Stream connectionStream;
             Stream clientStream = client.GetStream ();
 
@@ -114,9 +112,9 @@ public sealed class HttpHost : IDisposable {
             }
 
             IPEndPoint clientEndpoint = (IPEndPoint) client.Client.RemoteEndPoint!;
-            using HttpHostClientContext clientContext = new HttpHostClientContext ( client, this, clientEndpoint );
+            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint );
 
-            using (HttpConnection connection = new HttpConnection ( clientContext, connectionStream, this, clientEndpoint )) {
+            using (HttpConnection connection = new HttpConnection ( hostClient, connectionStream, this, clientEndpoint )) {
 
                 if (connectionStream is SslStream sslStream) {
                     try {
@@ -126,15 +124,16 @@ public sealed class HttpHost : IDisposable {
                             checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
                             enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
 
-                        clientContext.RemoteCertificate = sslStream.RemoteCertificate;
+                        hostClient.ClientCertificate = sslStream.RemoteCertificate;
                     }
                     catch (Exception) {
                         return;
                     }
                 }
 
-                var state = await connection.HandleConnectionEvents ();
-                ;
+                await this.Handler.OnClientConnectedAsync ( this, hostClient );
+                await connection.HandleConnectionEvents ();
+                await this.Handler.OnClientDisconnectedAsync ( this, hostClient );
             }
         }
         finally {
@@ -154,10 +153,12 @@ public sealed class HttpHost : IDisposable {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal async ValueTask InvokeContextCreated ( HttpHostContext context ) {
-        if (!this.disposedValue)
+        if (this.disposedValue)
             return;
-        if (ContextCreated != null)
-            await ContextCreated.Invoke ( this, context );
+        if (this.Handler is null)
+            return;
+
+        await this.Handler.OnContextCreatedAsync ( this, context );
     }
 
     /// <inheritdoc/>

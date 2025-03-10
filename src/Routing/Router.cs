@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 using Sisk.Core.Http;
 using Sisk.Core.Internal;
 
-class ActionHandler {
+sealed class ActionHandler {
     public Type MatchingType { get; set; }
     public Func<object, HttpResponse> Handler { get; set; }
 
@@ -30,7 +30,7 @@ namespace Sisk.Core.Routing {
     /// Represents a collection of <see cref="Route"/> and main executor of actions in the <see cref="HttpServer"/>.
     /// </summary>
     public sealed partial class Router {
-        internal record RouterExecutionResult ( HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception );
+        internal sealed record RouterExecutionResult ( HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception );
 
         internal HttpServer? parentServer;
         internal List<Route> _routesList = new ();
@@ -63,7 +63,7 @@ namespace Sisk.Core.Routing {
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
         /// </summary>
-        public bool MatchRoutesIgnoreCase { get; set; } = false;
+        public bool MatchRoutesIgnoreCase { get; set; }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> should check for possible routing
@@ -240,7 +240,7 @@ namespace Sisk.Core.Routing {
                 return result;
             }
             else {
-                throw new InvalidOperationException ( string.Format ( SR.Router_Handler_UnrecognizedAction, routeResult.GetType ().FullName ) );
+                throw new InvalidOperationException ( SR.Format ( SR.Router_Handler_UnrecognizedAction, routeResult.GetType ().FullName ) );
             }
         }
 

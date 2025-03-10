@@ -122,7 +122,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     public char GetChar () {
         this.ThrowIfNull ();
         if (this._ref!.Length != 1)
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "char" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "char" ) );
 
         return this._ref [ 0 ];
     }
@@ -136,10 +136,10 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     public int GetInteger () {
         this.ThrowIfNull ();
         try {
-            return int.Parse ( this._ref! );
+            return int.Parse ( this._ref!, provider: null );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "integer" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "integer" ) );
         }
     }
 
@@ -152,10 +152,10 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     public int GetByte () {
         this.ThrowIfNull ();
         try {
-            return byte.Parse ( this._ref! );
+            return byte.Parse ( this._ref!, provider: null );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "byte" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "byte" ) );
         }
     }
 
@@ -168,10 +168,10 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     public long GetLong () {
         this.ThrowIfNull ();
         try {
-            return long.Parse ( this._ref! );
+            return long.Parse ( this._ref!, provider: null );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "long" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "long" ) );
         }
     }
 
@@ -188,7 +188,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
             return short.Parse ( this._ref!, fmtProvider );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "short" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "short" ) );
         }
     }
 
@@ -205,7 +205,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
             return double.Parse ( this._ref!, fmtProvider );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "double" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "double" ) );
         }
     }
 
@@ -222,7 +222,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
             return float.Parse ( this._ref!, fmtProvider );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "float" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "float" ) );
         }
     }
 
@@ -238,7 +238,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
             return bool.Parse ( this._ref! );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "boolean" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "boolean" ) );
         }
     }
 
@@ -255,7 +255,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
             return DateTime.Parse ( this._ref!, fmtProvider );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "DateTime" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "DateTime" ) );
         }
     }
 
@@ -271,7 +271,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
             return Guid.Parse ( this._ref! );
         }
         catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( string.Format ( SR.ValueItem_CastException, this._ref, this.argName, "GUID" ) );
+            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, this._ref, this.argName, "GUID" ) );
         }
     }
 
@@ -286,7 +286,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
 
     void ThrowIfNull () {
         if (this.IsNull) {
-            throw new NullReferenceException ( string.Format ( SR.ValueItem_ValueNull, this.argName, this.argType ) );
+            throw new InvalidOperationException ( SR.Format ( SR.ValueItem_ValueNull, this.argName, this.argType ) );
         }
     }
 
@@ -349,6 +349,41 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <inheritdoc/>
     /// <exclude/>
     public int CompareTo ( StringValue other ) {
-        return string.Compare ( this._ref, other._ref );
+        return string.Compare ( this._ref, other._ref, StringComparison.Ordinal );
+    }
+
+    /// <summary>
+    /// Compares the current object with another object of the same type, using the specified string comparison.
+    /// </summary>
+    /// <param name="other">The object to compare with the current object.</param>
+    /// <param name="stringComparison">One of the <see cref="StringComparison"/> values that specifies the comparison rules to use.</param>
+    /// <returns>A value that indicates the relative order of the objects being compared.</returns>
+    /// <seealso cref="StringComparison"/>
+    public int CompareTo ( StringValue other, in StringComparison stringComparison ) {
+        return string.Compare ( this._ref, other._ref, stringComparison );
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public static bool operator < ( StringValue left, StringValue right ) {
+        return left.CompareTo ( right ) < 0;
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public static bool operator <= ( StringValue left, StringValue right ) {
+        return left.CompareTo ( right ) <= 0;
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public static bool operator > ( StringValue left, StringValue right ) {
+        return left.CompareTo ( right ) > 0;
+    }
+
+    /// <inheritdoc/>
+    /// <exclude/>
+    public static bool operator >= ( StringValue left, StringValue right ) {
+        return left.CompareTo ( right ) >= 0;
     }
 }

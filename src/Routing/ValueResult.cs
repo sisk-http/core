@@ -39,7 +39,7 @@ public sealed class ValueResult<T> where T : notnull {
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public static implicit operator ValueResult<T> ( T value ) {
         if (value is null)
-            throw new NullReferenceException ( SR.ValueResult_Null );
+            throw new InvalidOperationException ( SR.ValueResult_Null );
         return Unsafe.As<ValueResult<T>> ( value )!;
     }
 }

@@ -7,7 +7,6 @@
 // File name:   HttpHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Sisk.Cadente.HttpSerializer;
@@ -49,12 +48,12 @@ public sealed class HttpHostContext {
     public bool KeepAlive { get; set; } = true;
 
     /// <summary>
-    /// Gets the remote client endpoint.
+    /// Gets the associated <see cref="HttpHostClient"/> with this HTTP context.
     /// </summary>
-    public IPEndPoint ClientEndpoint { get; }
+    public HttpHostClient Client { get; }
 
-    internal HttpHostContext ( HttpRequestBase baseRequest, IPEndPoint clientEndpoint, Stream connectionStream ) {
-        this.ClientEndpoint = clientEndpoint;
+    internal HttpHostContext ( HttpRequestBase baseRequest, HttpHostClient client, Stream connectionStream ) {
+        this.Client = client;
         this._connectionStream = connectionStream;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );

@@ -31,7 +31,7 @@ public sealed class JsonRpcTransportLayer {
     /// <summary>
     /// Gets the event handler for WebSocket message reception.
     /// </summary>
-    public WebSocketMessageReceivedEventHandler WebSocket { get => new WebSocketMessageReceivedEventHandler ( this.ImplWebSocket ); }
+    public EventHandler<WebSocketMessage> WebSocket { get => new EventHandler<WebSocketMessage> ( this.ImplWebSocket ); }
 
     /// <summary>
     /// Gets the action to handle HTTP POST requests.

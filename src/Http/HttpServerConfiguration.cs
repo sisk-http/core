@@ -15,7 +15,7 @@ namespace Sisk.Core.Http {
     /// Provides execution parameters for an <see cref="HttpServer"/>.
     /// </summary>
     public sealed class HttpServerConfiguration : IDisposable {
-        private long _maximumContentLength = 0;
+        private long _maximumContentLength;
 
         /// <summary>
         /// Gets or sets the access logging format for incoming HTTP requests.
@@ -78,7 +78,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets or sets whether the server should include the "X-Request-Id" header in response headers.
         /// </summary>
-        public bool IncludeRequestIdHeader { get; set; } = false;
+        public bool IncludeRequestIdHeader { get; set; }
 
         /// <summary>
         /// Gets or sets the listening hosts repository that the <see cref="HttpServer"/> instance will listen to.
@@ -89,7 +89,7 @@ namespace Sisk.Core.Http {
         /// Gets or sets whether the server should throw exceptions instead of reporting it on 
         /// <see cref="HttpServerExecutionStatus"/> if any is thrown while processing requests.
         /// </summary>
-        public bool ThrowExceptions { get; set; } = false;
+        public bool ThrowExceptions { get; set; }
 
         /// <summary>
         /// Gets or sets whether the client should mantain an persistent connection
@@ -106,12 +106,12 @@ namespace Sisk.Core.Http {
         /// Gets or sets whether the HTTP server should automatically rewrite GET requests to end
         /// their path with <c>/</c>. This is applyable only to non-Regex routes.
         /// </summary>
-        public bool ForceTrailingSlash { get; set; } = false;
+        public bool ForceTrailingSlash { get; set; }
 
         /// <summary>
         /// Gets or sets whether the HTTP server should convert request headers encoding to the content encoding.
         /// </summary>
-        public bool NormalizeHeadersEncodings { get; set; } = false;
+        public bool NormalizeHeadersEncodings { get; set; }
 
         /// <summary>
         /// Gets or sets whether the HTTP server should send the X-Powered-By header in all responses.

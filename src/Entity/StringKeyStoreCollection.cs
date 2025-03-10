@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   StringKeyStore.cs
+// File name:   StringKeyStoreCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
@@ -19,33 +19,33 @@ namespace Sisk.Core.Entity;
 /// <summary>
 /// Represents a collection of string keys associated with multiple string values.
 /// </summary>
-public class StringKeyStore : IDictionary<string, string []> {
+public class StringKeyStoreCollection : IDictionary<string, string []> {
     readonly internal List<(string, List<string>)> items;
-    bool isReadOnly = false;
+    bool isReadOnly;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="StringKeyStore"/> class,
+    /// Initializes a new instance of the <see cref="StringKeyStoreCollection"/> class,
     /// </summary>
-    public StringKeyStore () {
+    public StringKeyStoreCollection () {
         this.Comparer = StringComparer.CurrentCulture;
         this.items = new ();
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="StringKeyStore"/> class with a specified comparer.
+    /// Initializes a new instance of the <see cref="StringKeyStoreCollection"/> class with a specified comparer.
     /// </summary>
     /// <param name="comparer">The comparer used for key equality.</param>
-    public StringKeyStore ( IEqualityComparer<string> comparer ) {
+    public StringKeyStoreCollection ( IEqualityComparer<string> comparer ) {
         this.Comparer = comparer;
         this.items = new ();
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="StringKeyStore"/> class,
+    /// Initializes a new instance of the <see cref="StringKeyStoreCollection"/> class,
     /// </summary>
     /// <param name="comparer">The comparer used for key equality.</param>
     /// <param name="items">The inner collection to add to this instance.</param>
-    public StringKeyStore ( IEqualityComparer<string> comparer, IDictionary<string, string []>? items ) {
+    public StringKeyStoreCollection ( IEqualityComparer<string> comparer, IDictionary<string, string []>? items ) {
         this.Comparer = comparer;
         this.items = new ();
         if (items != null)
@@ -84,36 +84,36 @@ public class StringKeyStore : IDictionary<string, string []> {
     #region Static methods
 
     /// <summary>
-    /// Creates a new instance of the <see cref="StringKeyStore"/> from a query string.
+    /// Creates a new instance of the <see cref="StringKeyStoreCollection"/> from a query string.
     /// The query string should be in the format of "key1=value1&amp;key2=value2".
     /// </summary>
     /// <param name="queryString">The query string containing the key-value pairs to import.</param>
-    /// <returns>A new <see cref="StringKeyStore"/> populated with the key-value pairs from the query string.</returns>
-    public static StringKeyStore FromQueryString ( string queryString ) {
-        var keyStore = new StringKeyStore ( StringComparer.InvariantCultureIgnoreCase );
+    /// <returns>A new <see cref="StringKeyStoreCollection"/> populated with the key-value pairs from the query string.</returns>
+    public static StringKeyStoreCollection FromQueryString ( string queryString ) {
+        var keyStore = new StringKeyStoreCollection ( StringComparer.InvariantCultureIgnoreCase );
         keyStore.ImportQueryString ( queryString );
         return keyStore;
     }
 
     /// <summary>
-    /// Creates a new instance of the <see cref="StringKeyStore"/> from a cookie string.
+    /// Creates a new instance of the <see cref="StringKeyStoreCollection"/> from a cookie string.
     /// The query string should be in the format of "key1=value1; key2=value2".
     /// </summary>
     /// <param name="queryString">The query string containing the key-value pairs to import.</param>
-    /// <returns>A new <see cref="StringKeyStore"/> populated with the key-value pairs from the query string.</returns>
-    public static StringKeyStore FromCookieString ( string queryString ) {
-        var keyStore = new StringKeyStore ( StringComparer.InvariantCultureIgnoreCase );
+    /// <returns>A new <see cref="StringKeyStoreCollection"/> populated with the key-value pairs from the query string.</returns>
+    public static StringKeyStoreCollection FromCookieString ( string queryString ) {
+        var keyStore = new StringKeyStoreCollection ( StringComparer.InvariantCultureIgnoreCase );
         keyStore.ImportCookieString ( queryString );
         return keyStore;
     }
 
     /// <summary>
-    /// Creates a new instance of the <see cref="StringKeyStore"/> from a <see cref="NameValueCollection"/>.
+    /// Creates a new instance of the <see cref="StringKeyStoreCollection"/> from a <see cref="NameValueCollection"/>.
     /// </summary>
     /// <param name="collection">The <see cref="NameValueCollection"/> containing the key-value pairs to import.</param>
-    /// <returns>A new <see cref="StringKeyStore"/> populated with the key-value pairs from the query string.</returns>
-    public static StringKeyStore FromNameValueCollection ( NameValueCollection collection ) {
-        var keyStore = new StringKeyStore ( StringComparer.InvariantCultureIgnoreCase );
+    /// <returns>A new <see cref="StringKeyStoreCollection"/> populated with the key-value pairs from the query string.</returns>
+    public static StringKeyStoreCollection FromNameValueCollection ( NameValueCollection collection ) {
+        var keyStore = new StringKeyStoreCollection ( StringComparer.InvariantCultureIgnoreCase );
         keyStore.ImportNameValueCollection ( collection );
         return keyStore;
     }
@@ -122,7 +122,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     #region Import methods
 
     /// <summary>
-    /// Imports key-value pairs from a <see cref="NameValueCollection"/> into the <see cref="StringKeyStore"/>.
+    /// Imports key-value pairs from a <see cref="NameValueCollection"/> into the <see cref="StringKeyStoreCollection"/>.
     /// Each key can have multiple associated values.
     /// </summary>
     /// <param name="items">The <see cref="NameValueCollection"/> containing the key-value pairs to import.</param>
@@ -137,7 +137,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Imports key-value pairs from a query string into the <see cref="StringKeyStore"/>.
+    /// Imports key-value pairs from a query string into the <see cref="StringKeyStoreCollection"/>.
     /// The query string should be in the format of "key1=value1&amp;key2=value2".
     /// </summary>
     /// <param name="queryString">The query string containing the key-value pairs to import.</param>
@@ -147,7 +147,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Imports key-value pairs from a cookie string into the <see cref="StringKeyStore"/>.
+    /// Imports key-value pairs from a cookie string into the <see cref="StringKeyStoreCollection"/>.
     /// The query string should be in the format of "key1=value1; key2=value2".
     /// </summary>
     /// <param name="queryString">The query string containing the key-value pairs to import.</param>
@@ -162,7 +162,7 @@ public class StringKeyStore : IDictionary<string, string []> {
 
     /// <summary>
     /// Gets the <see cref="IEqualityComparer{T}"/> used to compare
-    /// keys in this <see cref="StringKeyStore"/>.
+    /// keys in this <see cref="StringKeyStoreCollection"/>.
     /// </summary>
     public IEqualityComparer<string> Comparer { get; }
 
@@ -186,23 +186,23 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Gets the collection of keys in the <see cref="StringKeyStore"/>.
+    /// Gets the collection of keys in the <see cref="StringKeyStoreCollection"/>.
     /// </summary>
     public ICollection<string> Keys => this.items.Select ( i => i.Item1 ).ToArray ();
 
     /// <summary>
-    /// Gets the collection of values in the <see cref="StringKeyStore"/> as arrays.
+    /// Gets the collection of values in the <see cref="StringKeyStoreCollection"/> as arrays.
     /// Each key may have multiple associated values.
     /// </summary>
     public ICollection<string []> Values => this.items.Select ( v => v.Item2.ToArray () ).ToArray ();
 
     /// <summary>
-    /// Gets the number of key-value pairs in the <see cref="StringKeyStore"/>.
+    /// Gets the number of key-value pairs in the <see cref="StringKeyStoreCollection"/>.
     /// </summary>
     public int Count => this.items.Count;
 
     /// <summary>
-    /// Gets a value indicating whether the <see cref="StringKeyStore"/> is read-only.
+    /// Gets a value indicating whether the <see cref="StringKeyStoreCollection"/> is read-only.
     /// </summary>
     public bool IsReadOnly => this.isReadOnly;
 
@@ -241,7 +241,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Adds a key-value pair to the <see cref="StringKeyStore"/>.
+    /// Adds a key-value pair to the <see cref="StringKeyStoreCollection"/>.
     /// </summary>
     /// <param name="item">The key-value pair to add, where the key is associated with an array of values.</param>
     public void Add ( KeyValuePair<string, string []> item ) {
@@ -337,7 +337,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     #region Removers
 
     /// <summary>
-    /// Removes all key-value pairs from the <see cref="StringKeyStore"/>.
+    /// Removes all key-value pairs from the <see cref="StringKeyStoreCollection"/>.
     /// Throws an exception if the store is read-only.
     /// </summary>
     public void Clear () {
@@ -346,7 +346,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Removes the value associated with the specified key from the <see cref="StringKeyStore"/>.
+    /// Removes the value associated with the specified key from the <see cref="StringKeyStoreCollection"/>.
     /// Throws an exception if the store is read-only.
     /// </summary>
     /// <param name="key">The key of the value to remove.</param>
@@ -362,18 +362,18 @@ public class StringKeyStore : IDictionary<string, string []> {
 
     #region Other methods
     /// <summary>
-    /// Marks the <see cref="StringKeyStore"/> as read-only, preventing further modifications.
+    /// Marks the <see cref="StringKeyStoreCollection"/> as read-only, preventing further modifications.
     /// </summary>
     public void MakeReadOnly () {
         this.isReadOnly = true;
     }
 
     /// <summary>
-    /// Determines whether the <see cref="StringKeyStore"/> contains a specific key.
+    /// Determines whether the <see cref="StringKeyStoreCollection"/> contains a specific key.
     /// </summary>
-    /// <param name="key">The key to locate in the <see cref="StringKeyStore"/>.</param>
+    /// <param name="key">The key to locate in the <see cref="StringKeyStoreCollection"/>.</param>
     /// <returns>
-    /// <see langword="true"></see> if the <see cref="StringKeyStore"/> contains an element with the specified key; otherwise, <see langword="false"></see>.
+    /// <see langword="true"></see> if the <see cref="StringKeyStoreCollection"/> contains an element with the specified key; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool ContainsKey ( string key ) {
         return this.IndexOf ( key ) >= 0;
@@ -406,7 +406,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Copies the contents of this <see cref="StringKeyStore"/> into an <see cref="Dictionary{TKey, TValue}"/>.
+    /// Copies the contents of this <see cref="StringKeyStoreCollection"/> into an <see cref="Dictionary{TKey, TValue}"/>.
     /// </summary>
     public IDictionary<string, string []> AsDictionary () {
         Dictionary<string, string []> dict = new Dictionary<string, string []> ( this.Comparer );
@@ -418,7 +418,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Copies the contents of this <see cref="StringKeyStore"/> into an
+    /// Copies the contents of this <see cref="StringKeyStoreCollection"/> into an
     /// <see cref="NameValueCollection"/>, with values separated with an comma (,).
     /// </summary>
     public NameValueCollection AsNameValueCollection () {
@@ -431,7 +431,7 @@ public class StringKeyStore : IDictionary<string, string []> {
     }
 
     /// <summary>
-    /// Copies the contents of this <see cref="StringKeyStore"/> into an <see cref="StringValueCollection"/>.
+    /// Copies the contents of this <see cref="StringKeyStoreCollection"/> into an <see cref="StringValueCollection"/>.
     /// </summary>
     public StringValueCollection AsStringValueCollection () {
         return new StringValueCollection ( this );
@@ -439,24 +439,35 @@ public class StringKeyStore : IDictionary<string, string []> {
     #endregion
 
     #region Overrides/operators
-    /// <inheritdoc/>
-    public override string ToString () {
+
+    /// <summary>
+    /// Returns a string that represents the current object.
+    /// </summary>
+    /// <returns>A string that represents the current object.</returns>
+    public override string ToString () => this.ToString ( null );
+
+    /// <summary>
+    /// Returns a string that represents the current object, using the specified format provider.
+    /// </summary>
+    /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
+    /// <returns>A string that represents the current object, formatted using the specified format provider.</returns>
+    public string ToString ( IFormatProvider? formatProvider = null ) {
         StringBuilder sb = new StringBuilder ();
         foreach (var item in this) {
-            sb.AppendLine ( $"{item.Key}: {string.Join ( ", ", item.Value )}" );
+            sb.AppendLine ( formatProvider, $"{item.Key}: {string.Join ( ", ", item.Value )}" );
         }
         return sb.ToString ();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
-    public static implicit operator Dictionary<string, string?> ( StringKeyStore vcol ) {
+    public static implicit operator Dictionary<string, string?> ( StringKeyStoreCollection vcol ) {
         return (Dictionary<string, string?>) vcol.AsDictionary ();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
-    public static implicit operator NameValueCollection ( StringKeyStore vcol ) {
+    public static implicit operator NameValueCollection ( StringKeyStoreCollection vcol ) {
         return vcol.AsNameValueCollection ();
     }
     #endregion

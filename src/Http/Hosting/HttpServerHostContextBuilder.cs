@@ -19,6 +19,8 @@ namespace Sisk.Core.Http.Hosting;
 /// <summary>
 /// Represents a context constructor for <see cref="HttpServerHostContext"/>.
 /// </summary>
+[SuppressMessage ( "Design", "CA1001:Types that own disposable fields should be disposable",
+    Justification = "This class is a builder class and IDisposable members is disposed within the result of the Build() function." )]
 public sealed class HttpServerHostContextBuilder {
     private readonly HttpServerHostContext _context;
     private PortableConfigurationBuilder? _portableConfiguration;

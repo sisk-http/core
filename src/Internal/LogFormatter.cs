@@ -7,6 +7,7 @@
 // File name:   LogFormatter.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Sisk.Core.Helpers;
@@ -18,7 +19,7 @@ static class LogFormatter {
     public static string FormatExceptionEntr ( HttpServerExecutionResult executionResult ) {
         StringBuilder errLineBuilder = new StringBuilder ( 128 );
         errLineBuilder.Append ( '[' );
-        errLineBuilder.Append ( executionResult.Request.RequestedAt.ToString ( "G" ) );
+        errLineBuilder.Append ( executionResult.Request.RequestedAt.ToString ( "G", CultureInfo.CurrentCulture.DateTimeFormat ) );
         errLineBuilder.Append ( ']' );
         errLineBuilder.Append ( ' ' );
         errLineBuilder.Append ( executionResult.Request.Method.Method );
@@ -70,38 +71,38 @@ static class LogFormatter {
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     static string? MatchTermExpression ( in ReadOnlySpan<char> term, HttpServerExecutionResult executionResult )
         => term switch {
-            "dd" => executionResult.Request.RequestedAt.Day.ToString ( "D2" ),
-            "dmmm" => executionResult.Request.RequestedAt.ToString ( "MMMM" ),
-            "dmm" => executionResult.Request.RequestedAt.ToString ( "MMM" ),
-            "dm" => executionResult.Request.RequestedAt.Month.ToString ( "D2" ),
-            "dy" => executionResult.Request.RequestedAt.Year.ToString ( "D4" ),
+            "dd" => executionResult.Request.RequestedAt.Day.ToString ( "D2", provider: null ),
+            "dmmm" => executionResult.Request.RequestedAt.ToString ( "MMMM", provider: null ),
+            "dmm" => executionResult.Request.RequestedAt.ToString ( "MMM", provider: null ),
+            "dm" => executionResult.Request.RequestedAt.Month.ToString ( "D2", provider: null ),
+            "dy" => executionResult.Request.RequestedAt.Year.ToString ( "D4", provider: null ),
 
-            "th" => executionResult.Request.RequestedAt.ToString ( "hh" ),
-            "tH" => executionResult.Request.RequestedAt.ToString ( "HH" ),
-            "ti" => executionResult.Request.RequestedAt.ToString ( "mm" ),
-            "ts" => executionResult.Request.RequestedAt.ToString ( "ss" ),
-            "tm" => executionResult.Request.RequestedAt.Millisecond.ToString ( "D3" ),
+            "th" => executionResult.Request.RequestedAt.ToString ( "hh", provider: null ),
+            "tH" => executionResult.Request.RequestedAt.ToString ( "HH", provider: null ),
+            "ti" => executionResult.Request.RequestedAt.ToString ( "mm", provider: null ),
+            "ts" => executionResult.Request.RequestedAt.ToString ( "ss", provider: null ),
+            "tm" => executionResult.Request.RequestedAt.Millisecond.ToString ( "D3", provider: null ),
             "tz" => $"{HttpServer.environmentUtcOffset.TotalHours:00}00",
 
             "ri" => executionResult.Request.RemoteAddress.ToString (),
-            "rm" => executionResult.Request.Method.Method.ToUpper (),
+            "rm" => executionResult.Request.Method.Method.ToUpperInvariant (),
             "rs" => executionResult.Request.Uri.Scheme,
             "ra" => executionResult.Request.Authority,
             "rh" => executionResult.Request.Host,
-            "rp" => executionResult.Request.Uri.Port.ToString (),
+            "rp" => executionResult.Request.Uri.Port.ToString ( provider: null ),
             "rz" => executionResult.Request.Path,
             "rq" => executionResult.Request.QueryString,
 
-            "sc" => executionResult.Response?.Status.StatusCode.ToString (),
+            "sc" => executionResult.Response?.Status.StatusCode.ToString ( provider: null ),
             "sd" => executionResult.Response?.Status.Description.ToString (),
 
             "lin" => SizeHelper.HumanReadableSize ( executionResult.RequestSize ),
-            "linr" => executionResult.RequestSize.ToString (),
+            "linr" => executionResult.RequestSize.ToString ( provider: null ),
 
             "lou" => SizeHelper.HumanReadableSize ( executionResult.ResponseSize ),
-            "lour" => executionResult.ResponseSize.ToString (),
+            "lour" => executionResult.ResponseSize.ToString ( provider: null ),
 
-            "lms" => executionResult.Elapsed.TotalMilliseconds.ToString ( "N0" ),
+            "lms" => executionResult.Elapsed.TotalMilliseconds.ToString ( "N0", provider: null ),
             "ls" => executionResult.Status.ToString (),
             _ => null
         };

@@ -25,7 +25,7 @@ enum HttpServerHandlerActionEvent {
     Stopped,
 }
 
-internal class HttpServerHandlerRepository {
+internal sealed class HttpServerHandlerRepository {
     private readonly HttpServer parent;
     private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler> ();
     internal readonly DefaultHttpServerHandler _default = new DefaultHttpServerHandler ();

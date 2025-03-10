@@ -157,8 +157,8 @@ namespace Sisk.Core.Internal {
             }
 
             int wildcardCount = wildcardPattern.Count ( x => x == '*' );
-            if (wildcardPattern.StartsWith ( "*." ) && wildcardCount == 1) {
-                if (string.Compare ( subject, wildcardPattern [ 2.. ], comparer ) == 0)
+            if (wildcardPattern.StartsWith ( "*.", StringComparison.Ordinal ) && wildcardCount == 1) {
+                if (string.Equals ( subject, wildcardPattern [ 2.. ], comparer ))
                     return true;
             }
 

@@ -11,14 +11,15 @@ using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Http.Streams {
+
     /// <summary>
     /// Provides an persistent bi-directional socket between the client and the HTTP server.
     /// </summary>
-    public sealed class HttpWebSocket {
+    public sealed class HttpWebSocket : IDisposable {
         bool isListening = true;
         readonly HttpStreamPingPolicy pingPolicy;
 
-        internal WebSocketMessage? lastMessage = null;
+        internal WebSocketMessage? lastMessage;
         internal CancellationTokenSource asyncListenerToken = null!;
         internal ManualResetEvent closeEvent = new ManualResetEvent ( false );
         internal ManualResetEvent waitNextEvent = new ManualResetEvent ( false );
@@ -26,14 +27,14 @@ namespace Sisk.Core.Http.Streams {
         internal HttpListenerWebSocketContext ctx;
         internal HttpRequest request;
         internal TimeSpan closeTimeout = TimeSpan.Zero;
-        internal bool isClosed = false;
-        internal bool isWaitingNext = false;
-        internal bool wasServerClosed = false;
-        internal string? identifier = null;
+        internal bool _isClosed;
+        internal bool isWaitingNext;
+        internal bool wasServerClosed;
+        internal string? _identifier;
 
         const int BUFFER_LENGTH = 1024;
-        int attempt = 0;
-        long length = 0;
+        int attempt;
+        long length;
 
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP web socket connection.
@@ -64,23 +65,23 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets an boolean indicating if this Web Socket connection is closed.
         /// </summary>
-        public bool IsClosed => this.isClosed;
+        public bool IsClosed => this._isClosed;
 
         /// <summary>
         /// Gets an unique identifier label to this Web Socket connection, useful for finding this connection's reference later.
         /// </summary>
-        public string? Identifier => this.identifier;
+        public string? Identifier => this._identifier;
 
         /// <summary>
         /// Represents the event which is called when this web socket receives an message from
         /// remote origin.
         /// </summary>
-        public event WebSocketMessageReceivedEventHandler? OnReceive;
+        public event EventHandler<WebSocketMessage>? OnReceive;
 
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             this.request = req;
-            this.identifier = identifier;
+            this._identifier = identifier;
             this.pingPolicy = new HttpStreamPingPolicy ( this );
 
             if (identifier != null) {
@@ -111,7 +112,7 @@ namespace Sisk.Core.Http.Streams {
             message.IsEnd = result.EndOfMessage;
 
             if (result.MessageType == WebSocketMessageType.Close) {
-                this.isClosed = true;
+                this._isClosed = true;
                 this.isListening = false;
                 this.closeEvent.Set ();
             }
@@ -254,7 +255,7 @@ namespace Sisk.Core.Http.Streams {
         /// This method will not throw an exception if the connection is already closed.
         /// </summary>
         public HttpResponse Close () {
-            if (!this.isClosed) {
+            if (!this._isClosed) {
                 if (this.ctx.WebSocket.State != WebSocketState.Closed && this.ctx.WebSocket.State != WebSocketState.Aborted) {
                     // CloseAsync can throw an exception if any party closes the connection
                     // early before completing close handshake
@@ -273,7 +274,7 @@ namespace Sisk.Core.Http.Streams {
                 }
                 this.request.baseServer._wsCollection.UnregisterWebSocket ( this );
                 this.isListening = false;
-                this.isClosed = true;
+                this._isClosed = true;
                 this.closeEvent.Set ();
             }
             return new HttpResponse ( this.wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
@@ -283,7 +284,7 @@ namespace Sisk.Core.Http.Streams {
 
         [MethodImpl ( MethodImplOptions.Synchronized )]
         private bool SendInternal ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType ) {
-            if (this.isClosed) { return false; }
+            if (this._isClosed) { return false; }
 
             if (this.closeTimeout.TotalMilliseconds > 0)
                 this.asyncListenerToken?.CancelAfter ( this.closeTimeout );
@@ -359,14 +360,16 @@ namespace Sisk.Core.Http.Streams {
 
             return this.lastMessage;
         }
-    }
 
-    /// <summary>
-    /// Represents the void that is called when the Web Socket receives an message.
-    /// </summary>
-    /// <param name="sender">The <see cref="HttpWebSocket"/> object which fired the event.</param>
-    /// <param name="message">The Web Socket message information.</param>
-    public delegate void WebSocketMessageReceivedEventHandler ( object? sender, WebSocketMessage message );
+        /// <inheritdoc/>
+        public void Dispose () {
+            this.Close ();
+            this.pingPolicy.Dispose ();
+            this.closeEvent.Dispose ();
+            this.waitNextEvent.Dispose ();
+            this.receiveThread.Join ();
+        }
+    }
 
     /// <summary>
     /// Represents an websocket request message received by an websocket server.

@@ -43,7 +43,7 @@ namespace Sisk.Core.Routing {
         /// <summary>
         /// Get or sets if this route should use regex to be interpreted instead of predefined templates.
         /// </summary>
-        public bool UseRegex { get; set; } = false;
+        public bool UseRegex { get; set; }
 
         /// <summary>
         /// Creates an new <see cref="RouteAttribute"/> instance with given route method and path pattern.

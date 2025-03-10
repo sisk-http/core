@@ -28,7 +28,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// </summary>
     /// <param name="name">The form item name.</param>
     public MultipartObject? GetItem ( string name ) {
-        return this._items.LastOrDefault ( i => string.Compare ( name, i.Name, true ) == 0 );
+        return this._items.LastOrDefault ( i => string.Equals ( name, i.Name, StringComparison.OrdinalIgnoreCase ) );
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// <returns>An array of <see cref="MultipartObject"/> with the specified name.</returns>
     public MultipartObject [] GetItems ( string name ) {
         return this._items
-            .Where ( i => string.Compare ( name, i.Name, true ) == 0 )
+            .Where ( i => string.Equals ( name, i.Name, StringComparison.OrdinalIgnoreCase ) )
             .ToArray ();
     }
 
@@ -102,12 +102,12 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
 
     /// <inheritdoc/>
     public bool ContainsKey ( string key ) {
-        return this._items.Any ( i => i.Name.CompareTo ( key ) == 0 );
+        return this._items.Any ( i => i.Name.Equals ( key, StringComparison.OrdinalIgnoreCase ) );
     }
 
     /// <inheritdoc/>
     public bool TryGetValue ( string key, [MaybeNullWhen ( false )] out MultipartObject value ) {
-        var i = this._items.FirstOrDefault ( item => item.Name.CompareTo ( key ) == 0 );
+        var i = this._items.FirstOrDefault ( item => item.Name.Equals ( key, StringComparison.OrdinalIgnoreCase ) );
         if (i is null) {
             value = default;
             return false;

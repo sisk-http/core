@@ -15,16 +15,18 @@ namespace Sisk.Core.Http {
     /// <summary>
     /// Provides a managed, asynchronous log writer which supports writing safe data to log files or text streams.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage ( "Naming", "CA1711:Identifiers should not have incorrect suffix",
+        Justification = "Breaking change. Not going forward on this one." )]
     public class LogStream : IDisposable {
         private readonly Channel<object?> channel = Channel.CreateUnbounded<object?> ( new UnboundedChannelOptions () { SingleReader = true, SingleWriter = false } );
         private readonly Thread consumerThread;
         internal readonly ManualResetEvent writeEvent = new ManualResetEvent ( false );
         internal readonly ManualResetEvent rotatingPolicyLocker = new ManualResetEvent ( true );
-        internal RotatingLogPolicy? rotatingLogPolicy = null;
+        internal RotatingLogPolicy? rotatingLogPolicy;
 
         private string? filePath;
         private bool isDisposed;
-        private CircularBuffer<string>? _bufferingContent = null;
+        private CircularBuffer<string>? _bufferingContent;
 
         /// <summary>
         /// Gets a <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
@@ -276,7 +278,17 @@ namespace Sisk.Core.Http {
         /// <param name="format">The string format that represents the arguments positions.</param>
         /// <param name="args">An array of objects that represents the string format slots values.</param>
         public void WriteLine ( string format, params object? [] args ) {
-            this.WriteLineInternal ( string.Format ( format, args ) );
+            this.WriteLineInternal ( string.Format ( provider: null, format, args ) );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
+        /// </summary>
+        /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( IFormatProvider? formatProvider, string format, params object? [] args ) {
+            this.WriteLineInternal ( string.Format ( formatProvider, format, args ) );
         }
 
         /// <summary>
@@ -314,7 +326,7 @@ namespace Sisk.Core.Http {
 
         void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
             if (currentDepth == 0)
-                exceptionSbuilder.AppendLine ( string.Format ( SR.LogStream_ExceptionDump_Header,
+                exceptionSbuilder.AppendLine ( SR.Format ( SR.LogStream_ExceptionDump_Header,
                     context is null ? DateTime.Now.ToString ( "R" ) : $"{context}, {DateTime.Now:R}" ) );
 
             exceptionSbuilder.AppendLine ( exp.ToString () );

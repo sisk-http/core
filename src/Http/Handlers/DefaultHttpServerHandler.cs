@@ -13,7 +13,7 @@ using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http.Handlers;
 
-internal class DefaultHttpServerHandler : HttpServerHandler {
+internal sealed class DefaultHttpServerHandler : HttpServerHandler {
 
     internal HttpServerHostContext? hostContext;
     internal Action<Router>? _routerSetup;

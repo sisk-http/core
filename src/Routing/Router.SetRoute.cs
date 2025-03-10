@@ -47,7 +47,7 @@ public partial class Router {
     public Route? GetRouteFromName ( string name ) {
         for (int i = 0; i < this._routesList.Count; i++) {
             Route r = this._routesList [ i ];
-            if (string.Compare ( name, r.Name ) == 0) {
+            if (string.Equals ( name, r.Name, StringComparison.Ordinal )) {
                 return r;
             }
         }
@@ -237,13 +237,11 @@ public partial class Router {
             throw new InvalidOperationException ( SR.Router_ReadOnlyException );
         }
 
-        if (!r.UseRegex) {
-            if (this.Prefix is string prefix) {
-                r.Path = PathUtility.CombinePaths ( prefix, r.Path );
-            }
+        if (!r.UseRegex && this.Prefix is string prefix) {
+            r.Path = PathUtility.CombinePaths ( prefix, r.Path );
         }
 
-        this._routesList!.Add ( r );
+        this._routesList.Add ( r );
     }
 
     /// <summary>
@@ -384,7 +382,7 @@ public partial class Router {
                     this.SetRoute ( route );
                 }
                 catch (Exception ex) {
-                    throw new Exception ( string.Format ( SR.Router_Set_Exception, method.DeclaringType?.FullName, method.Name ), ex );
+                    throw new InvalidOperationException ( SR.Format ( SR.Router_Set_Exception, method.DeclaringType?.FullName, method.Name ), ex );
                 }
             }
         }

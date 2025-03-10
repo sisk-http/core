@@ -103,6 +103,7 @@ public abstract class CompressedContent : HttpContent {
 
     /// <inheritdoc/>
     protected override void Dispose ( bool disposing ) {
+        base.Dispose ( disposing );
         if (disposing) {
             this.InnerContent?.Dispose ();
         }

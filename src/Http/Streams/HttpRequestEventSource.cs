@@ -22,18 +22,18 @@ namespace Sisk.Core.Http.Streams {
         readonly HttpServer hostServer;
         TimeSpan keepAlive = TimeSpan.Zero;
         DateTime lastSuccessfullMessage = DateTime.Now;
-        int length = 0;
+        int length;
 
         internal List<string> sendQueue = new List<string> ();
-        internal bool hasSentData = false;
+        internal bool hasSentData;
 
         // 
         // isClosed determines if this instance has some connection or not
         // isDisposed determines if this object was removed from their collection but wasnt collected by gc yet
         //
 
-        private bool isClosed = false;
-        private bool isDisposed = false;
+        private bool isClosed;
+        private bool isDisposed;
 
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP event source connection.

@@ -26,7 +26,7 @@ namespace Sisk.Core.Internal.ServiceProvider {
                     ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip
                 } ) ) is not ConfigStructureFile config) {
 
-                throw new Exception ( SR.Provider_ConfigParser_ConfigFileInvalid );
+                throw new InvalidOperationException ( SR.Provider_ConfigParser_ConfigFileInvalid );
             }
 
             if (config.Server != null) {
@@ -34,7 +34,7 @@ namespace Sisk.Core.Internal.ServiceProvider {
                 prov.Host.ServerConfiguration.IncludeRequestIdHeader = config.Server.IncludeRequestIdHeader;
                 prov.Host.ServerConfiguration.ThrowExceptions = config.Server.ThrowExceptions;
 
-                if (config.Server.AccessLogsStream?.ToLower () == "console") {
+                if (config.Server.AccessLogsStream?.ToLowerInvariant () == "console") {
                     prov.Host.ServerConfiguration.AccessLogsStream = LogStream.ConsoleOutput;
                 }
                 else if (config.Server.AccessLogsStream != null) {
@@ -44,7 +44,7 @@ namespace Sisk.Core.Internal.ServiceProvider {
                     prov.Host.ServerConfiguration.AccessLogsStream = null;
                 }
 
-                if (config.Server.ErrorsLogsStream?.ToLower () == "console") {
+                if (config.Server.ErrorsLogsStream?.ToLowerInvariant () == "console") {
                     prov.Host.ServerConfiguration.ErrorsLogsStream = LogStream.ConsoleOutput;
                 }
                 else if (config.Server.ErrorsLogsStream != null) {
@@ -102,24 +102,24 @@ namespace Sisk.Core.Internal.ServiceProvider {
     internal class ConfigStructureFile__ServerConfiguration {
         public string? AccessLogsStream { get; set; } = "console";
         public string? ErrorsLogsStream { get; set; }
-        public int MaximumContentLength { get; set; } = 0;
-        public bool IncludeRequestIdHeader { get; set; } = false;
+        public int MaximumContentLength { get; set; }
+        public bool IncludeRequestIdHeader { get; set; }
         public bool ThrowExceptions { get; set; } = true;
     }
 
     [JsonSerializable ( typeof ( string [] ) )]
-    internal partial class ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy : JsonSerializerContext {
-        public bool? AllowCredentials { get; set; } = null;
+    internal sealed partial class ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy : JsonSerializerContext {
+        public bool? AllowCredentials { get; set; }
         public string []? ExposeHeaders { get; set; }
         public string? AllowOrigin { get; set; }
         public string []? AllowOrigins { get; set; }
         public string []? AllowMethods { get; set; }
         public string []? AllowHeaders { get; set; }
-        public int? MaxAge { get; set; } = null;
+        public int? MaxAge { get; set; }
     }
 
     [JsonSerializable ( typeof ( ConfigStructureFile__ListeningHost__CrossOriginResourceSharingPolicy ) )]
-    internal partial class ConfigStructureFile__ListeningHost : JsonSerializerContext {
+    internal sealed partial class ConfigStructureFile__ListeningHost : JsonSerializerContext {
         public string? Label { get; set; }
         public string []? Ports { get; set; }
 
@@ -128,6 +128,6 @@ namespace Sisk.Core.Internal.ServiceProvider {
 
     [JsonSourceGenerationOptions ( WriteIndented = true )]
     [JsonSerializable ( typeof ( ConfigStructureFile ) )]
-    internal partial class SourceGenerationContext : JsonSerializerContext {
+    internal sealed partial class SourceGenerationContext : JsonSerializerContext {
     }
 }

@@ -23,7 +23,7 @@ namespace Sisk.Core.Http {
         internal const byte HTTPRESPONSE_CLIENT_CLOSE = 32;
         internal const byte HTTPRESPONSE_UNHANDLED_EXCEPTION = 8;
 
-        internal long? CalculedLength = null;
+        internal long? CalculedLength;
 
         /// <summary>
         /// Creates an <see cref="HttpResponse"/> object which closes the connection with the client immediately (ECONNRESET).
@@ -54,9 +54,9 @@ namespace Sisk.Core.Http {
         /// <remarks>
         /// The response is always sent as chunked when it is not possible to determine the size of the content to send.
         /// </remarks>
-        public bool SendChunked { get; set; } = false;
+        public bool SendChunked { get; set; }
 
-        internal byte internalStatus = 0;
+        internal byte internalStatus;
 
         internal HttpResponse ( byte internalStatus ) {
             this.internalStatus = internalStatus;
@@ -68,9 +68,9 @@ namespace Sisk.Core.Http {
         /// <param name="includeBody">Determines whether the message content will also be included in the return from this function.</param>
         public string GetRawHttpResponse ( bool includeBody = true ) {
             StringBuilder sb = new StringBuilder ();
-            sb.AppendLine ( $"HTTP/1.1 {this.Status}" );
+            sb.AppendLine ( null, $"HTTP/1.1 {this.Status}" );
             foreach (var header in this.Headers) {
-                sb.Append ( $"{header.Key}: {header.Value}" );
+                sb.Append ( null, $"{header.Key}: {header.Value}" );
                 sb.Append ( '\n' );
             }
             if (this.Content?.Headers is not null)
@@ -89,7 +89,7 @@ namespace Sisk.Core.Http {
                         sb.Append ( s );
                     }
                     else {
-                        sb.Append ( $"| ({SizeHelper.HumanReadableSize ( s.Length )})" );
+                        sb.Append ( null, $"| ({SizeHelper.HumanReadableSize ( s.Length )})" );
                     }
                 }
             }

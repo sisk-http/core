@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   HttpServer__Core.cs
+// File name:   HttpServer.Core.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Diagnostics;
@@ -59,11 +59,11 @@ public partial class HttpServer {
 
         if (contentHeaders.LastModified is { } LastModified
             && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.LastModified, headerComparer ))
-            response.AppendHeader ( HttpKnownHeaderNames.LastModified, LastModified.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'" ) );
+            response.AppendHeader ( HttpKnownHeaderNames.LastModified, LastModified.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'", formatProvider: null ) );
 
         if (contentHeaders.Expires is { } Expires
             && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.Expires, headerComparer ))
-            response.AppendHeader ( HttpKnownHeaderNames.Expires, Expires.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'" ) );
+            response.AppendHeader ( HttpKnownHeaderNames.Expires, Expires.ToUniversalTime ().ToString ( "dddd, dd MMMM yyyy HH:mm:ss 'GMT'", formatProvider: null ) );
 
         if (contentHeaders.ContentLanguage.Count > 0
             && !SpanHelpers.Contains ( definedHeaders, HttpKnownHeaderNames.ContentLanguage, headerComparer ))
@@ -103,7 +103,7 @@ public partial class HttpServer {
             if (origin is not null) {
                 for (int i = 0; i < cors.AllowOrigins.Length; i++) {
                     string definedOrigin = cors.AllowOrigins [ i ];
-                    if (string.Compare ( definedOrigin, origin, true ) == 0) {
+                    if (string.Equals ( definedOrigin, origin, StringComparison.OrdinalIgnoreCase )) {
                         baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, origin );
                         break;
                     }
@@ -118,7 +118,7 @@ public partial class HttpServer {
             baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlExposeHeaders, string.Join ( ", ", cors.ExposeHeaders ) );
 
         if (cors.MaxAge > TimeSpan.Zero)
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString () );
+            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString ( provider: null ) );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -442,6 +442,8 @@ finishSending:
             if (!currentConfig.AsyncRequestProcessing) {
                 Monitor.Exit ( this.httpListener );
             }
+
+            (request as IDisposable)?.Dispose ();
             #endregion
         }
     }

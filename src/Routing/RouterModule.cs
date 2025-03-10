@@ -16,7 +16,7 @@ namespace Sisk.Core.Routing;
 /// request handlers and prefixes.
 /// </summary>
 public abstract class RouterModule {
-    internal bool _wasSetupCalled = false;
+    internal bool _wasSetupCalled;
 
     /// <summary>
     /// Gets or sets an list of <see cref="IRequestHandler"/> this <see cref="RouterModule"/> runs.
@@ -36,6 +36,18 @@ public abstract class RouterModule {
     /// of this class.</param>
     protected void HasRequestHandler ( IRequestHandler handler ) {
         this.RequestHandlers.Add ( handler );
+    }
+
+    /// <summary>
+    /// Specifies a prefix for all routes defined by this module.
+    /// </summary>
+    /// <param name="prefix">The prefix to be applied to all registered routes of this class.</param>
+    /// <remarks>
+    /// This method allows for the specification of a common prefix for all routes defined by this module,
+    /// which can be useful for organizing and structuring routes in a large application.
+    /// </remarks>
+    protected void HasPrefix ( string prefix ) {
+        this.Prefix = prefix;
     }
 
     /// <summary>

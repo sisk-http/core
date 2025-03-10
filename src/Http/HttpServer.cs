@@ -33,17 +33,17 @@ namespace Sisk.Core.Http {
         /// </summary>
         public static Version SiskVersion { get; private set; } = null!;
 
-        private bool _isListening = false;
-        private bool _isDisposing = false;
+        private bool _isListening;
+        private bool _isDisposing;
         private readonly HttpListener httpListener = new HttpListener ();
         private ListeningHost? _onlyListeningHost;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection ();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection ();
-        internal HashSet<string>? listeningPrefixes;
+        internal HashSet<string>? _listeningPrefixes;
         internal HttpServerHandlerRepository handler;
 
         internal AutoResetEvent waitNextEvent = new AutoResetEvent ( false );
-        internal bool isWaitingNextEvent = false;
+        internal bool isWaitingNextEvent;
         internal HttpServerExecutionResult? waitingExecutionResult;
 
         static HttpServer () {
@@ -176,7 +176,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
         /// </summary>
-        public string [] ListeningPrefixes => this.listeningPrefixes?.ToArray () ?? Array.Empty<string> ();
+        public string [] ListeningPrefixes => this._listeningPrefixes?.ToArray () ?? Array.Empty<string> ();
 
         /// <summary>
         /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
@@ -263,7 +263,7 @@ namespace Sisk.Core.Http {
 
             ObjectDisposedException.ThrowIf ( this._isDisposing, this );
 
-            this.listeningPrefixes = new HashSet<string> ();
+            this._listeningPrefixes = new HashSet<string> ();
 
             for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++) {
                 ListeningHost listeningHost = this.ServerConfiguration.ListeningHosts [ i ];
@@ -272,12 +272,12 @@ namespace Sisk.Core.Http {
                 for (int j = 0; j < listeningHost.Ports.Count; j++) {
                     var port = listeningHost.Ports [ j ];
 
-                    this.listeningPrefixes.Add ( port.ToString ( true ) );
+                    this._listeningPrefixes.Add ( port.ToString ( true ) );
                 }
             }
 
             this.httpListener.Prefixes.Clear ();
-            foreach (string prefix in this.listeningPrefixes)
+            foreach (string prefix in this._listeningPrefixes)
                 this.httpListener.Prefixes.Add ( prefix );
 
             this._isListening = true;

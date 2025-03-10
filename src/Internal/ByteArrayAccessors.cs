@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace Sisk.Core.Internal;
 
-class ByteArrayAccessors {
+static class ByteArrayAccessors {
     [UnsafeAccessor ( UnsafeAccessorKind.Field, Name = "_content" )]
     public extern static ref byte [] UnsafeGetContent ( ByteArrayContent bcontent );
 

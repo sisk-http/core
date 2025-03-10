@@ -7,11 +7,13 @@
 // File name:   HttpEventSourceCollection.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections;
+
 namespace Sisk.Core.Http.Streams {
     /// <summary>
     /// Provides a managed object to manage <see cref="HttpRequestEventSource"/> connections.
     /// </summary>
-    public sealed class HttpEventSourceCollection {
+    public sealed class HttpEventSourceCollection : IReadOnlyCollection<HttpRequestEventSource> {
         internal List<HttpRequestEventSource> _eventSources = new List<HttpRequestEventSource> ();
 
         /// <summary>
@@ -53,6 +55,9 @@ namespace Sisk.Core.Http.Streams {
         /// Gets an number indicating the amount of active event source connections.
         /// </summary>
         public int ActiveConnections { get => this._eventSources.Count ( ev => ev.IsActive ); }
+
+        /// <inheritdoc/>
+        public int Count => ((IReadOnlyCollection<HttpRequestEventSource>) this._eventSources).Count;
 
         /// <summary>
         /// Gets the event source connection for the specified identifier.
@@ -96,6 +101,16 @@ namespace Sisk.Core.Http.Streams {
                 foreach (HttpRequestEventSource es in this._eventSources)
                     es.Dispose ();
             }
+        }
+
+        /// <inheritdoc/>
+        public IEnumerator<HttpRequestEventSource> GetEnumerator () {
+            return this._eventSources.Where ( e => e.IsActive ).GetEnumerator ();
+        }
+
+        /// <inheritdoc/>
+        IEnumerator IEnumerable.GetEnumerator () {
+            return this.GetEnumerator ();
         }
     }
 

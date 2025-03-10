@@ -32,7 +32,7 @@ public static class MimeHelper {
     /// <param name="fallback">Optional. The default mime-type when the file best mime-type is not found. If this argument is null, <see cref="DefaultMimeType"/> is used.</param>
     /// <returns>The best matched mime-type, or the default if no mime-type was matched with the specified extension.</returns>
     public static string GetMimeType ( string fileExtension, string? fallback = null ) {
-        return MimeTypeList.ResolveMimeType ( fileExtension.TrimStart ( '.' ).ToLower () ) ?? fallback ?? DefaultMimeType;
+        return MimeTypeList.ResolveMimeType ( fileExtension.TrimStart ( '.' ).ToLowerInvariant () ) ?? fallback ?? DefaultMimeType;
     }
 
     /// <summary>

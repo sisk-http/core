@@ -40,7 +40,7 @@ public abstract class RequestHandler : IRequestHandler {
     }
 }
 
-class InlineRequestHandler : RequestHandler {
+sealed class InlineRequestHandler : RequestHandler {
     public Func<HttpRequest, HttpContext, HttpResponse?> Handler { get; set; }
 
     public InlineRequestHandler ( Func<HttpRequest, HttpContext, HttpResponse?> handler, RequestHandlerExecutionMode mode ) {

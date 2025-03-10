@@ -47,7 +47,7 @@ public abstract class AsyncRequestHandler : IRequestHandler {
     }
 }
 
-class InlineAsyncRequestHandler : AsyncRequestHandler {
+sealed class InlineAsyncRequestHandler : AsyncRequestHandler {
     public Func<HttpRequest, HttpContext, Task<HttpResponse?>> Handler { get; set; }
 
     public InlineAsyncRequestHandler ( Func<HttpRequest, HttpContext, Task<HttpResponse?>> handler, RequestHandlerExecutionMode mode ) {
