@@ -42,44 +42,44 @@ namespace Sisk.Core.Entity {
         /// <summary>
         /// Gets this <see cref="MultipartObject"/> form data content length in byte count.
         /// </summary>
-        public int ContentLength { get => this.ContentBytes.Length; }
+        public int ContentLength { get => ContentBytes.Length; }
 
         /// <summary>
         /// Gets an booolean indicating if this <see cref="MultipartObject"/> has contents or not.
         /// </summary>
-        public bool HasContents { get => this.ContentLength > 0; }
+        public bool HasContents { get => ContentLength > 0; }
 
         /// <summary>
         /// Reads the content bytes with the given encoder.
         /// </summary>
         public string ReadContentAsString ( Encoding encoder ) {
-            if (this.ContentLength == 0)
+            if (ContentLength == 0)
                 return string.Empty;
-            return encoder.GetString ( this.ContentBytes );
+            return encoder.GetString ( ContentBytes );
         }
 
         /// <summary>
         /// Reads the content bytes using the HTTP request content-encoding.
         /// </summary>
         public string ReadContentAsString () {
-            return this.ReadContentAsString ( this._baseEncoding );
+            return ReadContentAsString ( _baseEncoding );
         }
 
         /// <summary>
         /// Determines the image format based in the file header for each image content type.
         /// </summary>
         public MultipartObjectCommonFormat GetCommonFileFormat () {
-            int byteLen = this.ContentBytes.Length;
+            int byteLen = ContentBytes.Length;
 
             if (byteLen >= 8) {
-                Span<byte> len8 = this.ContentBytes.AsSpan ( 0, 8 );
+                Span<byte> len8 = ContentBytes.AsSpan ( 0, 8 );
 
                 if (len8.SequenceEqual ( MultipartObjectCommonFormatByteMark.PNG )) {
                     return MultipartObjectCommonFormat.PNG;
                 }
             }
             if (byteLen >= 4) {
-                Span<byte> len4 = this.ContentBytes.AsSpan ( 0, 4 );
+                Span<byte> len4 = ContentBytes.AsSpan ( 0, 4 );
 
                 if (len4.SequenceEqual ( MultipartObjectCommonFormatByteMark.WEBP )) {
                     return MultipartObjectCommonFormat.WEBP;
@@ -92,7 +92,7 @@ namespace Sisk.Core.Entity {
                 }
             }
             if (byteLen >= 3) {
-                Span<byte> len3 = this.ContentBytes.AsSpan ( 0, 3 );
+                Span<byte> len3 = ContentBytes.AsSpan ( 0, 3 );
 
                 if (len3.SequenceEqual ( MultipartObjectCommonFormatByteMark.JPEG )) {
                     return MultipartObjectCommonFormat.JPEG;
@@ -102,7 +102,7 @@ namespace Sisk.Core.Entity {
                 }
             }
             if (byteLen >= 2) {
-                Span<byte> len2 = this.ContentBytes.AsSpan ( 0, 2 );
+                Span<byte> len2 = ContentBytes.AsSpan ( 0, 2 );
 
                 if (len2.SequenceEqual ( MultipartObjectCommonFormatByteMark.BMP )) {
                     return MultipartObjectCommonFormat.BMP;
@@ -113,14 +113,14 @@ namespace Sisk.Core.Entity {
         }
 
         internal MultipartObject ( NameValueCollection headers, string? filename, string name, byte []? body, Encoding encoding ) {
-            this.Headers = new HttpHeaderCollection ();
-            this.Headers.ImportNameValueCollection ( headers );
-            this.Headers.MakeReadOnly ();
+            Headers = new HttpHeaderCollection ();
+            Headers.ImportNameValueCollection ( headers );
+            Headers.MakeReadOnly ();
 
-            this.Filename = filename;
-            this.Name = name;
-            this.ContentBytes = body ?? Array.Empty<byte> ();
-            this._baseEncoding = encoding;
+            Filename = filename;
+            Name = name;
+            ContentBytes = body ?? Array.Empty<byte> ();
+            _baseEncoding = encoding;
         }
 
         //
@@ -155,19 +155,19 @@ namespace Sisk.Core.Entity {
 
         /// <inheritdoc/>
         public override int GetHashCode () {
-            return HashCode.Combine ( this.Name.GetHashCode (), this.ContentLength.GetHashCode (), this.Filename?.GetHashCode () ?? 0 );
+            return HashCode.Combine ( Name.GetHashCode (), ContentLength.GetHashCode (), Filename?.GetHashCode () ?? 0 );
         }
 
         /// <inheritdoc/>
         public override bool Equals ( object? obj ) {
             if (obj is MultipartObject mo)
-                return this.Equals ( mo );
+                return Equals ( mo );
             return false;
         }
 
         /// <inheritdoc/>
         public bool Equals ( MultipartObject? other ) {
-            return this.GetHashCode () == other?.GetHashCode ();
+            return GetHashCode () == other?.GetHashCode ();
         }
     }
 }

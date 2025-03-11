@@ -31,22 +31,22 @@ sealed class HttpRequestBase {
 
     public string Method {
         get {
-            this._method ??= Encoding.ASCII.GetString ( this.MethodRef.Span );
-            return this._method;
+            _method ??= Encoding.ASCII.GetString ( MethodRef.Span );
+            return _method;
         }
     }
 
     public string Path {
         get {
-            this._path ??= Encoding.ASCII.GetString ( this.PathRef.Span );
-            return this._path;
+            _path ??= Encoding.ASCII.GetString ( PathRef.Span );
+            return _path;
         }
     }
 
     public HttpHeader [] HeadersAR {
         get {
-            this._headers ??= this.Headers.ToArray ();
-            return this._headers;
+            _headers ??= Headers.ToArray ();
+            return _headers;
         }
     }
 }

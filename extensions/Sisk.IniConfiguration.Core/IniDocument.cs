@@ -1,4 +1,13 @@
-﻿using System.Text;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   IniDocument.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Text;
 using Sisk.IniConfiguration.Core.Serialization;
 
 namespace Sisk.IniConfiguration.Core;
@@ -22,7 +31,7 @@ public sealed class IniDocument {
     /// Gets the global INI section, which is the primary section in the document.
     /// </summary>
     public IniSection Global {
-        get => this.Sections.GetGlobal ();
+        get => Sections.GetGlobal ();
     }
 
     /// <summary>
@@ -80,7 +89,7 @@ public sealed class IniDocument {
     /// </summary>
     /// <param name="sections">The list of <see cref="IniSection"/>.</param>
     public IniDocument ( IEnumerable<IniSection> sections ) {
-        this.Sections = new IniSectionCollection ( sections );
+        Sections = new IniSectionCollection ( sections );
     }
 
     /// <summary>
@@ -88,7 +97,7 @@ public sealed class IniDocument {
     /// INI sections added to it.
     /// </summary>
     public IniDocument () {
-        this.Sections = new IniSectionCollection ();
+        Sections = new IniSectionCollection ();
     }
 
     /// <summary>
@@ -97,8 +106,8 @@ public sealed class IniDocument {
     /// <param name="sectionName">The section name.</param>
     /// <returns>The <see cref="IniSection"/> object if found, or null if not defined.</returns>
     public IniSection? GetSection ( string sectionName ) {
-        for (int i = 0; i < this.Sections.Count; i++) {
-            IniSection section = this.Sections [ i ];
+        for (int i = 0; i < Sections.Count; i++) {
+            IniSection section = Sections [ i ];
             if (IniReader.IniNamingComparer.Compare ( section.Name, sectionName ) == 0)
                 return section;
         }

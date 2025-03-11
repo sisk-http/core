@@ -123,8 +123,8 @@ public partial class HttpServer {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private void UnbindRouters () {
-        for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++) {
-            var lh = this.ServerConfiguration.ListeningHosts [ i ];
+        for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++) {
+            var lh = ServerConfiguration.ListeningHosts [ i ];
             if (lh.Router is { } router && ReferenceEquals ( this, router.parentServer )) {
                 router.FreeHttpServer ();
             }
@@ -133,8 +133,8 @@ public partial class HttpServer {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private void BindRouters () {
-        for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++) {
-            var lh = this.ServerConfiguration.ListeningHosts [ i ];
+        for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++) {
+            var lh = ServerConfiguration.ListeningHosts [ i ];
             if (lh.Router is { } router && router.parentServer is null) {
                 router.BindServer ( this );
             }
@@ -142,13 +142,13 @@ public partial class HttpServer {
     }
 
     private void ListenerCallback ( IAsyncResult result ) {
-        if (this._isDisposing || !this._isListening)
+        if (_isDisposing || !_isListening)
             return;
 
-        this.httpListener.BeginGetContext ( this.ListenerCallback, null );
-        HttpListenerContext context = this.httpListener.EndGetContext ( result );
+        httpListener.BeginGetContext ( ListenerCallback, null );
+        HttpListenerContext context = httpListener.EndGetContext ( result );
 
-        this.ProcessRequest ( context );
+        ProcessRequest ( context );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
@@ -166,7 +166,7 @@ public partial class HttpServer {
 
         HttpContext._context.Value = srContext;
 
-        var currentConfig = this.ServerConfiguration;
+        var currentConfig = ServerConfiguration;
         bool hasAccessLogging = currentConfig.AccessLogsStream is not null;
         bool hasErrorLogging = currentConfig.ErrorsLogsStream is not null;
 
@@ -181,7 +181,7 @@ public partial class HttpServer {
         try {
 
             if (currentConfig.AsyncRequestProcessing == false) {
-                Monitor.Enter ( this.httpListener );
+                Monitor.Enter ( httpListener );
             }
 
             #region Step 1 - DNS/Listening host matching
@@ -204,7 +204,7 @@ public partial class HttpServer {
             }
 
             // detect the listening host for this listener
-            ListeningHost? matchedListeningHost = this._onlyListeningHost
+            ListeningHost? matchedListeningHost = _onlyListeningHost
                 ?? currentConfig.ListeningHosts.GetRequestMatchingListeningHost ( dnsSafeHost, baseRequest.Url!.AbsolutePath, baseRequest.LocalEndPoint.Port );
 
             if (matchedListeningHost is null) {
@@ -245,7 +245,7 @@ public partial class HttpServer {
                 return;
             }
 
-            this.handler.HttpRequestOpen ( request );
+            handler.HttpRequestOpen ( request );
 
             #endregion
 
@@ -405,10 +405,10 @@ finishSending:
                 }
             }
 
-            this.handler.HttpRequestClose ( executionResult );
+            handler.HttpRequestClose ( executionResult );
 
             if (executionResult.ServerException is not null)
-                this.handler.Exception ( executionResult.ServerException );
+                handler.Exception ( executionResult.ServerException );
 
             LogOutput logMode;
 
@@ -430,17 +430,17 @@ finishSending:
 
             if (canAccessLog) {
                 string line = LogFormatter.FormatAccessLogEntry ( currentConfig.AccessLogsFormat, executionResult );
-                this.ServerConfiguration.AccessLogsStream?.WriteLine ( line );
+                ServerConfiguration.AccessLogsStream?.WriteLine ( line );
             }
 
-            if (this.isWaitingNextEvent) {
-                this.waitingExecutionResult = executionResult;
-                this.waitNextEvent.Set ();
-                this.isWaitingNextEvent = false;
+            if (isWaitingNextEvent) {
+                waitingExecutionResult = executionResult;
+                waitNextEvent.Set ();
+                isWaitingNextEvent = false;
             }
 
             if (!currentConfig.AsyncRequestProcessing) {
-                Monitor.Exit ( this.httpListener );
+                Monitor.Exit ( httpListener );
             }
 
             (request as IDisposable)?.Dispose ();

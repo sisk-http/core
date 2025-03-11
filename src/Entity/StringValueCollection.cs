@@ -23,7 +23,7 @@ public sealed class StringValueCollection : StringKeyStoreCollection {
     /// </summary>
     public StringValueCollection ( IDictionary<string, string?> values ) : base ( StringComparer.InvariantCultureIgnoreCase ) {
         base.AddRange ( values );
-        this.paramName = "StringValue";
+        paramName = "StringValue";
     }
 
     /// <summary>
@@ -32,14 +32,14 @@ public sealed class StringValueCollection : StringKeyStoreCollection {
     /// </summary>
     public StringValueCollection ( IDictionary<string, string []> values ) : base ( StringComparer.InvariantCultureIgnoreCase ) {
         base.AddRange ( values );
-        this.paramName = "StringValue";
+        paramName = "StringValue";
     }
 
     /// <summary>
     /// Creates an new empty <see cref="StringValueCollection"/>.
     /// </summary>
     public StringValueCollection () : base ( StringComparer.InvariantCultureIgnoreCase ) {
-        this.paramName = "StringValue";
+        paramName = "StringValue";
     }
 
     internal StringValueCollection ( string paramName ) : base ( StringComparer.InvariantCultureIgnoreCase ) {
@@ -49,7 +49,7 @@ public sealed class StringValueCollection : StringKeyStoreCollection {
     /// <summary>
     /// Gets or sets an <see cref="StringValue"/> item by their key name.
     /// </summary>
-    public new StringValue this [ string name ] { get => this.GetItem ( name ); set => this.Set ( name, value.Value ?? string.Empty ); }
+    public new StringValue this [ string name ] { get => GetItem ( name ); set => Set ( name, value.Value ?? string.Empty ); }
 
     /// <summary>
     /// Gets an <see cref="StringValue"/> from their key name. If the object was
@@ -57,8 +57,8 @@ public sealed class StringValueCollection : StringKeyStoreCollection {
     /// returned.
     /// </summary>
     public StringValue GetItem ( string name ) {
-        this.TryGetValue ( name, out string [] value );
-        return new StringValue ( name, this.paramName, value.LastOrDefault () );
+        TryGetValue ( name, out string [] value );
+        return new StringValue ( name, paramName, value.LastOrDefault () );
     }
 
     /// <summary>
@@ -66,17 +66,17 @@ public sealed class StringValueCollection : StringKeyStoreCollection {
     /// not found by their name, an empty array of <see cref="StringValue"/> is returned.
     /// </summary>
     public StringValue [] GetItems ( string name ) {
-        this.TryGetValue ( name, out string [] value );
+        TryGetValue ( name, out string [] value );
         return value
-            .Select ( v => new StringValue ( name, this.paramName, v ) )
+            .Select ( v => new StringValue ( name, paramName, v ) )
             .ToArray ();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public new IEnumerator<StringValue> GetEnumerator () {
-        foreach (string key in this.Keys) {
-            yield return new StringValue ( key, this.paramName, this [ key ] );
+        foreach (string key in Keys) {
+            yield return new StringValue ( key, paramName, this [ key ] );
         }
     }
 
@@ -89,7 +89,7 @@ public sealed class StringValueCollection : StringKeyStoreCollection {
     /// <see langword="true"></see> if the key was found; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool TryGetValue ( string key, out StringValue value ) {
-        var sv = this.GetItem ( key );
+        var sv = GetItem ( key );
         value = sv;
         return !sv.IsNull;
     }

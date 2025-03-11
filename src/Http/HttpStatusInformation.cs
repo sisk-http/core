@@ -27,22 +27,22 @@ namespace Sisk.Core.Http {
         /// Custom status descriptions is only supported for plain HTTP/1.1 and 1.0 transfers.
         /// </remarks>
         public string Description {
-            get => this.__description;
+            get => __description;
         }
 
         /// <summary>
         /// Gets the numeric HTTP status code of the HTTP message.
         /// </summary>
         public int StatusCode {
-            get => this.__statusCode;
+            get => __statusCode;
         }
 
         /// <summary>
         /// Creates an new <see cref="HttpStatusInformation"/> with default parameters (200 OK) status.
         /// </summary>
         public HttpStatusInformation () {
-            this.__statusCode = 200;
-            this.__description = "OK";
+            __statusCode = 200;
+            __description = "OK";
         }
 
         /// <summary>
@@ -51,8 +51,8 @@ namespace Sisk.Core.Http {
         /// <param name="statusCode">Sets the numeric HTTP status code of the HTTP message.</param>
         public HttpStatusInformation ( int statusCode ) {
             ValidateStatusCode ( statusCode );
-            this.__statusCode = statusCode;
-            this.__description = GetStatusCodeDescription ( statusCode );
+            __statusCode = statusCode;
+            __description = GetStatusCodeDescription ( statusCode );
         }
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace Sisk.Core.Http {
         public HttpStatusInformation ( HttpStatusCode statusCode ) {
             int s = (int) statusCode;
             ValidateStatusCode ( s );
-            this.__statusCode = s;
-            this.__description = GetStatusCodeDescription ( statusCode );
+            __statusCode = s;
+            __description = GetStatusCodeDescription ( statusCode );
         }
 
         /// <summary>
@@ -78,8 +78,8 @@ namespace Sisk.Core.Http {
         public HttpStatusInformation ( int statusCode, string description ) {
             ValidateStatusCode ( statusCode );
             ValidateDescription ( description );
-            this.__statusCode = statusCode;
-            this.__description = description;
+            __statusCode = statusCode;
+            __description = description;
         }
 
         [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -118,7 +118,7 @@ namespace Sisk.Core.Http {
         /// An <see cref="HttpStatusCode"/> or null if the HTTP status matches no entry on it.
         /// </returns>
         public HttpStatusCode? GetHttpStatusCode () {
-            HttpStatusCode s = (HttpStatusCode) this.__statusCode;
+            HttpStatusCode s = (HttpStatusCode) __statusCode;
             if (Enum.IsDefined ( s )) {
                 return s;
             }
@@ -128,14 +128,14 @@ namespace Sisk.Core.Http {
         /// <inheritdoc/>
         /// <exclude/>
         public readonly bool Equals ( HttpStatusInformation other ) {
-            return other.__statusCode.Equals ( this.__statusCode ) && other.__description.Equals ( this.__description, StringComparison.Ordinal );
+            return other.__statusCode.Equals ( __statusCode ) && other.__description.Equals ( __description, StringComparison.Ordinal );
         }
 
         /// <inheritdoc/>
         /// <exclude/>
         public override bool Equals ( [NotNullWhen ( true )] object? obj ) {
             if (obj is HttpStatusInformation other) {
-                return this.Equals ( other );
+                return Equals ( other );
             }
             return false;
         }
@@ -143,26 +143,26 @@ namespace Sisk.Core.Http {
         /// <inheritdoc/>
         /// <exclude/>
         public override int GetHashCode () {
-            return HashCode.Combine ( this.__statusCode, this.__description );
+            return HashCode.Combine ( __statusCode, __description );
         }
 
         /// <summary>
         /// Gets an string representation of this HTTP Status Code.
         /// </summary>
         public override string ToString () {
-            return $"{this.__statusCode} {this.__description}";
+            return $"{__statusCode} {__description}";
         }
 
         /// <inheritdoc/>
         /// <exclude/>
         public bool Equals ( HttpStatusCode other ) {
-            return this.StatusCode == (int) other;
+            return StatusCode == (int) other;
         }
 
         /// <inheritdoc/>
         /// <exclude/>
         public bool Equals ( int other ) {
-            return this.__statusCode.Equals ( other );
+            return __statusCode.Equals ( other );
         }
 
         /// <inheritdoc/>

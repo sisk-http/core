@@ -7,12 +7,7 @@
 // File name:   HttpChunkedStream.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Cadente.Streams;
 
@@ -25,10 +20,10 @@ internal class HttpChunkedStream : Stream {
     static readonly byte [] CrLf = [ 0x0D, 0x0A ];
 
     public HttpChunkedStream ( Stream stream ) {
-        this._stream = stream;
+        _stream = stream;
     }
 
-    public override bool CanRead => this._stream.CanRead;
+    public override bool CanRead => _stream.CanRead;
 
     public override bool CanSeek => false;
 
@@ -36,23 +31,23 @@ internal class HttpChunkedStream : Stream {
 
     public override long Length => throw new NotSupportedException ();
 
-    public override long Position { get => this.written; set => throw new NotSupportedException (); }
+    public override long Position { get => written; set => throw new NotSupportedException (); }
 
     public override void Flush () {
-        this._stream.Flush ();
+        _stream.Flush ();
     }
 
     public override int Read ( byte [] buffer, int offset, int count ) {
 
-        if (this.innerStreamReturnedZero)
+        if (innerStreamReturnedZero)
             return 0;
 
         Span<byte> readBuffer = stackalloc byte [ Math.Min ( count - 2, CHUNKED_MAX_SIZE ) ];
-        int read = this._stream.Read ( readBuffer );
+        int read = _stream.Read ( readBuffer );
         byte [] readBytesEncoded = Encoding.ASCII.GetBytes ( $"{read:x}\r\n" );
 
         if (read == 0) {
-            this.innerStreamReturnedZero = true;
+            innerStreamReturnedZero = true;
         }
 
         Array.Copy (
@@ -70,7 +65,7 @@ internal class HttpChunkedStream : Stream {
         buffer [ bufferEnd + 0 ] = 0x0D;
         buffer [ bufferEnd + 1 ] = 0x0A;
 
-        this.written += read;
+        written += read;
 
         return bufferEnd + 2;
     }

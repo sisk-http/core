@@ -24,12 +24,12 @@ public sealed class HttpHostContext {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal bool WriteHttpResponseHeaders () {
-        if (this.ResponseHeadersAlreadySent) {
+        if (ResponseHeadersAlreadySent) {
             return true;
         }
 
-        this.ResponseHeadersAlreadySent = true;
-        return HttpResponseSerializer.WriteHttpResponseHeaders ( this._connectionStream, this.Response );
+        ResponseHeadersAlreadySent = true;
+        return HttpResponseSerializer.WriteHttpResponseHeaders ( _connectionStream, Response );
     }
 
     /// <summary>
@@ -53,12 +53,12 @@ public sealed class HttpHostContext {
     public HttpHostClient Client { get; }
 
     internal HttpHostContext ( HttpRequestBase baseRequest, HttpHostClient client, Stream connectionStream ) {
-        this.Client = client;
-        this._connectionStream = connectionStream;
+        Client = client;
+        _connectionStream = connectionStream;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
-        this.Request = new HttpRequest ( baseRequest, requestStream );
-        this.Response = new HttpResponse ( this, connectionStream );
+        Request = new HttpRequest ( baseRequest, requestStream );
+        Response = new HttpResponse ( this, connectionStream );
     }
 
     /// <summary>
@@ -73,41 +73,41 @@ public sealed class HttpHostContext {
         /// <summary>
         /// Gets the HTTP method (e.g., GET, POST) of the request.
         /// </summary>
-        public string Method { get => this._baseRequest.Method; }
+        public string Method { get => _baseRequest.Method; }
 
         /// <summary>
         /// Gets the path of the requested resource.
         /// </summary>
-        public string Path { get => this._baseRequest.Path; }
+        public string Path { get => _baseRequest.Path; }
 
         /// <summary>
         /// Gets the content length of the request.
         /// </summary>
-        public long ContentLength { get => this._baseRequest.ContentLength; }
+        public long ContentLength { get => _baseRequest.ContentLength; }
 
         /// <summary>
         /// Gets the headers associated with the request.
         /// </summary>
-        public HttpHeader [] Headers { get => this._baseRequest.HeadersAR; }
+        public HttpHeader [] Headers { get => _baseRequest.HeadersAR; }
 
         /// <summary>
         /// Gets the stream containing the content of the request.
         /// </summary>
         public Stream GetRequestStream () {
 
-            if (this._baseRequest.IsExpecting100 && !this.wasExpectationSent) {
-                this.wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( this._requestStream );
+            if (_baseRequest.IsExpecting100 && !wasExpectationSent) {
+                wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( _requestStream );
 
-                if (!this.wasExpectationSent)
+                if (!wasExpectationSent)
                     throw new InvalidOperationException ( "Unable to obtain the input stream for the request." );
             }
 
-            return this._requestStream;
+            return _requestStream;
         }
 
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
-            this._baseRequest = request;
-            this._requestStream = requestStream;
+            _baseRequest = request;
+            _requestStream = requestStream;
         }
     }
 
@@ -148,7 +148,7 @@ public sealed class HttpHostContext {
         /// Asynchronously gets an event stream writer with UTF-8 encoding.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with a <see cref="HttpEventStreamWriter"/> as the result.</returns>
-        public HttpEventStreamWriter GetEventStream () => this.GetEventStream ( Encoding.UTF8 );
+        public HttpEventStreamWriter GetEventStream () => GetEventStream ( Encoding.UTF8 );
 
         /// <summary>
         /// Asynchronously gets an event stream writer with the specified encoding.
@@ -157,14 +157,14 @@ public sealed class HttpHostContext {
         /// <returns>A task that represents the asynchronous operation, with a <see cref="HttpEventStreamWriter"/> as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
         public HttpEventStreamWriter GetEventStream ( Encoding encoding ) {
-            this.Headers.Set ( new HttpHeader ( "Content-Type", "text/event-stream" ) );
-            this.Headers.Set ( new HttpHeader ( "Cache-Control", "no-cache" ) );
+            Headers.Set ( new HttpHeader ( "Content-Type", "text/event-stream" ) );
+            Headers.Set ( new HttpHeader ( "Cache-Control", "no-cache" ) );
 
-            if (this._session.WriteHttpResponseHeaders () == false) {
+            if (_session.WriteHttpResponseHeaders () == false) {
                 throw new InvalidOperationException ( "Unable to obtain the output stream for the response." );
             }
 
-            return new HttpEventStreamWriter ( this._baseOutputStream, encoding );
+            return new HttpEventStreamWriter ( _baseOutputStream, encoding );
         }
 
         /// <summary>
@@ -173,22 +173,22 @@ public sealed class HttpHostContext {
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
         public Stream GetResponseStream () {
-            if (this._session.WriteHttpResponseHeaders () == false) {
+            if (_session.WriteHttpResponseHeaders () == false) {
                 throw new InvalidOperationException ( "Unable to obtain an output stream for the response." );
             }
 
-            this.ResponseStream = null;
-            return this._baseOutputStream;
+            ResponseStream = null;
+            return _baseOutputStream;
         }
 
         internal HttpResponse ( HttpHostContext session, Stream httpSessionStream ) {
-            this._session = session;
-            this._baseOutputStream = httpSessionStream;
+            _session = session;
+            _baseOutputStream = httpSessionStream;
 
-            this.StatusCode = 200;
-            this.StatusDescription = "Ok";
+            StatusCode = 200;
+            StatusDescription = "Ok";
 
-            this.Headers = new List<HttpHeader>
+            Headers = new List<HttpHeader>
                 {
                 new HttpHeader ("Date", DateTime.UtcNow.ToString("R")),
                 new HttpHeader ("Server", "Sisk")

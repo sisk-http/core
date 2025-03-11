@@ -15,14 +15,14 @@ class ProxyGateway : IDisposable {
     HttpClient client;
 
     public ProxyGateway ( IPEndPoint endpoint ) {
-        this.client = new HttpClient ();
+        client = new HttpClient ();
     }
 
     public Task<HttpResponseMessage> SendMessageAsync ( HttpRequestMessage requestMessage ) {
-        return this.client.SendAsync ( requestMessage, HttpCompletionOption.ResponseHeadersRead );
+        return client.SendAsync ( requestMessage, HttpCompletionOption.ResponseHeadersRead );
     }
 
     public void Dispose () {
-        this.client.Dispose ();
+        client.Dispose ();
     }
 }

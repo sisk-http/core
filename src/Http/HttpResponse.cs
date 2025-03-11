@@ -68,21 +68,21 @@ namespace Sisk.Core.Http {
         /// <param name="includeBody">Determines whether the message content will also be included in the return from this function.</param>
         public string GetRawHttpResponse ( bool includeBody = true ) {
             StringBuilder sb = new StringBuilder ();
-            sb.AppendLine ( null, $"HTTP/1.1 {this.Status}" );
-            foreach (var header in this.Headers) {
+            sb.AppendLine ( null, $"HTTP/1.1 {Status}" );
+            foreach (var header in Headers) {
                 sb.Append ( null, $"{header.Key}: {header.Value}" );
                 sb.Append ( '\n' );
             }
-            if (this.Content?.Headers is not null)
-                foreach (var header in this.Content.Headers) {
+            if (Content?.Headers is not null)
+                foreach (var header in Content.Headers) {
                     sb.Append ( header.Key + ": " );
                     sb.Append ( string.Join ( ", ", header.Value ) );
                     sb.Append ( '\n' );
                 }
             sb.Append ( '\n' );
 
-            if (includeBody && this.Content is not StreamContent) {
-                string? s = this.Content?.ReadAsStringAsync ().Result;
+            if (includeBody && Content is not StreamContent) {
+                string? s = Content?.ReadAsStringAsync ().Result;
 
                 if (s is not null) {
                     if (s.Length < 8 * SizeHelper.UnitKb) {
@@ -141,8 +141,8 @@ namespace Sisk.Core.Http {
         /// <param name="status">The <see cref="HttpStatusCode"/> of this HTTP response.</param>
         /// <param name="content">The response content, if any.</param>
         public HttpResponse ( HttpStatusCode status, HttpContent? content ) {
-            this.Status = status;
-            this.Content = content;
+            Status = status;
+            Content = content;
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="status">The <see cref="HttpStatusInformation"/> of this HTTP response.</param>
         public HttpResponse ( in HttpStatusInformation status ) : this () {
-            this.Status = status;
+            Status = status;
         }
 
         #region Cookie setter helpers
@@ -159,7 +159,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="cookie">The cookie object.</param>
         public void SetCookie ( Cookie cookie ) {
-            this.Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( cookie ) );
+            Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( cookie ) );
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace Sisk.Core.Http {
         /// <param name="name">The cookie name.</param>
         /// <param name="value">The cookie value.</param>
         public void SetCookie ( string name, string value ) {
-            this.Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( name, value ) );
+            Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( name, value ) );
         }
 
         /// <summary>
@@ -192,24 +192,24 @@ namespace Sisk.Core.Http {
             bool? secure = null,
             bool? httpOnly = null,
             string? sameSite = null ) {
-            this.Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite ) );
+            Headers.Add ( HttpKnownHeaderNames.SetCookie, CookieHelper.BuildCookieHeaderValue ( name, value, expires, maxAge, domain, path, secure, httpOnly, sameSite ) );
         }
         #endregion
 
         /// <inheritdoc/>
         public override string ToString () {
-            return this.Status.ToString ();
+            return Status.ToString ();
         }
 
         /// <inheritdoc/>
         public override int GetHashCode () {
-            return HashCode.Combine ( this.Status, this.Headers, this.Content );
+            return HashCode.Combine ( Status, Headers, Content );
         }
 
         /// <inheritdoc/>
         public override bool Equals ( object? obj ) {
             if (obj is HttpResponse res) {
-                return res.GetHashCode () == this.GetHashCode ();
+                return res.GetHashCode () == GetHashCode ();
             }
             return false;
         }

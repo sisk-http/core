@@ -171,30 +171,30 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets an boolean indicating if this HTTP server is running and listening.
         /// </summary>
-        public bool IsListening { get => this._isListening && !this._isDisposing; }
+        public bool IsListening { get => _isListening && !_isDisposing; }
 
         /// <summary>
         /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
         /// </summary>
-        public string [] ListeningPrefixes => this._listeningPrefixes?.ToArray () ?? Array.Empty<string> ();
+        public string [] ListeningPrefixes => _listeningPrefixes?.ToArray () ?? Array.Empty<string> ();
 
         /// <summary>
         /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
         /// </summary>
-        public HttpEventSourceCollection EventSources { get => this._eventCollection; }
+        public HttpEventSourceCollection EventSources { get => _eventCollection; }
 
         /// <summary>
         /// Gets an <see cref="HttpWebSocketConnectionCollection"/> with active Web Sockets connections in this HTTP server.
         /// </summary>
-        public HttpWebSocketConnectionCollection WebSockets { get => this._wsCollection; }
+        public HttpWebSocketConnectionCollection WebSockets { get => _wsCollection; }
 
         /// <summary>
         /// Creates a new default configuration <see cref="Sisk.Core.Http.HttpServer"/> instance with the given Route and server configuration.
         /// </summary>
         /// <param name="configuration">The configuration object of the server.</param>
         public HttpServer ( HttpServerConfiguration configuration ) {
-            this.ServerConfiguration = configuration;
-            this.handler = new HttpServerHandlerRepository ( this );
+            ServerConfiguration = configuration;
+            handler = new HttpServerHandlerRepository ( this );
         }
 
         /// <summary>
@@ -202,7 +202,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <typeparam name="T">The handler which implements <see cref="HttpServerHandler"/>.</typeparam>
         public void RegisterHandler<T> () where T : HttpServerHandler, new() {
-            this.handler.RegisterHandler ( new T () );
+            handler.RegisterHandler ( new T () );
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="obj">The instance of the server handler.</param>
         public void RegisterHandler ( HttpServerHandler obj ) {
-            this.handler.RegisterHandler ( obj );
+            handler.RegisterHandler ( obj );
         }
 
         /// <summary>
@@ -221,16 +221,16 @@ namespace Sisk.Core.Http {
         /// Calling this method, it starts the HTTP server if it ins't started yet.
         /// </remarks>
         public HttpServerExecutionResult WaitNext () {
-            if (!this.IsListening)
-                this.Start ();
-            if (this.isWaitingNextEvent)
+            if (!IsListening)
+                Start ();
+            if (isWaitingNextEvent)
                 throw new InvalidOperationException ( SR.Httpserver_WaitNext_Race_Condition );
 
-            this.waitingExecutionResult = null;
-            this.isWaitingNextEvent = true;
-            this.waitNextEvent.WaitOne ();
+            waitingExecutionResult = null;
+            isWaitingNextEvent = true;
+            waitNextEvent.WaitOne ();
 
-            return this.waitingExecutionResult!;
+            return waitingExecutionResult!;
         }
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace Sisk.Core.Http {
         /// Calling this method, it starts the HTTP server if it ins't started yet.
         /// </remarks>
         public async Task<HttpServerExecutionResult> WaitNextAsync () {
-            return await Task.Run ( this.WaitNext );
+            return await Task.Run ( WaitNext );
         }
 
 
@@ -249,67 +249,67 @@ namespace Sisk.Core.Http {
         /// Restarts this HTTP server, sending all processing responses and starting them again, reading the listening ports again.
         /// </summary>
         public void Restart () {
-            this.Stop ();
-            this.Start ();
+            Stop ();
+            Start ();
         }
 
         /// <summary>
         /// Starts listening to the set port and handling requests on this server.
         /// </summary>
         public void Start () {
-            if (this.ServerConfiguration.ListeningHosts is null) {
+            if (ServerConfiguration.ListeningHosts is null) {
                 throw new InvalidOperationException ( SR.Httpserver_NoListeningHost );
             }
 
-            ObjectDisposedException.ThrowIf ( this._isDisposing, this );
+            ObjectDisposedException.ThrowIf ( _isDisposing, this );
 
-            this._listeningPrefixes = new HashSet<string> ();
+            _listeningPrefixes = new HashSet<string> ();
 
-            for (int i = 0; i < this.ServerConfiguration.ListeningHosts.Count; i++) {
-                ListeningHost listeningHost = this.ServerConfiguration.ListeningHosts [ i ];
+            for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++) {
+                ListeningHost listeningHost = ServerConfiguration.ListeningHosts [ i ];
                 listeningHost.EnsureReady ();
 
                 for (int j = 0; j < listeningHost.Ports.Count; j++) {
                     var port = listeningHost.Ports [ j ];
 
-                    this._listeningPrefixes.Add ( port.ToString ( true ) );
+                    _listeningPrefixes.Add ( port.ToString ( true ) );
                 }
             }
 
-            this.httpListener.Prefixes.Clear ();
-            foreach (string prefix in this._listeningPrefixes)
-                this.httpListener.Prefixes.Add ( prefix );
+            httpListener.Prefixes.Clear ();
+            foreach (string prefix in _listeningPrefixes)
+                httpListener.Prefixes.Add ( prefix );
 
-            this._isListening = true;
-            this.httpListener.IgnoreWriteExceptions = true;
-            this.httpListener.TimeoutManager.IdleConnection = this.ServerConfiguration.IdleConnectionTimeout;
+            _isListening = true;
+            httpListener.IgnoreWriteExceptions = true;
+            httpListener.TimeoutManager.IdleConnection = ServerConfiguration.IdleConnectionTimeout;
 
-            this.handler.ServerStarting ( this );
-            this.BindRouters ();
+            handler.ServerStarting ( this );
+            BindRouters ();
 
-            if (this.ServerConfiguration.ListeningHosts.Count == 1) {
-                this._onlyListeningHost = this.ServerConfiguration.ListeningHosts [ 0 ];
+            if (ServerConfiguration.ListeningHosts.Count == 1) {
+                _onlyListeningHost = ServerConfiguration.ListeningHosts [ 0 ];
             }
             else {
-                this._onlyListeningHost = null;
+                _onlyListeningHost = null;
             }
 
-            this.httpListener.Start ();
-            this.httpListener.BeginGetContext ( this.ListenerCallback, null );
+            httpListener.Start ();
+            httpListener.BeginGetContext ( ListenerCallback, null );
 
-            this.handler.ServerStarted ( this );
+            handler.ServerStarted ( this );
         }
 
         /// <summary>
         /// Stops the server from listening and stops the request handler.
         /// </summary>
         public void Stop () {
-            this.handler.Stopping ( this );
-            this._isListening = false;
-            this.httpListener.Stop ();
+            handler.Stopping ( this );
+            _isListening = false;
+            httpListener.Stop ();
 
-            this.UnbindRouters ();
-            this.handler.Stopped ( this );
+            UnbindRouters ();
+            handler.Stopped ( this );
         }
 
         /// <summary>
@@ -317,11 +317,11 @@ namespace Sisk.Core.Http {
         /// permanently closes the HTTP server.
         /// </summary>
         public void Dispose () {
-            this._isDisposing = true;
-            this.httpListener.Close ();
-            this.ServerConfiguration.Dispose ();
-            this.waitNextEvent.Set ();
-            this.waitNextEvent.Dispose ();
+            _isDisposing = true;
+            httpListener.Close ();
+            ServerConfiguration.Dispose ();
+            waitNextEvent.Set ();
+            waitNextEvent.Dispose ();
         }
     }
 }

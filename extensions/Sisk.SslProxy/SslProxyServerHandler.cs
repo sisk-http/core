@@ -27,18 +27,18 @@ public sealed class SslProxyServerHandler : HttpServerHandler {
     /// </summary>
     /// <param name="secureProxy">The <see cref="SslProxy"/> instance.</param>
     public SslProxyServerHandler ( SslProxy secureProxy ) {
-        this.SecureProxy = secureProxy;
+        SecureProxy = secureProxy;
     }
 
     /// <exclude/>
     /// <inheritdoc/>
     protected override void OnServerStarted ( HttpServer server ) {
-        this.SecureProxy.Start ();
+        SecureProxy.Start ();
     }
 
     /// <exclude/>
     /// <inheritdoc/>
     protected override void OnServerStopping ( HttpServer server ) {
-        this.SecureProxy.Dispose ();
+        SecureProxy.Dispose ();
     }
 }

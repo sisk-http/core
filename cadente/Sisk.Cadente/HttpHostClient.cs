@@ -33,6 +33,6 @@ public sealed class HttpHostClient {
     public object? State { get; set; }
 
     internal HttpHostClient ( IPEndPoint clientEndpoint ) {
-        this.ClientEndpoint = clientEndpoint;
+        ClientEndpoint = clientEndpoint;
     }
 }

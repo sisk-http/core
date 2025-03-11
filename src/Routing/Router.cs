@@ -19,8 +19,8 @@ sealed class ActionHandler {
     public Func<object, HttpResponse> Handler { get; set; }
 
     public ActionHandler ( Type matchingType, Func<object, HttpResponse> handler ) {
-        this.MatchingType = matchingType;
-        this.Handler = handler;
+        MatchingType = matchingType;
+        Handler = handler;
     }
 }
 
@@ -38,8 +38,8 @@ namespace Sisk.Core.Routing {
 
         [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
         internal void BindServer ( HttpServer server ) {
-            if (this.parentServer is not null) {
-                if (ReferenceEquals ( server, this.parentServer )) {
+            if (parentServer is not null) {
+                if (ReferenceEquals ( server, parentServer )) {
                     return;
                 }
                 else {
@@ -48,17 +48,17 @@ namespace Sisk.Core.Routing {
             }
             else {
                 server.handler.SetupRouter ( this );
-                this.parentServer = server;
+                parentServer = server;
 
-                if (this.CheckForRouteCollisions)
-                    this.CheckForRouteCollisionsCore ();
+                if (CheckForRouteCollisions)
+                    CheckForRouteCollisionsCore ();
             }
         }
 
         /// <summary>
         /// Gets an boolean indicating where this <see cref="Router"/> is read-only or not.
         /// </summary>
-        public bool IsReadOnly { get => this.parentServer is not null; }
+        public bool IsReadOnly { get => parentServer is not null; }
 
         /// <summary>
         /// Gets or sets whether this <see cref="Router"/> will match routes ignoring case.
@@ -94,7 +94,7 @@ namespace Sisk.Core.Routing {
 #endif
         {
             foreach (var route in routes)
-                this.SetRoute ( route );
+                SetRoute ( route );
         }
 
         /// <summary>
@@ -142,7 +142,7 @@ namespace Sisk.Core.Routing {
         /// <summary>
         /// Gets all routes defined on this router instance.
         /// </summary>
-        public Route [] GetDefinedRoutes () => this._routesList.ToArray ();
+        public Route [] GetDefinedRoutes () => _routesList.ToArray ();
 
         /// <summary>
         /// Resolves the specified object into an valid <see cref="HttpResponse"/> using the defined
@@ -154,7 +154,7 @@ namespace Sisk.Core.Routing {
         /// into an <see cref="HttpResponse"/>, consider using <see cref="TryResolveActionResult(object?, out HttpResponse?)"/>.
         /// </remarks>
         public HttpResponse ResolveActionResult ( object? result ) {
-            return this.ResolveAction ( result );
+            return ResolveAction ( result );
         }
 
         /// <summary>
@@ -178,14 +178,14 @@ namespace Sisk.Core.Routing {
             // _routesList will be not modified during span reading
             ;
             bool wasLocked = false;
-            if (!this.IsReadOnly) {
+            if (!IsReadOnly) {
                 wasLocked = true;
-                Monitor.Enter ( this._actionHandlersList );
+                Monitor.Enter ( _actionHandlersList );
             }
             try {
                 Type actionType = result.GetType ();
 
-                Span<ActionHandler> hspan = CollectionsMarshal.AsSpan ( this._actionHandlersList );
+                Span<ActionHandler> hspan = CollectionsMarshal.AsSpan ( _actionHandlersList );
                 ref ActionHandler pointer = ref MemoryMarshal.GetReference ( hspan );
                 for (int i = 0; i < hspan.Length; i++) {
                     ref ActionHandler current = ref Unsafe.Add ( ref pointer, i );
@@ -203,7 +203,7 @@ namespace Sisk.Core.Routing {
             }
             finally {
                 if (wasLocked) {
-                    Monitor.Exit ( this._actionHandlersList );
+                    Monitor.Exit ( _actionHandlersList );
                 }
             }
         }
@@ -213,20 +213,20 @@ namespace Sisk.Core.Routing {
         /// </summary>
         /// <param name="actionHandler">The function that receives an object of the <typeparamref name="T"/> and returns an <see cref="HttpResponse"/> response from the informed object.</param>
         public void RegisterValueHandler<T> ( RouterActionHandlerCallback<T> actionHandler ) where T : notnull {
-            if (this.IsReadOnly) {
+            if (IsReadOnly) {
                 throw new InvalidOperationException ( SR.Router_ReadOnlyException );
             }
             Type type = typeof ( T );
             if (type == typeof ( HttpResponse )) {
                 throw new ArgumentException ( SR.Router_Handler_HttpResponseRegister );
             }
-            for (int i = 0; i < this._actionHandlersList!.Count; i++) {
-                ActionHandler item = this._actionHandlersList [ i ];
+            for (int i = 0; i < _actionHandlersList!.Count; i++) {
+                ActionHandler item = _actionHandlersList [ i ];
                 if (item.MatchingType.Equals ( type )) {
                     throw new ArgumentException ( SR.Router_Handler_Duplicate );
                 }
             }
-            this._actionHandlersList.Add ( new ActionHandler ( type, ( obj ) => actionHandler ( (T) obj ) ) );
+            _actionHandlersList.Add ( new ActionHandler ( type, ( obj ) => actionHandler ( (T) obj ) ) );
         }
 
         HttpResponse ResolveAction ( object? routeResult ) {
@@ -236,7 +236,7 @@ namespace Sisk.Core.Routing {
             else if (routeResult is HttpResponse rh) {
                 return rh;
             }
-            else if (this.TryResolveActionResult ( routeResult, out HttpResponse? result )) {
+            else if (TryResolveActionResult ( routeResult, out HttpResponse? result )) {
                 return result;
             }
             else {
@@ -246,11 +246,11 @@ namespace Sisk.Core.Routing {
 
         void CheckForRouteCollisionsCore () {
 
-            for (int i = 0; i < this._routesList.Count; i++) {
-                Route I = this._routesList [ i ];
+            for (int i = 0; i < _routesList.Count; i++) {
+                Route I = _routesList [ i ];
 
-                for (int j = 0; j < this._routesList.Count; j++) {
-                    Route J = this._routesList [ j ];
+                for (int j = 0; j < _routesList.Count; j++) {
+                    Route J = _routesList [ j ];
 
                     bool methodMatched =
                         I.Method == RouteMethod.Any ||
@@ -259,7 +259,7 @@ namespace Sisk.Core.Routing {
                         J.Method.HasFlag ( I.Method );
 
                     if (!ReferenceEquals ( I, J ) && methodMatched && HttpStringInternals.IsRoutePatternMatch ( I.Path, J.Path,
-                        this.MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal )) {
+                        MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal )) {
                         throw new ArgumentException ( SR.Format ( SR.Router_Set_Collision, I, J ) );
                     }
                 }
@@ -267,7 +267,7 @@ namespace Sisk.Core.Routing {
         }
 
         internal void FreeHttpServer () {
-            this.parentServer = null;
+            parentServer = null;
         }
     }
 

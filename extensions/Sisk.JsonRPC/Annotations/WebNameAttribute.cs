@@ -25,6 +25,6 @@ public sealed class WebNameAttribute : Attribute {
     /// </summary>
     /// <param name="name">The method-group name.</param>
     public WebNameAttribute ( string name ) {
-        this.Name = name;
+        Name = name;
     }
 }

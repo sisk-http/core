@@ -68,12 +68,12 @@ namespace Sisk.Core.Entity {
         /// Creates an empty <see cref="CrossOriginResourceSharingHeaders"/> instance with no predefined CORS headers.
         /// </summary>
         public CrossOriginResourceSharingHeaders () {
-            this.ExposeHeaders = Array.Empty<string> ();
-            this.AllowOrigins = Array.Empty<string> ();
-            this.AllowMethods = Array.Empty<string> ();
-            this.AllowHeaders = Array.Empty<string> ();
-            this.AllowOrigin = null;
-            this.MaxAge = TimeSpan.Zero;
+            ExposeHeaders = Array.Empty<string> ();
+            AllowOrigins = Array.Empty<string> ();
+            AllowMethods = Array.Empty<string> ();
+            AllowHeaders = Array.Empty<string> ();
+            AllowOrigin = null;
+            MaxAge = TimeSpan.Zero;
         }
 
         /// <summary>
@@ -93,12 +93,12 @@ namespace Sisk.Core.Entity {
             string []? exposeHeaders = null,
             TimeSpan? maxAge = null ) {
 
-            this.ExposeHeaders = exposeHeaders ?? Array.Empty<string> ();
-            this.AllowOrigins = allowOrigins ?? Array.Empty<string> ();
-            this.AllowHeaders = allowHeaders ?? Array.Empty<string> ();
-            this.AllowMethods = allowMethods ?? Array.Empty<string> ();
-            this.AllowOrigin = allowOrigin;
-            this.MaxAge = maxAge ?? TimeSpan.Zero;
+            ExposeHeaders = exposeHeaders ?? Array.Empty<string> ();
+            AllowOrigins = allowOrigins ?? Array.Empty<string> ();
+            AllowHeaders = allowHeaders ?? Array.Empty<string> ();
+            AllowMethods = allowMethods ?? Array.Empty<string> ();
+            AllowOrigin = allowOrigin;
+            MaxAge = maxAge ?? TimeSpan.Zero;
         }
 
         /// <summary>

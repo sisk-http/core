@@ -30,8 +30,8 @@ namespace Sisk.Core.Http.Streams {
         }
 
         internal void UnregisterEventSource ( HttpRequestEventSource eventSource ) {
-            lock (this._eventSources) {
-                if (this._eventSources.Remove ( eventSource ) && OnEventSourceUnregistration != null) {
+            lock (_eventSources) {
+                if (_eventSources.Remove ( eventSource ) && OnEventSourceUnregistration != null) {
                     OnEventSourceUnregistration ( this, eventSource );
                 }
             }
@@ -40,12 +40,12 @@ namespace Sisk.Core.Http.Streams {
         internal void RegisterEventSource ( HttpRequestEventSource src ) {
             // only register identified event sources
             if (src.Identifier != null) {
-                lock (this._eventSources) {
-                    HttpRequestEventSource [] toClose = this.Find ( p => p == src.Identifier );
+                lock (_eventSources) {
+                    HttpRequestEventSource [] toClose = Find ( p => p == src.Identifier );
                     foreach (HttpRequestEventSource ev in toClose) {
                         ev.Close ();
                     }
-                    this._eventSources.Add ( src );
+                    _eventSources.Add ( src );
                 }
                 OnEventSourceRegistered?.Invoke ( this, src );
             }
@@ -54,18 +54,18 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets an number indicating the amount of active event source connections.
         /// </summary>
-        public int ActiveConnections { get => this._eventSources.Count ( ev => ev.IsActive ); }
+        public int ActiveConnections { get => _eventSources.Count ( ev => ev.IsActive ); }
 
         /// <inheritdoc/>
-        public int Count => ((IReadOnlyCollection<HttpRequestEventSource>) this._eventSources).Count;
+        public int Count => ((IReadOnlyCollection<HttpRequestEventSource>) _eventSources).Count;
 
         /// <summary>
         /// Gets the event source connection for the specified identifier.
         /// </summary>
         /// <param name="identifier">The event source identifier.</param>
         public HttpRequestEventSource? GetByIdentifier ( string identifier ) {
-            lock (this._eventSources) {
-                HttpRequestEventSource? src = this._eventSources.Where ( es => es.Identifier == identifier ).FirstOrDefault ();
+            lock (_eventSources) {
+                HttpRequestEventSource? src = _eventSources.Where ( es => es.Identifier == identifier ).FirstOrDefault ();
                 return src;
             }
         }
@@ -75,8 +75,8 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="predicate">The expression on the an non-empty event source identifier.</param>
         public HttpRequestEventSource [] Find ( Func<string, bool> predicate ) {
-            lock (this._eventSources) {
-                return this._eventSources.Where ( e => {
+            lock (_eventSources) {
+                return _eventSources.Where ( e => {
                     if (!e.IsActive || e.Identifier is null)
                         return false;
                     return predicate ( e.Identifier );
@@ -88,8 +88,8 @@ namespace Sisk.Core.Http.Streams {
         /// Gets all actives <see cref="HttpRequestEventSource"/> instances.
         /// </summary>
         public HttpRequestEventSource [] All () {
-            lock (this._eventSources) {
-                return this._eventSources.Where ( e => e.IsActive ).ToArray ();
+            lock (_eventSources) {
+                return _eventSources.Where ( e => e.IsActive ).ToArray ();
             }
         }
 
@@ -97,20 +97,20 @@ namespace Sisk.Core.Http.Streams {
         /// Closes and disposes all registered and active <see cref="HttpRequestEventSource"/> in this collections.
         /// </summary>
         public void DropAll () {
-            lock (this._eventSources) {
-                foreach (HttpRequestEventSource es in this._eventSources)
+            lock (_eventSources) {
+                foreach (HttpRequestEventSource es in _eventSources)
                     es.Dispose ();
             }
         }
 
         /// <inheritdoc/>
         public IEnumerator<HttpRequestEventSource> GetEnumerator () {
-            return this._eventSources.Where ( e => e.IsActive ).GetEnumerator ();
+            return _eventSources.Where ( e => e.IsActive ).GetEnumerator ();
         }
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator () {
-            return this.GetEnumerator ();
+            return GetEnumerator ();
         }
     }
 

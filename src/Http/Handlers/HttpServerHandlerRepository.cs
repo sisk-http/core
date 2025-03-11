@@ -32,11 +32,11 @@ internal sealed class HttpServerHandlerRepository {
 
     public HttpServerHandlerRepository ( HttpServer parent ) {
         this.parent = parent;
-        this.RegisterHandler ( this._default );
+        RegisterHandler ( _default );
     }
 
     public void RegisterHandler ( HttpServerHandler handler ) {
-        this.handlers.Add ( handler );
+        handlers.Add ( handler );
     }
 
     private bool IsEventBreakable ( HttpServerHandlerActionEvent eventName )
@@ -45,16 +45,16 @@ internal sealed class HttpServerHandlerRepository {
         || eventName == HttpServerHandlerActionEvent.SetupRouter;
 
     private void CallEvery ( HandlerActionBase action, HttpServerHandlerActionEvent eventName ) {
-        int c = this.handlers.Count;
+        int c = handlers.Count;
         for (int i = 0; i < c; i++) {
-            var handler = this.handlers [ i ];
+            var handler = handlers [ i ];
 
             try {
                 action ( handler );
             }
             catch (Exception ex) {
-                if (this.parent.ServerConfiguration.ThrowExceptions == false && this.IsEventBreakable ( eventName ) == false) {
-                    this.parent.ServerConfiguration.ErrorsLogsStream?.WriteException ( ex );
+                if (parent.ServerConfiguration.ThrowExceptions == false && IsEventBreakable ( eventName ) == false) {
+                    parent.ServerConfiguration.ErrorsLogsStream?.WriteException ( ex );
                 }
                 else
                     throw;
@@ -63,15 +63,15 @@ internal sealed class HttpServerHandlerRepository {
     }
 
 
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ServerStarting ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStarting ( val ), HttpServerHandlerActionEvent.ServerStarting );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ServerStarted ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStarted ( val ), HttpServerHandlerActionEvent.ServerStarted );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void SetupRouter ( Router val ) => this.CallEvery ( handler => handler.InvokeOnSetupRouter ( val ), HttpServerHandlerActionEvent.SetupRouter );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ContextBagCreated ( TypedValueDictionary val ) => this.CallEvery ( handler => handler.InvokeOnContextBagCreated ( val ), HttpServerHandlerActionEvent.ContextBagCreated );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void HttpRequestOpen ( HttpRequest val ) => this.CallEvery ( handler => handler.InvokeOnHttpRequestOpen ( val ), HttpServerHandlerActionEvent.HttpRequestOpen );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void HttpRequestClose ( HttpServerExecutionResult val ) => this.CallEvery ( handler => handler.InvokeOnHttpRequestClose ( val ), HttpServerHandlerActionEvent.HttpRequestClose );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Exception ( Exception val ) => this.CallEvery ( handler => handler.InvokeOnException ( val ), HttpServerHandlerActionEvent.Exception );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Stopping ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStopping ( val ), HttpServerHandlerActionEvent.Stopping );
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Stopped ( HttpServer val ) => this.CallEvery ( handler => handler.InvokeOnServerStopped ( val ), HttpServerHandlerActionEvent.Stopped );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ServerStarting ( HttpServer val ) => CallEvery ( handler => handler.InvokeOnServerStarting ( val ), HttpServerHandlerActionEvent.ServerStarting );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ServerStarted ( HttpServer val ) => CallEvery ( handler => handler.InvokeOnServerStarted ( val ), HttpServerHandlerActionEvent.ServerStarted );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void SetupRouter ( Router val ) => CallEvery ( handler => handler.InvokeOnSetupRouter ( val ), HttpServerHandlerActionEvent.SetupRouter );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void ContextBagCreated ( TypedValueDictionary val ) => CallEvery ( handler => handler.InvokeOnContextBagCreated ( val ), HttpServerHandlerActionEvent.ContextBagCreated );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void HttpRequestOpen ( HttpRequest val ) => CallEvery ( handler => handler.InvokeOnHttpRequestOpen ( val ), HttpServerHandlerActionEvent.HttpRequestOpen );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void HttpRequestClose ( HttpServerExecutionResult val ) => CallEvery ( handler => handler.InvokeOnHttpRequestClose ( val ), HttpServerHandlerActionEvent.HttpRequestClose );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Exception ( Exception val ) => CallEvery ( handler => handler.InvokeOnException ( val ), HttpServerHandlerActionEvent.Exception );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Stopping ( HttpServer val ) => CallEvery ( handler => handler.InvokeOnServerStopping ( val ), HttpServerHandlerActionEvent.Stopping );
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )] internal void Stopped ( HttpServer val ) => CallEvery ( handler => handler.InvokeOnServerStopped ( val ), HttpServerHandlerActionEvent.Stopped );
 
     internal delegate void HandlerActionBase ( HttpServerHandler handler );
 }

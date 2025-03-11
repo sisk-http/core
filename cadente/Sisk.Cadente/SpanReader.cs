@@ -15,18 +15,18 @@ ref struct SpanReader<T> where T : IEquatable<T> {
 
     int readLength = 0;
 
-    public ReadOnlySpan<T> UnreadSpan { get => this.Span [ this.readLength.. ]; }
+    public ReadOnlySpan<T> UnreadSpan { get => Span [ readLength.. ]; }
     public ReadOnlySpan<T> Span { get; }
 
-    public int Consumed { get => this.readLength; }
+    public int Consumed { get => readLength; }
 
     public SpanReader ( in ReadOnlySpan<T> span ) {
-        this.Span = span;
+        Span = span;
     }
 
     public bool TryReadToAny ( out ReadOnlySpan<T> result, scoped ReadOnlySpan<T> delimiters, bool advancePastDelimiter = false ) {
 
-        ReadOnlySpan<T> remaining = this.UnreadSpan;
+        ReadOnlySpan<T> remaining = UnreadSpan;
 
         int index = delimiters.Length switch {
             0 => -1,
@@ -37,7 +37,7 @@ ref struct SpanReader<T> where T : IEquatable<T> {
 
         if (index != -1) {
             result = remaining.Slice ( 0, index );
-            this.Advance ( index + (advancePastDelimiter ? 1 : 0) );
+            Advance ( index + (advancePastDelimiter ? 1 : 0) );
             return true;
         }
 
@@ -47,6 +47,6 @@ ref struct SpanReader<T> where T : IEquatable<T> {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public void Advance ( int count ) {
-        this.readLength += count;
+        readLength += count;
     }
 }

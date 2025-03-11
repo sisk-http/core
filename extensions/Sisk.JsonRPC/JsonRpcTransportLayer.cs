@@ -25,23 +25,23 @@ public sealed class JsonRpcTransportLayer {
     private readonly JsonRpcHandler _handler;
 
     internal JsonRpcTransportLayer ( JsonRpcHandler handler ) {
-        this._handler = handler;
+        _handler = handler;
     }
 
     /// <summary>
     /// Gets the event handler for WebSocket message reception.
     /// </summary>
-    public EventHandler<WebSocketMessage> WebSocket { get => new EventHandler<WebSocketMessage> ( this.ImplWebSocket ); }
+    public EventHandler<WebSocketMessage> WebSocket { get => new EventHandler<WebSocketMessage> ( ImplWebSocket ); }
 
     /// <summary>
     /// Gets the action to handle HTTP POST requests.
     /// </summary>
-    public RouteAction HttpPost { get => new RouteAction ( this.ImplTransportPostHttp ); }
+    public RouteAction HttpPost { get => new RouteAction ( ImplTransportPostHttp ); }
 
     /// <summary>
     /// Gets the action to handle HTTP GET requests.
     /// </summary>
-    public RouteAction HttpGet { get => new RouteAction ( this.ImplTransportGetHttp ); }
+    public RouteAction HttpGet { get => new RouteAction ( ImplTransportGetHttp ); }
 
     void ImplWebSocket ( object? sender, WebSocketMessage message ) {
         JsonRpcRequest? rpcRequest = null;
@@ -49,10 +49,10 @@ public sealed class JsonRpcTransportLayer {
 
         string messageJson = message.GetString ();
 
-        if (!JsonValue.TryDeserialize ( messageJson, this._handler._jsonOptions, out JsonValue jsonRequestObject )) {
+        if (!JsonValue.TryDeserialize ( messageJson, _handler._jsonOptions, out JsonValue jsonRequestObject )) {
             response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, "Invalid JSON-RPC message received." ) );
 
-            string responseJson = JsonValue.Serialize ( response, this._handler._jsonOptions ).ToString ();
+            string responseJson = JsonValue.Serialize ( response, _handler._jsonOptions ).ToString ();
             message.Sender.Send ( responseJson );
 
             return;
@@ -60,9 +60,9 @@ public sealed class JsonRpcTransportLayer {
 
         Task.Run ( () => {
             rpcRequest = new JsonRpcRequest ( jsonRequestObject.GetJsonObject () );
-            response = this.HandleRpcRequest ( rpcRequest );
+            response = HandleRpcRequest ( rpcRequest );
 
-            string responseJson = JsonValue.Serialize ( response, this._handler._jsonOptions ).ToString ();
+            string responseJson = JsonValue.Serialize ( response, _handler._jsonOptions ).ToString ();
             message.Sender.Send ( responseJson );
         } );
     }
@@ -77,7 +77,7 @@ public sealed class JsonRpcTransportLayer {
             string qid = request.Query [ "id" ].GetString ();
 
             rpcRequest = new JsonRpcRequest ( qmethod, JsonValue.Deserialize ( qparameters ), qid );
-            response = this.HandleRpcRequest ( rpcRequest );
+            response = HandleRpcRequest ( rpcRequest );
         }
         catch (Exception ex) {
             response = new JsonRpcResponse ( null,
@@ -92,7 +92,7 @@ public sealed class JsonRpcTransportLayer {
         else {
             return new HttpResponse () {
                 Status = HttpStatusInformation.Ok,
-                Content = new StringContent ( JsonValue.Serialize ( response, this._handler._jsonOptions ).ToString (), Encoding.UTF8, "application/json" )
+                Content = new StringContent ( JsonValue.Serialize ( response, _handler._jsonOptions ).ToString (), Encoding.UTF8, "application/json" )
             };
         }
     }
@@ -108,12 +108,12 @@ public sealed class JsonRpcTransportLayer {
 
         try {
             using var requestReader = new StreamReader ( request.GetRequestStream (), request.RequestEncoding );
-            using var jsonReader = new JsonReader ( requestReader, this._handler._jsonOptions );
+            using var jsonReader = new JsonReader ( requestReader, _handler._jsonOptions );
 
             var jsonRequestObject = jsonReader.Parse ().GetJsonObject ();
             rpcRequest = new JsonRpcRequest ( jsonRequestObject );
 
-            response = this.HandleRpcRequest ( rpcRequest );
+            response = HandleRpcRequest ( rpcRequest );
         }
         catch (Exception ex) {
             response = new JsonRpcResponse ( null,
@@ -129,7 +129,7 @@ sendResponse:
         else {
             return new HttpResponse () {
                 Status = HttpStatusInformation.Ok,
-                Content = new StringContent ( JsonValue.Serialize ( response, this._handler._jsonOptions ).ToString (), Encoding.UTF8, "application/json" )
+                Content = new StringContent ( JsonValue.Serialize ( response, _handler._jsonOptions ).ToString (), Encoding.UTF8, "application/json" )
             };
         }
     }
@@ -142,7 +142,7 @@ sendResponse:
         JsonRpcResponse response;
         try {
             string rpcMethod = request.Method;
-            RpcDelegate? method = this._handler.Methods.GetMethod ( rpcMethod );
+            RpcDelegate? method = _handler.Methods.GetMethod ( rpcMethod );
 
             if (method != null) {
                 var methodInfo = method.Method;
@@ -204,7 +204,7 @@ sendResponse:
                     result = ((dynamic) task).GetAwaiter ().GetResult ();
                 }
 
-                JsonValue resultEncoded = JsonValue.Serialize ( result, this._handler._jsonOptions );
+                JsonValue resultEncoded = JsonValue.Serialize ( result, _handler._jsonOptions );
 
                 response = new JsonRpcResponse ( resultEncoded, null, request.Id );
             }
@@ -217,7 +217,7 @@ sendResponse:
             response = new JsonRpcResponse ( null, jex.AsRpcError (), request.Id );
         }
         catch (Exception ex) {
-            if (this._handler._server.ServerConfiguration.ThrowExceptions) {
+            if (_handler._server.ServerConfiguration.ThrowExceptions) {
                 throw;
             }
             else {

@@ -23,7 +23,7 @@ public sealed class RegexRoute : Route {
     /// <param name="pattern">The regular expression pattern for this route.</param>
     /// <param name="action">The action to be executed when this route is matched.</param>
     public RegexRoute ( RouteMethod method, [StringSyntax ( StringSyntaxAttribute.Regex )] string pattern, RouteAction action ) : base ( method, pattern, action ) {
-        this.UseRegex = true;
+        UseRegex = true;
     }
 
     /// <summary>
@@ -35,6 +35,6 @@ public sealed class RegexRoute : Route {
     /// <param name="action">The action to be executed when this route is matched.</param>
     /// <param name="beforeCallback">The callback to be executed before the action.</param>
     public RegexRoute ( RouteMethod method, [StringSyntax ( StringSyntaxAttribute.Regex )] string pattern, string? name, RouteAction action, IRequestHandler []? beforeCallback ) : base ( method, pattern, name, action, beforeCallback ) {
-        this.UseRegex = true;
+        UseRegex = true;
     }
 }

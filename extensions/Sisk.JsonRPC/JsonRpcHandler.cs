@@ -26,38 +26,38 @@ public sealed class JsonRpcHandler {
     /// <summary>
     /// Gets the transport layer used for communication.
     /// </summary>
-    public JsonRpcTransportLayer Transport { get => this._transport; }
+    public JsonRpcTransportLayer Transport { get => _transport; }
 
     /// <summary>
     /// Gets the collection of JSON-RPC methods available in this handler.
     /// </summary>
-    public JsonRpcMethodCollection Methods { get => this._methodCollection; }
+    public JsonRpcMethodCollection Methods { get => _methodCollection; }
 
     /// <summary>
     /// Gets the JSON serializer options used for serialization and deserialization.
     /// </summary>
-    public JsonOptions JsonSerializerOptions { get => this._jsonOptions; }
+    public JsonOptions JsonSerializerOptions { get => _jsonOptions; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonRpcHandler"/> class.
     /// </summary>
     /// <param name="parentServer">Defines the <see cref="HttpServer"/> where the JSON-RPC instance will run on.</param>
     public JsonRpcHandler ( HttpServer parentServer ) {
-        this._transport = new JsonRpcTransportLayer ( this );
-        this._jsonOptions = new JsonOptions ();
-        this._methodCollection = new JsonRpcMethodCollection ();
-        this._server = parentServer;
+        _transport = new JsonRpcTransportLayer ( this );
+        _jsonOptions = new JsonOptions ();
+        _methodCollection = new JsonRpcMethodCollection ();
+        _server = parentServer;
 
-        this._jsonOptions.PropertyNameComparer = new JsonSanitizedComparer ();
-        this._jsonOptions.Converters.Add ( new JsonRpcErrorConverter () );
-        this._jsonOptions.Converters.Add ( new JsonRpcRequestConverter () );
-        this._jsonOptions.Converters.Add ( new JsonRpcResponseConverter () );
+        _jsonOptions.PropertyNameComparer = new JsonSanitizedComparer ();
+        _jsonOptions.Converters.Add ( new JsonRpcErrorConverter () );
+        _jsonOptions.Converters.Add ( new JsonRpcRequestConverter () );
+        _jsonOptions.Converters.Add ( new JsonRpcResponseConverter () );
     }
 
     /// <summary>
     /// Gets the documentation for this JSON-RPC handler.
     /// </summary>
-    public JsonRpcDocumentation GetDocumentation () => this.GetDocumentation ( null! );
+    public JsonRpcDocumentation GetDocumentation () => GetDocumentation ( null! );
 
     /// <summary>
     /// Gets the documentation for this JSON-RPC handler.

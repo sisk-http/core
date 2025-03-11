@@ -53,16 +53,16 @@ namespace Sisk.Core.Http {
             HttpListenerContext context ) {
 
             this.context = context;
-            this.baseServer = server;
-            this.contextServerConfiguration = this.baseServer.ServerConfiguration;
-            this.listenerResponse = context.Response;
-            this.listenerRequest = context.Request;
-            this.RequestedAt = DateTime.UtcNow.Add ( HttpServer.environmentUtcOffset );
+            baseServer = server;
+            contextServerConfiguration = baseServer.ServerConfiguration;
+            listenerResponse = context.Response;
+            listenerRequest = context.Request;
+            RequestedAt = DateTime.UtcNow.Add ( HttpServer.environmentUtcOffset );
 
-            this.requestUri = context.Request.Url ?? throw new HttpRequestException ( SR.HttpRequest_Error );
-            this.ContentLength = this.listenerRequest.ContentLength64;
-            this.remoteAddr = this.ReadRequestRemoteAddr ();
-            this.requestMethod = new HttpMethod ( this.listenerRequest.HttpMethod );
+            requestUri = context.Request.Url ?? throw new HttpRequestException ( SR.HttpRequest_Error );
+            ContentLength = listenerRequest.ContentLength64;
+            remoteAddr = ReadRequestRemoteAddr ();
+            requestMethod = new HttpMethod ( listenerRequest.HttpMethod );
         }
 
         [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -71,42 +71,42 @@ namespace Sisk.Core.Http {
         }
 
         IPAddress ReadRequestRemoteAddr () {
-            if (this.contextServerConfiguration.ForwardingResolver is { } fr) {
-                return fr.OnResolveClientAddress ( this, this.listenerRequest.RemoteEndPoint );
+            if (contextServerConfiguration.ForwardingResolver is { } fr) {
+                return fr.OnResolveClientAddress ( this, listenerRequest.RemoteEndPoint );
             }
             else {
-                return new IPAddress ( this.listenerRequest.RemoteEndPoint.Address.GetAddressBytes () );
+                return new IPAddress ( listenerRequest.RemoteEndPoint.Address.GetAddressBytes () );
             }
         }
 
         byte [] ReadRequestStreamContents () {
-            if (this.contentBytes is null) {
-                if (this.ContentLength > Int32.MaxValue) {
+            if (contentBytes is null) {
+                if (ContentLength > Int32.MaxValue) {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
-                else if (this.ContentLength > 0) {
-                    using (var memoryStream = new MemoryStream ( (int) this.ContentLength )) {
-                        this.listenerRequest.InputStream.CopyTo ( memoryStream );
-                        this.contentBytes = memoryStream.ToArray ();
+                else if (ContentLength > 0) {
+                    using (var memoryStream = new MemoryStream ( (int) ContentLength )) {
+                        listenerRequest.InputStream.CopyTo ( memoryStream );
+                        contentBytes = memoryStream.ToArray ();
                     }
                 }
-                else if (this.ContentLength < 0) {
-                    this.contentBytes = Array.Empty<byte> ();
+                else if (ContentLength < 0) {
+                    contentBytes = Array.Empty<byte> ();
                     throw new HttpRequestException ( SR.HttpRequest_NoContentLength );
                 }
                 else // = 0
                 {
-                    this.contentBytes = Array.Empty<byte> ();
+                    contentBytes = Array.Empty<byte> ();
                 }
             }
 
-            return this.contentBytes;
+            return contentBytes;
         }
 
         /// <summary>
         /// Gets a unique random ID for this request.
         /// </summary>
-        public Guid RequestId { get => this.listenerRequest.RequestTraceIdentifier; }
+        public Guid RequestId { get => listenerRequest.RequestTraceIdentifier; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request was locally made by an secure
@@ -117,11 +117,11 @@ namespace Sisk.Core.Http {
         /// </remarks>
         public bool IsSecure {
             get {
-                if (this.contextServerConfiguration.ForwardingResolver is { } fr) {
-                    return fr.OnResolveSecureConnection ( this, this.listenerRequest.IsSecureConnection );
+                if (contextServerConfiguration.ForwardingResolver is { } fr) {
+                    return fr.OnResolveSecureConnection ( this, listenerRequest.IsSecureConnection );
                 }
                 else {
-                    return this.listenerRequest.IsSecureConnection;
+                    return listenerRequest.IsSecureConnection;
                 }
             }
         }
@@ -130,39 +130,39 @@ namespace Sisk.Core.Http {
         /// Gets a boolean indicating whether this request has body contents and whether
         /// it has already been read into memory by the server.
         /// </summary>
-        public bool IsContentAvailable { get => this.HasContents && this.contentBytes is not null; }
+        public bool IsContentAvailable { get => HasContents && contentBytes is not null; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request has body contents.
         /// </summary>
-        public bool HasContents { get => this.ContentLength > 0; }
+        public bool HasContents { get => ContentLength > 0; }
 
         /// <summary>
         /// Gets the HTTP request headers.
         /// </summary>
         public HttpHeaderCollection Headers {
             get {
-                if (this.headers is null) {
-                    if (this.contextServerConfiguration.NormalizeHeadersEncodings) {
-                        this.headers = new HttpHeaderCollection ();
+                if (headers is null) {
+                    if (contextServerConfiguration.NormalizeHeadersEncodings) {
+                        headers = new HttpHeaderCollection ();
                         Encoding entryCodepage = Encoding.GetEncoding ( "ISO-8859-1" );
-                        foreach (string headerName in this.listenerRequest.Headers) {
-                            string headerValue = this.listenerRequest.Headers [ headerName ]!;
-                            this.headers.Add (
+                        foreach (string headerName in listenerRequest.Headers) {
+                            string headerValue = listenerRequest.Headers [ headerName ]!;
+                            headers.Add (
                                 headerName,
-                                this.ConvertEncodingCodePage ( headerValue, entryCodepage, this.listenerRequest.ContentEncoding )
+                                ConvertEncodingCodePage ( headerValue, entryCodepage, listenerRequest.ContentEncoding )
                             );
                         }
                     }
                     else {
-                        this.headers = new HttpHeaderCollection ();
-                        this.headers.ImportNameValueCollection ( (WebHeaderCollection) this.listenerRequest.Headers );
+                        headers = new HttpHeaderCollection ();
+                        headers.ImportNameValueCollection ( (WebHeaderCollection) listenerRequest.Headers );
                     }
 
-                    this.headers.MakeReadOnly ();
+                    headers.MakeReadOnly ();
                 }
 
-                return this.headers;
+                return headers;
             }
         }
 
@@ -171,17 +171,17 @@ namespace Sisk.Core.Http {
         /// </summary>
         public StringKeyStoreCollection Cookies {
             get {
-                if (this.cookies is null) {
-                    string? cookieHeader = this.listenerRequest.Headers [ HttpKnownHeaderNames.Cookie ];
+                if (cookies is null) {
+                    string? cookieHeader = listenerRequest.Headers [ HttpKnownHeaderNames.Cookie ];
                     StringKeyStoreCollection store = new StringKeyStoreCollection ();
                     if (cookieHeader is not null) {
                         store.ImportCookieString ( cookieHeader );
                     }
                     store.MakeReadOnly ();
-                    this.cookies = store;
+                    cookies = store;
                 }
 
-                return this.cookies;
+                return cookies;
             }
         }
 
@@ -196,7 +196,7 @@ namespace Sisk.Core.Http {
         /// <remarks>
         /// This property is an shortcut for <see cref="HttpContext.RequestBag"/> property.
         /// </remarks>
-        public TypedValueDictionary Bag => this.Context.RequestBag;
+        public TypedValueDictionary Bag => Context.RequestBag;
 
         /// <summary>
         /// Get the requested host header with the port from this HTTP request.
@@ -205,21 +205,21 @@ namespace Sisk.Core.Http {
         /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
         /// </remarks>
         public string Authority {
-            get => this.requestUri.Authority;
+            get => requestUri.Authority;
         }
 
         /// <summary>
         /// Gets the HTTP request path without the query string.
         /// </summary>
         public string Path {
-            get => this.requestUri.AbsolutePath;
+            get => requestUri.AbsolutePath;
         }
 
         /// <summary>
         /// Gets the raw, full HTTP request path with the query string.
         /// </summary>
         public string FullPath {
-            get => this.listenerRequest.RawUrl ?? "/";
+            get => listenerRequest.RawUrl ?? "/";
         }
 
         /// <summary>
@@ -229,28 +229,28 @@ namespace Sisk.Core.Http {
         /// This property brings local request data, so it may not reflect the original client request when used with proxy or CDNs.
         /// </remarks>
         public string FullUrl {
-            get => this.requestUri.ToString ();
+            get => requestUri.ToString ();
         }
 
         /// <summary>
         /// Gets the <see cref="System.Uri"/> component for this HTTP request requested URL.
         /// </summary>
         public Uri Uri {
-            get => this.requestUri;
+            get => requestUri;
         }
 
         /// <summary>
         /// Gets an string <see cref="Encoding"/> that can be used to decode text in this HTTP request.
         /// </summary>
         public Encoding RequestEncoding {
-            get => this.listenerRequest.ContentEncoding;
+            get => listenerRequest.ContentEncoding;
         }
 
         /// <summary>
         /// Gets the HTTP request method.
         /// </summary>
         public HttpMethod Method {
-            get => this.requestMethod;
+            get => requestMethod;
         }
 
         /// <summary>
@@ -261,7 +261,7 @@ namespace Sisk.Core.Http {
         /// </remarks>
         [DebuggerBrowsable ( DebuggerBrowsableState.Never )]
         public string Body {
-            get => this.listenerRequest.ContentEncoding.GetString ( this.RawBody );
+            get => listenerRequest.ContentEncoding.GetString ( RawBody );
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace Sisk.Core.Http {
         [DebuggerBrowsable ( DebuggerBrowsableState.Never )]
         public byte [] RawBody {
             get {
-                return this.ReadRequestStreamContents ();
+                return ReadRequestStreamContents ();
             }
         }
 
@@ -290,13 +290,13 @@ namespace Sisk.Core.Http {
         /// </summary>
         public StringValueCollection Query {
             get {
-                if (this.query is null) {
+                if (query is null) {
                     var sv = new StringValueCollection ( "query parameter" );
-                    sv.ImportNameValueCollection ( this.listenerRequest.QueryString );
+                    sv.ImportNameValueCollection ( listenerRequest.QueryString );
                     sv.MakeReadOnly ();
-                    this.query = sv;
+                    query = sv;
                 }
-                return this.query;
+                return query;
             }
         }
 
@@ -309,14 +309,14 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets the HTTP request URL raw query string, including the '?' char.
         /// </summary>
-        public string QueryString { get => this.listenerRequest.Url?.Query ?? string.Empty; }
+        public string QueryString { get => listenerRequest.Url?.Query ?? string.Empty; }
 
         /// <summary>
         /// Gets the incoming local IP address from the request.
         /// </summary>
         public IPAddress RemoteAddress {
             get {
-                return this.remoteAddr;
+                return remoteAddr;
             }
         }
 
@@ -362,14 +362,14 @@ namespace Sisk.Core.Http {
         /// Reads the request body and extracts form data parameters from it.
         /// </summary>
         public StringKeyStoreCollection GetFormContent () {
-            return StringKeyStoreCollection.FromQueryString ( this.Body );
+            return StringKeyStoreCollection.FromQueryString ( Body );
         }
 
         /// <summary>
         /// Asynchronously reads the request body and extracts form data parameters from it.
         /// </summary>
         public Task<StringKeyStoreCollection> GetFormContentAsync () {
-            return Task.Run ( delegate () { return StringKeyStoreCollection.FromQueryString ( this.Body ); } );
+            return Task.Run ( delegate () { return StringKeyStoreCollection.FromQueryString ( Body ); } );
         }
 
         /// <summary>
@@ -380,30 +380,30 @@ namespace Sisk.Core.Http {
         public string GetRawHttpRequest ( bool includeBody = true, bool appendExtraInfo = false ) {
             StringBuilder sb = new StringBuilder ();
             // Method and path
-            sb.Append ( this.Method.ToString ().ToUpperInvariant () + " " );
-            sb.Append ( this.Path + " " );
+            sb.Append ( Method.ToString ().ToUpperInvariant () + " " );
+            sb.Append ( Path + " " );
             sb.Append ( "HTTP/" );
-            sb.Append ( this.listenerRequest.ProtocolVersion.Major + "." );
-            sb.Append ( this.listenerRequest.ProtocolVersion.Minor + "\n" );
+            sb.Append ( listenerRequest.ProtocolVersion.Major + "." );
+            sb.Append ( listenerRequest.ProtocolVersion.Minor + "\n" );
 
             // Headers
             if (appendExtraInfo) {
-                sb.AppendLine ( null, $":remote-ip: {this.RemoteAddress} (was {this.listenerRequest.RemoteEndPoint})" );
-                sb.AppendLine ( null, $":host: {this.Host} (was {this.listenerRequest.UserHostName})" );
-                sb.AppendLine ( null, $":date: {this.RequestedAt:s}" );
-                sb.AppendLine ( null, $":request-id: {this.RequestId}" );
-                sb.AppendLine ( null, $":request-proto: {(this.IsSecure ? "https" : "http")}" );
+                sb.AppendLine ( null, $":remote-ip: {RemoteAddress} (was {listenerRequest.RemoteEndPoint})" );
+                sb.AppendLine ( null, $":host: {Host} (was {listenerRequest.UserHostName})" );
+                sb.AppendLine ( null, $":date: {RequestedAt:s}" );
+                sb.AppendLine ( null, $":request-id: {RequestId}" );
+                sb.AppendLine ( null, $":request-proto: {(IsSecure ? "https" : "http")}" );
             }
-            sb.AppendLine ( this.Headers.ToString ( null ) );
+            sb.AppendLine ( Headers.ToString ( null ) );
             sb.AppendLine ();
 
             // Content
             if (includeBody) {
-                if (this.Body.Length < 8 * SizeHelper.UnitKb) {
-                    sb.Append ( this.Body );
+                if (Body.Length < 8 * SizeHelper.UnitKb) {
+                    sb.Append ( Body );
                 }
                 else {
-                    sb.Append ( null, $"| ({SizeHelper.HumanReadableSize ( this.Body.Length )})" );
+                    sb.Append ( null, $"| ({SizeHelper.HumanReadableSize ( Body.Length )})" );
                 }
             }
 
@@ -416,8 +416,8 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="otherCallback">Defines the <see cref="RouteAction"/> method which will handle this request.</param>
         public object SendTo ( RouteAction otherCallback ) {
-            Interlocked.Increment ( ref this.currentFrame );
-            if (this.currentFrame > 64) {
+            Interlocked.Increment ( ref currentFrame );
+            if (currentFrame > 64) {
                 throw new OverflowException ( SR.HttpRequest_SendTo_MaxRedirects );
             }
             return otherCallback ( this );
@@ -429,21 +429,21 @@ namespace Sisk.Core.Http {
         /// cached in this object.
         /// </summary>
         public Stream GetRequestStream () {
-            if (this.contentBytes is not null) {
+            if (contentBytes is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_InputStreamAlreadyLoaded );
             }
-            return this.listenerRequest.InputStream;
+            return listenerRequest.InputStream;
         }
 
         /// <summary>
         /// Gets an HTTP response stream for this HTTP request.
         /// </summary>
         public HttpResponseStreamManager GetResponseStream () {
-            if (this.isStreaming) {
+            if (isStreaming) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            this.isStreaming = true;
-            return new HttpResponseStreamManager ( this.listenerResponse, this.listenerRequest, this );
+            isStreaming = true;
+            return new HttpResponseStreamManager ( listenerResponse, listenerRequest, this );
         }
 
         /// <summary>
@@ -452,12 +452,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="identifier">Optional. Defines an label to the EventStream connection, useful for finding this connection's reference later.</param>
         public HttpRequestEventSource GetEventSource ( string? identifier = null ) {
-            if (this.isStreaming) {
+            if (isStreaming) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            this.isStreaming = true;
-            this.activeEventSource = new HttpRequestEventSource ( identifier, this.listenerResponse, this.listenerRequest, this );
-            return this.activeEventSource;
+            isStreaming = true;
+            activeEventSource = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
+            return activeEventSource;
         }
 
         /// <summary>
@@ -467,14 +467,14 @@ namespace Sisk.Core.Http {
         /// <param name="identifier">Optional. Defines a label to the EventStream connection, useful for finding this connection's reference later.</param>
         /// <returns>A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="HttpRequestEventSource"/> instance representing the event source for this request.</returns>
         public Task<HttpRequestEventSource> GetEventSourceAsync ( string? identifier = null ) {
-            if (this.isStreaming) {
+            if (isStreaming) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            this.isStreaming = true;
+            isStreaming = true;
 
             return Task.Run ( delegate () {
-                this.activeEventSource = new HttpRequestEventSource ( identifier, this.listenerResponse, this.listenerRequest, this );
-                return this.activeEventSource;
+                activeEventSource = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
+                return activeEventSource;
             } );
         }
 
@@ -485,7 +485,7 @@ namespace Sisk.Core.Http {
         /// <param name="subprotocol">Optional. Determines the sub-protocol to plug the websocket in.</param>
         /// <param name="identifier">Optional. Defines an label to the Web Socket connection, useful for finding this connection's reference later.</param>
         public HttpWebSocket GetWebSocket ( string? subprotocol = null, string? identifier = null ) {
-            var wsTask = this.GetWebSocketAsync ( subprotocol, identifier );
+            var wsTask = GetWebSocketAsync ( subprotocol, identifier );
             return wsTask.GetAwaiter ().GetResult ();
         }
 
@@ -497,11 +497,11 @@ namespace Sisk.Core.Http {
         /// <param name="identifier">Optional. Defines an label to the Web Socket connection, useful for finding this connection's reference later.</param>
         /// <returns>A task that represents the asynchronous operation, returning an instance of <see cref="HttpWebSocket"/> representing the accepted websocket connection.</returns>
         public async Task<HttpWebSocket> GetWebSocketAsync ( string? subprotocol = null, string? identifier = null ) {
-            if (this.isStreaming) {
+            if (isStreaming) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            this.isStreaming = true;
-            var accept = await this.context.AcceptWebSocketAsync ( subprotocol );
+            isStreaming = true;
+            var accept = await context.AcceptWebSocketAsync ( subprotocol );
             return new HttpWebSocket ( accept, this, identifier );
         }
 
@@ -513,7 +513,7 @@ namespace Sisk.Core.Http {
         /// context. However, when calling this method, the connection is interrupted instantly.
         /// </remarks>
         public HttpResponse Abort () {
-            this.listenerResponse.Abort ();
+            listenerResponse.Abort ();
             return HttpResponse.Refuse ();
         }
 
@@ -521,21 +521,21 @@ namespace Sisk.Core.Http {
         /// Gets an string representation of this <see cref="HttpRequest"/> object.
         /// </summary>
         public override string ToString () {
-            return $"{this.Method} {this.FullPath}";
+            return $"{Method} {FullPath}";
         }
 
         private void Dispose ( bool disposing ) {
-            if (!this.disposedValue) {
+            if (!disposedValue) {
                 if (disposing) {
-                    this.activeEventSource?.Dispose ();
+                    activeEventSource?.Dispose ();
                 }
 
-                this.disposedValue = true;
+                disposedValue = true;
             }
         }
 
         void IDisposable.Dispose () {
-            this.Dispose ( disposing: true );
+            Dispose ( disposing: true );
             GC.SuppressFinalize ( this );
         }
     }

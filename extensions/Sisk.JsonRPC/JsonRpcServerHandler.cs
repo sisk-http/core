@@ -34,14 +34,14 @@ public sealed class JsonRpcServerHandler : HttpServerHandler {
 
     /// <inheritdoc/>
     protected override void OnServerStarting ( HttpServer server ) {
-        this._handler = new JsonRpcHandler ( server );
+        _handler = new JsonRpcHandler ( server );
     }
 
     /// <inheritdoc/>
     protected override void OnSetupRouter ( Router router ) {
         base.OnSetupRouter ( router );
-        if (ConfigureAction != null && this._handler is not null)
-            ConfigureAction ( this, new JsonRpcServerConfigurationEventArgs ( router, this._handler ) );
+        if (ConfigureAction != null && _handler is not null)
+            ConfigureAction ( this, new JsonRpcServerConfigurationEventArgs ( router, _handler ) );
     }
 }
 
@@ -60,7 +60,7 @@ public sealed class JsonRpcServerConfigurationEventArgs : EventArgs {
     public JsonRpcHandler Handler { get; }
 
     internal JsonRpcServerConfigurationEventArgs ( Router router, JsonRpcHandler handler ) {
-        this.Router = router;
-        this.Handler = handler;
+        Router = router;
+        Handler = handler;
     }
 }

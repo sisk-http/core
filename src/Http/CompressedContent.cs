@@ -26,8 +26,8 @@ public abstract class CompressedContent : HttpContent {
     /// </summary>
     /// <param name="innerContent">The inner HTTP content.</param>
     public CompressedContent ( HttpContent innerContent ) {
-        this.InnerContent = innerContent;
-        this.Setup ();
+        InnerContent = innerContent;
+        Setup ();
     }
 
     /// <summary>
@@ -35,8 +35,8 @@ public abstract class CompressedContent : HttpContent {
     /// </summary>
     /// <param name="byteArrayContent">The byte array content.</param>
     public CompressedContent ( byte [] byteArrayContent ) {
-        this.InnerContent = new ByteArrayContent ( byteArrayContent );
-        this.Setup ();
+        InnerContent = new ByteArrayContent ( byteArrayContent );
+        Setup ();
     }
 
     /// <summary>
@@ -44,8 +44,8 @@ public abstract class CompressedContent : HttpContent {
     /// </summary>
     /// <param name="baseContent">The stream content.</param>
     public CompressedContent ( Stream baseContent ) {
-        this.InnerContent = new StreamContent ( baseContent );
-        this.Setup ();
+        InnerContent = new StreamContent ( baseContent );
+        Setup ();
     }
 
     /// <summary>
@@ -64,8 +64,8 @@ public abstract class CompressedContent : HttpContent {
 
     /// <inheritdoc/>
     protected override sealed void SerializeToStream ( Stream stream, TransportContext? context, CancellationToken cancellationToken ) {
-        using var compressStream = this.GetCompressingStream ( stream );
-        using var contentStream = this.InnerContent.ReadAsStream ( cancellationToken );
+        using var compressStream = GetCompressingStream ( stream );
+        using var contentStream = InnerContent.ReadAsStream ( cancellationToken );
 
         if (contentStream.CanSeek)
             contentStream.Seek ( 0, SeekOrigin.Begin );
@@ -75,8 +75,8 @@ public abstract class CompressedContent : HttpContent {
 
     /// <inheritdoc/>
     protected override sealed async Task SerializeToStreamAsync ( Stream stream, TransportContext? context ) {
-        using var compressStream = this.GetCompressingStream ( stream );
-        using var contentStream = await this.InnerContent.ReadAsStreamAsync ();
+        using var compressStream = GetCompressingStream ( stream );
+        using var contentStream = await InnerContent.ReadAsStreamAsync ();
 
         if (contentStream.CanSeek)
             contentStream.Seek ( 0, SeekOrigin.Begin );
@@ -86,8 +86,8 @@ public abstract class CompressedContent : HttpContent {
 
     /// <inheritdoc/>
     protected override sealed async Task SerializeToStreamAsync ( Stream stream, TransportContext? context, CancellationToken cancellationToken ) {
-        using var compressStream = this.GetCompressingStream ( stream );
-        using var contentStream = await this.InnerContent.ReadAsStreamAsync ( cancellationToken );
+        using var compressStream = GetCompressingStream ( stream );
+        using var contentStream = await InnerContent.ReadAsStreamAsync ( cancellationToken );
 
         if (contentStream.CanSeek)
             contentStream.Seek ( 0, SeekOrigin.Begin );
@@ -105,7 +105,7 @@ public abstract class CompressedContent : HttpContent {
     protected override void Dispose ( bool disposing ) {
         base.Dispose ( disposing );
         if (disposing) {
-            this.InnerContent?.Dispose ();
+            InnerContent?.Dispose ();
         }
     }
 }

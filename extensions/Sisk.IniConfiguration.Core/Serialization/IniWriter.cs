@@ -1,4 +1,13 @@
-﻿namespace Sisk.IniConfiguration.Core.Serialization;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   IniWriter.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.IniConfiguration.Core.Serialization;
 
 /// <summary>
 /// Specifies the behavior for writing new lines in an INI file.
@@ -40,7 +49,7 @@ public sealed class IniWriter : IDisposable {
     /// Gets the underlying text writer.
     /// </summary>
     public TextWriter Writer {
-        get => this.writer;
+        get => writer;
     }
 
     /// <summary>
@@ -57,7 +66,7 @@ public sealed class IniWriter : IDisposable {
     /// <param name="commentString">The comment to write.</param>
     public void WriteComment ( string commentString ) {
         foreach (var line in commentString.Split ( '\n', '\r' )) {
-            this.writer.WriteLine ( $"{this.CommentChar} {line.TrimEnd ()}" );
+            writer.WriteLine ( $"{CommentChar} {line.TrimEnd ()}" );
         }
     }
 
@@ -68,7 +77,7 @@ public sealed class IniWriter : IDisposable {
     /// <param name="value">The value to write.</param>
     public void Write ( string key, string? value ) {
         if (value is null) {
-            this.writer.WriteLine ( $"{key.Trim ()} = " );
+            writer.WriteLine ( $"{key.Trim ()} = " );
         }
         else {
             string carry = value;
@@ -82,11 +91,11 @@ public sealed class IniWriter : IDisposable {
             }
 
             if (value.Contains ( '\n' )) {
-                if (this.NewLineBehavior.HasFlag ( IniWritingNewLineBehavior.Quote ))
+                if (NewLineBehavior.HasFlag ( IniWritingNewLineBehavior.Quote ))
                     quoteValue = true;
-                if (this.NewLineBehavior.HasFlag ( IniWritingNewLineBehavior.Split ))
+                if (NewLineBehavior.HasFlag ( IniWritingNewLineBehavior.Split ))
                     splitNewLineEndings = true;
-                if (this.NewLineBehavior.HasFlag ( IniWritingNewLineBehavior.Escape ))
+                if (NewLineBehavior.HasFlag ( IniWritingNewLineBehavior.Escape ))
                     escapeNewLineEndings = true;
             }
 
@@ -108,11 +117,11 @@ public sealed class IniWriter : IDisposable {
 
             if (splitNewLineEndings) {
                 foreach (var line in carry.Split ( '\n', '\r' )) {
-                    this.Write ( key, line );
+                    Write ( key, line );
                 }
             }
             else {
-                this.Writer.WriteLine ( $"{key.Trim ()} = {carry}" );
+                Writer.WriteLine ( $"{key.Trim ()} = {carry}" );
             }
         }
     }
@@ -123,7 +132,7 @@ public sealed class IniWriter : IDisposable {
     /// <param name="value">The key-value pair to write.</param>
     public void Write ( in KeyValuePair<string, string []> value ) {
         foreach (var line in value.Value)
-            this.Write ( value.Key, line );
+            Write ( value.Key, line );
     }
 
     /// <summary>
@@ -132,15 +141,15 @@ public sealed class IniWriter : IDisposable {
     /// <param name="section">The section to write.</param>
     public void Write ( IniSection section ) {
         if (section.Name != IniReader.INITIAL_SECTION_NAME) {
-            this.writer.Write ( Token.SECTION_START );
-            this.writer.Write ( section.Name.Trim () );
-            this.writer.WriteLine ( Token.SECTION_END );
+            writer.Write ( Token.SECTION_START );
+            writer.Write ( section.Name.Trim () );
+            writer.WriteLine ( Token.SECTION_END );
         }
 
         foreach (var entry in section)
-            this.Write ( entry );
+            Write ( entry );
 
-        this.writer.WriteLine ();
+        writer.WriteLine ();
     }
 
     /// <summary>
@@ -149,13 +158,13 @@ public sealed class IniWriter : IDisposable {
     /// <param name="document">The document to write.</param>
     public void Write ( IniDocument document ) {
         foreach (var section in document.Sections)
-            this.Write ( section );
+            Write ( section );
     }
 
     /// <summary>
     /// Releases all resources used by the <see cref="IniWriter"/> object.
     /// </summary>
     public void Dispose () {
-        this.writer.Dispose ();
+        writer.Dispose ();
     }
 }

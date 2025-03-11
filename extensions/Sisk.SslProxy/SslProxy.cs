@@ -67,7 +67,7 @@ public sealed class SslProxy : IDisposable {
     /// <summary>
     /// Gets the proxy endpoint.
     /// </summary>
-    public IPEndPoint GatewayEndpoint { get => this.remoteEndpoint; }
+    public IPEndPoint GatewayEndpoint { get => remoteEndpoint; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SslProxy"/> class.
@@ -76,26 +76,26 @@ public sealed class SslProxy : IDisposable {
     /// <param name="certificate">The SSL/TLS certificate used by the proxy server.</param>
     /// <param name="remoteEndpoint">The remote endpoint to which the proxy server forwards traffic.</param>
     public SslProxy ( int sslListeningPort, X509Certificate certificate, IPEndPoint remoteEndpoint ) {
-        this.host = new HttpHost ( new IPEndPoint ( IPAddress.Any, sslListeningPort ) );
+        host = new HttpHost ( new IPEndPoint ( IPAddress.Any, sslListeningPort ) );
         this.remoteEndpoint = remoteEndpoint;
-        this.ServerCertificate = certificate;
+        ServerCertificate = certificate;
     }
 
     /// <summary>
     /// Starts the <see cref="SslProxy"/> and start routing traffic to the set remote endpoint.
     /// </summary>
     public void Start () {
-        this.host.Handler = new SslProxyContextHandler ( this );
-        this.host.HttpsOptions = new HttpsOptions ( this.ServerCertificate ) {
-            AllowedProtocols = this.AllowedProtocols,
-            ClientCertificateRequired = this.ClientCertificateRequired
+        host.Handler = new SslProxyContextHandler ( this );
+        host.HttpsOptions = new HttpsOptions ( ServerCertificate ) {
+            AllowedProtocols = AllowedProtocols,
+            ClientCertificateRequired = ClientCertificateRequired
         };
 
-        this.host.Start ();
+        host.Start ();
     }
 
     /// <inheritdoc/>
     public void Dispose () {
-        this.host.Dispose ();
+        host.Dispose ();
     }
 }

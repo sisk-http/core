@@ -31,7 +31,7 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( capacity );
 
         this.capacity = capacity;
-        this.items = new T [ capacity ];
+        items = new T [ capacity ];
     }
 
     /// <summary>
@@ -40,13 +40,13 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     /// </summary>
     /// <param name="item">The item to add.</param>
     public void Add ( T item ) {
-        lock (this.items) {
-            for (int i = this.capacity - 1; i > 0; i--) {
-                this.items [ i ] = this.items [ i - 1 ];
+        lock (items) {
+            for (int i = capacity - 1; i > 0; i--) {
+                items [ i ] = items [ i - 1 ];
             }
 
-            this.addedItems = Math.Min ( this.Capacity, this.addedItems + 1 );
-            this.items [ 0 ] = item;
+            addedItems = Math.Min ( Capacity, addedItems + 1 );
+            items [ 0 ] = item;
         }
     }
 
@@ -54,8 +54,8 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     /// Clears the circular buffer contents and recreates the array.
     /// </summary>
     public void Clear () {
-        this.items = new T [ this.capacity ];
-        this.addedItems = 0;
+        items = new T [ capacity ];
+        addedItems = 0;
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     public void Resize ( int capacity ) {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( capacity );
 
-        Array.Resize ( ref this.items, capacity );
+        Array.Resize ( ref items, capacity );
         this.capacity = capacity;
     }
 
@@ -73,35 +73,35 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     /// Returns an array representation of this <see cref="CircularBuffer{T}"/> items in their defined
     /// positions within the capacity.
     /// </summary>
-    public T [] ToArray () => this.items;
+    public T [] ToArray () => items;
 
     /// <summary>
     /// Creates an new <see cref="ReadOnlySpan{T}"/> over the circular buffer.
     /// </summary>
-    public ReadOnlySpan<T> ToSpan () => new ReadOnlySpan<T> ( this.items );
+    public ReadOnlySpan<T> ToSpan () => new ReadOnlySpan<T> ( items );
 
     /// <summary>
     /// Gets the current capacity of this <see cref="CircularBuffer{T}"/>.
     /// </summary>
-    public int Capacity { get => this.capacity; }
+    public int Capacity { get => capacity; }
 
     /// <summary>
     /// Gets the amount of added items in this circular buffer.
     /// </summary>
-    public int Count => this.addedItems;
+    public int Count => addedItems;
 
     /// <inheritdoc/>
-    public T this [ int index ] => this.items [ index ];
+    public T this [ int index ] => items [ index ];
 
     /// <inheritdoc/>
     /// <exclude/>
     public IEnumerator<T> GetEnumerator () {
-        return ((IEnumerable<T>) this.items).GetEnumerator ();
+        return ((IEnumerable<T>) items).GetEnumerator ();
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator () {
-        return this.items.GetEnumerator ();
+        return items.GetEnumerator ();
     }
 }

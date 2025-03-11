@@ -66,12 +66,12 @@ namespace Sisk.Core.Http {
         /// </remarks> 
         public long MaximumContentLength {
             get {
-                return this._maximumContentLength;
+                return _maximumContentLength;
             }
             set {
                 ArgumentOutOfRangeException.ThrowIfLessThan ( value, 0 );
 
-                this._maximumContentLength = value;
+                _maximumContentLength = value;
             }
         }
 
@@ -151,9 +151,9 @@ namespace Sisk.Core.Http {
         /// Frees the resources and invalidates this instance.
         /// </summary>
         public void Dispose () {
-            this.ListeningHosts.Clear ();
-            this.AccessLogsStream?.Dispose ();
-            this.ErrorsLogsStream?.Dispose ();
+            ListeningHosts.Clear ();
+            AccessLogsStream?.Dispose ();
+            ErrorsLogsStream?.Dispose ();
         }
     }
 

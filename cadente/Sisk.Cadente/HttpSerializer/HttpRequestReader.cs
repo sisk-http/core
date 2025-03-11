@@ -24,16 +24,16 @@ sealed class HttpRequestReader {
     private static ReadOnlySpan<byte> RequestHeaderLineSpaceDelimiters => [ SPACE, 0 ];
 
     public HttpRequestReader ( Stream stream ) {
-        this._stream = stream;
+        _stream = stream;
     }
 
     public bool TryReadHttpRequest ( [NotNullWhen ( true )] out HttpRequestBase? request ) {
         try {
 
             Span<byte> buffer = stackalloc byte [ HttpConnection.REQUEST_BUFFER_SIZE ];
-            int read = this._stream.Read ( buffer );
+            int read = _stream.Read ( buffer );
 
-            request = this.ParseHttpRequest ( buffer [ ..read ] );
+            request = ParseHttpRequest ( buffer [ ..read ] );
             return request != null;
         }
         catch (Exception ex) {

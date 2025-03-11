@@ -44,11 +44,11 @@ sealed class InlineRequestHandler : RequestHandler {
     public Func<HttpRequest, HttpContext, HttpResponse?> Handler { get; set; }
 
     public InlineRequestHandler ( Func<HttpRequest, HttpContext, HttpResponse?> handler, RequestHandlerExecutionMode mode ) {
-        this.Handler = handler ?? throw new ArgumentNullException ( nameof ( handler ) );
+        Handler = handler ?? throw new ArgumentNullException ( nameof ( handler ) );
         base.ExecutionMode = mode;
     }
 
     public override HttpResponse? Execute ( HttpRequest request, HttpContext context ) {
-        return this.Handler ( request, context );
+        return Handler ( request, context );
     }
 }

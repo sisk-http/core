@@ -32,11 +32,11 @@ public sealed class ConfigurationContext {
     /// <summary>
     /// Gets the <see cref="InitializationParameterCollection"/> collection for defining configuration parameters of the host application.
     /// </summary>
-    public InitializationParameterCollection Parameters { get => this.Host.Parameters; }
+    public InitializationParameterCollection Parameters { get => Host.Parameters; }
 
     internal ConfigurationContext ( string configurationFile, HttpServerHostContext host, ListeningHost targetListeningHost ) {
-        this.ConfigurationFile = configurationFile;
-        this.Host = host;
-        this.TargetListeningHost = targetListeningHost;
+        ConfigurationFile = configurationFile;
+        Host = host;
+        TargetListeningHost = targetListeningHost;
     }
 }

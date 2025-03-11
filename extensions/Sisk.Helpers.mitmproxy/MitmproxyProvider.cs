@@ -39,7 +39,7 @@ public sealed class MitmproxyProvider : HttpServerHandler {
     /// Initializes a new instance of the <see cref="MitmproxyProvider"/> class.
     /// </summary>
     public MitmproxyProvider () {
-        this.ProxyPort = 0;
+        ProxyPort = 0;
     }
 
     /// <summary>
@@ -48,8 +48,8 @@ public sealed class MitmproxyProvider : HttpServerHandler {
     /// <param name="proxyPort">The port on which the mitmproxy will listen.</param>
     /// <param name="processSetupAction">Optional. An action to configure the child process start information.</param>
     public MitmproxyProvider ( ushort proxyPort, Action<ChildProcessStartInfo>? processSetupAction = null ) {
-        this.ProxyPort = proxyPort;
-        this.setupAction = processSetupAction;
+        ProxyPort = proxyPort;
+        setupAction = processSetupAction;
     }
 
     /// <inheritdoc/>
@@ -58,26 +58,26 @@ public sealed class MitmproxyProvider : HttpServerHandler {
             FileName = "mitmdump"
         };
 
-        OutputRedirection outputRedirection = this.Silent ? OutputRedirection.NullDevice : OutputRedirection.ParentOutput;
+        OutputRedirection outputRedirection = Silent ? OutputRedirection.NullDevice : OutputRedirection.ParentOutput;
         pinfo.StdOutputRedirection = outputRedirection;
         pinfo.StdErrorRedirection = outputRedirection;
 
-        if (this.ProxyPort == 0) {
-            this.ProxyPort = (ushort) (server.ServerConfiguration.ListeningHosts [ 0 ].Ports [ 0 ].Port + 1);
+        if (ProxyPort == 0) {
+            ProxyPort = (ushort) (server.ServerConfiguration.ListeningHosts [ 0 ].Ports [ 0 ].Port + 1);
         }
 
-        pinfo.Arguments = [ "--mode", $"reverse:{server.ListeningPrefixes [ 0 ]}", "-p", this.ProxyPort.ToString () ];
+        pinfo.Arguments = [ "--mode", $"reverse:{server.ListeningPrefixes [ 0 ]}", "-p", ProxyPort.ToString () ];
 
-        if (this.setupAction != null)
-            this.setupAction ( pinfo );
+        if (setupAction != null)
+            setupAction ( pinfo );
 
-        this.MitmdumpProcessInfo = pinfo;
+        MitmdumpProcessInfo = pinfo;
     }
 
     /// <inheritdoc/>
     protected override void OnServerStarted ( HttpServer server ) {
         try {
-            this.MitmdumpProcess = ChildProcess.Start ( this.MitmdumpProcessInfo );
+            MitmdumpProcess = ChildProcess.Start ( MitmdumpProcessInfo );
         }
         catch (Exception e) {
             Console.WriteLine ( "Failed to start the mitmproxy. Perhaps you forgot to install it and make " +
@@ -89,11 +89,11 @@ public sealed class MitmproxyProvider : HttpServerHandler {
 
     /// <inheritdoc/>
     protected override void OnServerStopping ( HttpServer server ) {
-        this.MitmdumpProcess.Kill ();
+        MitmdumpProcess.Kill ();
     }
 
     /// <inheritdoc/>
     protected override void OnServerStopped ( HttpServer server ) {
-        this.MitmdumpProcess.Dispose ();
+        MitmdumpProcess.Dispose ();
     }
 }

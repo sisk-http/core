@@ -29,6 +29,6 @@ public sealed class RoutePrefixAttribute : Attribute {
         if (string.IsNullOrEmpty ( prefix )) {
             throw new ArgumentNullException ( nameof ( prefix ) );
         }
-        this.Prefix = prefix;
+        Prefix = prefix;
     }
 }

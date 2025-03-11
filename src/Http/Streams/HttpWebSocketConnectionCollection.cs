@@ -30,21 +30,21 @@ namespace Sisk.Core.Http.Streams {
 
         internal void RegisterWebSocket ( HttpWebSocket src ) {
             if (src._identifier != null) {
-                lock (this._ws) {
+                lock (_ws) {
                     // close another websockets with same identifier
-                    HttpWebSocket [] wsId = this.Find ( s => s == src._identifier );
+                    HttpWebSocket [] wsId = Find ( s => s == src._identifier );
                     foreach (HttpWebSocket ws in wsId) {
                         ws.Close ();
                     }
-                    this._ws.Add ( src );
+                    _ws.Add ( src );
                 }
                 OnWebSocketRegister?.Invoke ( this, src );
             }
         }
 
         internal void UnregisterWebSocket ( HttpWebSocket ws ) {
-            lock (this._ws) {
-                if (this._ws.Remove ( ws ) && OnWebSocketUnregister != null) {
+            lock (_ws) {
+                if (_ws.Remove ( ws ) && OnWebSocketUnregister != null) {
                     OnWebSocketUnregister ( this, ws );
                 }
             }
@@ -55,8 +55,8 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="identifier">The Web Socket identifier.</param>
         public HttpWebSocket? GetByIdentifier ( string identifier ) {
-            lock (this._ws) {
-                HttpWebSocket? src = this._ws.Where ( es => !es._isClosed && es.Identifier == identifier ).FirstOrDefault ();
+            lock (_ws) {
+                HttpWebSocket? src = _ws.Where ( es => !es._isClosed && es.Identifier == identifier ).FirstOrDefault ();
                 return src;
             }
         }
@@ -66,8 +66,8 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="predicate">The expression on the an non-empty Web Socket identifier.</param>
         public HttpWebSocket [] Find ( Func<string, bool> predicate ) {
-            lock (this._ws) {
-                return this._ws.Where ( e => e.Identifier != null && predicate ( e.Identifier ) ).ToArray ();
+            lock (_ws) {
+                return _ws.Where ( e => e.Identifier != null && predicate ( e.Identifier ) ).ToArray ();
             }
         }
 
@@ -75,37 +75,37 @@ namespace Sisk.Core.Http.Streams {
         /// Gets all actives <see cref="HttpWebSocket"/> instances.
         /// </summary>
         public HttpWebSocket [] All () {
-            lock (this._ws) {
-                return this._ws.ToArray ();
+            lock (_ws) {
+                return _ws.ToArray ();
             }
         }
 
         /// <summary>
         /// Gets an number indicating the amount of active web socket connections.
         /// </summary>
-        public int ActiveConnections { get => this._ws.Count; }
+        public int ActiveConnections { get => _ws.Count; }
 
         /// <inheritdoc/>
-        public int Count => ((IReadOnlyCollection<HttpWebSocket>) this._ws).Count;
+        public int Count => ((IReadOnlyCollection<HttpWebSocket>) _ws).Count;
 
         /// <summary>
         /// Closes all registered and active <see cref="HttpWebSocket"/> in this collections.
         /// </summary>
         public void DropAll () {
-            lock (this._ws) {
-                foreach (HttpWebSocket es in this._ws)
+            lock (_ws) {
+                foreach (HttpWebSocket es in _ws)
                     es.Close ();
             }
         }
 
         /// <inheritdoc/>
         public IEnumerator<HttpWebSocket> GetEnumerator () {
-            return ((IEnumerable<HttpWebSocket>) this._ws).GetEnumerator ();
+            return ((IEnumerable<HttpWebSocket>) _ws).GetEnumerator ();
         }
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator () {
-            return ((IEnumerable) this._ws).GetEnumerator ();
+            return ((IEnumerable) _ws).GetEnumerator ();
         }
     }
 

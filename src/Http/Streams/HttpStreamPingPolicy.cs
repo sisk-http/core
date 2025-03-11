@@ -28,17 +28,17 @@ public sealed class HttpStreamPingPolicy : IDisposable {
     public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds ( 5 );
 
     internal HttpStreamPingPolicy ( HttpRequestEventSource parent ) {
-        this.__sse_parent = parent;
+        __sse_parent = parent;
     }
     internal HttpStreamPingPolicy ( HttpWebSocket parent ) {
-        this.__ws_parent = parent;
+        __ws_parent = parent;
     }
 
     /// <summary>
     /// Starts sending periodic pings to the client.
     /// </summary>
     public void Start () {
-        this._timer = new Timer ( new TimerCallback ( this.OnCallback ), null, 0, (int) this.Interval.TotalMilliseconds );
+        _timer = new Timer ( new TimerCallback ( OnCallback ), null, 0, (int) Interval.TotalMilliseconds );
     }
 
     /// <summary>
@@ -47,33 +47,33 @@ public sealed class HttpStreamPingPolicy : IDisposable {
     /// <param name="dataMessage">The payload message that is sent to the server as a ping message.</param>
     /// <param name="interval">The sending interval for each ping message.</param>
     public void Start ( string dataMessage, TimeSpan interval ) {
-        this.DataMessage = dataMessage;
-        this.Interval = interval;
+        DataMessage = dataMessage;
+        Interval = interval;
 
-        this.Start ();
+        Start ();
     }
 
     private void OnCallback ( object? state ) {
-        if (this.__sse_parent != null) {
-            if (!this.__sse_parent.IsActive) {
-                this._timer!.Dispose ();
+        if (__sse_parent != null) {
+            if (!__sse_parent.IsActive) {
+                _timer!.Dispose ();
                 return;
             }
-            this.__sse_parent.hasSentData = true;
-            this.__sse_parent.sendQueue.Add ( $"event:ping\ndata: {this.DataMessage}\n\n" );
-            this.__sse_parent.Flush ();
+            __sse_parent.hasSentData = true;
+            __sse_parent.sendQueue.Add ( $"event:ping\ndata: {DataMessage}\n\n" );
+            __sse_parent.Flush ();
         }
-        else if (this.__ws_parent != null) {
-            if (this.__ws_parent.IsClosed) {
-                this._timer!.Dispose ();
+        else if (__ws_parent != null) {
+            if (__ws_parent.IsClosed) {
+                _timer!.Dispose ();
                 return;
             }
-            this.__ws_parent.Send ( this.DataMessage );
+            __ws_parent.Send ( DataMessage );
         }
     }
 
     /// <inheritdoc/>
     public void Dispose () {
-        this._timer?.Dispose ();
+        _timer?.Dispose ();
     }
 }

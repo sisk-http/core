@@ -1,4 +1,13 @@
-﻿using System.Collections;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   IniSection.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Sisk.IniConfiguration.Core.Serialization;
 
@@ -20,8 +29,8 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="name">The name of the INI section.</param>
     public IniSection ( string name ) {
-        this.items = new List<KeyValuePair<string, string>> ();
-        this.Name = name;
+        items = new List<KeyValuePair<string, string>> ();
+        Name = name;
     }
 
     /// <summary>
@@ -31,7 +40,7 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <param name="items">A collection of key-value pairs to be added to the section.</param>
     public IniSection ( string name, IEnumerable<KeyValuePair<string, string>> items ) {
         this.items = items.ToList ();
-        this.Name = name;
+        Name = name;
     }
 
     /// <summary>
@@ -40,7 +49,7 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <param name="key">The property name.</param>
     public string [] this [ string key ] {
         get {
-            return this.items
+            return items
                 .Where ( k => IniReader.IniNamingComparer.Compare ( key, k.Key ) == 0 )
                 .Select ( k => k.Value )
                 .ToArray ();
@@ -52,7 +61,7 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// </summary>
     public ICollection<string> Keys {
         get {
-            return this.items.Select ( i => i.Key ).Distinct ().ToArray ();
+            return items.Select ( i => i.Key ).Distinct ().ToArray ();
         }
     }
 
@@ -61,8 +70,8 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// </summary>
     public ICollection<string []> Values {
         get {
-            List<string []> values = new List<string []> ( this.Count );
-            using (var e = this.GetEnumerator ()) {
+            List<string []> values = new List<string []> ( Count );
+            using (var e = GetEnumerator ()) {
                 while (e.MoveNext ()) {
                     values.Add ( e.Current.Value );
                 }
@@ -74,17 +83,17 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <summary>
     /// Gets the number of properties in this INI section.
     /// </summary>
-    public int Count => this.items.Count;
+    public int Count => items.Count;
 
     /// <inheritdoc/>
     public bool IsReadOnly => false;
 
     /// <inheritdoc/>
     string [] IDictionary<string, string []>.this [ string key ] {
-        get => this.GetMany ( key );
+        get => GetMany ( key );
         set {
-            this.Remove ( key );
-            this.Add ( key, value );
+            Remove ( key );
+            Add ( key, value );
         }
     }
 
@@ -94,7 +103,7 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <param name="key">The property name.</param>
     /// <returns>The last value associated with the specified property name, or null if nothing is found.</returns>
     public string? GetOne ( string key ) {
-        return this.items
+        return items
             .Where ( k => IniReader.IniNamingComparer.Compare ( key, k.Key ) == 0 )
             .Select ( k => k.Value )
             .LastOrDefault ();
@@ -116,8 +125,8 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <param name="key">The property name.</param>
     /// <returns>An <see cref="bool"/> indicating if the specified property name is defined or not.</returns>
     public bool ContainsKey ( string key ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
 
             if (IniReader.IniNamingComparer.Compare ( item.Key, key ) == 0)
                 return true;
@@ -127,10 +136,10 @@ public sealed class IniSection : IDictionary<string, string []> {
 
     /// <inheritdoc/>
     public IEnumerator<KeyValuePair<string, string []>> GetEnumerator () {
-        string [] keysDistinct = this.items.Select ( i => i.Key ).Distinct ().ToArray ();
+        string [] keysDistinct = items.Select ( i => i.Key ).Distinct ().ToArray ();
 
         foreach (string key in keysDistinct) {
-            string [] valuesByKey = this.items
+            string [] valuesByKey = items
                 .Where ( i => i.Key == key )
                 .Select ( i => i.Value )
                 .ToArray ();
@@ -146,13 +155,13 @@ public sealed class IniSection : IDictionary<string, string []> {
     }
 
     IEnumerator IEnumerable.GetEnumerator () {
-        return this.GetEnumerator ();
+        return GetEnumerator ();
     }
 
     /// <inheritdoc/>
     public void Add ( string key, string [] value ) {
         foreach (var val in value)
-            this.items.Add ( new KeyValuePair<string, string> ( key, val ) );
+            items.Add ( new KeyValuePair<string, string> ( key, val ) );
     }
 
     /// <summary>
@@ -161,16 +170,16 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <param name="key">The key to be added.</param>
     /// <param name="value">The value associated with the key, or <c>null</c> to set an empty value.</param>
     public void Add ( string key, string? value ) {
-        this.items.Add ( new KeyValuePair<string, string> ( key, value ?? string.Empty ) );
+        items.Add ( new KeyValuePair<string, string> ( key, value ?? string.Empty ) );
     }
 
     /// <inheritdoc/>
     public bool Remove ( string key ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
 
             if (IniReader.IniNamingComparer.Compare ( item.Key, key ) == 0) {
-                this.items.RemoveAt ( i );
+                items.RemoveAt ( i );
                 return true;
             }
         }
@@ -179,18 +188,18 @@ public sealed class IniSection : IDictionary<string, string []> {
 
     /// <inheritdoc/>
     public void Add ( KeyValuePair<string, string []> item ) {
-        this.Add ( item.Key, item.Value );
+        Add ( item.Key, item.Value );
     }
 
     /// <inheritdoc/>
     public void Clear () {
-        this.items.Clear ();
+        items.Clear ();
     }
 
     /// <inheritdoc/>
     public bool Contains ( KeyValuePair<string, string []> item ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var current = this.items [ i ];
+        for (int i = 0; i < items.Count; i++) {
+            var current = items [ i ];
 
             if (IniReader.IniNamingComparer.Compare ( current.Key, item.Key ) == 0 &&
                 item.Value.Any ( i => i == current.Value ))
@@ -208,12 +217,12 @@ public sealed class IniSection : IDictionary<string, string []> {
 
     /// <inheritdoc/>
     public bool Remove ( KeyValuePair<string, string []> item ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var current = this.items [ i ];
+        for (int i = 0; i < items.Count; i++) {
+            var current = items [ i ];
 
             if (IniReader.IniNamingComparer.Compare ( current.Key, item.Key ) == 0 &&
                 item.Value.Any ( i => i == current.Value )) {
-                this.items.RemoveAt ( i );
+                items.RemoveAt ( i );
                 return true;
             }
         }

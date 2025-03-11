@@ -24,8 +24,8 @@ public sealed class JsonRpcMethodCollection {
     /// <param name="name">The name of the method to add.</param>
     /// <param name="method">The delegate representing the method to add.</param>
     public void AddMethod ( string name, Delegate method ) {
-        lock ((this.methods as ICollection).SyncRoot) {
-            this.methods.Add ( name, new RpcDelegate ( method.Method, method.Target ) );
+        lock ((methods as ICollection).SyncRoot) {
+            methods.Add ( name, new RpcDelegate ( method.Method, method.Target ) );
         }
     }
 
@@ -36,9 +36,9 @@ public sealed class JsonRpcMethodCollection {
     /// <param name="target">The target object instance containing the methods.</param>
     /// <param name="prefixTypes">Indicates whether to prefix method names with the type name.</param>
     public void AddMethodsFromType<[DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.PublicMethods )] T> ( T target, bool prefixTypes = false ) where T : notnull {
-        lock ((this.methods as ICollection).SyncRoot) {
+        lock ((methods as ICollection).SyncRoot) {
             foreach (var method in MethodScanner.ScanMethods ( typeof ( T ), prefixTypes, target )) {
-                this.methods.Add ( method.Item1, method.Item2 );
+                methods.Add ( method.Item1, method.Item2 );
             }
         }
     }
@@ -50,9 +50,9 @@ public sealed class JsonRpcMethodCollection {
     /// <param name="target">The target object instance containing the methods.</param>
     /// <param name="prefixTypes">Indicates whether to prefix method names with the type name.</param>
     public void AddMethodsFromType ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.PublicMethods )] Type type, object? target, bool prefixTypes ) {
-        lock ((this.methods as ICollection).SyncRoot) {
+        lock ((methods as ICollection).SyncRoot) {
             foreach (var method in MethodScanner.ScanMethods ( type, prefixTypes, target )) {
-                this.methods.Add ( method.Item1, method.Item2 );
+                methods.Add ( method.Item1, method.Item2 );
             }
         }
     }
@@ -62,27 +62,27 @@ public sealed class JsonRpcMethodCollection {
     /// </summary>
     /// <param name="type">The type from which to scan and add methods.</param>
     /// <param name="target">The target object instance containing the methods.</param>
-    public void AddMethodsFromType ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.PublicMethods )] Type type, object? target ) => this.AddMethodsFromType ( type, target, false );
+    public void AddMethodsFromType ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.PublicMethods )] Type type, object? target ) => AddMethodsFromType ( type, target, false );
 
     /// <summary>
     /// Adds methods from the specified type to the collection without prefixing method names.
     /// </summary>
     /// <param name="type">The type from which to scan and add methods.</param>
-    public void AddMethodsFromType ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.PublicMethods )] Type type ) => this.AddMethodsFromType ( type, null, false );
+    public void AddMethodsFromType ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.PublicMethods )] Type type ) => AddMethodsFromType ( type, null, false );
 
     /// <summary>
     /// Removes a method from the collection by its name.
     /// </summary>
     /// <param name="name">The name of the method to remove.</param>
     public void RemoveMethod ( string name ) {
-        lock ((this.methods as ICollection).SyncRoot) {
-            this.methods.Remove ( name );
+        lock ((methods as ICollection).SyncRoot) {
+            methods.Remove ( name );
         }
     }
 
     internal RpcDelegate? GetMethod ( string name ) {
-        lock ((this.methods as ICollection).SyncRoot) {
-            if (this.methods.TryGetValue ( name, out RpcDelegate? result )) {
+        lock ((methods as ICollection).SyncRoot) {
+            if (methods.TryGetValue ( name, out RpcDelegate? result )) {
                 return result;
             }
             else {

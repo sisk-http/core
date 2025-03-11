@@ -75,19 +75,19 @@ public class BasicAuthenticateRequestHandler : IRequestHandler {
     public HttpResponse? Execute ( HttpRequest request, HttpContext context ) {
         string? authorization = request.Headers [ "Authorization" ];
         if (authorization == null) {
-            return this.CreateUnauthorizedResponse ();
+            return CreateUnauthorizedResponse ();
         }
         else {
             try {
-                var auth = this.ParseAuth ( authorization );
+                var auth = ParseAuth ( authorization );
                 if (auth == null) {
                     throw new Exception ();
                 }
-                var res = this.OnValidating ( auth, context );
+                var res = OnValidating ( auth, context );
                 return res;
             }
             catch (Exception) {
-                return this.CreateUnauthorizedResponse ();
+                return CreateUnauthorizedResponse ();
             }
         }
     }
@@ -119,7 +119,7 @@ public class BasicAuthenticateRequestHandler : IRequestHandler {
     /// </type>
     public HttpResponse CreateUnauthorizedResponse () {
         var unauth = new HttpResponse ( System.Net.HttpStatusCode.Unauthorized );
-        unauth.Headers.Add ( "WWW-Authenticate", $"Basic realm=\"{this.Realm}\"" );
+        unauth.Headers.Add ( "WWW-Authenticate", $"Basic realm=\"{Realm}\"" );
         return unauth;
     }
 

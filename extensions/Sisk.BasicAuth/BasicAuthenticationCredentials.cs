@@ -42,7 +42,7 @@ public class BasicAuthenticationCredentials {
     public string Password { get; private set; }
 
     internal BasicAuthenticationCredentials ( string username, string password ) {
-        this.UserId = username;
-        this.Password = password;
+        UserId = username;
+        Password = password;
     }
 }

@@ -23,7 +23,7 @@ namespace Sisk.Core.Http {
         /// <param name="obj">The another object which will be used to compare.</param>
         public override bool Equals ( object? obj ) {
             if (obj is ListeningHost other) {
-                return other.GetHashCode () == this.GetHashCode ();
+                return other.GetHashCode () == GetHashCode ();
             }
             else {
                 return false;
@@ -35,7 +35,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         public override int GetHashCode () {
             int hashCode = 9999;
-            foreach (var port in this._ports) {
+            foreach (var port in _ports) {
                 hashCode ^= port.GetHashCode ();
             }
             return hashCode;
@@ -44,7 +44,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets whether this <see cref="ListeningHost"/> can be listened by it's host <see cref="HttpServer"/>.
         /// </summary>
-        public bool CanListen { get => this.Router is not null; }
+        public bool CanListen { get => Router is not null; }
 
         /// <summary>
         /// Gets or sets the CORS sharing policy object.
@@ -62,10 +62,10 @@ namespace Sisk.Core.Http {
         /// </summary>
         public IList<ListeningPort> Ports {
             get {
-                return this._ports;
+                return _ports;
             }
             set {
-                this._ports = new List<ListeningPort> ( value );
+                _ports = new List<ListeningPort> ( value );
             }
         }
 
@@ -85,7 +85,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="ports">The array of <see cref="ListeningPort"/> to listen in the <see cref="ListeningHost"/>.</param>
         public ListeningHost ( params ListeningPort [] ports ) {
-            this._ports = ports.ToList ();
+            _ports = ports.ToList ();
         }
 
         /// <summary>
@@ -94,20 +94,20 @@ namespace Sisk.Core.Http {
         /// <param name="uri">The well formatted URL with scheme, hostname and port.</param>
         /// <param name="r">The router which will handle this listener requests.</param>
         public ListeningHost ( string uri, Router r ) {
-            this.Ports = [ new ListeningPort ( uri ) ];
-            this.Router = r;
+            Ports = [ new ListeningPort ( uri ) ];
+            Router = r;
         }
 
         internal void EnsureReady () {
             // The router does not need to be defined to start the server.
             ;
-            if (this._ports.Count == 0) {
+            if (_ports.Count == 0) {
                 throw new InvalidOperationException ( SR.ListeningHost_NotReady_EmptyPorts );
             }
 
-            string firstPath = this._ports [ 0 ].Path;
-            for (int i = 0; i < this._ports.Count; i++) {
-                ListeningPort port = this._ports [ i ];
+            string firstPath = _ports [ 0 ].Path;
+            for (int i = 0; i < _ports.Count; i++) {
+                ListeningPort port = _ports [ i ];
                 if (!port.Path.StartsWith ( '/' )) {
                     throw new InvalidOperationException ( SR.ListeningHost_NotReady_InvalidPath );
                 }

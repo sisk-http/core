@@ -27,7 +27,7 @@ public sealed class RouteMatch {
     public NameValueCollection? Parameters { get; }
 
     internal RouteMatch ( bool success, NameValueCollection? parameters ) {
-        this.Success = success;
-        this.Parameters = parameters;
+        Success = success;
+        Parameters = parameters;
     }
 }

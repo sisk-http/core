@@ -26,7 +26,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
     /// Creates an new <see cref="JsonRpcJsonExport"/> instance with default parameters.
     /// </summary>
     public JsonRpcJsonExport () {
-        this.JsonOptions = new JsonOptions () { NamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        JsonOptions = new JsonOptions () { NamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
     /// instance.
     /// </summary>
     public JsonRpcJsonExport ( JsonOptions options ) {
-        this.JsonOptions = options;
+        JsonOptions = options;
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
     /// <param name="documentation">The JSON-RPC documentation to encode.</param>
     /// <returns></returns>
     public JsonValue EncodeDocumentation ( JsonRpcDocumentation documentation ) {
-        JsonArray arr = this.JsonOptions.CreateJsonArray ();
+        JsonArray arr = JsonOptions.CreateJsonArray ();
 
         foreach (var method in documentation.Methods) {
 
@@ -61,11 +61,11 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
                     .ToArray ()
             };
 
-            arr.Add ( JsonValue.Serialize ( item, this.JsonOptions ) );
+            arr.Add ( JsonValue.Serialize ( item, JsonOptions ) );
         }
 
-        return this.JsonOptions.Serialize ( new {
-            Metadata = this.Pipe ( documentation.Metadata, m => new {
+        return JsonOptions.Serialize ( new {
+            Metadata = Pipe ( documentation.Metadata, m => new {
                 m!.ApplicationName,
                 m.ApplicationDescription,
                 m.ServicePath,
@@ -77,7 +77,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
 
     /// <inheritdoc/>
     public byte [] ExportDocumentBytes ( JsonRpcDocumentation documentation ) {
-        string json = this.EncodeDocumentation ( documentation ).ToString ();
+        string json = EncodeDocumentation ( documentation ).ToString ();
         return Encoding.UTF8.GetBytes ( json );
     }
 

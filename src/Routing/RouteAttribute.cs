@@ -51,8 +51,8 @@ namespace Sisk.Core.Routing {
         /// <param name="method">The route entry point method.</param>
         /// <param name="path">The route path.</param>
         public RouteAttribute ( RouteMethod method, string path ) {
-            this.Method = method;
-            this.Path = path;
+            Method = method;
+            Path = path;
         }
     }
 

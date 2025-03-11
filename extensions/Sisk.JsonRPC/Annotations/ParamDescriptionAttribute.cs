@@ -30,7 +30,7 @@ public sealed class ParamDescriptionAttribute : Attribute {
     /// <param name="paramName">The parameter name.</param>
     /// <param name="description">The description of the method parameter.</param>
     public ParamDescriptionAttribute ( string paramName, string description ) {
-        this.ParameterName = paramName;
-        this.Description = description;
+        ParameterName = paramName;
+        Description = description;
     }
 }

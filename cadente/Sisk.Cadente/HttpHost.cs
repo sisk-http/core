@@ -36,7 +36,7 @@ public sealed class HttpHost : IDisposable {
     /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHost"/> has been disposed.
     /// </summary>
-    public bool IsDisposed { get => this.disposedValue; }
+    public bool IsDisposed { get => disposedValue; }
 
     /// <summary>
     /// Gets or sets the HTTPS options for secure connections. Setting an <see cref="Sisk.Cadente.HttpsOptions"/> object in this
@@ -54,7 +54,7 @@ public sealed class HttpHost : IDisposable {
     /// </summary>
     /// <param name="endpoint">The <see cref="IPEndPoint"/> to listen on.</param>
     public HttpHost ( IPEndPoint endpoint ) {
-        this._listener = new TcpListener ( endpoint );
+        _listener = new TcpListener ( endpoint );
     }
 
     /// <summary>
@@ -68,43 +68,43 @@ public sealed class HttpHost : IDisposable {
     /// Starts the HTTP host and begins listening for incoming connections.
     /// </summary>
     public void Start () {
-        ObjectDisposedException.ThrowIf ( this.disposedValue, this );
+        ObjectDisposedException.ThrowIf ( disposedValue, this );
 
-        this._listener.Server.NoDelay = true;
-        this._listener.Server.LingerState = new LingerOption ( true, 0 );
-        this._listener.Server.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
-        this._listener.Server.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
+        _listener.Server.NoDelay = true;
+        _listener.Server.LingerState = new LingerOption ( true, 0 );
+        _listener.Server.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
+        _listener.Server.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
 
-        this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
-        this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
-        this._listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
-        this._listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
-        this._listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
+        _listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
+        _listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
+        _listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
+        _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
+        _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
 
-        this._listener.Start ( QueueSize );
-        this._listener.BeginAcceptTcpClient ( this.ReceiveClient, null );
+        _listener.Start ( QueueSize );
+        _listener.BeginAcceptTcpClient ( ReceiveClient, null );
     }
 
     private async void ReceiveClient ( IAsyncResult result ) {
 
-        this._listener.BeginAcceptTcpClient ( this.ReceiveClient, null );
-        var client = this._listener.EndAcceptTcpClient ( result );
+        _listener.BeginAcceptTcpClient ( ReceiveClient, null );
+        var client = _listener.EndAcceptTcpClient ( result );
 
-        await this.HandleTcpClient ( client );
+        await HandleTcpClient ( client );
     }
 
     private async Task HandleTcpClient ( TcpClient client ) {
         try {
-            client.ReceiveTimeout = this.TimeoutManager._ClientReadTimeoutSeconds;
-            client.SendTimeout = this.TimeoutManager._ClientWriteTimeoutSeconds;
+            client.ReceiveTimeout = TimeoutManager._ClientReadTimeoutSeconds;
+            client.SendTimeout = TimeoutManager._ClientWriteTimeoutSeconds;
 
-            if (this.Handler is null)
+            if (Handler is null)
                 return;
 
             Stream connectionStream;
             Stream clientStream = client.GetStream ();
 
-            if (this.HttpsOptions is not null) {
+            if (HttpsOptions is not null) {
                 connectionStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
             }
             else {
@@ -119,10 +119,10 @@ public sealed class HttpHost : IDisposable {
                 if (connectionStream is SslStream sslStream) {
                     try {
                         await sslStream.AuthenticateAsServerAsync (
-                            serverCertificate: this.HttpsOptions!.ServerCertificate,
-                            clientCertificateRequired: this.HttpsOptions.ClientCertificateRequired,
-                            checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
-                            enabledSslProtocols: this.HttpsOptions.AllowedProtocols );
+                            serverCertificate: HttpsOptions!.ServerCertificate,
+                            clientCertificateRequired: HttpsOptions.ClientCertificateRequired,
+                            checkCertificateRevocation: HttpsOptions.CheckCertificateRevocation,
+                            enabledSslProtocols: HttpsOptions.AllowedProtocols );
 
                         hostClient.ClientCertificate = sslStream.RemoteCertificate;
                     }
@@ -131,9 +131,9 @@ public sealed class HttpHost : IDisposable {
                     }
                 }
 
-                await this.Handler.OnClientConnectedAsync ( this, hostClient );
+                await Handler.OnClientConnectedAsync ( this, hostClient );
                 await connection.HandleConnectionEvents ();
-                await this.Handler.OnClientDisconnectedAsync ( this, hostClient );
+                await Handler.OnClientDisconnectedAsync ( this, hostClient );
             }
         }
         finally {
@@ -142,29 +142,29 @@ public sealed class HttpHost : IDisposable {
     }
 
     private void Dispose ( bool disposing ) {
-        if (!this.disposedValue) {
+        if (!disposedValue) {
             if (disposing) {
-                this._listener.Dispose ();
+                _listener.Dispose ();
             }
 
-            this.disposedValue = true;
+            disposedValue = true;
         }
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal async ValueTask InvokeContextCreated ( HttpHostContext context ) {
-        if (this.disposedValue)
+        if (disposedValue)
             return;
-        if (this.Handler is null)
+        if (Handler is null)
             return;
 
-        await this.Handler.OnContextCreatedAsync ( this, context );
+        await Handler.OnContextCreatedAsync ( this, context );
     }
 
     /// <inheritdoc/>
     public void Dispose () {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        this.Dispose ( disposing: true );
+        Dispose ( disposing: true );
         GC.SuppressFinalize ( this );
     }
 }

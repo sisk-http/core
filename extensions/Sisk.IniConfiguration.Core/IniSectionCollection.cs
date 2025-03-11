@@ -1,4 +1,13 @@
-﻿using System.Collections;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   IniSectionCollection.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Collections;
 using Sisk.IniConfiguration.Core.Serialization;
 
 namespace Sisk.IniConfiguration.Core;
@@ -10,11 +19,11 @@ public sealed class IniSectionCollection : IList<IniSection> {
     private List<IniSection> inner;
 
     internal IniSectionCollection () {
-        this.inner = new List<IniSection> ();
+        inner = new List<IniSection> ();
     }
 
     internal IniSectionCollection ( IEnumerable<IniSection> p ) {
-        this.inner = new List<IniSection> ( p );
+        inner = new List<IniSection> ( p );
     }
 
     /// <summary>
@@ -25,17 +34,17 @@ public sealed class IniSectionCollection : IList<IniSection> {
     public IniSection GetGlobal () {
 
         IniSection global;
-        if (this.inner.Count == 0) {
+        if (inner.Count == 0) {
             global = new IniSection ( IniReader.INITIAL_SECTION_NAME );
-            this.inner.Add ( global );
+            inner.Add ( global );
         }
         else {
-            if (this.inner [ 0 ].Name == IniReader.INITIAL_SECTION_NAME) {
-                global = this.inner [ 0 ];
+            if (inner [ 0 ].Name == IniReader.INITIAL_SECTION_NAME) {
+                global = inner [ 0 ];
             }
             else {
                 global = new IniSection ( IniReader.INITIAL_SECTION_NAME );
-                this.inner.Insert ( 0, global );
+                inner.Insert ( 0, global );
             }
         }
 
@@ -44,77 +53,77 @@ public sealed class IniSectionCollection : IList<IniSection> {
 
     /// <inheritdoc/>
     public IniSection this [ int index ] {
-        get => ((IList<IniSection>) this.inner) [ index ];
+        get => ((IList<IniSection>) inner) [ index ];
         set {
-            ((IList<IniSection>) this.inner) [ index ] = value;
-            this.MergeIniSections ();
+            ((IList<IniSection>) inner) [ index ] = value;
+            MergeIniSections ();
         }
     }
 
     /// <inheritdoc/>
-    public int Count => ((ICollection<IniSection>) this.inner).Count;
+    public int Count => ((ICollection<IniSection>) inner).Count;
 
     /// <inheritdoc/>
-    public bool IsReadOnly => ((ICollection<IniSection>) this.inner).IsReadOnly;
+    public bool IsReadOnly => ((ICollection<IniSection>) inner).IsReadOnly;
 
     /// <inheritdoc/>
     public void Add ( IniSection item ) {
-        ((ICollection<IniSection>) this.inner).Add ( item );
-        this.MergeIniSections ();
+        ((ICollection<IniSection>) inner).Add ( item );
+        MergeIniSections ();
     }
 
     /// <inheritdoc/>
     public void Clear () {
-        ((ICollection<IniSection>) this.inner).Clear ();
+        ((ICollection<IniSection>) inner).Clear ();
     }
 
     /// <inheritdoc/>
     public bool Contains ( IniSection item ) {
-        return ((ICollection<IniSection>) this.inner).Contains ( item );
+        return ((ICollection<IniSection>) inner).Contains ( item );
     }
 
     /// <inheritdoc/>
     public void CopyTo ( IniSection [] array, int arrayIndex ) {
-        ((ICollection<IniSection>) this.inner).CopyTo ( array, arrayIndex );
+        ((ICollection<IniSection>) inner).CopyTo ( array, arrayIndex );
     }
 
     /// <inheritdoc/>
     public IEnumerator<IniSection> GetEnumerator () {
-        return ((IEnumerable<IniSection>) this.inner).GetEnumerator ();
+        return ((IEnumerable<IniSection>) inner).GetEnumerator ();
     }
 
     /// <inheritdoc/>
     public int IndexOf ( IniSection item ) {
-        return ((IList<IniSection>) this.inner).IndexOf ( item );
+        return ((IList<IniSection>) inner).IndexOf ( item );
     }
 
     /// <inheritdoc/>
     public void Insert ( int index, IniSection item ) {
-        ((IList<IniSection>) this.inner).Insert ( index, item );
-        this.MergeIniSections ();
+        ((IList<IniSection>) inner).Insert ( index, item );
+        MergeIniSections ();
     }
 
     /// <inheritdoc/>
     public bool Remove ( IniSection item ) {
-        bool result = ((ICollection<IniSection>) this.inner).Remove ( item );
-        this.MergeIniSections ();
+        bool result = ((ICollection<IniSection>) inner).Remove ( item );
+        MergeIniSections ();
         return result;
     }
 
     /// <inheritdoc/>
     public void RemoveAt ( int index ) {
-        ((IList<IniSection>) this.inner).RemoveAt ( index );
-        this.MergeIniSections ();
+        ((IList<IniSection>) inner).RemoveAt ( index );
+        MergeIniSections ();
     }
 
     /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator () {
-        return ((IEnumerable) this.inner).GetEnumerator ();
+        return ((IEnumerable) inner).GetEnumerator ();
     }
 
     IList<IniSection> MergeIniSections () {
-        lock (this.inner) {
-            var sectionNames = this.inner
+        lock (inner) {
+            var sectionNames = inner
             .DistinctBy ( s => s.Name, IniReader.IniNamingComparer )
             .Select ( s => s.Name )
             .ToArray ();
@@ -124,8 +133,8 @@ public sealed class IniSectionCollection : IList<IniSection> {
                 string currentName = sectionNames [ i ];
                 List<KeyValuePair<string, string>> allProperties = new ();
 
-                for (int j = 0; j < this.inner.Count; j++) {
-                    IniSection s = this.inner [ j ];
+                for (int j = 0; j < inner.Count; j++) {
+                    IniSection s = inner [ j ];
                     if (IniReader.IniNamingComparer.Compare ( s.Name, currentName ) == 0) {
                         allProperties.AddRange ( s.items );
                     }

@@ -25,7 +25,7 @@ namespace Sisk.Core.Routing {
         /// </summary>
         /// <param name="constructorArguments">An optional array of objects which is passed to the request handler constructor.</param>
         public RequestHandlerAttribute ( params object? [] constructorArguments ) : base ( typeof ( T ) ) {
-            this.ConstructorArguments = constructorArguments;
+            ConstructorArguments = constructorArguments;
         }
     }
 
@@ -51,13 +51,13 @@ namespace Sisk.Core.Routing {
         /// </summary>
         /// <param name="handledBy">The type that implements <see cref="IRequestHandler"/> which will be instantiated.</param>
         public RequestHandlerAttribute ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.All )] Type handledBy ) {
-            this.RequestHandlerType = handledBy;
-            this.ConstructorArguments = Array.Empty<object?> ();
+            RequestHandlerType = handledBy;
+            ConstructorArguments = Array.Empty<object?> ();
         }
 
         internal IRequestHandler Activate () {
-            if (Activator.CreateInstance ( this.RequestHandlerType, this.ConstructorArguments ) is not IRequestHandler rhandler) {
-                throw new ArgumentException ( SR.Format ( SR.RequestHandler_ActivationException, this.RequestHandlerType.FullName, this.ConstructorArguments.Length ) );
+            if (Activator.CreateInstance ( RequestHandlerType, ConstructorArguments ) is not IRequestHandler rhandler) {
+                throw new ArgumentException ( SR.Format ( SR.RequestHandler_ActivationException, RequestHandlerType.FullName, ConstructorArguments.Length ) );
             }
             return rhandler;
         }

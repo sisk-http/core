@@ -86,10 +86,10 @@ namespace Sisk.Core.Http {
         public Router? Router { get; internal set; }
 
         internal HttpContext ( HttpServer httpServer ) {
-            this.HttpServer = httpServer;
-            this.Request = null!; // associated later
-            this.Router = null!;// associated later, may be null
-            this.ListeningHost = null!; // associated later, may be null
+            HttpServer = httpServer;
+            Request = null!; // associated later
+            Router = null!;// associated later, may be null
+            ListeningHost = null!; // associated later, may be null
         }
     }
 }

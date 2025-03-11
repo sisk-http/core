@@ -42,6 +42,6 @@ public sealed class HttpsOptions {
     /// </summary>
     /// <param name="certificate">The <see cref="X509Certificate"/> used to encrypt data between the client and the server.</param>
     public HttpsOptions ( X509Certificate certificate ) {
-        this.ServerCertificate = certificate;
+        ServerCertificate = certificate;
     }
 }

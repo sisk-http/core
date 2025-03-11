@@ -34,9 +34,9 @@ public readonly struct JsonRpcError {
     /// Creates an new instance of the <see cref="JsonRpcError"/> structure.
     /// </summary>
     public JsonRpcError () {
-        this.Code = -32603;
-        this.Message = "An exception was thrown.";
-        this.Data = JsonValue.Null;
+        Code = -32603;
+        Message = "An exception was thrown.";
+        Data = JsonValue.Null;
     }
 
     /// <summary>
@@ -46,9 +46,9 @@ public readonly struct JsonRpcError {
     /// <param name="code">The JSON-RPC error code.</param>
     /// <param name="message">The JSON-RPC error message.</param>
     public JsonRpcError ( int code, string message ) {
-        this.Code = code;
-        this.Message = message;
-        this.Data = JsonValue.Null;
+        Code = code;
+        Message = message;
+        Data = JsonValue.Null;
     }
 
     /// <summary>
@@ -59,8 +59,8 @@ public readonly struct JsonRpcError {
     /// <param name="message">The JSON-RPC error message.</param>
     /// <param name="data">The JSON-RPC error additional data.</param>
     public JsonRpcError ( int code, string message, JsonValue data ) {
-        this.Code = code;
-        this.Message = message;
-        this.Data = data;
+        Code = code;
+        Message = message;
+        Data = data;
     }
 }

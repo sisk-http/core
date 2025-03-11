@@ -36,9 +36,9 @@ public sealed class JsonRpcResponse {
     public JsonValue Id { get; }
 
     internal JsonRpcResponse ( JsonValue? result, JsonRpcError? error, JsonValue id ) {
-        this.Result = result;
-        this.Error = error;
-        this.Id = id;
+        Result = result;
+        Error = error;
+        Id = id;
     }
 
     /// <summary>

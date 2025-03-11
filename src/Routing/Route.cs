@@ -40,7 +40,7 @@ namespace Sisk.Core.Routing {
         /// <summary>
         /// Gets an boolean indicating if this <see cref="Route"/> action return is an asynchronous <see cref="Task"/>.
         /// </summary>
-        public bool IsAsync { get => this._isAsyncTask; }
+        public bool IsAsync { get => _isAsyncTask; }
 
         /// <summary>
         /// Gets or sets how this route can write messages to log files on the server.
@@ -67,14 +67,14 @@ namespace Sisk.Core.Routing {
         /// </summary>
         public string Path {
             get {
-                return this.path;
+                return path;
             }
             set {
-                if (this.UseRegex && this.routeRegex != null) {
+                if (UseRegex && routeRegex != null) {
                     // routeRegex is created in the router invocation
-                    this.routeRegex = null;
+                    routeRegex = null;
                 }
-                this.path = value;
+                path = value;
             }
         }
 
@@ -88,21 +88,21 @@ namespace Sisk.Core.Routing {
         /// </summary>
         public Delegate? Action {
             get {
-                if (this._parameterlessRouteAction != null) {
-                    return this._parameterlessRouteAction;
+                if (_parameterlessRouteAction != null) {
+                    return _parameterlessRouteAction;
                 }
                 else {
-                    return this._singleParamCallback;
+                    return _singleParamCallback;
                 }
             }
             set {
                 if (value is null) {
-                    this._parameterlessRouteAction = null;
-                    this._singleParamCallback = null;
-                    this._isAsyncTask = false;
-                    this._isAsyncEnumerable = false;
+                    _parameterlessRouteAction = null;
+                    _singleParamCallback = null;
+                    _isAsyncTask = false;
+                    _isAsyncEnumerable = false;
                 }
-                else if (!this.TrySetRouteAction ( value.Method, value.Target, out Exception? ex )) {
+                else if (!TrySetRouteAction ( value.Method, value.Target, out Exception? ex )) {
                     throw ex;
                 }
             }
@@ -110,12 +110,12 @@ namespace Sisk.Core.Routing {
 
         internal bool TrySetRouteAction ( MethodInfo method, object? target, [NotNullWhen ( false )] out Exception? ex ) {
             if (Delegate.CreateDelegate ( typeof ( RouteAction ), target, method, false ) is RouteAction raction) {
-                this._singleParamCallback = raction;
-                this._parameterlessRouteAction = null;
+                _singleParamCallback = raction;
+                _parameterlessRouteAction = null;
             }
             else if (Delegate.CreateDelegate ( typeof ( ParameterlessRouteAction ), target, method, false ) is ParameterlessRouteAction parameterlessRouteAction) {
-                this._singleParamCallback = null;
-                this._parameterlessRouteAction = parameterlessRouteAction;
+                _singleParamCallback = null;
+                _parameterlessRouteAction = parameterlessRouteAction;
             }
             else {
                 ex = new ArgumentException ( SR.Router_Set_InvalidType );
@@ -135,8 +135,8 @@ namespace Sisk.Core.Routing {
                 return null;
             }
 
-            this._isAsyncTask = false;
-            this._isAsyncEnumerable = false;
+            _isAsyncTask = false;
+            _isAsyncEnumerable = false;
 
             var retType = method.ReturnType;
             if (retType.IsValueType) {
@@ -144,14 +144,14 @@ namespace Sisk.Core.Routing {
                 return false;
             }
             else if (retType.IsAssignableTo ( typeof ( Task ) )) {
-                this._isAsyncTask = true;
+                _isAsyncTask = true;
                 if (CheckAsyncReturnParameters ( retType ) is Exception rex) {
                     ex = rex;
                     return false;
                 }
             }
             else if (retType.IsGenericType && retType.GetGenericTypeDefinition () == typeof ( IAsyncEnumerable<> )) {
-                this._isAsyncEnumerable = true;
+                _isAsyncEnumerable = true;
                 if (CheckAsyncReturnParameters ( retType ) is Exception rex) {
                     ex = rex;
                     return false;
@@ -179,9 +179,9 @@ namespace Sisk.Core.Routing {
         /// <param name="path">The path expression that will be interpreted by the router and validated by the requests.</param>
         /// <param name="action">The function that is called after the route is matched with the request.</param>
         public Route ( RouteMethod method, string path, Delegate? action ) {
-            this.Method = method;
+            Method = method;
             this.path = path;
-            this.Action = action;
+            Action = action;
         }
 
         /// <summary>
@@ -193,25 +193,25 @@ namespace Sisk.Core.Routing {
         /// <param name="action">The function that is called after the route is matched with the request.</param>
         /// <param name="handlers">The RequestHandlers to run before the route's Action.</param>
         public Route ( RouteMethod method, string path, string? name, Delegate? action, IRequestHandler []? handlers ) {
-            this.Method = method;
+            Method = method;
             this.path = path;
-            this.Name = name;
-            this.Action = action;
-            this.RequestHandlers = handlers ?? Array.Empty<IRequestHandler> ();
+            Name = name;
+            Action = action;
+            RequestHandlers = handlers ?? Array.Empty<IRequestHandler> ();
         }
 
         /// <summary>
         /// Creates an new <see cref="Route"/> instance with no parameters.
         /// </summary>
         public Route () {
-            this.path = "/";
+            path = "/";
         }
 
         /// <summary>
         /// Gets an string notation for this <see cref="Route"/> object.
         /// </summary>
         public override string ToString () {
-            return $"[{this.Method.ToString ().ToUpperInvariant ()} {this.path}] {this.Name ?? this.Action?.Method.Name ?? "<no action>"}";
+            return $"[{Method.ToString ().ToUpperInvariant ()} {path}] {Name ?? Action?.Method.Name ?? "<no action>"}";
         }
         #region Helper constructors
 

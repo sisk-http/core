@@ -27,7 +27,7 @@ public abstract class AsyncRequestHandler : IRequestHandler {
     public abstract Task<HttpResponse?> ExecuteAsync ( HttpRequest request, HttpContext context );
 
     HttpResponse? IRequestHandler.Execute ( HttpRequest request, HttpContext context ) {
-        return this.ExecuteAsync ( request, context ).GetAwaiter ().GetResult ();
+        return ExecuteAsync ( request, context ).GetAwaiter ().GetResult ();
     }
 
     /// <summary>
@@ -51,11 +51,11 @@ sealed class InlineAsyncRequestHandler : AsyncRequestHandler {
     public Func<HttpRequest, HttpContext, Task<HttpResponse?>> Handler { get; set; }
 
     public InlineAsyncRequestHandler ( Func<HttpRequest, HttpContext, Task<HttpResponse?>> handler, RequestHandlerExecutionMode mode ) {
-        this.Handler = handler ?? throw new ArgumentNullException ( nameof ( handler ) );
+        Handler = handler ?? throw new ArgumentNullException ( nameof ( handler ) );
         base.ExecutionMode = mode;
     }
 
     public override async Task<HttpResponse?> ExecuteAsync ( HttpRequest request, HttpContext context ) {
-        return await this.Handler ( request, context );
+        return await Handler ( request, context );
     }
 }

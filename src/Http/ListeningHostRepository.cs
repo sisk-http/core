@@ -30,13 +30,13 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="hosts">The collection which stores the <see cref="ListeningHost"/> which will be copied to this repository.</param>
         public ListeningHostRepository ( IEnumerable<ListeningHost> hosts ) {
-            this._hosts.AddRange ( hosts );
+            _hosts.AddRange ( hosts );
         }
 
         /// <summary>
         /// Gets the number of elements contained in this <see cref="ListeningHostRepository"/>.
         /// </summary>
-        public int Count => this._hosts.Count;
+        public int Count => _hosts.Count;
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="ListeningHostRepository"/> is read only. This property always returns <see langword="false"></see>.
@@ -48,16 +48,16 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="item">The <see cref="ListeningHost"/> to add to this collection.</param>
         public void Add ( ListeningHost item ) {
-            if (this.Contains ( item ))
+            if (Contains ( item ))
                 throw new ArgumentException ( SR.ListeningHostRepository_Duplicate, nameof ( item ) );
-            this._hosts.Add ( item );
+            _hosts.Add ( item );
         }
 
         /// <summary>
         /// Removes all listeninghosts from this repository.
         /// </summary>
         public void Clear () {
-            this._hosts.Clear ();
+            _hosts.Clear ();
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="item">The <see cref="ListeningHost"/> to check if is present in this repository.</param>
         public bool Contains ( ListeningHost item ) {
-            return this._hosts.Contains ( item );
+            return _hosts.Contains ( item );
         }
 
         /// <summary>
@@ -74,14 +74,14 @@ namespace Sisk.Core.Http {
         /// <param name="array">The one-dimensional System.Array that is the destination of the elements copied.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
         public void CopyTo ( ListeningHost [] array, int arrayIndex ) {
-            this._hosts.CopyTo ( array, arrayIndex );
+            _hosts.CopyTo ( array, arrayIndex );
         }
 
         /// <summary>
         /// Returns an enumerator that iterates through this <see cref="ListeningHostRepository"/>.
         /// </summary>
         public IEnumerator<ListeningHost> GetEnumerator () {
-            return this._hosts.GetEnumerator ();
+            return _hosts.GetEnumerator ();
         }
 
         /// <summary>
@@ -89,22 +89,22 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="item">The <see cref="ListeningHost"/> to be removed.</param>
         public bool Remove ( ListeningHost item ) {
-            return this._hosts.Remove ( item );
+            return _hosts.Remove ( item );
         }
 
         /// <summary>
         /// Returns an enumerator that iterates through this <see cref="ListeningHostRepository"/>.
         /// </summary>
         IEnumerator IEnumerable.GetEnumerator () {
-            return this.GetEnumerator ();
+            return GetEnumerator ();
         }
 
         /// <inheritdoc/>
-        public ListeningHost this [ int index ] { get => this._hosts [ index ]; set => this._hosts [ index ] = value; }
+        public ListeningHost this [ int index ] { get => _hosts [ index ]; set => _hosts [ index ] = value; }
 
         internal ListeningHost? GetRequestMatchingListeningHost ( string incomingHost, string path, int incomingPort ) {
-            lock (this._hosts) {
-                Span<ListeningHost> hosts = CollectionsMarshal.AsSpan ( this._hosts );
+            lock (_hosts) {
+                Span<ListeningHost> hosts = CollectionsMarshal.AsSpan ( _hosts );
                 for (int H = 0; H < hosts.Length; H++) {
                     ListeningHost h = hosts [ H ];
 
@@ -125,17 +125,17 @@ namespace Sisk.Core.Http {
 
         /// <inheritdoc/>
         public int IndexOf ( ListeningHost item ) {
-            return this._hosts.IndexOf ( item );
+            return _hosts.IndexOf ( item );
         }
 
         /// <inheritdoc/>
         public void Insert ( int index, ListeningHost item ) {
-            this._hosts.Insert ( index, item );
+            _hosts.Insert ( index, item );
         }
 
         /// <inheritdoc/>
         public void RemoveAt ( int index ) {
-            this._hosts.RemoveAt ( index );
+            _hosts.RemoveAt ( index );
         }
     }
 }

@@ -79,46 +79,46 @@ public abstract class AsyncHttpServerHandler : HttpServerHandler {
 
     /// <inheritdoc/>
     protected sealed override void OnContextBagCreated ( TypedValueDictionary contextBag ) {
-        this.OnContextBagCreatedAsync ( contextBag ).GetAwaiter ().GetResult ();
+        OnContextBagCreatedAsync ( contextBag ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnException ( Exception exception ) {
-        this.OnExceptionAsync ( exception ).GetAwaiter ().GetResult ();
+        OnExceptionAsync ( exception ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnHttpRequestClose ( HttpServerExecutionResult result ) {
-        this.OnHttpRequestCloseAsync ( result ).GetAwaiter ().GetResult ();
+        OnHttpRequestCloseAsync ( result ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnHttpRequestOpen ( HttpRequest request ) {
-        this.OnHttpRequestOpenAsync ( request ).GetAwaiter ().GetResult ();
+        OnHttpRequestOpenAsync ( request ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnServerStarted ( HttpServer server ) {
-        this.OnServerStartedAsync ( server ).GetAwaiter ().GetResult ();
+        OnServerStartedAsync ( server ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnServerStarting ( HttpServer server ) {
-        this.OnServerStartingAsync ( server ).GetAwaiter ().GetResult ();
+        OnServerStartingAsync ( server ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnServerStopped ( HttpServer server ) {
-        this.OnServerStoppedAsync ( server ).GetAwaiter ().GetResult ();
+        OnServerStoppedAsync ( server ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnServerStopping ( HttpServer server ) {
-        this.OnServerStoppingAsync ( server ).GetAwaiter ().GetResult ();
+        OnServerStoppingAsync ( server ).GetAwaiter ().GetResult ();
     }
 
     /// <inheritdoc/>
     protected sealed override void OnSetupRouter ( Router router ) {
-        this.OnSetupRouterAsync ( router ).GetAwaiter ().GetResult ();
+        OnSetupRouterAsync ( router ).GetAwaiter ().GetResult ();
     }
 }

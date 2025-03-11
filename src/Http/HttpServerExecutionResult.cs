@@ -15,13 +15,13 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets the <see cref="HttpRequest"/> received in this diagnosis.
         /// </summary>
-        public HttpRequest Request { get => this.Context.Request; }
+        public HttpRequest Request { get => Context.Request; }
 
         /// <summary>
         /// Gets the resulted <see cref="HttpResponse"/> send by the router, if any. This object can be null if the
         /// server didn't sent any response to the client.
         /// </summary>
-        public HttpResponse? Response { get => this.Context.RouterResponse; }
+        public HttpResponse? Response { get => Context.RouterResponse; }
 
         /// <summary>
         /// Gets the <see cref="HttpContext"/> of this execution result.
@@ -41,7 +41,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets an boolean indicating if this execution status is an success status.
         /// </summary>
-        public bool IsSuccessStatus { get => this.Status == HttpServerExecutionStatus.Executed || this.Status == HttpServerExecutionStatus.ConnectionClosed; }
+        public bool IsSuccessStatus { get => Status == HttpServerExecutionStatus.Executed || Status == HttpServerExecutionStatus.ConnectionClosed; }
 
         /// <summary>
         /// Gets the estimated request size in bytes.

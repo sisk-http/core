@@ -28,8 +28,8 @@ public sealed class JsonRpcDocumentation {
     public JsonRpcDocumentationMetadata? Metadata { get; }
 
     internal JsonRpcDocumentation ( JsonRpcDocumentationMethod [] methods, JsonRpcDocumentationMetadata? metadata ) {
-        this.Methods = methods;
-        this.Metadata = metadata;
+        Methods = methods;
+        Metadata = metadata;
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public sealed class JsonRpcDocumentation {
     /// <summary>
     /// Gets an JSON string representation of this <see cref="JsonRpcDocumentation"/>.
     /// </summary>
-    public string ExportToJson () => this.ExportToJson ( JsonOptions.Default );
+    public string ExportToJson () => ExportToJson ( JsonOptions.Default );
 }
 
 /// <summary>
@@ -110,11 +110,11 @@ public sealed class JsonRpcDocumentationMethod {
     public JsonRpcDocumentationParameter [] Parameters { get; }
 
     internal JsonRpcDocumentationMethod ( string methodName, string? category, string? description, Type returnType, JsonRpcDocumentationParameter [] parameters ) {
-        this.MethodName = methodName;
-        this.Category = category;
-        this.Description = description;
-        this.ReturnType = returnType;
-        this.Parameters = parameters;
+        MethodName = methodName;
+        Category = category;
+        Description = description;
+        ReturnType = returnType;
+        Parameters = parameters;
     }
 }
 
@@ -150,9 +150,9 @@ public sealed class JsonRpcDocumentationParameter {
     /// <param name="description">The description of the parameter.</param>
     /// <param name="isOptional">Indicates whether the parameter is optional.</param>
     internal JsonRpcDocumentationParameter ( string parameterName, Type parameterType, string? description, bool isOptional ) {
-        this.ParameterName = parameterName;
-        this.ParameterType = parameterType;
-        this.Description = description;
-        this.IsOptional = isOptional;
+        ParameterName = parameterName;
+        ParameterType = parameterType;
+        Description = description;
+        IsOptional = isOptional;
     }
 }

@@ -20,23 +20,23 @@ internal sealed class DefaultHttpServerHandler : HttpServerHandler {
     internal List<(Action, string)> _serverBootstrapingFunctions = new ();
 
     protected override void OnServerStarting ( HttpServer server ) {
-        for (int i = 0; i < this._serverBootstrapingFunctions.Count; i++) {
-            var func = this._serverBootstrapingFunctions [ i ];
+        for (int i = 0; i < _serverBootstrapingFunctions.Count; i++) {
+            var func = _serverBootstrapingFunctions [ i ];
 
             Stopwatch sw = Stopwatch.StartNew ();
-            if (this.hostContext?.verbose == true) {
+            if (hostContext?.verbose == true) {
                 Console.Write ( $"Running server boostrapper <{func.Item2}>... " );
             }
 
             func.Item1 ();
 
-            if (this.hostContext?.verbose == true) {
+            if (hostContext?.verbose == true) {
                 Console.WriteLine ( $"OK! ({sw.ElapsedMilliseconds} ms)" );
             }
         }
     }
 
     protected override void OnSetupRouter ( Router router ) {
-        this._routerSetup?.Invoke ( router );
+        _routerSetup?.Invoke ( router );
     }
 }

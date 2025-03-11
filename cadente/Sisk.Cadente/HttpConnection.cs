@@ -32,18 +32,18 @@ sealed class HttpConnection : IDisposable {
     public const int RESPONSE_BUFFER_SIZE = 4096;
 
     public HttpConnection ( HttpHostClient client, Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
-        this._client = client;
-        this._connectionStream = connectionStream;
-        this._host = host;
-        this._endpoint = endpoint;
+        _client = client;
+        _connectionStream = connectionStream;
+        _host = host;
+        _endpoint = endpoint;
     }
 
     public async Task<HttpConnectionState> HandleConnectionEvents () {
         bool connectionCloseRequested = false;
 
-        while (this._connectionStream.CanRead && !this.disposedValue) {
+        while (_connectionStream.CanRead && !disposedValue) {
 
-            HttpRequestReader requestReader = new HttpRequestReader ( this._connectionStream );
+            HttpRequestReader requestReader = new HttpRequestReader ( _connectionStream );
             Stream? responseStream = null;
 
             try {
@@ -51,8 +51,8 @@ sealed class HttpConnection : IDisposable {
                     return HttpConnectionState.ConnectionClosed;
                 }
 
-                HttpHostContext managedSession = new HttpHostContext ( nextRequest, this._client, this._connectionStream );
-                await this._host.InvokeContextCreated ( managedSession );
+                HttpHostContext managedSession = new HttpHostContext ( nextRequest, _client, _connectionStream );
+                await _host.InvokeContextCreated ( managedSession );
 
                 if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                     connectionCloseRequested = true;
@@ -66,7 +66,7 @@ sealed class HttpConnection : IDisposable {
                     managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
                 }
 
-                Stream outputStream = this._connectionStream;
+                Stream outputStream = _connectionStream;
                 if (responseStream is not null) {
 
                     if (managedSession.Response.SendChunked || !responseStream.CanSeek) {
@@ -87,7 +87,7 @@ sealed class HttpConnection : IDisposable {
                     await responseStream.CopyToAsync ( outputStream );
                 }
 
-                await this._connectionStream.FlushAsync ();
+                await _connectionStream.FlushAsync ();
 
                 if (connectionCloseRequested) {
                     break;
@@ -102,17 +102,17 @@ sealed class HttpConnection : IDisposable {
     }
 
     private void Dispose ( bool disposing ) {
-        if (!this.disposedValue) {
+        if (!disposedValue) {
             if (disposing) {
-                this._connectionStream.Dispose ();
+                _connectionStream.Dispose ();
             }
 
-            this.disposedValue = true;
+            disposedValue = true;
         }
     }
 
     public void Dispose () {
-        this.Dispose ( disposing: true );
+        Dispose ( disposing: true );
         GC.SuppressFinalize ( this );
     }
 }

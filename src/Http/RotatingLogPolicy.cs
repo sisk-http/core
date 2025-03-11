@@ -36,8 +36,8 @@ namespace Sisk.Core.Http {
             if (ls.rotatingLogPolicy != null) {
                 throw new InvalidOperationException ( SR.LogStream_RotatingLogPolicy_AlreadyBind );
             }
-            this._logStream = ls;
-            this._logStream.rotatingLogPolicy = this;
+            _logStream = ls;
+            _logStream.rotatingLogPolicy = this;
         }
 
         /// <summary>
@@ -49,49 +49,49 @@ namespace Sisk.Core.Http {
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="due">The time interval between checks.</param>
         public void Configure ( long maximumSize, TimeSpan due ) {
-            if (this.checkTimer?.Enabled == true) {
+            if (checkTimer?.Enabled == true) {
                 return;
             }
-            if (string.IsNullOrEmpty ( this._logStream?.FilePath )) {
+            if (string.IsNullOrEmpty ( _logStream?.FilePath )) {
                 throw new NotSupportedException ( SR.LogStream_RotatingLogPolicy_NotLocalFile );
             }
             if (due == TimeSpan.Zero) {
                 throw new ArgumentException ( SR.LogStream_RotatingLogPolicy_IntervalZero );
             }
 
-            this.MaximumSize = maximumSize;
-            this.Due = due;
+            MaximumSize = maximumSize;
+            Due = due;
 
-            this.checkTimer ??= new System.Timers.Timer () {
+            checkTimer ??= new System.Timers.Timer () {
                 AutoReset = false
             };
 
-            this.checkTimer.Interval = this.Due.TotalMilliseconds;
-            this.checkTimer.Elapsed += this.Check;
-            this.checkTimer.Start ();
+            checkTimer.Interval = Due.TotalMilliseconds;
+            checkTimer.Elapsed += Check;
+            checkTimer.Start ();
         }
 
         private void Check ( object? state, ElapsedEventArgs e ) {
-            if (this.disposedValue)
+            if (disposedValue)
                 return;
-            if (this._logStream is null || this._logStream.Disposed)
+            if (_logStream is null || _logStream.Disposed)
                 return;
-            if (this.checkTimer is null)
+            if (checkTimer is null)
                 return;
 
-            string file = this._logStream.FilePath!;
+            string file = _logStream.FilePath!;
 
             if (File.Exists ( file )) {
                 FileInfo fileInfo = new FileInfo ( file );
 
-                if (fileInfo.Length > this.MaximumSize) {
+                if (fileInfo.Length > MaximumSize) {
                     DateTime now = DateTime.Now;
                     string ext = fileInfo.Extension;
                     string safeDatetime = $"{now.Day:D2}-{now.Month:D2}-{now.Year}T{now.Hour:D2}-{now.Minute:D2}-{now.Second:D2}.{now.Millisecond:D4}";
                     string gzippedFilename = $"{fileInfo.FullName}.{safeDatetime}{ext}.gz";
 
                     try {
-                        this._logStream.rotatingPolicyLocker.Reset ();
+                        _logStream.rotatingPolicyLocker.Reset ();
 
                         using (FileStream logSs = fileInfo.Open ( FileMode.OpenOrCreate ))
                         using (FileStream gzFileSs = new FileInfo ( gzippedFilename ).Create ())
@@ -107,30 +107,30 @@ namespace Sisk.Core.Http {
                         ;
                     }
                     finally {
-                        this._logStream.rotatingPolicyLocker.Set ();
+                        _logStream.rotatingPolicyLocker.Set ();
                     }
                 }
             }
 
-            this.checkTimer.Interval = this.Due.TotalMilliseconds;
-            this.checkTimer.Start ();
+            checkTimer.Interval = Due.TotalMilliseconds;
+            checkTimer.Start ();
         }
 
         private void Dispose ( bool disposing ) {
-            if (!this.disposedValue) {
+            if (!disposedValue) {
                 if (disposing) {
-                    this.checkTimer?.Dispose ();
-                    this._logStream?.Dispose ();
+                    checkTimer?.Dispose ();
+                    _logStream?.Dispose ();
                 }
 
-                this._logStream = null;
-                this.disposedValue = true;
+                _logStream = null;
+                disposedValue = true;
             }
         }
 
         /// <inheritdoc/>
         public void Dispose () {
-            this.Dispose ( disposing: true );
+            Dispose ( disposing: true );
             GC.SuppressFinalize ( this );
         }
     }

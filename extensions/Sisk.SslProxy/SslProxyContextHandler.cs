@@ -17,11 +17,11 @@ class SslProxyContextHandler : HttpHostHandler {
     public SslProxy Proxy { get; }
 
     public SslProxyContextHandler ( SslProxy proxy ) {
-        this.Proxy = proxy;
+        Proxy = proxy;
     }
 
     public override Task OnClientConnectedAsync ( HttpHost host, HttpHostClient client ) {
-        client.State = new ProxyGateway ( this.Proxy.GatewayEndpoint );
+        client.State = new ProxyGateway ( Proxy.GatewayEndpoint );
         return Task.CompletedTask;
     }
 
@@ -35,7 +35,7 @@ class SslProxyContextHandler : HttpHostHandler {
 
         HttpMethod requestMethod = new HttpMethod ( context.Request.Method );
         string requestPath = context.Request.Path;
-        string requestUri = $"http://{this.Proxy.GatewayEndpoint.Address}:{this.Proxy.GatewayEndpoint.Port}{requestPath}";
+        string requestUri = $"http://{Proxy.GatewayEndpoint.Address}:{Proxy.GatewayEndpoint.Port}{requestPath}";
 
         bool isWebsocketConnection = context.Request.Headers.Any ( c => c.Name.Equals ( "Sec-WebSocket-Key", StringComparison.OrdinalIgnoreCase ) );
         if (isWebsocketConnection) {
@@ -43,7 +43,7 @@ class SslProxyContextHandler : HttpHostHandler {
         }
 
         HttpRequestMessage proxyRequest = new HttpRequestMessage ( requestMethod, requestUri );
-        proxyRequest.Headers.Host = this.Proxy.GatewayHostname;
+        proxyRequest.Headers.Host = Proxy.GatewayHostname;
 
         if (context.Request.ContentLength > 0) {
             Stream requestStream = context.Request.GetRequestStream ();
@@ -53,10 +53,10 @@ class SslProxyContextHandler : HttpHostHandler {
         for (int i = 0; i < context.Request.Headers.Length; i++) {
             HttpHeader header = context.Request.Headers [ i ];
 
-            if (this.UnnalowedProxiedHeaders.Contains ( header.Name, StringComparer.OrdinalIgnoreCase )) {
+            if (UnnalowedProxiedHeaders.Contains ( header.Name, StringComparer.OrdinalIgnoreCase )) {
                 continue;
             }
-            else if (header.Name.Equals ( "Host", StringComparison.OrdinalIgnoreCase ) && this.Proxy.GatewayHostname != null) {
+            else if (header.Name.Equals ( "Host", StringComparison.OrdinalIgnoreCase ) && Proxy.GatewayHostname != null) {
 
             }
             else {
@@ -74,7 +74,7 @@ class SslProxyContextHandler : HttpHostHandler {
             [ .. proxyResponse.Headers, .. proxyResponse.Content.Headers ];
 
         foreach (var header in proxyResponseHeaders) {
-            if (this.UnnalowedProxiedHeaders.Contains ( header.Key, StringComparer.OrdinalIgnoreCase ))
+            if (UnnalowedProxiedHeaders.Contains ( header.Key, StringComparer.OrdinalIgnoreCase ))
                 continue;
 
             foreach (var headerValue in header.Value)

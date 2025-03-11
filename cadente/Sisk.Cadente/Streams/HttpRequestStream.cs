@@ -18,67 +18,67 @@ internal class HttpRequestStream : Stream {
     int bufferedByteLength = 0;
 
     public HttpRequestStream ( Stream clientStream, HttpRequestBase baseRequest ) {
-        this.s = clientStream;
+        s = clientStream;
         this.baseRequest = baseRequest;
-        this.bufferedByteLength = this.baseRequest.BufferedContent.Length;
+        bufferedByteLength = this.baseRequest.BufferedContent.Length;
     }
 
-    public override bool CanRead => this.s.CanRead;
+    public override bool CanRead => s.CanRead;
 
     public override bool CanSeek => false;
 
     public override bool CanWrite => false;
 
-    public override long Length => this.baseRequest.ContentLength;
+    public override long Length => baseRequest.ContentLength;
 
-    public override long Position { get => this.read; set => this.s.Position = value; }
+    public override long Position { get => read; set => s.Position = value; }
 
     public override void Flush () {
-        this.s.Flush ();
+        s.Flush ();
     }
 
     public override int Read ( byte [] buffer, int offset, int count ) {
-        if (this.read >= this.baseRequest.ContentLength) {
+        if (read >= baseRequest.ContentLength) {
             return 0;
         }
 
-        int bufferRead = this.ReadFromBuffer ( buffer, offset, count );
+        int bufferRead = ReadFromBuffer ( buffer, offset, count );
         if (bufferRead > 0) {
-            this.read += bufferRead;
+            read += bufferRead;
             return bufferRead;
         }
         else {
-            int streamRead = this.s.Read ( buffer, offset, count );
-            this.read += streamRead;
+            int streamRead = s.Read ( buffer, offset, count );
+            read += streamRead;
             return streamRead;
         }
     }
 
     int ReadFromBuffer ( byte [] buffer, int offset, int count ) {
-        long availableRead = Math.Min ( this.bufferedByteLength, this.baseRequest.ContentLength ) - this.read;
+        long availableRead = Math.Min ( bufferedByteLength, baseRequest.ContentLength ) - read;
 
         if (availableRead <= 0)
             return 0;
 
         long toRead = Math.Min ( count, availableRead );
 
-        int bufferOffset = this.read;
+        int bufferOffset = read;
 
         var bufferMemory = new Memory<byte> ( buffer );
-        this.baseRequest.BufferedContent [ bufferOffset.. ].CopyTo ( bufferMemory [ offset..(offset + (int) toRead) ] );
+        baseRequest.BufferedContent [ bufferOffset.. ].CopyTo ( bufferMemory [ offset..(offset + (int) toRead) ] );
 
         return (int) toRead;
     }
 
     public override long Seek ( long offset, SeekOrigin origin ) {
-        return this.s.Seek ( offset, origin );
+        return s.Seek ( offset, origin );
     }
 
     public override void SetLength ( long value ) {
-        this.s.SetLength ( value );
+        s.SetLength ( value );
     }
 
     public override void Write ( byte [] buffer, int offset, int count ) {
-        this.s.Write ( buffer, offset, count );
+        s.Write ( buffer, offset, count );
     }
 }

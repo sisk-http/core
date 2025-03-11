@@ -19,8 +19,8 @@ public sealed class HttpEventStreamWriter {
     private Encoding _messageEncoding;
 
     internal HttpEventStreamWriter ( Stream innerStream, Encoding encoding ) {
-        this._innerStream = innerStream;
-        this._messageEncoding = encoding;
+        _innerStream = innerStream;
+        _messageEncoding = encoding;
     }
 
     /// <summary>
@@ -29,8 +29,8 @@ public sealed class HttpEventStreamWriter {
     /// <param name="data">The data to write.</param>
     /// <returns>A task that represents the asynchronous write operation.</returns>
     public async Task WriteDataAsync ( string data ) {
-        byte [] payload = this._messageEncoding.GetBytes ( $"data: {data}\n\n" );
-        await this._innerStream.WriteAsync ( payload );
+        byte [] payload = _messageEncoding.GetBytes ( $"data: {data}\n\n" );
+        await _innerStream.WriteAsync ( payload );
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public sealed class HttpEventStreamWriter {
     /// <param name="eventName">The name of the event to write.</param>
     /// <returns>A task that represents the asynchronous write operation.</returns>
     public async Task WriteEventAsync ( string eventName ) {
-        byte [] payload = this._messageEncoding.GetBytes ( $"event: {eventName}\n\n" );
-        await this._innerStream.WriteAsync ( payload );
+        byte [] payload = _messageEncoding.GetBytes ( $"event: {eventName}\n\n" );
+        await _innerStream.WriteAsync ( payload );
     }
 }

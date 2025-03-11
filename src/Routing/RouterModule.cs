@@ -35,7 +35,7 @@ public abstract class RouterModule {
     /// <param name="handler">The <see cref="IRequestHandler"/> instance which will be applied to all registered routes
     /// of this class.</param>
     protected void HasRequestHandler ( IRequestHandler handler ) {
-        this.RequestHandlers.Add ( handler );
+        RequestHandlers.Add ( handler );
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public abstract class RouterModule {
     /// which can be useful for organizing and structuring routes in a large application.
     /// </remarks>
     protected void HasPrefix ( string prefix ) {
-        this.Prefix = prefix;
+        Prefix = prefix;
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public abstract class RouterModule {
     /// </remarks>
     /// <param name="parentRouter">The <see cref="Router"/> which is defining routes from the current <see cref="RouterModule"/>.</param>
     protected virtual void OnSetup ( Router parentRouter ) {
-        this._wasSetupCalled = true;
+        _wasSetupCalled = true;
     }
 
     /// <summary>
@@ -72,8 +72,8 @@ public abstract class RouterModule {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal void CallRouteCreating ( Route configuringRoute ) => this.OnRouteCreating ( configuringRoute );
+    internal void CallRouteCreating ( Route configuringRoute ) => OnRouteCreating ( configuringRoute );
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal void CallOnSetup ( Router parentRouter ) => this.OnSetup ( parentRouter );
+    internal void CallOnSetup ( Router parentRouter ) => OnSetup ( parentRouter );
 }

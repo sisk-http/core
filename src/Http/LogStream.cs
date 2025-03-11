@@ -38,8 +38,8 @@ namespace Sisk.Core.Http {
         /// </summary>
         public RotatingLogPolicy RotatingPolicy {
             get {
-                this.rotatingLogPolicy ??= new RotatingLogPolicy ( this );
-                return this.rotatingLogPolicy;
+                rotatingLogPolicy ??= new RotatingLogPolicy ( this );
+                return rotatingLogPolicy;
             }
         }
 
@@ -47,12 +47,12 @@ namespace Sisk.Core.Http {
         /// Gets an boolean indicating if this <see cref="LogStream"/> is buffering output messages
         /// to their internal message buffer.
         /// </summary>
-        public bool IsBuffering { get => this._bufferingContent is not null; }
+        public bool IsBuffering { get => _bufferingContent is not null; }
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="LogStream"/> was disposed.
         /// </summary>
-        public bool Disposed { get => this.isDisposed; }
+        public bool Disposed { get => isDisposed; }
 
         /// <summary>
         /// Gets or sets a boolean that indicates that every input must be trimmed and have their
@@ -67,16 +67,16 @@ namespace Sisk.Core.Http {
         /// When setting this method, if the file directory doens't exists, it is created.
         /// </remarks>
         public string? FilePath {
-            get => this.filePath; set {
+            get => filePath; set {
                 if (value is not null) {
-                    this.filePath = Path.GetFullPath ( value );
+                    filePath = Path.GetFullPath ( value );
 
-                    string? dirPath = Path.GetDirectoryName ( this.filePath );
+                    string? dirPath = Path.GetDirectoryName ( filePath );
                     if (dirPath is not null)
                         Directory.CreateDirectory ( dirPath );
                 }
                 else {
-                    this.filePath = null;
+                    filePath = null;
                 }
             }
         }
@@ -96,8 +96,8 @@ namespace Sisk.Core.Http {
         /// Creates an new <see cref="LogStream"/> instance with no predefined outputs.
         /// </summary>
         public LogStream () {
-            this.consumerThread = new Thread ( new ThreadStart ( this.ProcessQueue ) );
-            this.consumerThread.Start ();
+            consumerThread = new Thread ( new ThreadStart ( ProcessQueue ) );
+            consumerThread.Start ();
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="tw">The <see cref="System.IO.TextWriter"/> instance which this instance will write log to.</param>
         public LogStream ( TextWriter tw ) : this () {
-            this.TextWriter = tw;
+            TextWriter = tw;
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="filename">The file path where this instance will write log to.</param>
         public LogStream ( string filename ) : this () {
-            this.FilePath = filename;
+            FilePath = filename;
         }
 
         /// <summary>
@@ -123,15 +123,15 @@ namespace Sisk.Core.Http {
         /// <param name="tw">The text writer which this instance will write log to.</param>
         public LogStream ( string? filename, TextWriter? tw ) : this () {
             if (filename is not null)
-                this.FilePath = Path.GetFullPath ( filename );
-            this.TextWriter = tw;
+                FilePath = Path.GetFullPath ( filename );
+            TextWriter = tw;
         }
 
         /// <summary>
         /// Clears the current log queue and blocks the current thread until all content is written to the underlying streams.
         /// </summary>
         public void Flush () {
-            this.writeEvent.WaitOne ();
+            writeEvent.WaitOne ();
         }
 
         /// <summary>
@@ -140,12 +140,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown when this LogStream is not buffering.</exception>
         public string Peek () {
-            if (this._bufferingContent is null) {
+            if (_bufferingContent is null) {
                 throw new InvalidOperationException ( SR.LogStream_NotBuffering );
             }
 
-            lock (this._bufferingContent) {
-                string [] lines = this._bufferingContent.ToArray ();
+            lock (_bufferingContent) {
+                string [] lines = _bufferingContent.ToArray ();
                 return string.Join ( Environment.NewLine, lines );
             }
         }
@@ -155,26 +155,26 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="lines">The amount of lines to store in the buffer.</param>
         public void StartBuffering ( int lines ) {
-            if (this._bufferingContent is not null)
+            if (_bufferingContent is not null)
                 return;
-            this._bufferingContent = new CircularBuffer<string> ( lines );
+            _bufferingContent = new CircularBuffer<string> ( lines );
         }
 
         /// <summary>
         /// Stops buffering output to the alternative stream.
         /// </summary>
         public void StopBuffering () {
-            this._bufferingContent = null;
+            _bufferingContent = null;
         }
 
         private async void ProcessQueue () {
-            var reader = this.channel.Reader;
+            var reader = channel.Reader;
             try {
-                while (!this.isDisposed && await reader.WaitToReadAsync ()) {
-                    this.writeEvent.Reset ();
+                while (!isDisposed && await reader.WaitToReadAsync ()) {
+                    writeEvent.Reset ();
 
                     while (reader.TryRead ( out var item )) {
-                        this.rotatingPolicyLocker.WaitOne ();
+                        rotatingPolicyLocker.WaitOne ();
 
                         bool gotAnyError = false;
                         string? dataStr = item?.ToString ();
@@ -183,60 +183,60 @@ namespace Sisk.Core.Http {
                             continue;
 
                         try {
-                            this.TextWriter?.WriteLine ( dataStr );
+                            TextWriter?.WriteLine ( dataStr );
                         }
                         catch (Exception ex) {
-                            Console.WriteLine ( this.GetExceptionEntry ( ex, "Exception raised from the LogStream TextWriter instance" ) );
+                            Console.WriteLine ( GetExceptionEntry ( ex, "Exception raised from the LogStream TextWriter instance" ) );
 
                             if (!gotAnyError) {
-                                await this.channel.Writer.WriteAsync ( item );
+                                await channel.Writer.WriteAsync ( item );
                                 gotAnyError = true;
                             }
                         }
 
                         try {
-                            if (this.filePath is not null)
-                                File.AppendAllText ( this.filePath, dataStr + Environment.NewLine, this.Encoding );
+                            if (filePath is not null)
+                                File.AppendAllText ( filePath, dataStr + Environment.NewLine, Encoding );
                         }
                         catch (Exception ex) {
-                            Console.WriteLine ( this.GetExceptionEntry ( ex, "Exception raised from the LogStream FilePath instance" ) );
+                            Console.WriteLine ( GetExceptionEntry ( ex, "Exception raised from the LogStream FilePath instance" ) );
 
                             if (!gotAnyError) {
-                                await this.channel.Writer.WriteAsync ( item );
+                                await channel.Writer.WriteAsync ( item );
                                 gotAnyError = true;
                             }
                         }
 
                         try {
-                            this._bufferingContent?.Add ( dataStr );
+                            _bufferingContent?.Add ( dataStr );
                         }
                         catch (Exception ex) {
-                            Console.WriteLine ( this.GetExceptionEntry ( ex, "Exception raised from the LogStream BufferingContent instance" ) );
+                            Console.WriteLine ( GetExceptionEntry ( ex, "Exception raised from the LogStream BufferingContent instance" ) );
 
                             if (!gotAnyError) {
-                                await this.channel.Writer.WriteAsync ( item );
+                                await channel.Writer.WriteAsync ( item );
                             }
                         }
                     }
 
-                    this.writeEvent.Set ();
+                    writeEvent.Set ();
                 }
             }
             finally {
-                this.writeEvent.Set ();
+                writeEvent.Set ();
             }
         }
 
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        public virtual void Close () => this.Dispose ();
+        public virtual void Close () => Dispose ();
 
         /// <summary>
         /// Writes an exception description in the log.
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
-        public virtual void WriteException ( Exception exp ) => this.WriteException ( exp, null );
+        public virtual void WriteException ( Exception exp ) => WriteException ( exp, null );
 
         /// <summary>
         /// Writes an exception description in the log.
@@ -245,15 +245,15 @@ namespace Sisk.Core.Http {
         /// <param name="extraContext">Extra context message to append to the exception message.</param>
         public virtual void WriteException ( Exception exp, string? extraContext = null ) {
             StringBuilder excpStr = new StringBuilder ();
-            this.WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
-            this.WriteLineInternal ( excpStr.ToString () );
+            WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
+            WriteLineInternal ( excpStr.ToString () );
         }
 
         /// <summary>
         /// Writes an line-break at the end of the output.
         /// </summary>
         public void WriteLine () {
-            this.WriteLineInternal ( string.Empty );
+            WriteLineInternal ( string.Empty );
         }
 
         /// <summary>
@@ -261,7 +261,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
         public void WriteLine ( object? message ) {
-            this.WriteLineInternal ( message?.ToString () ?? string.Empty );
+            WriteLineInternal ( message?.ToString () ?? string.Empty );
         }
 
         /// <summary>
@@ -269,7 +269,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
         public void WriteLine ( string message ) {
-            this.WriteLineInternal ( message );
+            WriteLineInternal ( message );
         }
 
         /// <summary>
@@ -278,7 +278,7 @@ namespace Sisk.Core.Http {
         /// <param name="format">The string format that represents the arguments positions.</param>
         /// <param name="args">An array of objects that represents the string format slots values.</param>
         public void WriteLine ( string format, params object? [] args ) {
-            this.WriteLineInternal ( string.Format ( provider: null, format, args ) );
+            WriteLineInternal ( string.Format ( provider: null, format, args ) );
         }
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace Sisk.Core.Http {
         /// <param name="format">The string format that represents the arguments positions.</param>
         /// <param name="args">An array of objects that represents the string format slots values.</param>
         public void WriteLine ( IFormatProvider? formatProvider, string format, params object? [] args ) {
-            this.WriteLineInternal ( string.Format ( formatProvider, format, args ) );
+            WriteLineInternal ( string.Format ( formatProvider, format, args ) );
         }
 
         /// <summary>
@@ -296,11 +296,11 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="line">The line which will be written to the log stream.</param>
         protected virtual async void WriteLineInternal ( string line ) {
-            if (this.NormalizeEntries) {
-                await this.EnqueueMessageLine ( line.Normalize ().Trim ().ReplaceLineEndings () );
+            if (NormalizeEntries) {
+                await EnqueueMessageLine ( line.Normalize ().Trim ().ReplaceLineEndings () );
             }
             else {
-                await this.EnqueueMessageLine ( line );
+                await EnqueueMessageLine ( line );
             }
         }
 
@@ -314,14 +314,14 @@ namespace Sisk.Core.Http {
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="dueTime">The time interval between checks.</param>
         public LogStream ConfigureRotatingPolicy ( long maximumSize, TimeSpan dueTime ) {
-            var policy = this.RotatingPolicy;
+            var policy = RotatingPolicy;
             policy.Configure ( maximumSize, dueTime );
             return this;
         }
 
         async ValueTask EnqueueMessageLine ( string message ) {
             ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
-            await this.channel.Writer.WriteAsync ( message );
+            await channel.Writer.WriteAsync ( message );
         }
 
         void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
@@ -334,7 +334,7 @@ namespace Sisk.Core.Http {
             if (exp.InnerException != null) {
                 if (currentDepth <= 3) {
                     exceptionSbuilder.AppendLine ( "+++ inner exception +++" );
-                    this.WriteExceptionInternal ( exceptionSbuilder, exp.InnerException, null, currentDepth + 1 );
+                    WriteExceptionInternal ( exceptionSbuilder, exp.InnerException, null, currentDepth + 1 );
                 }
                 else {
                     exceptionSbuilder.AppendLine ( SR.LogStream_ExceptionDump_TrimmedFooter );
@@ -344,7 +344,7 @@ namespace Sisk.Core.Http {
 
         string GetExceptionEntry ( Exception exception, string? context = null ) {
             StringBuilder exceptionSbuilder = new StringBuilder ();
-            this.WriteExceptionInternal ( exceptionSbuilder, exception, context, 0 );
+            WriteExceptionInternal ( exceptionSbuilder, exception, context, 0 );
             return exceptionSbuilder.ToString ();
         }
 
@@ -352,24 +352,24 @@ namespace Sisk.Core.Http {
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
         protected virtual void Dispose ( bool disposing ) {
-            if (!this.isDisposed) {
+            if (!isDisposed) {
                 if (disposing) {
-                    this.channel.Writer.Complete ();
-                    this.Flush ();
-                    this.TextWriter?.Dispose ();
-                    this.rotatingLogPolicy?.Dispose ();
-                    this.consumerThread.Join ();
+                    channel.Writer.Complete ();
+                    Flush ();
+                    TextWriter?.Dispose ();
+                    rotatingLogPolicy?.Dispose ();
+                    consumerThread.Join ();
                 }
 
-                this._bufferingContent = null;
-                this.isDisposed = true;
+                _bufferingContent = null;
+                isDisposed = true;
             }
         }
 
         /// <inheritdoc/>
         ~LogStream () {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            this.Dispose ( disposing: false );
+            Dispose ( disposing: false );
         }
 
         /// <summary>
@@ -377,7 +377,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         public void Dispose () {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            this.Dispose ( disposing: true );
+            Dispose ( disposing: true );
             GC.SuppressFinalize ( this );
         }
     }

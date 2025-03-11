@@ -36,7 +36,7 @@ public partial class Router {
     }
 
     private RouteMatch TestRouteMatchUsingRegex ( Route route, string requestPath ) {
-        route.routeRegex ??= new Regex ( route.Path, this.MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None );
+        route.routeRegex ??= new Regex ( route.Path, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None );
 
         var test = route.routeRegex.Match ( requestPath );
         if (test.Success) {
@@ -59,7 +59,7 @@ public partial class Router {
             var rh = baseLists [ i ];
 
             if (rh.ExecutionMode.HasFlag ( mode )) {
-                HttpResponse? response = this.InvokeHandler ( rh, request, context, bypassList, out exception );
+                HttpResponse? response = InvokeHandler ( rh, request, context, bypassList, out exception );
                 if (response is not null) {
                     result = response;
                     return true;
@@ -85,9 +85,9 @@ public partial class Router {
         }
         catch (Exception ex) {
             exception = ex;
-            if (this.parentServer!.ServerConfiguration.ThrowExceptions == false) {
-                if (this.CallbackErrorHandler is not null) {
-                    result = this.CallbackErrorHandler ( ex, context );
+            if (parentServer!.ServerConfiguration.ThrowExceptions == false) {
+                if (CallbackErrorHandler is not null) {
+                    result = CallbackErrorHandler ( ex, context );
                 }
             }
             else
@@ -101,11 +101,11 @@ public partial class Router {
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     internal RouterExecutionResult Execute ( HttpContext context ) {
         // the line below ensures that _routesList will not be modified in this method
-        if (this.parentServer is null)
+        if (parentServer is null)
             throw new InvalidOperationException ( SR.Router_NotBinded );
 
         HttpRequest request = context.Request;
-        HttpServerConfiguration currentConfig = this.parentServer!.ServerConfiguration;
+        HttpServerConfiguration currentConfig = parentServer!.ServerConfiguration;
 
         Route? matchedRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
@@ -114,7 +114,7 @@ public partial class Router {
         // IsReadOnly ensures that no route will be added or removed from the list during the
         // span iteration
         // 
-        Span<Route> rspan = CollectionsMarshal.AsSpan ( this._routesList );
+        Span<Route> rspan = CollectionsMarshal.AsSpan ( _routesList );
         ref Route rPointer = ref MemoryMarshal.GetReference ( rspan );
         for (int i = 0; i < rspan.Length; i++) {
             ref Route route = ref Unsafe.Add ( ref rPointer, i );
@@ -124,11 +124,11 @@ public partial class Router {
             string reqUrlTest = request.Path;
 
             if (route.UseRegex) {
-                pathTest = this.TestRouteMatchUsingRegex ( route, reqUrlTest );
+                pathTest = TestRouteMatchUsingRegex ( route, reqUrlTest );
             }
             else {
                 pathTest = HttpStringInternals.IsReqPathMatch ( route.Path, reqUrlTest,
-                    this.MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal );
+                    MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal );
             }
 
             if (!pathTest.Success) {
@@ -139,7 +139,7 @@ public partial class Router {
             bool isMethodMatched = false;
 
             // test method
-            if (this.IsMethodMatching ( request.Method.Method, route.Method )) {
+            if (IsMethodMatching ( request.Method.Method, route.Method )) {
                 isMethodMatched = true;
             }
             else if (request.Method == HttpMethod.Options) {
@@ -173,17 +173,17 @@ public partial class Router {
             }
         }
 
-        if (matchResult == RouteMatchResult.NotMatched && this.NotFoundErrorHandler is not null) {
-            return new RouterExecutionResult ( this.NotFoundErrorHandler ( context ), null, matchResult, null );
+        if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null) {
+            return new RouterExecutionResult ( NotFoundErrorHandler ( context ), null, matchResult, null );
         }
         else if (matchResult == RouteMatchResult.OptionsMatched) {
             HttpResponse corsResponse = new HttpResponse ();
 
             return new RouterExecutionResult ( corsResponse, null, matchResult, null );
         }
-        else if (matchResult == RouteMatchResult.PathMatched && this.MethodNotAllowedErrorHandler is not null) {
+        else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null) {
             context.MatchedRoute = matchedRoute;
-            return new RouterExecutionResult ( this.MethodNotAllowedErrorHandler ( context ), matchedRoute, matchResult, null );
+            return new RouterExecutionResult ( MethodNotAllowedErrorHandler ( context ), matchedRoute, matchResult, null );
         }
         else if (matchResult == RouteMatchResult.FullyMatched && matchedRoute is not null) {
             context.MatchedRoute = matchedRoute;
@@ -200,13 +200,13 @@ public partial class Router {
                 return new RouterExecutionResult ( res, matchedRoute, matchResult, null );
             }
 
-            this.parentServer?.handler.ContextBagCreated ( context.RequestBag );
+            parentServer?.handler.ContextBagCreated ( context.RequestBag );
 
             #region Before-response handlers
-            if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out HttpResponse? rhResponse, out Exception? rhException )) {
+            if (InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out HttpResponse? rhResponse, out Exception? rhException )) {
                 return new RouterExecutionResult ( rhResponse, matchedRoute, matchResult, rhException );
             }
-            if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException )) {
+            if (InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.BeforeResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException )) {
                 return new RouterExecutionResult ( rhResponse, matchedRoute, matchResult, rhException );
             }
             #endregion
@@ -242,15 +242,15 @@ public partial class Router {
                     }
                 }
 
-                result = this.ResolveAction ( actionResult );
+                result = ResolveAction ( actionResult );
             }
             catch (Exception ex) {
-                if (this.parentServer!.ServerConfiguration.ThrowExceptions == false
+                if (parentServer!.ServerConfiguration.ThrowExceptions == false
                     && (ex is not HttpListenerException) /*the HttpServer__Core should handle HttpListenerException exceptions*/) {
 
-                    if (this.CallbackErrorHandler is not null) {
+                    if (CallbackErrorHandler is not null) {
                         handledException = ex;
-                        result = this.CallbackErrorHandler ( ex, context );
+                        result = CallbackErrorHandler ( ex, context );
                     }
                     else {
                         result = new HttpResponse ( HttpResponse.HTTPRESPONSE_UNHANDLED_EXCEPTION );
@@ -266,10 +266,10 @@ public partial class Router {
             #endregion
 
             #region After-response global handlers
-            if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.AfterResponse, this.GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException )) {
+            if (InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.AfterResponse, GlobalRequestHandlers, matchedRoute.BypassGlobalRequestHandlers, request, context, out rhResponse, out rhException )) {
                 return new RouterExecutionResult ( rhResponse, matchedRoute, matchResult, rhException );
             }
-            if (this.InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.AfterResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException )) {
+            if (InvokeRequestHandlerGroup ( RequestHandlerExecutionMode.AfterResponse, matchedRoute.RequestHandlers, null, request, context, out rhResponse, out rhException )) {
                 return new RouterExecutionResult ( rhResponse, matchedRoute, matchResult, rhException );
             }
             #endregion     

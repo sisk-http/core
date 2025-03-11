@@ -25,20 +25,20 @@ public sealed class PortableConfigurationBuilder {
     Action<InitializationParameterCollection>? _initializerHandler;
 
     internal PortableConfigurationBuilder ( HttpServerHostContext context ) {
-        this._context = context;
+        _context = context;
     }
 
     internal void Build () {
-        string absoluteFilePath = Path.GetFullPath ( this._filename );
-        string filename = Path.GetFileName ( this._filename );
+        string absoluteFilePath = Path.GetFullPath ( _filename );
+        string filename = Path.GetFileName ( _filename );
 
         Stack<string> searchFileLocations = new Stack<string> ();
         searchFileLocations.Push ( absoluteFilePath );
 
-        if (this._fileLookupDirectory.HasFlag ( ConfigurationFileLookupDirectory.CurrentDirectory ))
+        if (_fileLookupDirectory.HasFlag ( ConfigurationFileLookupDirectory.CurrentDirectory ))
             searchFileLocations.Push ( PathHelper.FilesystemCombinePaths ( Directory.GetCurrentDirectory (), filename ) );
 
-        if (this._fileLookupDirectory.HasFlag ( ConfigurationFileLookupDirectory.AppDirectory ))
+        if (_fileLookupDirectory.HasFlag ( ConfigurationFileLookupDirectory.AppDirectory ))
             searchFileLocations.Push ( PathHelper.FilesystemCombinePaths ( AppDomain.CurrentDomain.BaseDirectory, filename ) );
 
         string? currentTestingPath, foundFile = null;
@@ -50,23 +50,23 @@ public sealed class PortableConfigurationBuilder {
         }
 
         if (foundFile is null) {
-            if (this._createIfDontExists) {
+            if (_createIfDontExists) {
                 File.Create ( absoluteFilePath ).Close ();
                 foundFile = absoluteFilePath;
             }
             else {
-                throw new ArgumentException ( SR.Format ( SR.Provider_ConfigParser_ConfigFileNotFound, this._filename ) );
+                throw new ArgumentException ( SR.Format ( SR.Provider_ConfigParser_ConfigFileNotFound, _filename ) );
             }
         }
 
-        ConfigurationContext provider = new ConfigurationContext ( foundFile, this._context, this._context.ServerConfiguration.ListeningHosts [ 0 ] );
+        ConfigurationContext provider = new ConfigurationContext ( foundFile, _context, _context.ServerConfiguration.ListeningHosts [ 0 ] );
 
-        var pipelineReader = this._pipeline ?? new JsonConfigParser ();
+        var pipelineReader = _pipeline ?? new JsonConfigParser ();
         pipelineReader.ReadConfiguration ( provider );
 
-        this._initializerHandler?.Invoke ( this._context.Parameters );
+        _initializerHandler?.Invoke ( _context.Parameters );
 
-        this._context.Parameters.MakeReadonly ();
+        _context.Parameters.MakeReadonly ();
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public sealed class PortableConfigurationBuilder {
     /// </summary>
     /// <param name="reader">The <see cref="IConfigurationReader"/> object.</param>
     public PortableConfigurationBuilder WithConfigReader ( IConfigurationReader reader ) {
-        this._pipeline = reader;
+        _pipeline = reader;
         return this;
     }
 
@@ -83,7 +83,7 @@ public sealed class PortableConfigurationBuilder {
     /// </summary>
     /// <typeparam name="TReader">The <see cref="IConfigurationReader"/> type.</typeparam>
     public PortableConfigurationBuilder WithConfigReader<TReader> () where TReader : IConfigurationReader, new() {
-        this._pipeline = new TReader ();
+        _pipeline = new TReader ();
         return this;
     }
 
@@ -94,9 +94,9 @@ public sealed class PortableConfigurationBuilder {
     /// <param name="createIfDontExists">Optional. Determines if the configuration file should be created if it doens't exists.</param>
     /// <param name="lookupDirectories">Optional. Specifies the directories which the <see cref="IConfigurationReader"/> should search for the configuration file.</param>
     public PortableConfigurationBuilder WithConfigFile ( string filename, bool createIfDontExists = false, ConfigurationFileLookupDirectory lookupDirectories = ConfigurationFileLookupDirectory.CurrentDirectory ) {
-        this._filename = Path.GetFullPath ( filename );
-        this._createIfDontExists = createIfDontExists;
-        this._fileLookupDirectory = lookupDirectories;
+        _filename = Path.GetFullPath ( filename );
+        _createIfDontExists = createIfDontExists;
+        _fileLookupDirectory = lookupDirectories;
         return this;
     }
 
@@ -105,7 +105,7 @@ public sealed class PortableConfigurationBuilder {
     /// </summary>
     /// <param name="handler">The handler of <see cref="InitializationParameterCollection"/>.</param>
     public PortableConfigurationBuilder WithParameters ( Action<InitializationParameterCollection> handler ) {
-        this._initializerHandler = handler;
+        _initializerHandler = handler;
         return this;
     }
 }

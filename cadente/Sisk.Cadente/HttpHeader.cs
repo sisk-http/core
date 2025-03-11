@@ -25,7 +25,7 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHeader"/> has any empty value or name.
     /// </summary>
-    public bool IsEmpty { get => this.NameBytes.IsEmpty || this.ValueBytes.IsEmpty; }
+    public bool IsEmpty { get => NameBytes.IsEmpty || ValueBytes.IsEmpty; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpHeader"/> struct with the specified name and value as byte arrays.
@@ -33,8 +33,8 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// <param name="nameBytes">The byte array representing the name of the header.</param>
     /// <param name="valueBytes">The byte array representing the value of the header.</param>
     public HttpHeader ( in ReadOnlyMemory<byte> nameBytes, in ReadOnlyMemory<byte> valueBytes ) {
-        this.NameBytes = nameBytes;
-        this.ValueBytes = valueBytes;
+        NameBytes = nameBytes;
+        ValueBytes = valueBytes;
     }
 
     /// <summary>
@@ -43,8 +43,8 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// <param name="name">The name of the header.</param>
     /// <param name="value">The value of the header.</param>
     public HttpHeader ( string name, string value ) {
-        this.NameBytes = HeaderEncoding.GetBytes ( name );
-        this.ValueBytes = HeaderEncoding.GetBytes ( value );
+        NameBytes = HeaderEncoding.GetBytes ( name );
+        ValueBytes = HeaderEncoding.GetBytes ( value );
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// </summary>
     public string Name {
         get {
-            return HeaderEncoding.GetString ( this.NameBytes.Span );
+            return HeaderEncoding.GetString ( NameBytes.Span );
         }
     }
 
@@ -61,7 +61,7 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// </summary>
     public string Value {
         get {
-            return HeaderEncoding.GetString ( this.ValueBytes.Span );
+            return HeaderEncoding.GetString ( ValueBytes.Span );
         }
     }
 
@@ -69,13 +69,13 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// Gets the string representation of this <see cref="HttpHeader"/>.
     /// </summary>
     public override string ToString () {
-        return $"{this.Name}: {this.Value}";
+        return $"{Name}: {Value}";
     }
 
     /// <inheritdoc/>
     public override bool Equals ( [NotNullWhen ( true )] object? obj ) {
         if (obj is HttpHeader other) {
-            return this.Equals ( other );
+            return Equals ( other );
         }
         else {
             return object.Equals ( this, obj );
@@ -84,12 +84,12 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
 
     /// <inheritdoc/>
     public override int GetHashCode () {
-        return HashCode.Combine ( this.NameBytes, this.ValueBytes );
+        return HashCode.Combine ( NameBytes, ValueBytes );
     }
 
     /// <inheritdoc/>
     public bool Equals ( HttpHeader other ) {
-        return this.NameBytes.Span.SequenceEqual ( other.NameBytes.Span ) &&
-               this.ValueBytes.Span.SequenceEqual ( other.ValueBytes.Span );
+        return NameBytes.Span.SequenceEqual ( other.NameBytes.Span ) &&
+               ValueBytes.Span.SequenceEqual ( other.ValueBytes.Span );
     }
 }

@@ -169,8 +169,8 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
 
         html += new HtmlElement ( "head", head => {
             head += new HtmlElement ( "title", "JSON-RPC 2.0 Application Documentation" );
-            if (this.Style != null) {
-                head += new HtmlElement ( "style", RenderableText.Raw ( this.Style ) );
+            if (Style != null) {
+                head += new HtmlElement ( "style", RenderableText.Raw ( Style ) );
             }
         } );
 
@@ -181,11 +181,11 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
 
             body += new HtmlElement ( "main", main => {
 
-                if (this.Header is not null) {
-                    main += this.Header;
+                if (Header is not null) {
+                    main += Header;
                 }
 
-                if (this.ExportMetadata && documentation.Metadata is { } meta) {
+                if (ExportMetadata && documentation.Metadata is { } meta) {
                     main += new HtmlElement ( "h1", meta.ApplicationName ?? "Application name" );
                     if (meta.ApplicationDescription is not null) {
                         foreach (string part in meta.ApplicationDescription.Split ( "\n", StringSplitOptions.RemoveEmptyEntries )) {
@@ -199,7 +199,7 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
                     main += new HtmlElement ( "hr" ).SelfClosed ();
                 }
 
-                if (this.ExportSummary) {
+                if (ExportSummary) {
                     main += new HtmlElement ( "h1", "Summary" );
 
                     foreach (var category in methodsGrouped) {
@@ -271,6 +271,6 @@ public class JsonRpcHtmlExport : IJsonRpcDocumentationExporter {
 
     /// <inheritdoc/>
     public byte [] ExportDocumentBytes ( JsonRpcDocumentation documentation ) {
-        return Encoding.UTF8.GetBytes ( this.EncodeDocumentationHtml ( documentation ) );
+        return Encoding.UTF8.GetBytes ( EncodeDocumentationHtml ( documentation ) );
     }
 }

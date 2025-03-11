@@ -39,7 +39,7 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP web socket connection.
         /// </summary>
-        public HttpStreamPingPolicy PingPolicy => this.pingPolicy;
+        public HttpStreamPingPolicy PingPolicy => pingPolicy;
 
         /// <summary>
         /// Gets or sets the maximum wait time for synchronous listener methods like <see cref="WaitNext()"/>.
@@ -60,17 +60,17 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets the <see cref="Sisk.Core.Http.HttpRequest"/> object which created this Web Socket instance.
         /// </summary>
-        public HttpRequest HttpRequest => this.request;
+        public HttpRequest HttpRequest => request;
 
         /// <summary>
         /// Gets an boolean indicating if this Web Socket connection is closed.
         /// </summary>
-        public bool IsClosed => this._isClosed;
+        public bool IsClosed => _isClosed;
 
         /// <summary>
         /// Gets an unique identifier label to this Web Socket connection, useful for finding this connection's reference later.
         /// </summary>
-        public string? Identifier => this._identifier;
+        public string? Identifier => _identifier;
 
         /// <summary>
         /// Represents the event which is called when this web socket receives an message from
@@ -80,24 +80,24 @@ namespace Sisk.Core.Http.Streams {
 
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
-            this.request = req;
-            this._identifier = identifier;
-            this.pingPolicy = new HttpStreamPingPolicy ( this );
+            request = req;
+            _identifier = identifier;
+            pingPolicy = new HttpStreamPingPolicy ( this );
 
             if (identifier != null) {
                 req.baseServer._wsCollection.RegisterWebSocket ( this );
             }
 
-            this.receiveThread = new Thread ( new ThreadStart ( this.ReceiveTask ) );
-            this.receiveThread.IsBackground = true;
-            this.receiveThread.Start ();
+            receiveThread = new Thread ( new ThreadStart ( ReceiveTask ) );
+            receiveThread.IsBackground = true;
+            receiveThread.Start ();
         }
 
         void RecreateAsyncToken () {
-            this.asyncListenerToken = new CancellationTokenSource ();
-            if (this.closeTimeout.TotalMilliseconds > 0)
-                this.asyncListenerToken.CancelAfter ( this.closeTimeout );
-            this.asyncListenerToken.Token.ThrowIfCancellationRequested ();
+            asyncListenerToken = new CancellationTokenSource ();
+            if (closeTimeout.TotalMilliseconds > 0)
+                asyncListenerToken.CancelAfter ( closeTimeout );
+            asyncListenerToken.Token.ThrowIfCancellationRequested ();
         }
 
         void TrimMessage ( WebSocketReceiveResult result, WebSocketMessage message ) {
@@ -112,44 +112,44 @@ namespace Sisk.Core.Http.Streams {
             message.IsEnd = result.EndOfMessage;
 
             if (result.MessageType == WebSocketMessageType.Close) {
-                this._isClosed = true;
-                this.isListening = false;
-                this.closeEvent.Set ();
+                _isClosed = true;
+                isListening = false;
+                closeEvent.Set ();
             }
         }
 
         internal async void ReceiveTask () {
-            while (this.isListening) {
-                this.RecreateAsyncToken ();
+            while (isListening) {
+                RecreateAsyncToken ();
                 WebSocketMessage message = new WebSocketMessage ( this, BUFFER_LENGTH );
 
                 var arrSegment = new ArraySegment<byte> ( message.__msgBytes );
                 WebSocketReceiveResult result;
 
                 try {
-                    result = await this.ctx.WebSocket.ReceiveAsync ( arrSegment, this.asyncListenerToken.Token );
+                    result = await ctx.WebSocket.ReceiveAsync ( arrSegment, asyncListenerToken.Token );
                 }
                 catch (Exception) {
-                    if (this.ctx.WebSocket.State != WebSocketState.Open
-                     && this.ctx.WebSocket.State != WebSocketState.Connecting) {
-                        this.Close ();
+                    if (ctx.WebSocket.State != WebSocketState.Open
+                     && ctx.WebSocket.State != WebSocketState.Connecting) {
+                        Close ();
                         break;
                     }
                     continue;
                 }
 
                 if (result.Count == 0 || result.CloseStatus != null) {
-                    this.Close ();
+                    Close ();
                     break;
                 }
 
-                this.TrimMessage ( result, message );
-                bool isPingMessage = message.GetString () == this.pingPolicy.DataMessage;
+                TrimMessage ( result, message );
+                bool isPingMessage = message.GetString () == pingPolicy.DataMessage;
 
-                if (this.isWaitingNext & !isPingMessage) {
-                    this.isWaitingNext = false;
-                    this.lastMessage = message;
-                    this.waitNextEvent.Set ();
+                if (isWaitingNext & !isPingMessage) {
+                    isWaitingNext = false;
+                    lastMessage = message;
+                    waitNextEvent.Set ();
                 }
                 else {
                     OnReceive?.Invoke ( this, message );
@@ -162,7 +162,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="act">The method that runs on the ping policy for this HTTP Web Socket.</param>
         public HttpWebSocket WithPing ( Action<HttpStreamPingPolicy> act ) {
-            act ( this.pingPolicy );
+            act ( pingPolicy );
             return this;
         }
 
@@ -172,9 +172,9 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="probeMessage">The payload/probe message that is sent to the client.</param>
         /// <param name="interval">The sending interval for each probe message.</param>
         public HttpWebSocket WithPing ( string probeMessage, TimeSpan interval ) {
-            this.PingPolicy.DataMessage = probeMessage;
-            this.PingPolicy.Interval = interval;
-            this.PingPolicy.Start ();
+            PingPolicy.DataMessage = probeMessage;
+            PingPolicy.Interval = interval;
+            PingPolicy.Start ();
             return this;
         }
 
@@ -183,7 +183,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
         public Task<bool> SendAsync ( object message ) {
-            return Task.FromResult ( this.Send ( message ) );
+            return Task.FromResult ( Send ( message ) );
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
         public Task<bool> SendAsync ( string message ) {
-            return Task.FromResult ( this.Send ( message ) );
+            return Task.FromResult ( Send ( message ) );
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="buffer">The target message which will be as an encoded UTF-8 string.</param>
         public Task<bool> SendAsync ( byte [] buffer ) {
-            return Task.FromResult ( this.Send ( buffer ) );
+            return Task.FromResult ( Send ( buffer ) );
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Sisk.Core.Http.Streams {
             if (t is null)
                 throw new ArgumentNullException ( nameof ( message ) );
 
-            return this.Send ( t );
+            return Send ( t );
         }
 
         /// <summary>
@@ -221,15 +221,15 @@ namespace Sisk.Core.Http.Streams {
         public bool Send ( string message ) {
             ArgumentNullException.ThrowIfNull ( message );
 
-            byte [] messageBytes = this.request.RequestEncoding.GetBytes ( message );
-            return this.SendInternal ( messageBytes, WebSocketMessageType.Text );
+            byte [] messageBytes = request.RequestEncoding.GetBytes ( message );
+            return SendInternal ( messageBytes, WebSocketMessageType.Text );
         }
 
         /// <summary>
         /// Sends an binary message to the remote point.
         /// </summary>
         /// <param name="buffer">The target byte array.</param>
-        public bool Send ( byte [] buffer ) => this.Send ( buffer, 0, buffer.Length );
+        public bool Send ( byte [] buffer ) => Send ( buffer, 0, buffer.Length );
 
         /// <summary>
         /// Sends an binary message to the remote point.
@@ -239,7 +239,7 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="length">The number of items in the memory.</param>
         public bool Send ( byte [] buffer, int start, int length ) {
             ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte> ( buffer, start, length );
-            return this.SendInternal ( span, WebSocketMessageType.Binary );
+            return SendInternal ( span, WebSocketMessageType.Binary );
         }
 
         /// <summary>
@@ -247,7 +247,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="buffer">The target byte memory.</param>
         public bool Send ( ReadOnlyMemory<byte> buffer ) {
-            return this.SendInternal ( buffer, WebSocketMessageType.Binary );
+            return SendInternal ( buffer, WebSocketMessageType.Binary );
         }
 
         /// <summary>
@@ -255,39 +255,39 @@ namespace Sisk.Core.Http.Streams {
         /// This method will not throw an exception if the connection is already closed.
         /// </summary>
         public HttpResponse Close () {
-            if (!this._isClosed) {
-                if (this.ctx.WebSocket.State != WebSocketState.Closed && this.ctx.WebSocket.State != WebSocketState.Aborted) {
+            if (!_isClosed) {
+                if (ctx.WebSocket.State != WebSocketState.Closed && ctx.WebSocket.State != WebSocketState.Aborted) {
                     // CloseAsync can throw an exception if any party closes the connection
                     // early before completing close handshake
                     // when this happens, the connection is already closed by some party and then release
                     // the resources of this websocket
                     try {
-                        this.ctx.WebSocket.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, CancellationToken.None )
+                        ctx.WebSocket.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, CancellationToken.None )
                             .Wait ();
                     }
                     catch (Exception) {
                         ;
                     }
                     finally {
-                        this.wasServerClosed = true;
+                        wasServerClosed = true;
                     }
                 }
-                this.request.baseServer._wsCollection.UnregisterWebSocket ( this );
-                this.isListening = false;
-                this._isClosed = true;
-                this.closeEvent.Set ();
+                request.baseServer._wsCollection.UnregisterWebSocket ( this );
+                isListening = false;
+                _isClosed = true;
+                closeEvent.Set ();
             }
-            return new HttpResponse ( this.wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
-                CalculedLength = this.length
+            return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
+                CalculedLength = length
             };
         }
 
         [MethodImpl ( MethodImplOptions.Synchronized )]
         private bool SendInternal ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType ) {
-            if (this._isClosed) { return false; }
+            if (_isClosed) { return false; }
 
-            if (this.closeTimeout.TotalMilliseconds > 0)
-                this.asyncListenerToken?.CancelAfter ( this.closeTimeout );
+            if (closeTimeout.TotalMilliseconds > 0)
+                asyncListenerToken?.CancelAfter ( closeTimeout );
 
             try {
                 int totalLength = buffer.Length;
@@ -299,18 +299,18 @@ namespace Sisk.Core.Http.Streams {
 
                     ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
 
-                    this.ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, CancellationToken.None )
+                    ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, CancellationToken.None )
                         .AsTask ().Wait ();
 
-                    this.length += chunk.Length;
+                    length += chunk.Length;
                 }
 
-                this.attempt = 0;
+                attempt = 0;
             }
             catch (Exception) {
-                this.attempt++;
-                if (this.MaxAttempts >= 0 && this.attempt >= this.MaxAttempts) {
-                    this.Close ();
+                attempt++;
+                if (MaxAttempts >= 0 && attempt >= MaxAttempts) {
+                    Close ();
                     return false;
                 }
             }
@@ -323,15 +323,15 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="timeout">Defines the timeout timer before the connection expires without any message.</param>
         public void WaitForClose ( TimeSpan timeout ) {
-            this.closeTimeout = timeout;
-            this.closeEvent.WaitOne ();
+            closeTimeout = timeout;
+            closeEvent.WaitOne ();
         }
 
         /// <summary>
         /// Blocks the current call stack until the connection is terminated by either the client or the server.
         /// </summary>
         public void WaitForClose () {
-            this.closeEvent.WaitOne ();
+            closeEvent.WaitOne ();
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace Sisk.Core.Http.Streams {
         /// Null is returned if a connection error is thrown.
         /// </remarks>
         public WebSocketMessage? WaitNext () {
-            return this.WaitNext ( this.WaitTimeout );
+            return WaitNext ( WaitTimeout );
         }
 
         /// <summary>
@@ -353,21 +353,21 @@ namespace Sisk.Core.Http.Streams {
         /// Null is returned if a connection error is thrown.
         /// </remarks>
         public WebSocketMessage? WaitNext ( TimeSpan timeout ) {
-            this.waitNextEvent.Reset ();
-            this.isWaitingNext = true;
+            waitNextEvent.Reset ();
+            isWaitingNext = true;
 
-            this.waitNextEvent.WaitOne ( timeout );
+            waitNextEvent.WaitOne ( timeout );
 
-            return this.lastMessage;
+            return lastMessage;
         }
 
         /// <inheritdoc/>
         public void Dispose () {
-            this.Close ();
-            this.pingPolicy.Dispose ();
-            this.closeEvent.Dispose ();
-            this.waitNextEvent.Dispose ();
-            this.receiveThread.Join ();
+            Close ();
+            pingPolicy.Dispose ();
+            closeEvent.Dispose ();
+            waitNextEvent.Dispose ();
+            receiveThread.Join ();
         }
     }
 
@@ -390,12 +390,12 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets an byte array with the message contents.
         /// </summary>
-        public byte [] MessageBytes => this.__msgBytes;
+        public byte [] MessageBytes => __msgBytes;
 
         /// <summary>
         /// Gets the message length in byte count.
         /// </summary>
-        public int Length => this.__msgBytes.Length;
+        public int Length => __msgBytes.Length;
 
         /// <summary>
         /// Gets the sender <see cref="HttpWebSocket"/> object instance which received this message.
@@ -407,19 +407,19 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="encoding">The encoding which will be used to decode the message.</param>
         public string GetString ( System.Text.Encoding encoding ) {
-            return encoding.GetString ( this.MessageBytes );
+            return encoding.GetString ( MessageBytes );
         }
 
         /// <summary>
         /// Reads the message bytes as string using the HTTP request encoding.
         /// </summary>
         public string GetString () {
-            return this.GetString ( this.Sender.HttpRequest.RequestEncoding );
+            return GetString ( Sender.HttpRequest.RequestEncoding );
         }
 
         internal WebSocketMessage ( HttpWebSocket httpws, int bufferLen ) {
-            this.Sender = httpws;
-            this.__msgBytes = new byte [ bufferLen ];
+            Sender = httpws;
+            __msgBytes = new byte [ bufferLen ];
         }
     }
 }

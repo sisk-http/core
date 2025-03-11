@@ -32,36 +32,36 @@ public sealed class HttpServerHostContext : IDisposable {
     /// <summary>
     /// Gets the host server configuration.
     /// </summary>
-    public HttpServerConfiguration ServerConfiguration { get => this.HttpServer.ServerConfiguration; }
+    public HttpServerConfiguration ServerConfiguration { get => HttpServer.ServerConfiguration; }
 
     /// <summary>
     /// Gets the host <see cref="CrossOriginResourceSharingPolicy"/>.
     /// </summary>
     public CrossOriginResourceSharingHeaders CrossOriginResourceSharingPolicy {
-        get => this.HttpServer.ServerConfiguration.ListeningHosts [ 0 ].CrossOriginResourceSharingPolicy;
-        set => this.HttpServer.ServerConfiguration.ListeningHosts [ 0 ].CrossOriginResourceSharingPolicy = value;
+        get => HttpServer.ServerConfiguration.ListeningHosts [ 0 ].CrossOriginResourceSharingPolicy;
+        set => HttpServer.ServerConfiguration.ListeningHosts [ 0 ].CrossOriginResourceSharingPolicy = value;
     }
 
     /// <summary>
     /// Gets the host router.
     /// </summary>
     public Router Router {
-        get => this.ServerConfiguration.ListeningHosts [ 0 ].Router!;
-        set => this.ServerConfiguration.ListeningHosts [ 0 ].Router = value;
+        get => ServerConfiguration.ListeningHosts [ 0 ].Router!;
+        set => ServerConfiguration.ListeningHosts [ 0 ].Router = value;
     }
 
     /// <summary>
     /// Gets the configured access log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    public LogStream? AccessLogs { get => this.ServerConfiguration.AccessLogsStream; }
+    public LogStream? AccessLogs { get => ServerConfiguration.AccessLogsStream; }
 
     /// <summary>
     /// Gets the configured error log stream. This property is inherited from <see cref="ServerConfiguration"/>.
     /// </summary>
-    public LogStream? ErrorLogs { get => this.ServerConfiguration.ErrorsLogsStream; }
+    public LogStream? ErrorLogs { get => ServerConfiguration.ErrorsLogsStream; }
 
     internal HttpServerHostContext ( HttpServer httpServer ) {
-        this.HttpServer = httpServer ?? throw new ArgumentNullException ( nameof ( httpServer ) );
+        HttpServer = httpServer ?? throw new ArgumentNullException ( nameof ( httpServer ) );
     }
 
     /// <summary>
@@ -72,19 +72,19 @@ public sealed class HttpServerHostContext : IDisposable {
     public void Start ( bool verbose = true, bool preventHault = true ) {
 
         this.verbose = verbose;
-        this.HttpServer.Start ();
+        HttpServer.Start ();
 
         if (verbose) {
             Console.WriteLine ( SR.Httpserver_StartMessage );
-            foreach (string prefix in this.HttpServer.ListeningPrefixes)
+            foreach (string prefix in HttpServer.ListeningPrefixes)
                 Console.WriteLine ( "- {0}", prefix );
 
-            foreach (var startupMessage in this.startupMessages) {
+            foreach (var startupMessage in startupMessages) {
                 Console.WriteLine ( startupMessage () );
             }
         }
 
-        if (this.Router.GetDefinedRoutes ().Length == 0) {
+        if (Router.GetDefinedRoutes ().Length == 0) {
             Console.WriteLine ( $"Warning: {SR.Httpserver_Warning_NoRoutes}" );
         }
 
@@ -98,13 +98,13 @@ public sealed class HttpServerHostContext : IDisposable {
     /// <param name="preventHault">Optional. Specifies if the application should pause the main application loop.</param>
     /// <param name="verbose">Optional. Specifies if the application should write the listening prefix welcome message.</param>
     public Task StartAsync ( bool verbose = true, bool preventHault = true ) {
-        return Task.Run ( () => this.Start ( verbose, preventHault ) );
+        return Task.Run ( () => Start ( verbose, preventHault ) );
     }
 
     /// <summary>
     /// Invalidates this class and releases the resources used by it, and permanently closes the HTTP server.
     /// </summary>
     public void Dispose () {
-        this.HttpServer.Dispose ();
+        HttpServer.Dispose ();
     }
 }

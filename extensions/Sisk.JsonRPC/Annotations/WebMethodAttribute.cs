@@ -31,6 +31,6 @@ public sealed class WebMethodAttribute : Attribute {
     /// </summary>
     /// <param name="methodName">The method name.</param>
     public WebMethodAttribute ( string methodName ) {
-        this.Name = methodName;
+        Name = methodName;
     }
 }

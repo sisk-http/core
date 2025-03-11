@@ -21,16 +21,16 @@ public sealed class HttpHostTimeoutManager {
     /// Gets or sets the timeout for client read operations.
     /// </summary>
     public TimeSpan ClientReadTimeout {
-        get => TimeSpan.FromSeconds ( this._ClientReadTimeoutSeconds );
-        set => this._ClientReadTimeoutSeconds = (int) value.TotalSeconds;
+        get => TimeSpan.FromSeconds ( _ClientReadTimeoutSeconds );
+        set => _ClientReadTimeoutSeconds = (int) value.TotalSeconds;
     }
 
     /// <summary>
     /// Gets or sets the timeout for client write operations.
     /// </summary>
     public TimeSpan ClientWriteTimeout {
-        get => TimeSpan.FromSeconds ( this._ClientWriteTimeoutSeconds );
-        set => this._ClientWriteTimeoutSeconds = (int) value.TotalSeconds;
+        get => TimeSpan.FromSeconds ( _ClientWriteTimeoutSeconds );
+        set => _ClientWriteTimeoutSeconds = (int) value.TotalSeconds;
     }
 
     /// <summary>

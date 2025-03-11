@@ -22,7 +22,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// Creates an new <see cref="TypedValueDictionary"/> instance with default parameters.
     /// </summary>
     public TypedValueDictionary () {
-        this._values = new ();
+        _values = new ();
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <see cref="StringComparer"/>.
     /// </summary>
     public TypedValueDictionary ( StringComparer keyComparer ) {
-        this._values = new Dictionary<string, object?> ( keyComparer );
+        _values = new Dictionary<string, object?> ( keyComparer );
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// </summary>
     /// <typeparam name="T">The singleton type.</typeparam>
     public bool IsSet<T> () where T : notnull {
-        return this._values.ContainsKey ( this.GetTypeKeyName ( typeof ( T ) ) );
+        return _values.ContainsKey ( GetTypeKeyName ( typeof ( T ) ) );
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <returns>True if the object is find with the specified key; otherwise, false.</returns>
     /// <typeparam name="T">The singleton type.</typeparam>
     public bool IsSet<T> ( [NotNullWhen ( true )] out T value ) where T : notnull {
-        var b = this.TryGetValue ( this.GetTypeKeyName ( typeof ( T ) ), out var v );
+        var b = TryGetValue ( GetTypeKeyName ( typeof ( T ) ), out var v );
         value = b ? (T) v! : default!;
         return b;
     }
@@ -66,7 +66,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// </summary>
     /// <typeparam name="T">The singleton type.</typeparam>
     public bool Unset<T> () where T : notnull {
-        return this._values.Remove ( this.GetTypeKeyName ( typeof ( T ) ) );
+        return _values.Remove ( GetTypeKeyName ( typeof ( T ) ) );
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// </summary>
     /// <typeparam name="T">The object that will be defined in this context bag.</typeparam>
     public T Set<T> () where T : notnull, new() {
-        return this.Set ( new T () );
+        return Set ( new T () );
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <param name="value">The instance of <typeparamref name="T"/> which will be defined in this context bag.</param>
     public T Set<T> ( T value ) where T : notnull {
         Type contextType = typeof ( T );
-        this._values [ this.GetTypeKeyName ( contextType ) ] = value;
+        _values [ GetTypeKeyName ( contextType ) ] = value;
         return value;
     }
 
@@ -93,7 +93,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// </summary>
     /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
     public T Get<T> () where T : notnull {
-        if (this.IsSet ( out T value )) {
+        if (IsSet ( out T value )) {
             return value;
         }
         throw new ArgumentException ( SR.Format ( SR.HttpContextBagRepository_UndefinedDynamicProperty, typeof ( T ).FullName ) );
@@ -106,7 +106,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <typeparam name="T">The type of the object defined in this context bag.</typeparam>
     /// <returns>The object of type <typeparamref name="T"/> if it exists; otherwise, <see langword="null"></see>.</returns>
     public T? GetOrDefault<T> () where T : notnull {
-        if (this.IsSet ( out T value )) {
+        if (IsSet ( out T value )) {
             return value;
         }
         return default;
@@ -120,12 +120,12 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <param name="getter">A function that provides the object to be added if it does not exist.</param>
     /// <returns>The object of type <typeparamref name="T"/> from the context bag.</returns>
     public T GetOrAdd<T> ( Func<T> getter ) where T : notnull {
-        if (this.IsSet ( out T value )) {
+        if (IsSet ( out T value )) {
             return value;
         }
         else {
             value = getter ();
-            return this.Set ( value );
+            return Set ( value );
         }
     }
 
@@ -136,12 +136,12 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <typeparam name="T">The type of the object defined in this context bag. It must have a public parameterless constructor.</typeparam>
     /// <returns>The object of type <typeparamref name="T"/> from the context bag.</returns>
     public T GetOrAdd<T> () where T : notnull, new() {
-        if (this.IsSet ( out T value )) {
+        if (IsSet ( out T value )) {
             return value;
         }
         else {
             value = new T ();
-            return this.Set ( value );
+            return Set ( value );
         }
     }
 
@@ -153,30 +153,30 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <param name="getter">An asynchronous function that provides the object to be added if it does not exist.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the object of type <typeparamref name="T"/> from the context bag.</returns>
     public async Task<T> GetOrAddAsync<T> ( Func<Task<T>> getter ) where T : notnull {
-        if (this.IsSet ( out T value )) {
+        if (IsSet ( out T value )) {
             return value;
         }
         else {
             value = await getter ();
-            return this.Set ( value );
+            return Set ( value );
         }
     }
 
     /// <inheritdoc />
     /// <exclude />
-    public object? this [ string key ] { get => this._values [ key ]; set => this._values [ key ] = value; }
+    public object? this [ string key ] { get => _values [ key ]; set => _values [ key ] = value; }
 
     /// <inheritdoc />
     /// <exclude />
-    public ICollection<string> Keys => this._values.Keys;
+    public ICollection<string> Keys => _values.Keys;
 
     /// <inheritdoc />
     /// <exclude />
-    public ICollection<object?> Values => this._values.Values;
+    public ICollection<object?> Values => _values.Values;
 
     /// <inheritdoc />
     /// <exclude />
-    public int Count => this._values.Count;
+    public int Count => _values.Count;
 
     /// <inheritdoc />
     /// <exclude />
@@ -185,61 +185,61 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <inheritdoc />
     /// <exclude />
     public void Add ( string key, object? value ) {
-        this._values.Add ( key, value );
+        _values.Add ( key, value );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public void Add ( KeyValuePair<string, object?> item ) {
-        this._values.Add ( item.Key, item.Value );
+        _values.Add ( item.Key, item.Value );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public void Clear () {
-        this._values.Clear ();
+        _values.Clear ();
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool Contains ( KeyValuePair<string, object?> item ) {
-        return this._values.Contains ( item );
+        return _values.Contains ( item );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool ContainsKey ( string key ) {
-        return this._values.ContainsKey ( key );
+        return _values.ContainsKey ( key );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public void CopyTo ( KeyValuePair<string, object?> [] array, int arrayIndex ) {
-        ((ICollection<KeyValuePair<string, object?>>) this._values).CopyTo ( array, arrayIndex );
+        ((ICollection<KeyValuePair<string, object?>>) _values).CopyTo ( array, arrayIndex );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public IEnumerator<KeyValuePair<string, object?>> GetEnumerator () {
-        return this._values.GetEnumerator ();
+        return _values.GetEnumerator ();
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool Remove ( string key ) {
-        return this._values.Remove ( key );
+        return _values.Remove ( key );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool Remove ( KeyValuePair<string, object?> item ) {
-        return ((ICollection<KeyValuePair<string, object?>>) this._values).Remove ( item );
+        return ((ICollection<KeyValuePair<string, object?>>) _values).Remove ( item );
     }
 
     /// <inheritdoc />
     /// <exclude />
     public bool TryGetValue ( string key, [MaybeNullWhen ( false )] out object? value ) {
-        return this._values.TryGetValue ( key, out value );
+        return _values.TryGetValue ( key, out value );
     }
 
     /// <summary>
@@ -250,7 +250,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
     /// <returns>true if the object is find with the specified key; otherwise, false.</returns>
     public bool TryGetValue<TResult> ( string key, [MaybeNullWhen ( false )] out TResult? value ) {
-        bool b = this._values.TryGetValue ( key, out var v );
+        bool b = _values.TryGetValue ( key, out var v );
         if (b) {
             value = (TResult?) v;
             return true;
@@ -264,6 +264,6 @@ public class TypedValueDictionary : IDictionary<string, object?> {
     /// <inheritdoc />
     /// <exclude />
     IEnumerator IEnumerable.GetEnumerator () {
-        return ((IEnumerable) this._values).GetEnumerator ();
+        return ((IEnumerable) _values).GetEnumerator ();
     }
 }

@@ -27,8 +27,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// Initializes a new instance of the <see cref="StringKeyStoreCollection"/> class,
     /// </summary>
     public StringKeyStoreCollection () {
-        this.Comparer = StringComparer.CurrentCulture;
-        this.items = new ();
+        Comparer = StringComparer.CurrentCulture;
+        items = new ();
     }
 
     /// <summary>
@@ -36,8 +36,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="comparer">The comparer used for key equality.</param>
     public StringKeyStoreCollection ( IEqualityComparer<string> comparer ) {
-        this.Comparer = comparer;
-        this.items = new ();
+        Comparer = comparer;
+        items = new ();
     }
 
     /// <summary>
@@ -46,34 +46,34 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="comparer">The comparer used for key equality.</param>
     /// <param name="items">The inner collection to add to this instance.</param>
     public StringKeyStoreCollection ( IEqualityComparer<string> comparer, IDictionary<string, string []>? items ) {
-        this.Comparer = comparer;
+        Comparer = comparer;
         this.items = new ();
         if (items != null)
-            this.AddRange ( items );
+            AddRange ( items );
     }
 
     #region Internal methods
 
     internal void AddInternal ( string key, IEnumerable<string> values ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
-            if (this.Comparer.Equals ( item.Item1, key )) {
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
+            if (Comparer.Equals ( item.Item1, key )) {
                 item.Item2.AddRange ( values );
                 return;
             }
         }
-        this.items.Add ( (key, new List<string> ( values )) );
+        items.Add ( (key, new List<string> ( values )) );
     }
 
     internal void SetItemInternal ( string key, string value ) {
-        this.RemoveItemInternal ( key );
-        this.items.Add ( (key, new List<string> () { value }) );
+        RemoveItemInternal ( key );
+        items.Add ( (key, new List<string> () { value }) );
     }
 
     internal bool RemoveItemInternal ( string key ) {
-        int itemKey = this.IndexOf ( key );
+        int itemKey = IndexOf ( key );
         if (itemKey >= 0) {
-            this.items.RemoveAt ( itemKey );
+            items.RemoveAt ( itemKey );
             return true;
         }
         return false;
@@ -127,11 +127,11 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="items">The <see cref="NameValueCollection"/> containing the key-value pairs to import.</param>
     public void ImportNameValueCollection ( NameValueCollection items ) {
-        this.ThrowIfReadOnly ();
+        ThrowIfReadOnly ();
         foreach (string headerName in items) {
             string []? values = items.GetValues ( headerName );
             if (values is not null) {
-                this.AddInternal ( headerName, values );
+                AddInternal ( headerName, values );
             }
         }
     }
@@ -142,8 +142,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="queryString">The query string containing the key-value pairs to import.</param>
     public void ImportQueryString ( string queryString ) {
-        this.ThrowIfReadOnly ();
-        this.ParseQueryString ( queryString, SharedChars.Amp, SharedChars.Equal );
+        ThrowIfReadOnly ();
+        ParseQueryString ( queryString, SharedChars.Amp, SharedChars.Equal );
     }
 
     /// <summary>
@@ -152,8 +152,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="queryString">The query string containing the key-value pairs to import.</param>
     public void ImportCookieString ( string queryString ) {
-        this.ThrowIfReadOnly ();
-        this.ParseQueryString ( queryString, SharedChars.Semicolon, SharedChars.Equal );
+        ThrowIfReadOnly ();
+        ParseQueryString ( queryString, SharedChars.Semicolon, SharedChars.Equal );
     }
 
     #endregion
@@ -172,7 +172,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     public string? this [ string key ] {
         get {
-            var values = this.GetValues ( key ).ToArray ();
+            var values = GetValues ( key ).ToArray ();
             return values.Length switch {
                 0 => null,
                 1 => values [ 0 ],
@@ -181,30 +181,30 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
         }
         set {
             if (value != null)
-                this.Set ( key, value );
+                Set ( key, value );
         }
     }
 
     /// <summary>
     /// Gets the collection of keys in the <see cref="StringKeyStoreCollection"/>.
     /// </summary>
-    public ICollection<string> Keys => this.items.Select ( i => i.Item1 ).ToArray ();
+    public ICollection<string> Keys => items.Select ( i => i.Item1 ).ToArray ();
 
     /// <summary>
     /// Gets the collection of values in the <see cref="StringKeyStoreCollection"/> as arrays.
     /// Each key may have multiple associated values.
     /// </summary>
-    public ICollection<string []> Values => this.items.Select ( v => v.Item2.ToArray () ).ToArray ();
+    public ICollection<string []> Values => items.Select ( v => v.Item2.ToArray () ).ToArray ();
 
     /// <summary>
     /// Gets the number of key-value pairs in the <see cref="StringKeyStoreCollection"/>.
     /// </summary>
-    public int Count => this.items.Count;
+    public int Count => items.Count;
 
     /// <summary>
     /// Gets a value indicating whether the <see cref="StringKeyStoreCollection"/> is read-only.
     /// </summary>
-    public bool IsReadOnly => this.isReadOnly;
+    public bool IsReadOnly => isReadOnly;
 
     #endregion
 
@@ -216,8 +216,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="key">The key to which the values will be added.</param>
     /// <param name="value">The array of values to associate with the key.</param>
     public void Add ( string key, string [] value ) {
-        this.ThrowIfReadOnly ();
-        this.AddInternal ( key, value );
+        ThrowIfReadOnly ();
+        AddInternal ( key, value );
     }
 
     /// <summary>
@@ -226,8 +226,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="key">The key to which the values will be added.</param>
     /// <param name="value">The collection of values to associate with the key.</param>
     public void Add ( string key, IEnumerable<string> value ) {
-        this.ThrowIfReadOnly ();
-        this.AddInternal ( key, value );
+        ThrowIfReadOnly ();
+        AddInternal ( key, value );
     }
 
     /// <summary>
@@ -236,8 +236,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="key">The key to which the value will be added.</param>
     /// <param name="value">The value to associate with the key.</param>
     public void Add ( string key, string value ) {
-        this.ThrowIfReadOnly ();
-        this.AddInternal ( key, new string [ 1 ] { value } );
+        ThrowIfReadOnly ();
+        AddInternal ( key, new string [ 1 ] { value } );
     }
 
     /// <summary>
@@ -245,8 +245,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="item">The key-value pair to add, where the key is associated with an array of values.</param>
     public void Add ( KeyValuePair<string, string []> item ) {
-        this.ThrowIfReadOnly ();
-        this.AddInternal ( item.Key, item.Value );
+        ThrowIfReadOnly ();
+        AddInternal ( item.Key, item.Value );
     }
 
     /// <summary>
@@ -255,7 +255,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="items">The collection whose items should be added to the end of this collection.</param>
     public void AddRange ( IEnumerable<KeyValuePair<string, string []>> items ) {
         foreach (KeyValuePair<string, string []> item in items)
-            this.Add ( item );
+            Add ( item );
     }
 
     /// <summary>
@@ -264,7 +264,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="items">The collection whose items should be added to the end of this collection.</param>
     public void AddRange ( IEnumerable<KeyValuePair<string, string?>> items ) {
         foreach (KeyValuePair<string, string?> item in items)
-            this.Add ( item.Key, item.Value ?? string.Empty );
+            Add ( item.Key, item.Value ?? string.Empty );
     }
 
     /// <summary>
@@ -273,21 +273,21 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="items">The collection whose items should be replaced or added to this collection.</param>
     public void SetRange ( IEnumerable<KeyValuePair<string, string []>> items ) {
         foreach (KeyValuePair<string, string []> item in items)
-            this.Set ( item );
+            Set ( item );
     }
 
     /// <summary>
     /// Sets the value associated with the specified key, replacing any existing values.
     /// </summary>
     /// <param name="item">The key-value pair to add, where the key is associated with an array of values.</param>
-    public void Set ( KeyValuePair<string, string []> item ) => this.Set ( item.Key, item.Value );
+    public void Set ( KeyValuePair<string, string []> item ) => Set ( item.Key, item.Value );
 
     /// <summary>
     /// Sets the value associated with the specified key, replacing any existing values.
     /// </summary>
     /// <param name="key">The key for which to set the value.</param>
     /// <param name="value">The value to associate with the key.</param>
-    public void Set ( string key, string value ) => this.Set ( key, [ value ] );
+    public void Set ( string key, string value ) => Set ( key, [ value ] );
 
     /// <summary>
     /// Sets the collection of values associated with the specified key, replacing any existing values.
@@ -295,8 +295,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <param name="key">The key for which to set the values.</param>
     /// <param name="value">The collection of values to associate with the key.</param>
     public void Set ( string key, IEnumerable<string> value ) {
-        this.Remove ( key );
-        this.Add ( key, value );
+        Remove ( key );
+        Add ( key, value );
     }
 
     #endregion
@@ -311,7 +311,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// The last value associated with the specified key, or <see langword="null"></see> if the key is not found.
     /// </returns>
     public string? GetValue ( string name ) {
-        if (this.TryGetValue ( name, out var values )) {
+        if (TryGetValue ( name, out var values )) {
             return values.LastOrDefault ();
         }
         return null;
@@ -326,7 +326,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// An array of values associated with the specified key, or an empty array if the key is not found.
     /// </returns>
     public string [] GetValues ( string name ) {
-        if (this.TryGetValue ( name, out var values )) {
+        if (TryGetValue ( name, out var values )) {
             return values.ToArray ();
         }
         return Array.Empty<string> ();
@@ -341,8 +341,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// Throws an exception if the store is read-only.
     /// </summary>
     public void Clear () {
-        this.ThrowIfReadOnly ();
-        this.items.Clear ();
+        ThrowIfReadOnly ();
+        items.Clear ();
     }
 
     /// <summary>
@@ -354,8 +354,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <see langword="true"></see> if the key was successfully removed; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool Remove ( string key ) {
-        this.ThrowIfReadOnly ();
-        return this.RemoveItemInternal ( key );
+        ThrowIfReadOnly ();
+        return RemoveItemInternal ( key );
     }
 
     #endregion
@@ -365,7 +365,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// Marks the <see cref="StringKeyStoreCollection"/> as read-only, preventing further modifications.
     /// </summary>
     public void MakeReadOnly () {
-        this.isReadOnly = true;
+        isReadOnly = true;
     }
 
     /// <summary>
@@ -376,12 +376,12 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <see langword="true"></see> if the <see cref="StringKeyStoreCollection"/> contains an element with the specified key; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool ContainsKey ( string key ) {
-        return this.IndexOf ( key ) >= 0;
+        return IndexOf ( key ) >= 0;
     }
 
     /// <inheritdoc/>
     public IEnumerator<KeyValuePair<string, string []>> GetEnumerator () {
-        foreach (var item in this.items)
+        foreach (var item in items)
             yield return new KeyValuePair<string, string []> ( item.Item1, item.Item2.ToArray () );
     }
 
@@ -394,9 +394,9 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// <see langword="true"></see> if the key was found and the values were retrieved; otherwise, <see langword="false"></see>.
     /// </returns>
     public bool TryGetValue ( string key, out string [] value ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
-            if (this.Comparer.Equals ( item.Item1, key )) {
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
+            if (Comparer.Equals ( item.Item1, key )) {
                 value = item.Item2.ToArray ();
                 return true;
             }
@@ -409,9 +409,9 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// Copies the contents of this <see cref="StringKeyStoreCollection"/> into an <see cref="Dictionary{TKey, TValue}"/>.
     /// </summary>
     public IDictionary<string, string []> AsDictionary () {
-        Dictionary<string, string []> dict = new Dictionary<string, string []> ( this.Comparer );
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
+        Dictionary<string, string []> dict = new Dictionary<string, string []> ( Comparer );
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
             dict.Add ( item.Item1, item.Item2.ToArray () );
         }
         return dict;
@@ -423,8 +423,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// </summary>
     public NameValueCollection AsNameValueCollection () {
         NameValueCollection nm = new NameValueCollection ();
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
             nm.Add ( item.Item1, string.Join ( ", ", item.Item2 ) );
         }
         return nm;
@@ -444,7 +444,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     /// Returns a string that represents the current object.
     /// </summary>
     /// <returns>A string that represents the current object.</returns>
-    public override string ToString () => this.ToString ( null );
+    public override string ToString () => ToString ( null );
 
     /// <summary>
     /// Returns a string that represents the current object, using the specified format provider.
@@ -475,35 +475,35 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     #region Private/interface methods
 
     IEnumerator IEnumerable.GetEnumerator () {
-        return this.GetEnumerator ();
+        return GetEnumerator ();
     }
 
     void ICollection<KeyValuePair<string, string []>>.CopyTo ( KeyValuePair<string, string []> [] array, int arrayIndex ) {
-        ((ICollection<KeyValuePair<string, string []>>) this.items).CopyTo ( array, arrayIndex );
+        ((ICollection<KeyValuePair<string, string []>>) items).CopyTo ( array, arrayIndex );
     }
 
     bool ICollection<KeyValuePair<string, string []>>.Contains ( KeyValuePair<string, string []> item ) {
-        if (this.TryGetValue ( item.Key, out var value )) {
+        if (TryGetValue ( item.Key, out var value )) {
             return item.Value.All ( value.Contains );
         }
         return false;
     }
 
     bool ICollection<KeyValuePair<string, string []>>.Remove ( KeyValuePair<string, string []> item ) {
-        return this.Remove ( item.Key );
+        return Remove ( item.Key );
     }
 
     void ThrowIfReadOnly () {
-        if (this.isReadOnly)
+        if (isReadOnly)
             throw new InvalidOperationException ( SR.Collection_ReadOnly );
     }
 
-    string [] IDictionary<string, string []>.this [ string key ] { get => this.GetValues ( key ); set => this.Set ( key, value ); }
+    string [] IDictionary<string, string []>.this [ string key ] { get => GetValues ( key ); set => Set ( key, value ); }
 
     int IndexOf ( string key ) {
-        for (int i = 0; i < this.items.Count; i++) {
-            var item = this.items [ i ];
-            if (this.Comparer.Equals ( item.Item1, key ))
+        for (int i = 0; i < items.Count; i++) {
+            var item = items [ i ];
+            if (Comparer.Equals ( item.Item1, key ))
                 return i;
         }
         return -1;
@@ -518,7 +518,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
 
                 int eqPos = part.IndexOf ( valueSeparator, StringComparison.Ordinal );
                 if (eqPos < 0) {
-                    this.AddInternal ( part, new string [ 1 ] { string.Empty } );
+                    AddInternal ( part, new string [ 1 ] { string.Empty } );
                     continue;
                 }
                 else {
@@ -530,7 +530,7 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
                         continue;
                     }
 
-                    this.AddInternal ( key, new string [ 1 ] { WebUtility.UrlDecode ( value ) } );
+                    AddInternal ( key, new string [ 1 ] { WebUtility.UrlDecode ( value ) } );
                 }
             }
         }

@@ -29,6 +29,6 @@ public sealed class MethodDescriptionAttribute : Attribute {
     /// </summary>
     /// <param name="description">The description of the method.</param>
     public MethodDescriptionAttribute ( string description ) {
-        this.Description = description;
+        Description = description;
     }
 }

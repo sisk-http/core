@@ -36,7 +36,7 @@ public sealed class DeflateContent : CompressedContent {
 
     /// <inheritdoc/>
     public override void Setup () {
-        HeaderHelper.CopyHttpHeaders ( this.InnerContent.Headers, this.Headers );
-        this.Headers.ContentEncoding.Add ( "deflate" );
+        HeaderHelper.CopyHttpHeaders ( InnerContent.Headers, Headers );
+        Headers.ContentEncoding.Add ( "deflate" );
     }
 }

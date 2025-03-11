@@ -31,7 +31,7 @@ public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     /// </summary>
     /// <param name="items">The inner collection to add to this collection.</param>
     public HttpHeaderCollection ( IDictionary<string, string []> items ) : base ( _comparer ) {
-        this.AddRange ( items );
+        AddRange ( items );
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     /// </summary>
     /// <param name="items">The inner collection to add to this collection.</param>
     public HttpHeaderCollection ( IDictionary<string, string?> items ) : base ( _comparer ) {
-        this.AddRange ( items );
+        AddRange ( items );
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     /// </summary>
     /// <param name="items">The inner collection to add to this collection.</param>
     public HttpHeaderCollection ( WebHeaderCollection items ) : base ( _comparer ) {
-        this.AddRange ( FromNameValueCollection ( items ) );
+        AddRange ( FromNameValueCollection ( items ) );
     }
     #region Helper properties
 
