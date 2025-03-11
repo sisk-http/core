@@ -55,6 +55,18 @@ public static class HttpKnownHeaderNames {
     public const string AcceptRanges = "Accept-Ranges";
 
     /// <summary>
+    /// The HTTP Accept-CH header.
+    /// <para>Specifies the client hints that the server supports, allowing clients to provide additional information about their capabilities.</para>
+    /// </summary>
+    public const string AcceptCH = "Accept-CH";
+
+    /// <summary>
+    /// The HTTP Accept-Post header.
+    /// <para>Specifies which media types are accepted by the server in a POST request.</para>
+    /// </summary>
+    public const string AcceptPost = "Accept-Post";
+
+    /// <summary>
     /// The HTTP Access-Control-Allow-Credentials header.
     /// <para>Indicates whether the response to the request can expose credentials, allowing cross-origin requests to include credentials.</para>
     /// </summary>
@@ -293,6 +305,19 @@ public static class HttpKnownHeaderNames {
     /// <para>Used to indicate the privacy policy of the server, allowing clients to understand how their data will be handled.</para>
     /// </summary>
     public const string P3P = "P3P";
+
+    /// <summary>
+    /// The HTTP DNT header.
+    /// <para>The HTTP DNT (Do Not Track) request header indicates the user's tracking preference.</para>
+    /// </summary>
+    public const string Dnt = "DNT";
+
+    /// <summary>
+    /// The HTTP Sec-GPC header.
+    /// <para>The HTTP Sec-GPC request header is part of the Global Privacy Control (GPC) mechanism to indicate whether the
+    /// user consents to a website or service selling or sharing their personal information with third parties.</para>
+    /// </summary>
+    public const string SecGPC = "Sec-GPC";
 
     /// <summary>
     /// The HTTP Pragma header.

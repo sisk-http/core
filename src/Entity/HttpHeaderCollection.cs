@@ -90,6 +90,18 @@ public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     public string? AcceptRanges { get => this [ Header.AcceptRanges ]; set => this [ Header.AcceptRanges ] = value; }
 
     /// <summary>
+    /// Gets or sets the value of the HTTP Accept-Post header.
+    /// <para>Specifies the accepted formats for posting data to the server.</para>
+    /// </summary>
+    public string? AcceptPost { get => this [ Header.AcceptPost ]; set => this [ Header.AcceptPost ] = value; }
+
+    /// <summary>
+    /// Gets or sets the value of the HTTP Accept-CH header.
+    /// <para>Specifies the client hints that the server supports, allowing clients to provide additional information about their capabilities.</para>
+    /// </summary>
+    public string? AcceptCH { get => this [ Header.AcceptCH ]; set => this [ Header.AcceptCH ] = value; }
+
+    /// <summary>
     /// Gets or sets the value of the HTTP Access-Control-Allow-Credentials header.
     /// <para>Indicates whether the response to the request can expose credentials, allowing cross-origin requests to include credentials.</para>
     /// </summary>
@@ -237,6 +249,18 @@ public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     /// <para>Provides a unique identifier for a specific version of a resource, allowing clients to cache and validate resources efficiently.</para>
     /// </summary>
     public string? ETag { get => this [ Header.ETag ]; set => this [ Header.ETag ] = value; }
+
+    /// <summary>
+    /// Gets the value of the HTTP DNT header.
+    /// <para>The HTTP DNT (Do Not Track) request header indicates the user's tracking preference.</para>
+    /// </summary>
+    public string? Dnt { get => this [ Header.Dnt ]; set => this [ Header.Dnt ] = value; }
+
+    /// <summary>
+    /// Gets the value of the HTTP Sec-GPC header.
+    /// <para>The HTTP Sec-GPC request header is part of the Global Privacy Control (GPC) mechanism to indicate whether the user consents to a website or service selling or sharing their personal information with third parties.</para>
+    /// </summary>
+    public string? SecGPC { get => this [ Header.SecGPC ]; set => this [ Header.SecGPC ] = value; }
 
     /// <summary>
     /// Gets the value of the HTTP Expect header.
