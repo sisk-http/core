@@ -29,11 +29,6 @@ public sealed class SslProxy : IDisposable {
     public string? ProxyAuthorization { get; set; }
 
     /// <summary>
-    /// Gets or sets whether keep-alive connections should be used.
-    /// </summary>
-    public bool KeepAliveEnabled { get; set; } = true;
-
-    /// <summary>
     /// Gets the SSL certificate used by the proxy server.
     /// </summary>
     public X509Certificate ServerCertificate { get; }
@@ -88,8 +83,11 @@ public sealed class SslProxy : IDisposable {
         host.Handler = new SslProxyContextHandler ( this );
         host.HttpsOptions = new HttpsOptions ( ServerCertificate ) {
             AllowedProtocols = AllowedProtocols,
-            ClientCertificateRequired = ClientCertificateRequired
+            ClientCertificateRequired = ClientCertificateRequired,
+            CheckCertificateRevocation = CheckCertificateRevocation
         };
+        host.TimeoutManager.ClientReadTimeout = GatewayTimeout;
+        host.TimeoutManager.ClientWriteTimeout = GatewayTimeout;
 
         host.Start ();
     }

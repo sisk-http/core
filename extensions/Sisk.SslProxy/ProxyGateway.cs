@@ -14,12 +14,15 @@ namespace Sisk.Ssl;
 class ProxyGateway : IDisposable {
     HttpClient client;
 
+    public IPEndPoint GatewayEndpoint { get; }
+
     public ProxyGateway ( IPEndPoint endpoint ) {
         client = new HttpClient ();
+        GatewayEndpoint = endpoint;
     }
 
-    public Task<HttpResponseMessage> SendMessageAsync ( HttpRequestMessage requestMessage ) {
-        return client.SendAsync ( requestMessage, HttpCompletionOption.ResponseHeadersRead );
+    public Task<HttpResponseMessage> SendMessageAsync ( HttpRequestMessage requestMessage, CancellationToken cancellationToken = default ) {
+        return client.SendAsync ( requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken );
     }
 
     public void Dispose () {
