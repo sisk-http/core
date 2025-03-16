@@ -8,255 +8,233 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
-using Sisk.Core.Internal;
+using System.Text;
 
-namespace Sisk.Core.Http.Streams;
-
-/// <summary>
-/// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
-/// </summary>
-public sealed class HttpRequestEventSource : IDisposable {
-    readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
-    readonly HttpStreamPingPolicy pingPolicy;
-    readonly HttpListenerResponse res;
-    readonly HttpListenerRequest req;
-    readonly HttpRequest reqObj;
-    readonly HttpServer hostServer;
-    readonly HttpRequestEventSourceWriter writer;
-    TimeSpan keepAlive = TimeSpan.Zero;
-
-    private bool isClosed;
-    private bool isDisposed;
-
+namespace Sisk.Core.Http.Streams {
     /// <summary>
-    /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP event source connection.
+    /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
     /// </summary>
-    public HttpStreamPingPolicy PingPolicy { get => pingPolicy; }
+    public sealed class HttpRequestEventSource : IDisposable {
+        readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
+        readonly HttpStreamPingPolicy pingPolicy;
+        readonly HttpListenerResponse res;
+        readonly HttpListenerRequest req;
+        readonly HttpRequest reqObj;
+        readonly HttpServer hostServer;
+        TimeSpan keepAlive = TimeSpan.Zero;
+        DateTime lastSuccessfullMessage = DateTime.Now;
+        int length;
 
-    /// <summary>
-    /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
-    /// </summary>
-    public HttpRequest HttpRequest => reqObj;
+        internal Queue<string> sendQueue = new Queue<string> ();
+        internal bool hasSentData;
 
-    /// <summary>
-    /// Gets an unique identifier label to this EventStream connection, useful for finding this connection's reference later.
-    /// </summary>
-    public string? Identifier { get; private set; }
+        // 
+        // isClosed determines if this instance has some connection or not
+        // isDisposed determines if this object was removed from their collection but wasnt collected by gc yet
+        //
 
-    /// <summary>
-    /// Gets an boolean indicating if this connection is open and this instance can send messages.
-    /// </summary>
-    public bool IsActive { get => (isDisposed && isClosed) == false; }
+        private bool isClosed;
+        private bool isDisposed;
 
-    internal HttpRequestEventSource ( string? identifier, HttpListenerResponse res, HttpListenerRequest req, HttpRequest host ) {
-        this.req = req;
-        this.res = res;
+        /// <summary>
+        /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP event source connection.
+        /// </summary>
+        public HttpStreamPingPolicy PingPolicy { get => pingPolicy; }
 
-        Identifier = identifier;
+        /// <summary>
+        /// Gets the <see cref="Http.HttpRequest"/> object which created this Event Source instance.
+        /// </summary>
+        public HttpRequest HttpRequest => reqObj;
 
-        hostServer = host.baseServer;
-        reqObj = host;
-        pingPolicy = new HttpStreamPingPolicy ( this );
+        /// <summary>
+        /// Gets an integer indicating the total bytes sent by this instance to the client.
+        /// </summary>
+        public int SentContentLength { get => length; }
 
-        hostServer._eventCollection.RegisterEventSource ( this );
+        /// <summary>
+        /// Gets an unique identifier label to this EventStream connection, useful for finding this connection's reference later.
+        /// </summary>
+        public string? Identifier { get; private set; }
 
-        res.AddHeader ( HttpKnownHeaderNames.CacheControl, "no-store, no-cache" );
-        res.AddHeader ( HttpKnownHeaderNames.ContentType, "text/event-stream" );
+        /// <summary>
+        /// Gets an boolean indicating if this connection is open and this instance can send messages.
+        /// </summary>
+        public bool IsActive { get => !isClosed && !isDisposed; }
 
-        if (host.baseServer.ServerConfiguration.SendSiskHeader)
-            res.AddHeader ( HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy );
+        internal HttpRequestEventSource ( string? identifier, HttpListenerResponse res, HttpListenerRequest req, HttpRequest host ) {
+            this.res = res ?? throw new ArgumentNullException ( nameof ( res ) );
+            this.req = req ?? throw new ArgumentNullException ( nameof ( req ) );
+            Identifier = identifier;
+            hostServer = host.baseServer;
+            reqObj = host;
+            pingPolicy = new HttpStreamPingPolicy ( this );
 
-        if (host.Context.MatchedRoute?.UseCors == true)
-            HttpServer.SetCorsHeaders ( req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res );
+            hostServer._eventCollection.RegisterEventSource ( this );
 
-        writer = new HttpRequestEventSourceWriter ( new StreamWriter ( res.OutputStream, req.ContentEncoding ) );
-    }
+            res.AddHeader ( HttpKnownHeaderNames.CacheControl, "no-store, no-cache" );
+            res.AddHeader ( HttpKnownHeaderNames.ContentType, "text/event-stream; charset=utf-8" );
+            if (host.baseServer.ServerConfiguration.SendSiskHeader)
+                res.AddHeader ( HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy );
 
-    private void KeepAliveTask () {
-        while (IsActive) {
-            if (writer.lastSuccessfullMessage < DateTime.Now - keepAlive) {
+            if (host.Context.MatchedRoute?.UseCors == true)
+                HttpServer.SetCorsHeaders ( req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res );
+        }
+
+        private void KeepAliveTask () {
+            while (IsActive) {
+                if (lastSuccessfullMessage < DateTime.Now - keepAlive) {
+                    Dispose ();
+                    break;
+                }
+                else {
+                    Thread.Sleep ( 1000 );
+                }
+            }
+        }
+
+        /// <summary>
+        /// Configures the ping policy for this instance of HTTP Event Source.
+        /// </summary>
+        /// <param name="act">The method that runs on the ping policy for this HTTP Event Source.</param>
+        public void WithPing ( Action<HttpStreamPingPolicy> act ) {
+            act ( pingPolicy );
+        }
+
+        /// <summary>
+        /// Sends an header to the streaming context.
+        /// </summary>
+        /// <param name="name">The header name.</param>
+        /// <param name="value">The header value.</param>
+        public void AppendHeader ( string name, string value ) {
+            if (hasSentData) {
+                throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
+            }
+            res.AddHeader ( name, value );
+        }
+
+        /// <summary>
+        /// Sends an event to the client over the HTTP connection.
+        /// </summary>
+        /// <param name="data">The data to be sent as part of the event.</param>
+        /// <param name="fieldName">The field name for the event data. Defaults to "data".</param>
+        /// <returns>True if the event was sent successfully, false otherwise.</returns>
+        public bool Send ( string? data, string fieldName = "data" ) {
+
+            ArgumentNullException.ThrowIfNull ( fieldName, nameof ( fieldName ) );
+
+            if (!IsActive) {
+                return false;
+            }
+            hasSentData = true;
+            sendQueue.Enqueue ( $"{fieldName}: {data}\n\n" );
+            Flush ();
+            return IsActive;
+        }
+
+        /// <summary>
+        /// Asynchronously sends an event to the client over the HTTP connection.
+        /// </summary>
+        /// <param name="data">The data to be sent as part of the event.</param>
+        /// <param name="fieldName">The field name for the event data. Defaults to "data".</param>
+        /// <returns>A <see cref="ValueTask{TResult}"/> that represents the asynchronous operation. The result is true if the event was sent successfully, false otherwise.</returns>
+        public async ValueTask<bool> SendAsync ( string? data, string fieldName = "data" ) {
+
+            ArgumentNullException.ThrowIfNull ( fieldName, nameof ( fieldName ) );
+
+            if (!IsActive) {
+                return false;
+            }
+            hasSentData = true;
+            sendQueue.Enqueue ( $"{fieldName}: {data}\n\n" );
+            await FlushAsync ();
+            return IsActive;
+        }
+
+        /// <summary>
+        /// Asynchronously waits for the connection to close before continuing execution. This method
+        /// is released when either the client or the server reaches an sending failure.
+        /// </summary>
+        public void KeepAlive () {
+            if (!IsActive) {
+                throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
+            }
+            terminatingMutex.WaitOne ();
+        }
+
+        /// <summary>
+        /// Asynchronously waits for the connection to close before continuing execution with
+        /// an maximum keep alive timeout. This method is released when either the client or the server reaches an sending failure.
+        /// </summary>
+        /// <param name="maximumIdleTolerance">The maximum timeout interval for an idle connection to automatically release this method.</param>
+        public void WaitForFail ( TimeSpan maximumIdleTolerance ) {
+            if (!IsActive) {
+                throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
+            }
+            keepAlive = maximumIdleTolerance;
+
+            new Task ( KeepAliveTask ).Start ();
+
+            terminatingMutex.WaitOne ();
+        }
+
+        /// <summary>
+        /// Closes the event listener and it's connection.
+        /// </summary>
+        public HttpResponse Close () {
+            if (!isClosed) {
+                isClosed = true;
+                Flush ();
                 Dispose ();
-                break;
+                hostServer._eventCollection.UnregisterEventSource ( this );
             }
-            else {
-                Thread.Sleep ( 500 );
+            return new HttpResponse ( HttpResponse.HTTPRESPONSE_SERVER_CLOSE ) {
+                CalculedLength = length
+            };
+        }
+
+        /// <summary>
+        /// Cancels the sending queue from sending pending messages and clears the queue.
+        /// </summary>
+        public void Cancel () {
+            sendQueue.Clear ();
+        }
+
+        internal void Flush () {
+            while (sendQueue.TryDequeue ( out string? item )) {
+                byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
+                try {
+                    res.OutputStream.Write ( itemBytes );
+                    length += itemBytes.Length;
+                    lastSuccessfullMessage = DateTime.Now;
+                }
+                catch (Exception) {
+                    Dispose ();
+                }
             }
         }
-    }
 
-    /// <summary>
-    /// Configures the ping policy for this instance of HTTP Event Source.
-    /// </summary>
-    /// <param name="act">The method that runs on the ping policy for this HTTP Event Source.</param>
-    public void WithPing ( Action<HttpStreamPingPolicy> act ) {
-        act ( pingPolicy );
-    }
-
-    /// <summary>
-    /// Sends an header to the streaming context.
-    /// </summary>
-    /// <param name="name">The header name.</param>
-    /// <param name="value">The header value.</param>
-    public void AppendHeader ( string name, string value ) {
-        if (writer.hasSentData) {
-            throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
-        }
-        res.AddHeader ( name, value );
-    }
-
-    /// <summary>
-    /// Sends data to the output stream.
-    /// </summary>
-    /// <param name="data">The data to send, or <c>null</c> to send no data.</param>
-    /// <param name="splitLines">Whether to split the data into separate lines if it contains newline characters.</param>
-    /// <returns>Whether the operation was successful.</returns>
-    public bool Send ( object? data, bool splitLines = false ) => SendAsync ( data?.ToString (), splitLines ).GetSyncronizedResult ();
-
-    /// <summary>
-    /// Sends an event to the output stream.
-    /// </summary>
-    /// <param name="eventName">The name of the event to send.</param>
-    /// <returns>Whether the operation was successful.</returns>
-    public bool SendEvent ( string eventName ) => SendEventAsync ( eventName ).GetSyncronizedResult ();
-
-    /// <summary>
-    /// Sends an ID to the output stream.
-    /// </summary>
-    /// <param name="id">The ID to send.</param>
-    /// <returns>Whether the operation was successful.</returns>
-    public bool SendId ( string id ) => SendIdAsync ( id ).GetSyncronizedResult ();
-
-    /// <summary>
-    /// Sends a retry-after directive to the output stream.
-    /// </summary>
-    /// <param name="retryAfter">The time after which the client should retry the request.</param>
-    /// <returns>Whether the operation was successful.</returns>
-    public bool SendRetryAfter ( TimeSpan retryAfter ) => SendRetryAfterAsync ( retryAfter ).GetSyncronizedResult ();
-
-    /// <summary>
-    /// Sends a retry-after directive to the output stream.
-    /// </summary>
-    /// <param name="ms">The time in milliseconds after which the client should retry the request.</param>
-    /// <returns>Whether the operation was successful.</returns>
-    public bool SendRetryAfter ( int ms ) => SendRetryAfterAsync ( ms ).GetSyncronizedResult ();
-
-    /// <summary>
-    /// Asynchronously sends data to the output stream.
-    /// </summary>
-    /// <param name="data">The data to send, or <c>null</c> to send no data.</param>
-    /// <param name="splitLines">Whether to split the data into separate lines if it contains newline characters.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result indicates whether the operation was successful.</returns>
-    public async ValueTask<bool> SendAsync ( string? data, bool splitLines = false ) {
-        if (!IsActive)
-            return false;
-
-        if (splitLines && data?.Contains ( '\n' ) == true) {
-            foreach (var chunk in data.Split ( '\n' )) {
-                if (await writer.SendMessageAsync ( "data", chunk, breakLineAfter: false ) == false)
-                    return false;
+        internal async ValueTask FlushAsync () {
+            while (sendQueue.TryDequeue ( out string? item )) {
+                byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
+                try {
+                    await res.OutputStream.WriteAsync ( itemBytes );
+                    length += itemBytes.Length;
+                    lastSuccessfullMessage = DateTime.Now;
+                }
+                catch (Exception) {
+                    Dispose ();
+                }
             }
-            return await writer.WriteLineAsync ();
         }
-        else {
-            return await writer.SendMessageAsync ( "data", data, breakLineAfter: true );
-        }
-    }
 
-    /// <summary>
-    /// Asynchronously sends an event to the output stream.
-    /// </summary>
-    /// <param name="eventName">The name of the event to send.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result indicates whether the operation was successful.</returns>
-    public async ValueTask<bool> SendEventAsync ( string eventName ) {
-        if (!IsActive)
-            return false;
-
-        return await writer.SendMessageAsync ( "event", eventName, breakLineAfter: true );
-    }
-
-    /// <summary>
-    /// Asynchronously sends an ID to the output stream.
-    /// </summary>
-    /// <param name="id">The ID to send.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result indicates whether the operation was successful.</returns>
-    public async ValueTask<bool> SendIdAsync ( string id ) {
-        if (!IsActive)
-            return false;
-
-        return await writer.SendMessageAsync ( "id", id, breakLineAfter: true );
-    }
-
-    /// <summary>
-    /// Asynchronously sends a retry-after directive to the output stream.
-    /// </summary>
-    /// <param name="retryAfter">The time after which the client should retry the request.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result indicates whether the operation was successful.</returns>
-    public ValueTask<bool> SendRetryAfterAsync ( TimeSpan retryAfter ) => SendRetryAfterAsync ( (int) retryAfter.TotalMilliseconds );
-
-    /// <summary>
-    /// Asynchronously sends a retry-after directive to the output stream.
-    /// </summary>
-    /// <param name="ms">The time in milliseconds after which the client should retry the request.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result indicates whether the operation was successful.</returns>
-    public async ValueTask<bool> SendRetryAfterAsync ( int ms ) {
-        if (!IsActive)
-            return false;
-
-        return await writer.SendMessageAsync ( "retry", ms.ToString ( provider: null ), breakLineAfter: true );
-    }
-
-    /// <summary>
-    /// Wait until the connection is closed by the server or until some message is not delivered to the client.
-    /// </summary>
-    public void KeepAlive () {
-        if (!IsActive) {
-            throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
-        }
-        terminatingMutex.WaitOne ();
-    }
-
-    /// <summary>
-    /// Wait until the connection is closed by the server or until some message is not delivered to the client,
-    /// with a specified maximum idle tolerance.
-    /// </summary>
-    /// <param name="maximumIdleTolerance">The maximum idle tolerance.</param>
-    public void WaitForFail ( in TimeSpan maximumIdleTolerance ) {
-        if (!IsActive) {
-            throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
-        }
-        keepAlive = maximumIdleTolerance;
-
-        new Task ( KeepAliveTask ).Start ();
-
-        terminatingMutex.WaitOne ();
-    }
-
-    /// <summary>
-    /// Closes the event listener and it's connection.
-    /// </summary>
-    public HttpResponse Close () {
-        if (!isClosed) {
-            isClosed = true;
-            hostServer._eventCollection.UnregisterEventSource ( this );
-        }
-        return new HttpResponse ( HttpResponse.HTTPRESPONSE_SERVER_CLOSE );
-    }
-
-    /// <summary>
-    /// Cancels the sending queue from sending pending messages and clears the queue.
-    /// </summary>
-    [Obsolete ( "This method doens't do anything and should not be used." )]
-    public void Cancel () {
-        ;
-    }
-
-    /// <summary>
-    /// Flushes and releases the used resources of this class instance.
-    /// </summary>
-    public void Dispose () {
-        if (!isDisposed) {
+        /// <summary>
+        /// Flushes and releases the used resources of this class instance.
+        /// </summary>
+        public void Dispose () {
+            if (isDisposed)
+                return;
             Close ();
-            writer.Dispose ();
+            sendQueue.Clear ();
             terminatingMutex.Dispose ();
             isDisposed = true;
         }

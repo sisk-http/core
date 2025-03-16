@@ -88,6 +88,6 @@ static class HttpStatusDescription {
             510 => "Not Extended",
             511 => "Network Authentication Required",
 
-            _ => "Unknown",
+            _ => "Unknown"
         };
 }

@@ -59,9 +59,7 @@ public sealed class HttpStreamPingPolicy : IDisposable {
                 _timer!.Dispose ();
                 return;
             }
-            __sse_parent.hasSentData = true;
-            __sse_parent.sendQueue.Add ( $"event:ping\ndata: {DataMessage}\n\n" );
-            __sse_parent.Flush ();
+            __sse_parent.Send ( $":{DataMessage}" );
         }
         else if (__ws_parent != null) {
             if (__ws_parent.IsClosed) {

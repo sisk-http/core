@@ -14,7 +14,7 @@ using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http {
     /// <summary>
-    /// Represents a structure that holds an HTTP response status information, with it's status code and description.
+    /// Represents a value that holds an HTTP response status information, with it's status code and description.
     /// </summary>
     public readonly struct HttpStatusInformation : IEquatable<HttpStatusInformation>, IEquatable<HttpStatusCode>, IEquatable<int> {
         private readonly int __statusCode;
@@ -95,18 +95,19 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
-        /// Gets the description of the HTTP status based on its description.
+        /// Gets the description of the specified HTTP status code.
         /// </summary>
         /// <param name="statusCode">The HTTP status code.</param>
+        /// <returns>The description of the HTTP status code.</returns>
         public static string GetStatusCodeDescription ( int statusCode ) {
-            ValidateStatusCode ( statusCode );
             return HttpStatusDescription.Get ( statusCode );
         }
 
         /// <summary>
-        /// Gets the description of the HTTP status based on its description.
+        /// Gets the description of the specified HTTP status code.
         /// </summary>
-        /// <param name="statusCode">The HTTP status code.</param>
+        /// <param name="statusCode">The <see cref="HttpStatusCode"/> value.</param>
+        /// <returns>The description of the HTTP status code.</returns>
         public static string GetStatusCodeDescription ( HttpStatusCode statusCode ) {
             return GetStatusCodeDescription ( (int) statusCode );
         }
@@ -137,7 +138,15 @@ namespace Sisk.Core.Http {
             if (obj is HttpStatusInformation other) {
                 return Equals ( other );
             }
-            return false;
+            else if (obj is HttpStatusCode htstatusCode) {
+                return __statusCode == (int) htstatusCode;
+            }
+            else if (obj is int iint) {
+                return __statusCode == iint;
+            }
+            else {
+                return false;
+            }
         }
 
         /// <inheritdoc/>
@@ -177,40 +186,35 @@ namespace Sisk.Core.Http {
             return new HttpStatusInformation ( statusCode );
         }
 
-        /// <inheritdoc/>
         /// <exclude/>
-        public static bool operator == ( HttpStatusInformation a, HttpStatusInformation b ) {
+        public static bool operator == ( HttpStatusInformation a, HttpStatusInformation? b ) {
+            return a.Equals ( b );
+        }
+
+        /// <exclude/>
+        public static bool operator != ( HttpStatusInformation a, HttpStatusInformation? b ) {
+            return !(a == b);
+        }
+
+        /// <inheritdoc/>
+        public static bool operator == ( HttpStatusInformation a, int? b ) {
             return a.Equals ( b );
         }
 
         /// <inheritdoc/>
         /// <exclude/>
-        public static bool operator != ( HttpStatusInformation a, HttpStatusInformation b ) {
-            return !a.Equals ( b );
+        public static bool operator != ( HttpStatusInformation a, int? b ) {
+            return !(a == b);
         }
 
-        /// <inheritdoc/>
         /// <exclude/>
-        public static bool operator == ( HttpStatusInformation a, int b ) {
+        public static bool operator == ( HttpStatusInformation a, HttpStatusCode? b ) {
             return a.Equals ( b );
         }
 
-        /// <inheritdoc/>
         /// <exclude/>
-        public static bool operator != ( HttpStatusInformation a, int b ) {
-            return !a.Equals ( b );
-        }
-
-        /// <inheritdoc/>
-        /// <exclude/>
-        public static bool operator == ( HttpStatusInformation a, HttpStatusCode b ) {
-            return a.Equals ( b );
-        }
-
-        /// <inheritdoc/>
-        /// <exclude/>
-        public static bool operator != ( HttpStatusInformation a, HttpStatusCode b ) {
-            return a.Equals ( b );
+        public static bool operator != ( HttpStatusInformation a, HttpStatusCode? b ) {
+            return !(a == b);
         }
 
         #region "Helper properties"
