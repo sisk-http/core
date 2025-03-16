@@ -33,10 +33,5 @@ public sealed class HttpHostTimeoutManager {
         set => _ClientWriteTimeoutSeconds = (int) value.TotalSeconds;
     }
 
-    /// <summary>
-    /// Gets or sets the maximum duration for the context.
-    /// </summary>
-    public TimeSpan ContextMaxDuration { get; set; } = TimeSpan.Zero;
-
     internal HttpHostTimeoutManager () { }
 }
