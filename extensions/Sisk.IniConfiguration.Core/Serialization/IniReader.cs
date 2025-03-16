@@ -135,7 +135,7 @@ readNext:
                 return ReadUntil ( new char [] { Token.STRING_QUOTE_2 }, false );
             }
             else {
-                return (c + ReadUntil ( new char [] { Token.NEW_LINE }, true, true )).Trim ();
+                return (c + ReadUntil ( new char [] { Token.NEW_LINE, Token.RETURN }, true, true )).Trim ();
             }
         }
     }

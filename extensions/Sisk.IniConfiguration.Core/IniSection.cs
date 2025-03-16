@@ -16,7 +16,7 @@ namespace Sisk.IniConfiguration.Core;
 /// <summary>
 /// Represents an INI section, which contains it's own properties.
 /// </summary>
-public sealed class IniSection : IDictionary<string, string []> {
+public sealed class IniSection : IDictionary<string, string []>, IEquatable<IniSection> {
     internal List<KeyValuePair<string, string>> items;
 
     /// <summary>
@@ -29,6 +29,7 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// </summary>
     /// <param name="name">The name of the INI section.</param>
     public IniSection ( string name ) {
+        ArgumentException.ThrowIfNullOrEmpty ( name, nameof ( name ) );
         items = new List<KeyValuePair<string, string>> ();
         Name = name;
     }
@@ -39,6 +40,9 @@ public sealed class IniSection : IDictionary<string, string []> {
     /// <param name="name">The name of the INI section.</param>
     /// <param name="items">A collection of key-value pairs to be added to the section.</param>
     public IniSection ( string name, IEnumerable<KeyValuePair<string, string>> items ) {
+        ArgumentException.ThrowIfNullOrEmpty ( name, nameof ( name ) );
+        ArgumentNullException.ThrowIfNull ( items, nameof ( items ) );
+
         this.items = items.ToList ();
         Name = name;
     }
@@ -53,6 +57,10 @@ public sealed class IniSection : IDictionary<string, string []> {
                 .Where ( k => IniReader.IniNamingComparer.Compare ( key, k.Key ) == 0 )
                 .Select ( k => k.Value )
                 .ToArray ();
+        }
+        set {
+            Remove ( key );
+            Add ( key, value );
         }
     }
 
@@ -87,15 +95,6 @@ public sealed class IniSection : IDictionary<string, string []> {
 
     /// <inheritdoc/>
     public bool IsReadOnly => false;
-
-    /// <inheritdoc/>
-    string [] IDictionary<string, string []>.this [ string key ] {
-        get => GetMany ( key );
-        set {
-            Remove ( key );
-            Add ( key, value );
-        }
-    }
 
     /// <summary>
     /// Gets the last value defined in this INI section by their property name.
@@ -160,8 +159,10 @@ public sealed class IniSection : IDictionary<string, string []> {
 
     /// <inheritdoc/>
     public void Add ( string key, string [] value ) {
-        foreach (var val in value)
+        for (int i = 0; i < value.Length; i++) {
+            string? val = value [ i ];
             items.Add ( new KeyValuePair<string, string> ( key, val ) );
+        }
     }
 
     /// <summary>
@@ -227,5 +228,31 @@ public sealed class IniSection : IDictionary<string, string []> {
             }
         }
         return false;
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode () {
+        int hash = Name.GetHashCode ();
+
+        for (int i = 0; i < items.Count; i++) {
+            KeyValuePair<string, string> item = items [ i ];
+
+            hash = HashCode.Combine ( hash, item.Key, item.Value );
+        }
+
+        return hash;
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals ( object? obj ) {
+        if (obj is IniSection iniSection) {
+            return Equals ( iniSection );
+        }
+        return false;
+    }
+
+    /// <inheritdoc/>
+    public bool Equals ( IniSection? other ) {
+        return GetHashCode () == other?.GetHashCode ();
     }
 }

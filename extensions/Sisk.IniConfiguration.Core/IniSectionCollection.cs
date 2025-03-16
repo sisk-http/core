@@ -15,7 +15,7 @@ namespace Sisk.IniConfiguration.Core;
 /// <summary>
 /// Represents an collection of <see cref="IniSection"/>.
 /// </summary>
-public sealed class IniSectionCollection : IList<IniSection> {
+public sealed class IniSectionCollection : IList<IniSection>, IReadOnlyList<IniSection>, ICollection {
     private List<IniSection> inner;
 
     internal IniSectionCollection () {
@@ -32,23 +32,24 @@ public sealed class IniSectionCollection : IList<IniSection> {
     /// </summary>
     /// <returns>The global <see cref="IniSection"/>.</returns>
     public IniSection GetGlobal () {
-
-        IniSection global;
-        if (inner.Count == 0) {
-            global = new IniSection ( IniReader.INITIAL_SECTION_NAME );
-            inner.Add ( global );
-        }
-        else {
-            if (inner [ 0 ].Name == IniReader.INITIAL_SECTION_NAME) {
-                global = inner [ 0 ];
+        lock (((ICollection) this).SyncRoot) {
+            IniSection global;
+            if (inner.Count == 0) {
+                global = new IniSection ( IniReader.INITIAL_SECTION_NAME );
+                inner.Add ( global );
             }
             else {
-                global = new IniSection ( IniReader.INITIAL_SECTION_NAME );
-                inner.Insert ( 0, global );
+                if (inner [ 0 ].Name == IniReader.INITIAL_SECTION_NAME) {
+                    global = inner [ 0 ];
+                }
+                else {
+                    global = new IniSection ( IniReader.INITIAL_SECTION_NAME );
+                    inner.Insert ( 0, global );
+                }
             }
-        }
 
-        return global;
+            return global;
+        }
     }
 
     /// <inheritdoc/>
@@ -66,15 +67,24 @@ public sealed class IniSectionCollection : IList<IniSection> {
     /// <inheritdoc/>
     public bool IsReadOnly => ((ICollection<IniSection>) inner).IsReadOnly;
 
+    bool ICollection.IsSynchronized => true;
+
+    object ICollection.SyncRoot => ((ICollection) inner).SyncRoot;
+
     /// <inheritdoc/>
     public void Add ( IniSection item ) {
-        ((ICollection<IniSection>) inner).Add ( item );
-        MergeIniSections ();
+        lock (((ICollection) this).SyncRoot) {
+            inner.Add ( item );
+            MergeIniSections ();
+        }
     }
 
     /// <inheritdoc/>
     public void Clear () {
-        ((ICollection<IniSection>) inner).Clear ();
+        lock (((ICollection) this).SyncRoot) {
+            inner.Clear ();
+            MergeIniSections ();
+        }
     }
 
     /// <inheritdoc/>
@@ -84,7 +94,9 @@ public sealed class IniSectionCollection : IList<IniSection> {
 
     /// <inheritdoc/>
     public void CopyTo ( IniSection [] array, int arrayIndex ) {
-        ((ICollection<IniSection>) inner).CopyTo ( array, arrayIndex );
+        lock (((ICollection) this).SyncRoot) {
+            ((ICollection<IniSection>) inner).CopyTo ( array, arrayIndex );
+        }
     }
 
     /// <inheritdoc/>
@@ -99,21 +111,27 @@ public sealed class IniSectionCollection : IList<IniSection> {
 
     /// <inheritdoc/>
     public void Insert ( int index, IniSection item ) {
-        ((IList<IniSection>) inner).Insert ( index, item );
-        MergeIniSections ();
+        lock (((ICollection) this).SyncRoot) {
+            inner.Insert ( index, item );
+            MergeIniSections ();
+        }
     }
 
     /// <inheritdoc/>
     public bool Remove ( IniSection item ) {
-        bool result = ((ICollection<IniSection>) inner).Remove ( item );
-        MergeIniSections ();
-        return result;
+        lock (((ICollection) this).SyncRoot) {
+            var result = inner.Remove ( item );
+            MergeIniSections ();
+            return result;
+        }
     }
 
     /// <inheritdoc/>
     public void RemoveAt ( int index ) {
-        ((IList<IniSection>) inner).RemoveAt ( index );
-        MergeIniSections ();
+        lock (((ICollection) this).SyncRoot) {
+            inner.RemoveAt ( index );
+            MergeIniSections ();
+        }
     }
 
     /// <inheritdoc/>
@@ -121,12 +139,12 @@ public sealed class IniSectionCollection : IList<IniSection> {
         return ((IEnumerable) inner).GetEnumerator ();
     }
 
-    IList<IniSection> MergeIniSections () {
-        lock (inner) {
+    void MergeIniSections () {
+        lock (((ICollection) this).SyncRoot) {
             var sectionNames = inner
-            .DistinctBy ( s => s.Name, IniReader.IniNamingComparer )
-            .Select ( s => s.Name )
-            .ToArray ();
+                .DistinctBy ( s => s.Name, IniReader.IniNamingComparer )
+                .Select ( s => s.Name )
+                .ToArray ();
 
             List<IniSection> result = new List<IniSection> ( sectionNames.Length );
             for (int i = 0; i < sectionNames.Length; i++) {
@@ -143,7 +161,11 @@ public sealed class IniSectionCollection : IList<IniSection> {
                 result.Add ( new IniSection ( currentName, allProperties.ToArray () ) );
             }
 
-            return result.ToList ();
+            inner = result.ToList ();
         }
+    }
+
+    void ICollection.CopyTo ( Array array, int index ) {
+        ((ICollection) inner).CopyTo ( array, index );
     }
 }

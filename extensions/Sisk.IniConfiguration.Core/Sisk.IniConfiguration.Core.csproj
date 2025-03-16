@@ -21,9 +21,9 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<AssemblyVersion>1.4</AssemblyVersion>
-		<FileVersion>1.4</FileVersion>
-		<Version>1.4</Version>
+		<AssemblyVersion>1.4.1</AssemblyVersion>
+		<FileVersion>1.4.1</FileVersion>
+		<Version>1.4.1</Version>
 
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

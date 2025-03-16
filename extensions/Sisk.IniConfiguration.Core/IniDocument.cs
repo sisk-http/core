@@ -18,11 +18,6 @@ namespace Sisk.IniConfiguration.Core;
 public sealed class IniDocument {
 
     /// <summary>
-    /// Represents an empty <see cref="IniDocument"/> with no entry on it.
-    /// </summary>
-    public static readonly IniDocument Empty = new IniDocument ( Array.Empty<IniSection> () );
-
-    /// <summary>
     /// Gets all INI sections defined in this INI document.
     /// </summary>
     public IniSectionCollection Sections { get; }
@@ -54,7 +49,7 @@ public sealed class IniDocument {
     /// <param name="throwIfNotExists">Optional. Defines whether this method should throw if the specified file doens't exists or return an empty INI document.</param>
     public static IniDocument FromFile ( string filePath, Encoding? encoding = null, bool throwIfNotExists = true ) {
         if (!throwIfNotExists && !File.Exists ( filePath ))
-            return IniDocument.Empty;
+            return new IniDocument ();
 
         using TextReader reader = new StreamReader ( filePath, encoding ?? Encoding.UTF8 );
         using IniReader parser = new IniReader ( reader );
@@ -112,6 +107,42 @@ public sealed class IniDocument {
                 return section;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Retrieves all entries in the INI document.
+    /// </summary>
+    /// <returns>An enumerable collection of key-value pairs, where each key is the entry name and each value is an array of strings representing the entry values.</returns>
+    public IEnumerable<KeyValuePair<string, string []>> GetEntries () {
+        foreach (var section in Sections) {
+            foreach (var entry in section) {
+
+                string name;
+                if (section.Name != IniReader.INITIAL_SECTION_NAME) {
+                    name = $"{section.Name}.{entry.Key}";
+                }
+                else {
+                    name = entry.Key;
+                }
+
+                yield return new KeyValuePair<string, string []> ( name, entry.Value );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Retrieves the values of a specific entry in the INI document.
+    /// </summary>
+    /// <param name="name">The name of the entry to retrieve.</param>
+    /// <param name="stringComparison">The string comparison to use when searching for the entry. Defaults to <see cref="StringComparison.OrdinalIgnoreCase"/>.</param>
+    /// <returns>An array of strings representing the values of the entry, or an empty array if the entry is not found.</returns>
+    public string [] GetEntry ( string name, StringComparison stringComparison = StringComparison.OrdinalIgnoreCase ) {
+        foreach (var entry in GetEntries ()) {
+            if (entry.Key.Equals ( name, stringComparison )) {
+                return entry.Value;
+            }
+        }
+        return Array.Empty<string> ();
     }
 
     /// <summary>
