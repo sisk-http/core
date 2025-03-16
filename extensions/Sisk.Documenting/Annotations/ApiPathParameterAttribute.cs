@@ -1,4 +1,13 @@
-﻿namespace Sisk.Documenting.Annotations;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiPathParameterAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Documenting.Annotations;
 
 /// <summary>
 /// Specifies an attribute for an API path parameter, allowing metadata such as name, type, and description to be associated with methods.
@@ -25,14 +34,14 @@ public sealed class ApiPathParameterAttribute : Attribute {
     /// </summary>
     /// <param name="name">The name of the path parameter.</param>
     public ApiPathParameterAttribute ( string name ) {
-        this.Name = name;
+        Name = name;
     }
 
     internal ApiEndpointPathParameter GetApiEndpointObject () {
         return new ApiEndpointPathParameter {
-            Name = this.Name,
-            Description = this.Description,
-            Type = this.Type
+            Name = Name,
+            Description = Description,
+            Type = Type
         };
     }
 }

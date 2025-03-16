@@ -1,4 +1,13 @@
-﻿using System.Net;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiResponseAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Net;
 
 namespace Sisk.Documenting.Annotations;
 
@@ -32,15 +41,15 @@ public sealed class ApiResponseAttribute : Attribute {
     /// </summary>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     public ApiResponseAttribute ( HttpStatusCode statusCode ) {
-        this.StatusCode = statusCode;
+        StatusCode = statusCode;
     }
 
     internal ApiEndpointResponse GetApiEndpointObject () {
         return new ApiEndpointResponse {
-            StatusCode = this.StatusCode,
-            Description = this.Description,
-            Example = this.Example,
-            ExampleLanguage = this.ExampleLanguage,
+            StatusCode = StatusCode,
+            Description = Description,
+            Example = Example,
+            ExampleLanguage = ExampleLanguage,
         };
     }
 }

@@ -1,4 +1,13 @@
-﻿using System.Net;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiDocumentation.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Net;
 using Sisk.Core.Routing;
 
 namespace Sisk.Documenting;
@@ -12,22 +21,22 @@ public sealed class ApiDocumentation {
     /// Gets or sets the name of the application.
     /// </summary>
     public string? ApplicationName { get; internal set; }
-    
+
     /// <summary>
     /// Gets or sets the description of the application.
     /// </summary>
     public string? ApplicationDescription { get; internal set; }
-    
+
     /// <summary>
     /// Gets or sets the version of the API.
     /// </summary>
     public string? ApiVersion { get; internal set; }
-    
+
     /// <summary>
     /// Gets or sets the array of API endpoints.
     /// </summary>
     public ApiEndpoint [] Endpoints { get; internal set; } = null!;
-    
+
     /// <summary>
     /// Generates an instance of <see cref="ApiDocumentation"/> by reading documentation from the specified router and identifier.
     /// </summary>

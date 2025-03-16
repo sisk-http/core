@@ -1,4 +1,13 @@
-﻿namespace Sisk.Documenting.Annotations;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiRequestAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Documenting.Annotations;
 
 /// <summary>
 /// Specifies an attribute for an API request, allowing metadata such as description, example language, and example content to be associated with methods.
@@ -25,14 +34,14 @@ public sealed class ApiRequestAttribute : Attribute {
     /// </summary>
     /// <param name="description">The description of the API request.</param>
     public ApiRequestAttribute ( string description ) {
-        this.Description = description;
+        Description = description;
     }
 
     internal ApiEndpointRequestExample GetApiEndpointObject () {
         return new ApiEndpointRequestExample {
-            Description = this.Description,
-            ExampleLanguage = this.ExampleLanguage,
-            Example = this.Example,
+            Description = Description,
+            ExampleLanguage = ExampleLanguage,
+            Example = Example,
         };
     }
 }

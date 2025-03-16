@@ -1,4 +1,12 @@
-﻿
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HtmlDocumentationExporter.cs
+// Repository:  https://github.com/sisk-http/core
+
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Sisk.Core.Http;
@@ -95,8 +103,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
         return HtmlElement.Fragment ( fragment => {
             fragment += new HtmlElement ( "h1", documentation.ApplicationName ?? "Application name" )
                 .WithClass ( "app-title" );
-            fragment += this.CreateParagraphs ( documentation.ApplicationDescription );
-            fragment += new HtmlElement ( "p", string.Format ( this.FormatMainTitleServiceVersion, documentation.ApiVersion ?? "1.0" ) );
+            fragment += CreateParagraphs ( documentation.ApplicationDescription );
+            fragment += new HtmlElement ( "p", string.Format ( FormatMainTitleServiceVersion, documentation.ApiVersion ?? "1.0" ) );
         } );
     }
 
@@ -110,21 +118,21 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             details.ClassList.Add ( "endpoint-description" );
 
             details += new HtmlElement ( "summary", summary => {
-                summary.Id = this.TransformId ( endpoint.Name );
+                summary.Id = TransformId ( endpoint.Name );
 
-                summary += new HtmlElement ( "span", endpoint.RouteMethod ).WithStyle ( new { backgroundColor = this.GetRouteMethodHexColor ( endpoint.RouteMethod ) + "40" } );
+                summary += new HtmlElement ( "span", endpoint.RouteMethod ).WithStyle ( new { backgroundColor = GetRouteMethodHexColor ( endpoint.RouteMethod ) + "40" } );
                 summary += new HtmlElement ( "span", endpoint.Path );
                 summary += new HtmlElement ( "span", $" - {endpoint.Name}" ).WithClass ( "muted" );
             } );
 
             details += new HtmlElement ( "h3", endpoint.Name );
-            details += this.CreateParagraphs ( endpoint.Description );
+            details += CreateParagraphs ( endpoint.Description );
 
-            details += this.CreateCodeBlock ( $"{endpoint.RouteMethod.ToString ().ToUpper ()} {endpoint.Path}", null );
+            details += CreateCodeBlock ( $"{endpoint.RouteMethod.ToString ().ToUpper ()} {endpoint.Path}", null );
 
             if (endpoint.Headers.Length > 0) {
                 details += new HtmlElement ( "div", div => {
-                    div += new HtmlElement ( "p", this.FormatEndpointHeaders );
+                    div += new HtmlElement ( "p", FormatEndpointHeaders );
 
                     div += new HtmlElement ( "ul", ul => {
                         foreach (var header in endpoint.Headers) {
@@ -132,8 +140,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                                 li.ClassList.Add ( "item-description" );
 
                                 li += new HtmlElement ( "code", header.HeaderName );
-                                li += new HtmlElement ( "span", header.IsRequired ? this.FormatRequiredText : "" ).WithClass ( "at", "ml3" );
-                                li += new HtmlElement ( "div", this.CreateParagraphs ( header.Description ) );
+                                li += new HtmlElement ( "span", header.IsRequired ? FormatRequiredText : "" ).WithClass ( "at", "ml3" );
+                                li += new HtmlElement ( "div", CreateParagraphs ( header.Description ) );
                             } );
                         }
                     } );
@@ -142,7 +150,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
             if (endpoint.PathParameters.Length > 0) {
                 details += new HtmlElement ( "div", div => {
-                    div += new HtmlElement ( "p", this.FormatEndpointPathParameters );
+                    div += new HtmlElement ( "p", FormatEndpointPathParameters );
 
                     div += new HtmlElement ( "ul", ul => {
                         foreach (var pathParam in endpoint.PathParameters) {
@@ -151,7 +159,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
                                 li += new HtmlElement ( "code", pathParam.Name );
                                 li += new HtmlElement ( "span", pathParam.Type ).WithClass ( "muted", "ml3" );
-                                li += new HtmlElement ( "div", this.CreateParagraphs ( pathParam.Description ) );
+                                li += new HtmlElement ( "div", CreateParagraphs ( pathParam.Description ) );
                             } );
                         }
                     } );
@@ -160,7 +168,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
             if (endpoint.Parameters.Length > 0) {
                 details += new HtmlElement ( "div", div => {
-                    div += new HtmlElement ( "p", this.FormatEndpointParameters );
+                    div += new HtmlElement ( "p", FormatEndpointParameters );
 
                     div += new HtmlElement ( "ul", ul => {
                         foreach (var param in endpoint.Parameters) {
@@ -169,8 +177,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
                                 li += new HtmlElement ( "code", param.Name );
                                 li += new HtmlElement ( "span", param.TypeName ).WithClass ( "muted", "ml3" );
-                                li += new HtmlElement ( "span", param.IsRequired ? this.FormatRequiredText : "" ).WithClass ( "at", "ml3" );
-                                li += new HtmlElement ( "div", this.CreateParagraphs ( param.Description ) );
+                                li += new HtmlElement ( "span", param.IsRequired ? FormatRequiredText : "" ).WithClass ( "at", "ml3" );
+                                li += new HtmlElement ( "div", CreateParagraphs ( param.Description ) );
                             } );
                         }
                     } );
@@ -179,18 +187,18 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
             if (endpoint.RequestExamples.Length > 0) {
                 details += new HtmlElement ( "div", div => {
-                    div += new HtmlElement ( "p", this.FormatEndpointRequestExamples );
+                    div += new HtmlElement ( "p", FormatEndpointRequestExamples );
 
                     div += new HtmlElement ( "ul", ul => {
                         foreach (var req in endpoint.RequestExamples) {
                             ul += new HtmlElement ( "li", li => {
                                 li.ClassList.Add ( "item-description" );
 
-                                li += this.CreateParagraphs ( req.Description );
+                                li += CreateParagraphs ( req.Description );
 
                                 if (req.Example != null) {
                                     li += new HtmlElement ( "div", exampleDiv => {
-                                        exampleDiv += this.CreateCodeBlock ( req.Example, req.ExampleLanguage );
+                                        exampleDiv += CreateCodeBlock ( req.Example, req.ExampleLanguage );
                                     } );
                                 }
                             } );
@@ -201,7 +209,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
             if (endpoint.Responses.Length > 0) {
                 details += new HtmlElement ( "div", div => {
-                    div += new HtmlElement ( "p", this.FormatEndpointResponses );
+                    div += new HtmlElement ( "p", FormatEndpointResponses );
 
                     div += new HtmlElement ( "ul", ul => {
                         foreach (var res in endpoint.Responses) {
@@ -209,11 +217,11 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                                 li.ClassList.Add ( "item-description" );
 
                                 li += new HtmlElement ( "code", (int) res.StatusCode );
-                                li += new HtmlElement ( "div", this.CreateParagraphs ( res.Description ) );
+                                li += new HtmlElement ( "div", CreateParagraphs ( res.Description ) );
 
                                 if (res.Example != null) {
                                     li += new HtmlElement ( "div", exampleDiv => {
-                                        exampleDiv += this.CreateCodeBlock ( res.Example, res.ExampleLanguage );
+                                        exampleDiv += CreateCodeBlock ( res.Example, res.ExampleLanguage );
                                     } );
                                 }
                             } );
@@ -250,7 +258,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <returns>The HTML element representing the endpoint badge, or null if no badge is applicable.</returns>
     protected virtual HtmlElement? CreateEndpointBadge ( RouteMethod method, string? path ) {
 
-        string spanColor = this.GetRouteMethodHexColor ( method );
+        string spanColor = GetRouteMethodHexColor ( method );
 
         return new HtmlElement ( "span22", span => {
             span.ClassList.Add ( "endpoint-badge" );
@@ -334,17 +342,17 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 .WithAttribute ( "content", "width=device-width, initial-scale=1.0" )
                 .SelfClosed ();
 
-            head += new HtmlElement ( "title", this.PageTitle );
-            head += new HtmlElement ( "style", RenderableText.Raw ( this.Style ) );
-            head += new HtmlElement ( "script", RenderableText.Raw ( this.Script ) );
+            head += new HtmlElement ( "title", PageTitle );
+            head += new HtmlElement ( "style", RenderableText.Raw ( Style ) );
+            head += new HtmlElement ( "script", RenderableText.Raw ( Script ) );
         } );
 
         html += new HtmlElement ( "body", body => {
             body += new HtmlElement ( "main", main => {
 
-                main += this.WriteMainTitle ( d );
+                main += WriteMainTitle ( d );
 
-                main += this.Header;
+                main += Header;
 
                 var groups = d.Endpoints.GroupBy ( e => e.Group );
                 foreach (var item in groups) {
@@ -355,12 +363,12 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                         main += new HtmlElement ( "section", section => {
                             section.ClassList.Add ( "endpoint" );
 
-                            section += this.WriteEndpointDescription ( endpoint );
+                            section += WriteEndpointDescription ( endpoint );
                         } );
                     }
                 }
 
-                main += this.Footer;
+                main += Footer;
             } );
         } );
 
@@ -373,6 +381,6 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <param name="documentation">The API documentation to export.</param>
     /// <returns>The exported API documentation as HTTP content.</returns>
     public HttpContent ExportDocumentationContent ( ApiDocumentation documentation ) {
-        return new HtmlContent ( this.ExportHtml ( documentation ), Encoding.UTF8 );
+        return new HtmlContent ( ExportHtml ( documentation ), Encoding.UTF8 );
     }
 }

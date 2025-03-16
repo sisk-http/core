@@ -1,4 +1,13 @@
-﻿namespace Sisk.Documenting.Annotations;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiHeaderAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Documenting.Annotations;
 
 /// <summary>
 /// Specifies an attribute for an API header, allowing metadata such as header name, description, and requirement status to be associated with methods.
@@ -25,14 +34,14 @@ public sealed class ApiHeaderAttribute : Attribute {
     /// </summary>
     /// <param name="headerName">The name of the header.</param>
     public ApiHeaderAttribute ( string headerName ) {
-        this.HeaderName = headerName;
+        HeaderName = headerName;
     }
 
     internal ApiEndpointHeader GetApiEndpointObject () {
         return new ApiEndpointHeader {
-            HeaderName = this.HeaderName,
-            Description = this.Description,
-            IsRequired = this.IsRequired
+            HeaderName = HeaderName,
+            Description = Description,
+            IsRequired = IsRequired
         };
     }
 }

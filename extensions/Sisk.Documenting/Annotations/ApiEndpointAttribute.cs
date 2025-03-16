@@ -1,4 +1,13 @@
-﻿namespace Sisk.Documenting.Annotations;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiEndpointAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Documenting.Annotations;
 
 /// <summary>
 /// Specifies an attribute for an API endpoint, allowing metadata such as name, description, and group to be associated with methods.
@@ -25,6 +34,6 @@ public sealed class ApiEndpointAttribute : Attribute {
     /// </summary>
     /// <param name="name">The name of the API endpoint.</param>
     public ApiEndpointAttribute ( string name ) {
-        this.Name = name;
+        Name = name;
     }
 }

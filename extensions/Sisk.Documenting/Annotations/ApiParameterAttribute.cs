@@ -1,4 +1,13 @@
-﻿namespace Sisk.Documenting.Annotations;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   ApiParameterAttribute.cs
+// Repository:  https://github.com/sisk-http/core
+
+namespace Sisk.Documenting.Annotations;
 
 /// <summary>
 /// Specifies an attribute for an API parameter, allowing metadata such as name, type, description, and requirement status to be associated with methods.
@@ -31,16 +40,16 @@ public sealed class ApiParameterAttribute : Attribute {
     /// <param name="name">The name of the parameter.</param>
     /// <param name="typeName">The type name of the parameter.</param>
     public ApiParameterAttribute ( string name, string typeName ) {
-        this.Name = name;
-        this.TypeName = typeName;
+        Name = name;
+        TypeName = typeName;
     }
 
     internal ApiEndpointParameter GetApiEndpointObject () {
         return new ApiEndpointParameter {
-            Name = this.Name,
-            TypeName = this.TypeName,
-            Description = this.Description,
-            IsRequired = this.IsRequired
+            Name = Name,
+            TypeName = TypeName,
+            Description = Description,
+            IsRequired = IsRequired
         };
     }
 }
