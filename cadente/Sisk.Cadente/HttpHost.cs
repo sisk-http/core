@@ -102,7 +102,7 @@ public sealed class HttpHost : IDisposable {
                 return;
 
             Stream connectionStream;
-            Stream clientStream = client.GetStream ();
+            using Stream clientStream = client.GetStream ();
 
             if (HttpsOptions is not null) {
                 connectionStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );

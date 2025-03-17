@@ -20,7 +20,7 @@ public static class CertificateUtil {
     // -> https://github.com/dotnet/corefx/blob/a10890f4ffe0fadf090c922578ba0e606ebdd16c/src/Common/src/System/Text/StringOrCharArray.cs#L140
     // we need to make sure each hashcode for each string is the same.
     static int GetDeterministicHashCode ( string str ) {
-        str = str.ToLower ();
+        str = str.ToLowerInvariant ();
         unchecked {
             int hash1 = (5381 << 16) + 5381;
             int hash2 = hash1;
@@ -37,9 +37,10 @@ public static class CertificateUtil {
     }
 
     static int ComputeArrayHash ( string [] array ) {
-        int i = 3321581 /*choose by dream*/;
+        int i = 3321581;
         for (int j = 0; j < array.Length; j++) {
             i ^= GetDeterministicHashCode ( array [ j ] );
+            i *= j + 1;
         }
         return Math.Abs ( i );
     }
@@ -71,7 +72,7 @@ public static class CertificateUtil {
     /// Creates a self-signed certificate for the specified DNS names.
     /// </summary>
     /// <param name="dnsNames">The certificate DNS names.</param>
-    public static X509Certificate2 CreateDevelopmentCertificate ( string [] dnsNames ) {
+    public static X509Certificate2 CreateDevelopmentCertificate ( params string [] dnsNames ) {
         SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder ();
         sanBuilder.AddIpAddress ( IPAddress.Loopback );
         sanBuilder.AddIpAddress ( IPAddress.IPv6Loopback );

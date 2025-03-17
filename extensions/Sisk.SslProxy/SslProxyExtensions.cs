@@ -41,7 +41,7 @@ public static class SslProxyExtensions {
 
         if (builder.ServerConfiguration.ListeningHosts.Count == 0 ||
             builder.ServerConfiguration.ListeningHosts [ 0 ].Ports.Count == 0) {
-            throw new ArgumentException ( "Couldn't start the SslProxy: the server ListeningHost ins't configured yet." );
+            throw new ArgumentException ( "Couldn't start the SslProxy: the server ListeningHost ins't configured yet. Run UseSsl() after defining the listening port." );
         }
 
         var primaryHost = builder.ServerConfiguration.ListeningHosts [ 0 ];
