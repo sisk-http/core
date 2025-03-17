@@ -77,9 +77,6 @@
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-
-		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
-		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
 	</PropertyGroup>
 
 	<!-- package included files -->
