@@ -69,7 +69,10 @@ public sealed class IniSection : IDictionary<string, string []>, IEquatable<IniS
     /// </summary>
     public ICollection<string> Keys {
         get {
-            return items.Select ( i => i.Key ).Distinct ().ToArray ();
+            return items
+                .Select ( i => i.Key )
+                .Distinct ( IniReader.IniNamingComparer )
+                .ToArray ();
         }
     }
 
@@ -135,11 +138,14 @@ public sealed class IniSection : IDictionary<string, string []>, IEquatable<IniS
 
     /// <inheritdoc/>
     public IEnumerator<KeyValuePair<string, string []>> GetEnumerator () {
-        string [] keysDistinct = items.Select ( i => i.Key ).Distinct ().ToArray ();
+        string [] keysDistinct = items
+            .Select ( i => i.Key )
+            .Distinct ( IniReader.IniNamingComparer )
+            .ToArray ();
 
         foreach (string key in keysDistinct) {
             string [] valuesByKey = items
-                .Where ( i => i.Key == key )
+                .Where ( i => IniReader.IniNamingComparer.Equals ( i.Key, key ) )
                 .Select ( i => i.Value )
                 .ToArray ();
 

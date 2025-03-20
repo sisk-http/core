@@ -24,6 +24,7 @@ public sealed class IniSectionCollection : IList<IniSection>, IReadOnlyList<IniS
 
     internal IniSectionCollection ( IEnumerable<IniSection> p ) {
         inner = new List<IniSection> ( p );
+        MergeIniSections ();
     }
 
     /// <summary>

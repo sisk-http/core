@@ -51,120 +51,136 @@ public sealed class IniReader : IDisposable {
         List<KeyValuePair<string, string>> items = new ();
         List<IniSection> creatingSections = new ();
 
-        int read = 0;
-        while ((read = reader.Peek ()) >= 0) {
-            char c = (char) read;
+        string? line;
+        while ((line = reader.ReadLine ()) != null) {
 
-            if (c is Token.SECTION_START) {
-                reader.Read ();
-                string? sectionName = ReadUntil ( new char [] { Token.SECTION_END } )?.Trim ();
+            if (string.IsNullOrWhiteSpace ( line ))
+                continue;
+
+            string lineTrimmed = line.TrimStart ();
+            char assertingChar = lineTrimmed [ 0 ];
+
+            // assert comments
+            if (assertingChar == Token.COMMENT_1 || assertingChar == Token.COMMENT_2) {
+                continue;
+            }
+
+            // assert section start
+            else if (assertingChar == Token.SECTION_START) {
+                string? sectionName = ParseSectionName ( lineTrimmed );
 
                 if (sectionName is null)
-                    break;
+                    continue;
 
-                var closingSection = new IniSection ( lastSectionName, items.ToArray () );
-                creatingSections.Add ( closingSection );
+                var commitingSection = new IniSection ( lastSectionName, items );
+                creatingSections.Add ( commitingSection );
 
                 items.Clear ();
                 lastSectionName = sectionName;
+            }
 
-                SkipUntilNewLine ();
-            }
-            else if (c is Token.COMMENT_1 or Token.COMMENT_2) {
-                SkipUntilNewLine ();
-            }
+            // assert property
             else {
-                string? propertyName = ReadUntil ( new char [] { Token.PROPERTY_DELIMITER, Token.NEW_LINE, Token.RETURN }, true );
-                if (propertyName is null)
-                    break;
+                var property = ParsePropertyName ( lineTrimmed );
 
-                string? propertyValue = ReadValue ();
-                if (propertyValue is null)
-                    break;
-
-                if ((string.IsNullOrWhiteSpace ( propertyName ) && string.IsNullOrWhiteSpace ( propertyValue )) == false)
-                    items.Add ( new ( propertyName.Trim (), propertyValue ) );
-
-                SkipWhiteSpace ();
+                items.Add ( new KeyValuePair<string, string> ( property.propertyName ?? string.Empty, property.propertyValue ?? string.Empty ) );
             }
         }
 
         if (items.Count > 0) {
-            var closingSection = new IniSection ( lastSectionName, items.ToArray () );
-            creatingSections.Add ( closingSection );
+            var commitingSection = new IniSection ( lastSectionName, items );
+            creatingSections.Add ( commitingSection );
         }
 
-        return new IniDocument ( creatingSections.ToArray () );
+        return new IniDocument ( creatingSections );
     }
 
-    void SkipUntilNewLine () {
-        ReadUntil ( new char [] { Token.NEW_LINE }, false );
+    (string? propertyName, string? propertyValue) ParsePropertyName ( in ReadOnlySpan<char> line ) {
+
+        int propertySeparator = line.IndexOfAny ( [ Token.PROPERTY_DELIMITER, Token.NEW_LINE, Token.RETURN ] );
+        if (propertySeparator < 0) {
+            // eof?
+            return (new string ( line ).Trim (), null);
+        }
+
+        if (line [ propertySeparator ] == Token.PROPERTY_DELIMITER) {
+
+            string propertyName = new string ( line [ 0..propertySeparator ] ).Trim ();
+            string valueInitial = new string ( line [ (propertySeparator + 1).. ] ).Trim ();
+
+            if (string.IsNullOrEmpty ( valueInitial )) {
+                return (propertyName, null);
+            }
+            else if (valueInitial [ 0 ] == Token.STRING_QUOTE_1) {
+
+                if (valueInitial.EndsWith ( Token.STRING_QUOTE_1 )) {
+                    return (propertyName, valueInitial [ 1..^1 ]);
+                }
+                else {
+                    string valueParsed = ParseValue ( valueInitial, Token.STRING_QUOTE_1 );
+                    return (propertyName, valueParsed);
+                }
+            }
+            else if (valueInitial [ 0 ] == Token.STRING_QUOTE_2) {
+
+                if (valueInitial.EndsWith ( Token.STRING_QUOTE_2 )) {
+                    return (propertyName, valueInitial [ 1..^1 ]);
+                }
+                else {
+                    string valueParsed = ParseValue ( valueInitial, Token.STRING_QUOTE_2 );
+                    return (propertyName, valueParsed);
+                }
+            }
+            else {
+
+                if (valueInitial.AsSpan ().IndexOfAny ( [ Token.COMMENT_1, Token.COMMENT_2 ] ) is int commentIndex and >= 0) {
+                    valueInitial = valueInitial [ 0..commentIndex ].TrimEnd ();
+                }
+
+                return (propertyName, valueInitial);
+            }
+        }
+        else {
+            // eof!
+            return (new string ( line ).Trim (), null);
+        }
     }
 
-    void SkipWhiteSpace () {
-        int read = 0;
-        while ((read = reader.Peek ()) >= 0) {
-            char c = (char) read;
-            if (!char.IsWhiteSpace ( c )) {
+    string ParseValue ( string initialValue, char eof ) {
+        StringBuilder sb = new StringBuilder ();
+        sb.AppendLine ( initialValue );
+
+        bool exploded = true;
+        string? line;
+        while ((line = reader.ReadLine ()) != null) {
+
+            sb.AppendLine ( line );
+
+            if (line.IndexOf ( eof ) >= 0) {
+                exploded = false;
                 break;
             }
-            else
-                reader.Read ();
+        }
+
+        string s = sb.ToString ().Trim ();
+        if (exploded) {
+            return s [ 1.. ];
+        }
+        else {
+            return s [ 1..^1 ];
         }
     }
 
-    string? ReadValue () {
-readNext:
-        int read = reader.Read ();
-        if (read < 0) {
-            return string.Empty;
-        }
-        else {
-            char c = (char) read;
+    string? ParseSectionName ( in ReadOnlySpan<char> line ) {
+        int sectionStartPosition = line.IndexOf ( Token.SECTION_START );
+        int sectionEndPosition = line.IndexOf ( Token.SECTION_END );
 
-            if (c is Token.SPACE or Token.TAB) {
-                goto readNext;
-            }
-            else if (c is Token.RETURN or Token.NEW_LINE) {
-                return string.Empty;
-            }
-            if (c == Token.STRING_QUOTE_1) {
-                return ReadUntil ( new char [] { Token.STRING_QUOTE_1 }, false );
-            }
-            else if (c == Token.STRING_QUOTE_2) {
-                return ReadUntil ( new char [] { Token.STRING_QUOTE_2 }, false );
-            }
-            else {
-                return (c + ReadUntil ( new char [] { Token.NEW_LINE, Token.RETURN }, true, true )).Trim ();
-            }
-        }
-    }
-
-    string? ReadUntil ( in char [] until, bool canExplode = false, bool breakOnComment = false ) {
-        StringBuilder sb = new StringBuilder ();
-        int read = 0;
-        while ((read = reader.Read ()) >= 0) {
-            char c = (char) read;
-
-            if (until.Contains ( c )) {
-                return sb.ToString ();
-            }
-            else if (breakOnComment && (c is Token.COMMENT_1 or Token.COMMENT_2)) {
-                var s = sb.ToString ();
-                SkipUntilNewLine ();
-                return s;
-            }
-            else {
-                sb.Append ( c );
-            }
-        }
-
-        if (canExplode) {
-            return sb.ToString ();
-        }
-        else {
+        if (sectionEndPosition < 0 || sectionStartPosition < 0) {
             return null;
         }
+
+        ReadOnlySpan<char> part = line [ (sectionStartPosition + 1)..sectionEndPosition ];
+        return new string ( part ).Trim ();
     }
 
     void ThrowIfDisposed () {
