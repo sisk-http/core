@@ -1,13 +1,63 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
-  </ItemGroup>
+		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
+		<IsAotCompatible>true</IsAotCompatible>
+
+		<Title>Sisk.Documenting</Title>
+		<PackageId>Sisk.Documenting</PackageId>
+
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.Documenting</Product>
+		<Description>This package provides a way to export documentation from your Sisk API.</Description>
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PackageTags>http-server,http,web framework</PackageTags>
+		<RepositoryType>git</RepositoryType>
+
+		<AssemblyVersion>1.4.0</AssemblyVersion>
+		<FileVersion>1.4.0</FileVersion>
+		<Version>1.4.0-beta1</Version>
+
+		<NeutralLanguage>en</NeutralLanguage>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
+		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\.github\Icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\.nuget\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\..\LightJson\Sources\LightJson\LightJson.csproj" />
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+	</ItemGroup>
 
 </Project>

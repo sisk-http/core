@@ -19,20 +19,34 @@ using Sisk.Core.Internal;
 namespace Sisk.Core.Routing;
 
 public partial class Router {
-    private bool IsMethodMatching ( string ogRqMethod, RouteMethod method ) {
-        switch (method) {
-            case RouteMethod.Any:
-            case RouteMethod.Get when ogRqMethod == "GET":
-            case RouteMethod.Post when ogRqMethod == "POST":
-            case RouteMethod.Put when ogRqMethod == "PUT":
-            case RouteMethod.Patch when ogRqMethod == "PATCH":
-            case RouteMethod.Options when ogRqMethod == "OPTIONS":
-            case RouteMethod.Head when ogRqMethod == "HEAD":
-            case RouteMethod.Delete when ogRqMethod == "DELETE":
-                return true;
-        }
 
-        return false;
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private bool IsMethodMatching ( in string ogRqMethod, RouteMethod method ) {
+
+        if (ogRqMethod.Equals ( "GET", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Get );
+        }
+        else if (ogRqMethod.Equals ( "POST", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Post );
+        }
+        else if (ogRqMethod.Equals ( "PUT", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Put );
+        }
+        else if (ogRqMethod.Equals ( "PATCH", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Patch );
+        }
+        else if (ogRqMethod.Equals ( "OPTIONS", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Options );
+        }
+        else if (ogRqMethod.Equals ( "HEAD", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Head );
+        }
+        else if (ogRqMethod.Equals ( "DELETE", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Delete );
+        }
+        else {
+            return method.HasFlag ( RouteMethod.Any );
+        }
     }
 
     private RouteMatch TestRouteMatchUsingRegex ( Route route, string requestPath ) {
