@@ -12,15 +12,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net;
-
 namespace Sisk.Core.Internal;
 
 static class HttpStatusDescription {
-    internal static string? Get ( HttpStatusCode code ) =>
-        Get ( (int) code );
 
-    internal static string Get ( int code ) =>
+    internal static string? Get ( int code ) =>
         code switch {
             100 => "Continue",
             101 => "Switching Protocols",
@@ -88,6 +84,6 @@ static class HttpStatusDescription {
             510 => "Not Extended",
             511 => "Network Authentication Required",
 
-            _ => "Unknown"
+            _ => null
         };
 }

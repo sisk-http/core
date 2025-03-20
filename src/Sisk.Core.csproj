@@ -49,7 +49,7 @@
 	<PropertyGroup>
 		<AssemblyVersion>1.4.1</AssemblyVersion>
 		<FileVersion>1.4.1</FileVersion>
-		<Version>1.4.1</Version>
+		<Version>1.4.1-beta1</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->

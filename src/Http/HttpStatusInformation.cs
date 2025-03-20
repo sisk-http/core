@@ -100,7 +100,7 @@ namespace Sisk.Core.Http {
         /// <param name="statusCode">The HTTP status code.</param>
         /// <returns>The description of the HTTP status code.</returns>
         public static string GetStatusCodeDescription ( int statusCode ) {
-            return HttpStatusDescription.Get ( statusCode );
+            return HttpStatusDescription.Get ( statusCode ) ?? "Unknown";
         }
 
         /// <summary>

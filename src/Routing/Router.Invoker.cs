@@ -173,17 +173,25 @@ public partial class Router {
             }
         }
 
-        if (matchResult == RouteMatchResult.NotMatched && NotFoundErrorHandler is not null) {
-            return new RouterExecutionResult ( NotFoundErrorHandler ( context ), null, matchResult, null );
+        if (matchResult == RouteMatchResult.NotMatched) {
+            if (NotFoundErrorHandler is not null) {
+                return new RouterExecutionResult ( NotFoundErrorHandler ( context ), null, matchResult, null );
+            }
+            else {
+                return new RouterExecutionResult ( new HttpResponse ( HttpStatusCode.NotFound ), null, matchResult, null );
+            }
         }
         else if (matchResult == RouteMatchResult.OptionsMatched) {
-            HttpResponse corsResponse = new HttpResponse ();
-
-            return new RouterExecutionResult ( corsResponse, null, matchResult, null );
+            return new RouterExecutionResult ( new HttpResponse ( HttpStatusCode.OK ), null, matchResult, null );
         }
-        else if (matchResult == RouteMatchResult.PathMatched && MethodNotAllowedErrorHandler is not null) {
+        else if (matchResult == RouteMatchResult.PathMatched) {
             context.MatchedRoute = matchedRoute;
-            return new RouterExecutionResult ( MethodNotAllowedErrorHandler ( context ), matchedRoute, matchResult, null );
+            if (MethodNotAllowedErrorHandler is not null) {
+                return new RouterExecutionResult ( MethodNotAllowedErrorHandler ( context ), matchedRoute, matchResult, null );
+            }
+            else {
+                return new RouterExecutionResult ( new HttpResponse ( HttpStatusCode.MethodNotAllowed ), matchedRoute, matchResult, null );
+            }
         }
         else if (matchResult == RouteMatchResult.FullyMatched && matchedRoute is not null) {
             context.MatchedRoute = matchedRoute;

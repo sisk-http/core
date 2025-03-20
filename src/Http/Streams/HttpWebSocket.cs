@@ -299,8 +299,10 @@ namespace Sisk.Core.Http.Streams {
 
                     ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
 
-                    ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, CancellationToken.None )
-                        .AsTask ().Wait ();
+                    var sendVt = ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, asyncListenerToken?.Token ?? default );
+                    if (!sendVt.IsCompleted) {
+                        sendVt.AsTask ().GetAwaiter ().GetResult ();
+                    }
 
                     length += chunk.Length;
                 }
