@@ -14,6 +14,6 @@ static class AsyncHelpers {
         if (task.IsCompleted) {
             return task.Result;
         }
-        return task.GetAwaiter ().GetResult ();
+        return task.AsTask ().GetAwaiter ().GetResult ();
     }
 }

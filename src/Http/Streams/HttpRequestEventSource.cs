@@ -233,10 +233,18 @@ namespace Sisk.Core.Http.Streams {
         public void Dispose () {
             if (isDisposed)
                 return;
+
+            GC.SuppressFinalize ( this );
+
             Close ();
             sendQueue.Clear ();
             terminatingMutex.Dispose ();
             isDisposed = true;
+        }
+
+        /// <exclude/>
+        ~HttpRequestEventSource () {
+            Dispose ();
         }
     }
 }

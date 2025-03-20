@@ -8,7 +8,8 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net.WebSockets;
-using System.Runtime.CompilerServices;
+using System.Text;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http.Streams {
 
@@ -17,8 +18,10 @@ namespace Sisk.Core.Http.Streams {
     /// </summary>
     public sealed class HttpWebSocket : IDisposable {
         bool isListening = true;
+        bool isDisposed;
         readonly HttpStreamPingPolicy pingPolicy;
 
+        internal SemaphoreSlim sendSemaphore = new SemaphoreSlim ( 1 );
         internal WebSocketMessage? lastMessage;
         internal CancellationTokenSource asyncListenerToken = null!;
         internal ManualResetEvent closeEvent = new ManualResetEvent ( false );
@@ -179,39 +182,21 @@ namespace Sisk.Core.Http.Streams {
         }
 
         /// <summary>
-        /// Asynchronously sends an message to the remote point.
-        /// </summary>
-        /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
-        public Task<bool> SendAsync ( object message ) {
-            return Task.FromResult ( Send ( message ) );
-        }
-
-        /// <summary>
         /// Asynchronously sends an text message to the remote point.
         /// </summary>
         /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
-        public Task<bool> SendAsync ( string message ) {
-            return Task.FromResult ( Send ( message ) );
+        public ValueTask<bool> SendAsync ( string message ) {
+            ArgumentNullException.ThrowIfNull ( message );
+
+            return SendInternalAsync ( Encoding.UTF8.GetBytes ( message ), WebSocketMessageType.Text );
         }
 
         /// <summary>
         /// Asynchronously sends an binary message to the remote point.
         /// </summary>
         /// <param name="buffer">The target message which will be as an encoded UTF-8 string.</param>
-        public Task<bool> SendAsync ( byte [] buffer ) {
-            return Task.FromResult ( Send ( buffer ) );
-        }
-
-        /// <summary>
-        /// Sends an text message to the remote point.
-        /// </summary>
-        /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
-        public bool Send ( object message ) {
-            string? t = message.ToString ();
-            if (t is null)
-                throw new ArgumentNullException ( nameof ( message ) );
-
-            return Send ( t );
+        public ValueTask<bool> SendAsync ( ReadOnlyMemory<byte> buffer ) {
+            return SendInternalAsync ( buffer, WebSocketMessageType.Binary );
         }
 
         /// <summary>
@@ -220,9 +205,7 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="message">The target message which will be as an encoded using the request preferred encoding.</param>
         public bool Send ( string message ) {
             ArgumentNullException.ThrowIfNull ( message );
-
-            byte [] messageBytes = request.RequestEncoding.GetBytes ( message );
-            return SendInternal ( messageBytes, WebSocketMessageType.Text );
+            return SendAsync ( message ).GetSyncronizedResult ();
         }
 
         /// <summary>
@@ -239,7 +222,7 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="length">The number of items in the memory.</param>
         public bool Send ( byte [] buffer, int start, int length ) {
             ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte> ( buffer, start, length );
-            return SendInternal ( span, WebSocketMessageType.Binary );
+            return SendAsync ( span ).GetSyncronizedResult ();
         }
 
         /// <summary>
@@ -247,7 +230,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         /// <param name="buffer">The target byte memory.</param>
         public bool Send ( ReadOnlyMemory<byte> buffer ) {
-            return SendInternal ( buffer, WebSocketMessageType.Binary );
+            return SendAsync ( buffer ).GetSyncronizedResult ();
         }
 
         /// <summary>
@@ -263,7 +246,7 @@ namespace Sisk.Core.Http.Streams {
                     // the resources of this websocket
                     try {
                         ctx.WebSocket.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, CancellationToken.None )
-                            .Wait ();
+                            .GetAwaiter ().GetResult ();
                     }
                     catch (Exception) {
                         ;
@@ -282,41 +265,43 @@ namespace Sisk.Core.Http.Streams {
             };
         }
 
-        [MethodImpl ( MethodImplOptions.Synchronized )]
-        private bool SendInternal ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType ) {
-            if (_isClosed) { return false; }
+        private async ValueTask<bool> SendInternalAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType ) {
+            if (_isClosed)
+                return false;
 
             if (closeTimeout.TotalMilliseconds > 0)
                 asyncListenerToken?.CancelAfter ( closeTimeout );
 
+            await sendSemaphore.WaitAsync ( asyncListenerToken?.Token ?? default );
             try {
-                int totalLength = buffer.Length;
-                int chunks = (int) Math.Ceiling ( (double) totalLength / BUFFER_LENGTH );
+                try {
+                    int totalLength = buffer.Length;
+                    int chunks = (int) Math.Ceiling ( (double) totalLength / BUFFER_LENGTH );
 
-                for (int i = 0; i < chunks; i++) {
-                    int ca = i * BUFFER_LENGTH;
-                    int cb = Math.Min ( ca + BUFFER_LENGTH, buffer.Length );
+                    for (int i = 0; i < chunks; i++) {
+                        int ca = i * BUFFER_LENGTH;
+                        int cb = Math.Min ( ca + BUFFER_LENGTH, buffer.Length );
 
-                    ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
+                        ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
 
-                    var sendVt = ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, asyncListenerToken?.Token ?? default );
-                    if (!sendVt.IsCompleted) {
-                        sendVt.AsTask ().GetAwaiter ().GetResult ();
+                        await ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, asyncListenerToken?.Token ?? default );
+                        length += chunk.Length;
                     }
 
-                    length += chunk.Length;
+                    attempt = 0;
                 }
-
-                attempt = 0;
-            }
-            catch (Exception) {
-                attempt++;
-                if (MaxAttempts >= 0 && attempt >= MaxAttempts) {
-                    Close ();
-                    return false;
+                catch (Exception) {
+                    attempt++;
+                    if (MaxAttempts >= 0 && attempt >= MaxAttempts) {
+                        Close ();
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
+            finally {
+                sendSemaphore.Release ();
+            }
         }
 
         /// <summary>
@@ -365,11 +350,22 @@ namespace Sisk.Core.Http.Streams {
 
         /// <inheritdoc/>
         public void Dispose () {
+            if (isDisposed)
+                return;
+
+            GC.SuppressFinalize ( this );
+
             Close ();
             pingPolicy.Dispose ();
             closeEvent.Dispose ();
             waitNextEvent.Dispose ();
             receiveThread.Join ();
+            isDisposed = true;
+        }
+
+        /// <exclude/>
+        ~HttpWebSocket () {
+            Dispose ();
         }
     }
 

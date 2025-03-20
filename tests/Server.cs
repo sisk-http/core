@@ -22,6 +22,13 @@ public sealed class Server {
                         Status = HttpStatusInformation.Ok
                     };
                 } );
+                router.MapGet ( "/tests/plaintext/chunked", delegate ( HttpRequest request ) {
+                    return new HttpResponse () {
+                        Content = new StringContent ( "Hello, world!", Encoding.UTF8, "text/plain" ),
+                        Status = HttpStatusInformation.Ok,
+                        SendChunked = true
+                    };
+                } );
             } )
             .Build ();
 
