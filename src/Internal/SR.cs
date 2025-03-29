@@ -104,6 +104,7 @@ static partial class SR {
 
     public const string RequiresUnreferencedCode = "This method requires access to unreferenced code, which may break AOT compilation and trimming.";
     public const string RequiresUnreferencedCode__RouterSetObject = "This method requires access to unreferenced code, which may break AOT compilation and trimming. Use the SetObject(Type, Object) or SetObject<TObject>(TObject) overloads instead.";
+    public const string RequiresUnreferencedCode__JsonDeserialize = "JSON deserialization without a type info may require types that cannot be statically analyzed.";
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public static string Format ( string format, params object? [] items ) {

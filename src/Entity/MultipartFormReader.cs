@@ -50,9 +50,10 @@ internal sealed class MultipartFormReader {
         position += nlbytes.Length;
     }
 
-    int Read ( Span<byte> buffer ) {
+    int Read ( Span<byte> buffer, CancellationToken cancellation ) {
         int read = 0;
         for (int i = 0; i < buffer.Length; i++) {
+            cancellation.ThrowIfCancellationRequested ();
             if (ReadByte () is > 0 and int b) {
                 buffer [ read++ ] = (byte) b;
             }
@@ -62,16 +63,17 @@ internal sealed class MultipartFormReader {
         return read;
     }
 
-    public MultipartObject [] Read () {
+    public MultipartObject [] Read ( CancellationToken cancellation = default ) {
         List<MultipartObject> objects = new List<MultipartObject> ();
         while (CanRead) {
-            ReadNextBoundary ();
+            cancellation.ThrowIfCancellationRequested ();
+            ReadNextBoundary ( cancellation );
             NameValueCollection headers = ReadHeaders ();
 
             if (!CanRead)
                 break;
 
-            byte [] content = ReadContent ().ToArray ();
+            byte [] content = ReadContent ( cancellation ).ToArray ();
 
             ReadNewLine ();
 
@@ -123,13 +125,14 @@ internal sealed class MultipartFormReader {
         return encoder.GetString ( line [ 0..n ] );
     }
 
-    Span<byte> ReadContent () {
+    Span<byte> ReadContent ( CancellationToken cancellation = default ) {
         var boundarySpan = boundaryBytes.AsSpan ();
         int boundaryLen = boundaryBytes.Length;
         int istart = position;
 
         while (CanRead) {
             position++;
+            cancellation.ThrowIfCancellationRequested ();
 
             if ((position - istart) > boundaryLen) {
                 if (bytes [ (position - boundaryLen)..position ].AsSpan ().SequenceCompareTo ( boundarySpan ) == 0) {
@@ -160,9 +163,9 @@ internal sealed class MultipartFormReader {
         return headers;
     }
 
-    void ReadNextBoundary () {
+    void ReadNextBoundary ( CancellationToken cancellation ) {
         Span<byte> boundaryBlock = stackalloc byte [ boundaryBytes.Length + 2 ];
-        int nextLine = Read ( boundaryBlock );
+        int nextLine = Read ( boundaryBlock, cancellation );
 
         ReadNewLine ();
 

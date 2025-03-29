@@ -8,9 +8,12 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http.Streams;
@@ -77,6 +80,30 @@ namespace Sisk.Core.Http {
             else {
                 return new IPAddress ( listenerRequest.RemoteEndPoint.Address.GetAddressBytes () );
             }
+        }
+
+        internal async Task<byte []> ReadRequestStreamContentsAsync ( CancellationToken cancellation = default ) {
+            if (contentBytes is null) {
+                if (ContentLength > Int32.MaxValue) {
+                    throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
+                }
+                else if (ContentLength > 0) {
+                    using (var memoryStream = new MemoryStream ( (int) ContentLength )) {
+                        await listenerRequest.InputStream.CopyToAsync ( memoryStream, cancellation );
+                        contentBytes = memoryStream.ToArray ();
+                    }
+                }
+                else if (ContentLength < 0) {
+                    contentBytes = Array.Empty<byte> ();
+                    throw new HttpRequestException ( SR.HttpRequest_NoContentLength );
+                }
+                else // = 0
+                {
+                    contentBytes = Array.Empty<byte> ();
+                }
+            }
+
+            return contentBytes;
         }
 
         byte [] ReadRequestStreamContents () {
@@ -331,11 +358,81 @@ namespace Sisk.Core.Http {
         public HttpContext Context { get; internal set; } = null!;
 
         /// <summary>
+        /// Deserializes the request body into an object of type <typeparamref name="T"/> using the provided <see cref="JsonTypeInfo{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
+        /// <param name="typeInfo">The <see cref="JsonTypeInfo{T}"/> to use for deserialization.</param>
+        /// <returns>The deserialized object, or <c>null</c> if the request body is empty.</returns>
+        public T? GetJsonContent<T> ( JsonTypeInfo<T> typeInfo ) {
+            var requestStream = GetRequestStream ();
+            return JsonSerializer.Deserialize<T> ( requestStream, typeInfo );
+        }
+
+        /// <summary>
+        /// Deserializes the request body into an object of type <typeparamref name="T"/> using the provided <see cref="JsonSerializerOptions"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
+        /// <param name="jsonOptions">The <see cref="JsonSerializerOptions"/> to use for deserialization.</param>
+        /// <returns>The deserialized object, or <c>null</c> if the request body is empty.</returns>
+        [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        public T? GetJsonContent<T> ( JsonSerializerOptions jsonOptions ) {
+            var requestStream = GetRequestStream ();
+            return JsonSerializer.Deserialize<T> ( requestStream, jsonOptions );
+        }
+
+        /// <summary>
+        /// Deserializes the request body into an object of type <typeparamref name="T"/> using the default <see cref="JsonSerializerOptions"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
+        /// <returns>The deserialized object, or <c>null</c> if the request body is empty.</returns>
+        [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        public T? GetJsonContent<T> () => GetJsonContent<T> ( JsonSerializerOptions.Default );
+
+        /// <summary>
+        /// Asynchronously deserializes the request body into an object of type <typeparamref name="T"/> using the provided <see cref="JsonTypeInfo{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
+        /// <param name="typeInfo">The <see cref="JsonTypeInfo{T}"/> to use for deserialization.</param>
+        /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
+        public ValueTask<T?> GetJsonContentAsync<T> ( JsonTypeInfo<T> typeInfo, CancellationToken cancellation = default ) {
+            var requestStream = GetRequestStream ();
+            return JsonSerializer.DeserializeAsync<T> ( requestStream, typeInfo, cancellation );
+        }
+
+        /// <summary>
+        /// Asynchronously deserializes the request body into an object of type <typeparamref name="T"/> using the provided <see cref="JsonSerializerOptions"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
+        /// <param name="jsonOptions">The <see cref="JsonSerializerOptions"/> to use for deserialization.</param>
+        /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
+        [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        public ValueTask<T?> GetJsonContentAsync<T> ( JsonSerializerOptions jsonOptions, CancellationToken cancellation = default ) {
+            var requestStream = GetRequestStream ();
+            return JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions, cancellation );
+        }
+
+        /// <summary>
+        /// Asynchronously deserializes the request body into an object of type <typeparamref name="T"/> using the default <see cref="JsonSerializerOptions"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
+        /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
+        [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
+        public ValueTask<T?> GetJsonContentAsync<T> ( CancellationToken cancellation = default ) => GetJsonContentAsync<T> ( JsonSerializerOptions.Default, cancellation );
+
+        /// <summary>
         /// Reads the request body and obtains a <see cref="MultipartFormCollection"/> from it.
         /// </summary>
         public MultipartFormCollection GetMultipartFormContent () {
             try {
-                return MultipartObject.ParseMultipartObjects ( this );
+                byte [] body = ReadRequestStreamContents ();
+                return MultipartObject.ParseMultipartObjects ( this, body );
             }
             catch (Exception ex) {
                 throw new HttpRequestException ( SR.Format ( SR.MultipartFormReader_Exception, ex.Message ), ex );
@@ -345,17 +442,17 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Asynchronously reads the request body and obtains a <see cref="MultipartFormCollection"/> from it.
         /// </summary>
+        /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
         /// <returns>A <see cref="Task"/> that represents the asynchronous operation, containing a <see cref="MultipartFormCollection"/> instance representing the multipart form content of the request.</returns>
         /// <exception cref="HttpRequestException">If an error occurs while parsing the multipart form content.</exception>
-        public Task<MultipartFormCollection> GetMultipartFormContentAsync () {
-            return Task.Run ( delegate () {
-                try {
-                    return MultipartObject.ParseMultipartObjects ( this );
-                }
-                catch (Exception ex) {
-                    throw new HttpRequestException ( SR.Format ( SR.MultipartFormReader_Exception, ex.Message ), ex );
-                }
-            } );
+        public async Task<MultipartFormCollection> GetMultipartFormContentAsync ( CancellationToken cancellation = default ) {
+            try {
+                byte [] body = await ReadRequestStreamContentsAsync ( cancellation );
+                return MultipartObject.ParseMultipartObjects ( this, body, cancellation );
+            }
+            catch (Exception ex) {
+                throw new HttpRequestException ( SR.Format ( SR.MultipartFormReader_Exception, ex.Message ), ex );
+            }
         }
 
         /// <summary>

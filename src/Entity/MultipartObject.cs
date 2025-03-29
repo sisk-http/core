@@ -127,13 +127,14 @@ namespace Sisk.Core.Entity {
         // we should rewrite it using Spans<>, but there are so many code and it would take
         // days...
         // edit: we did it! but we'll mantain this method for at least one year
-        internal static MultipartFormCollection ParseMultipartObjects ( HttpRequest req ) {
+        internal static MultipartFormCollection ParseMultipartObjects ( HttpRequest req, byte [] body, CancellationToken cancellation = default ) {
             string? contentType = req.Headers [ HttpKnownHeaderNames.ContentType ]
                 ?? throw new InvalidOperationException ( SR.MultipartObject_ContentTypeMissing );
 
             string [] contentTypePieces = contentType.Split ( ';' );
             string? boundary = null;
             for (int i = 0; i < contentTypePieces.Length; i++) {
+                cancellation.ThrowIfCancellationRequested ();
                 string obj = contentTypePieces [ i ];
                 string [] kv = obj.Split ( "=" );
                 if (kv.Length != 2) { continue; }
@@ -147,8 +148,8 @@ namespace Sisk.Core.Entity {
             }
 
             byte [] boundaryBytes = req.RequestEncoding.GetBytes ( boundary );
-            MultipartFormReader reader = new MultipartFormReader ( req.RawBody, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions );
-            var objects = reader.Read ();
+            MultipartFormReader reader = new MultipartFormReader ( body, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions );
+            var objects = reader.Read ( cancellation );
 
             return new MultipartFormCollection ( objects );
         }
