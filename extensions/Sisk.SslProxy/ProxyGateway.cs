@@ -17,7 +17,12 @@ class ProxyGateway : IDisposable {
     public IPEndPoint GatewayEndpoint { get; }
 
     public ProxyGateway ( IPEndPoint endpoint ) {
-        client = new HttpClient ();
+        var httpHandler = new HttpClientHandler () {
+            AllowAutoRedirect = false,
+            AutomaticDecompression = DecompressionMethods.None
+        };
+
+        client = new HttpClient ( httpHandler );
         GatewayEndpoint = endpoint;
     }
 

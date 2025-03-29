@@ -99,8 +99,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// </summary>
     /// <typeparam name="TEnum">The <see cref="Enum"/> type.</typeparam>
     public TEnum GetEnum<TEnum> () where TEnum : struct, Enum {
-        ThrowIfNull ();
-        return Enum.Parse<TEnum> ( _ref!, true );
+        return Enum.Parse<TEnum> ( GetString (), true );
     }
 
     /// <summary>
@@ -110,184 +109,176 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <returns>An non-null string value.</returns>
     /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
     public string GetString () {
-        ThrowIfNull ();
-        return _ref!;
+        if (_ref is null)
+            throw new InvalidOperationException ( SR.Format ( SR.ValueItem_ValueNull, argName, argType ) );
+        return _ref;
     }
 
     /// <summary>
-    /// Gets a <see cref="char"/> from this <see cref="StringValue"/>. This method will throw an <see cref="NullReferenceException"/> if
-    /// the value stored in this instance is null.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="char"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <returns>An non-null char value.</returns>
+    /// <returns>The converted <see cref="char"/>.</returns>
     public char GetChar () {
-        ThrowIfNull ();
-        if (_ref!.Length != 1)
+        string r = GetString ();
+        if (r.Length != 1)
             throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "char" ) );
 
-        return _ref [ 0 ];
+        return r [ 0 ];
     }
 
     /// <summary>
-    /// Gets a <see cref="Int32"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as an <see cref="int"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <returns>An non-null Int32 value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public int GetInteger () {
-        ThrowIfNull ();
-        try {
-            return int.Parse ( _ref!, provider: null );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="int"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to an <see cref="int"/>.</exception>
+    public int GetInteger ( IFormatProvider? formatProvider = null ) {
+        if (Int32.TryParse ( GetString (), formatProvider, out Int32 result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "integer" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Int32 ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="Byte"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="byte"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <returns>An non-null byte value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public int GetByte () {
-        ThrowIfNull ();
-        try {
-            return byte.Parse ( _ref!, provider: null );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="byte"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="byte"/>.</exception>
+    public int GetByte ( IFormatProvider? formatProvider = null ) {
+        if (Byte.TryParse ( GetString (), formatProvider, out Byte result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "byte" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Byte ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="Int64"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="long"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <returns>An non-null long value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public long GetLong () {
-        ThrowIfNull ();
-        try {
-            return long.Parse ( _ref!, provider: null );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="long"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="long"/>.</exception>
+    public long GetLong ( IFormatProvider? formatProvider = null ) {
+        if (Int64.TryParse ( GetString (), formatProvider, out Int64 result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "long" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Int64 ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="Int16"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="short"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
-    /// <returns>An non-null short value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public short GetShort ( IFormatProvider? fmtProvider = null ) {
-        ThrowIfNull ();
-        try {
-            return short.Parse ( _ref!, fmtProvider );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="short"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="short"/>.</exception>
+    public short GetShort ( IFormatProvider? formatProvider = null ) {
+        if (Int16.TryParse ( GetString (), formatProvider, out Int16 result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "short" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Int16 ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="double"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="double"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
-    /// <returns>An non-null double value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public double GetDouble ( IFormatProvider? fmtProvider = null ) {
-        ThrowIfNull ();
-        try {
-            return double.Parse ( _ref!, fmtProvider );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="double"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="double"/>.</exception>
+    public double GetDouble ( IFormatProvider? formatProvider = null ) {
+        if (Double.TryParse ( GetString (), formatProvider, out Double result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "double" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Double ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="float"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="float"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
-    /// <returns>An non-null double value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public double GetSingle ( IFormatProvider? fmtProvider = null ) {
-        ThrowIfNull ();
-        try {
-            return float.Parse ( _ref!, fmtProvider );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="float"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="float"/>.</exception>
+    public float GetSingle ( IFormatProvider? formatProvider = null ) {
+        if (Single.TryParse ( GetString (), formatProvider, out Single result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "float" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Single ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="bool"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="decimal"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <returns>An non-null boolean value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="decimal"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="decimal"/>.</exception>
+    public decimal GetDecimal ( IFormatProvider? formatProvider = null ) {
+        if (Decimal.TryParse ( GetString (), formatProvider, out Decimal result )) {
+            return result;
+        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Decimal ) ) );
+    }
+
+    /// <summary>
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="bool"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
+    /// </summary>
+    /// <returns>The converted <see cref="bool"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="bool"/>.</exception>
     public bool GetBoolean () {
-        ThrowIfNull ();
-        try {
-            return bool.Parse ( _ref! );
+        if (Boolean.TryParse ( GetString (), out Boolean result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "boolean" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Boolean ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="DateTime"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="DateTime"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <param name="fmtProvider">Optional. Specifies the culture-specific format information.</param>
-    /// <returns>An non-null DateTime value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public DateTime GetDateTime ( IFormatProvider? fmtProvider = null ) {
-        ThrowIfNull ();
-        try {
-            return DateTime.Parse ( _ref!, fmtProvider );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="DateTime"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="DateTime"/>.</exception>
+    public DateTime GetDateTime ( IFormatProvider? formatProvider = null ) {
+        if (DateTime.TryParse ( GetString (), formatProvider, out DateTime result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "DateTime" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( DateTime ) ) );
     }
 
     /// <summary>
-    /// Gets a <see cref="Guid"/> from this <see cref="StringValue"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a <see cref="Guid"/>. Throws an exception
+    /// if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <returns>An non-null Guid value.</returns>
-    /// <exception cref="NullReferenceException">Thrown when the value stored in this instance is null.</exception>
-    /// <exception cref="FormatException">Thrown when the value stored in this instance is not parseable to the desired type.</exception>
-    public Guid GetGuid () {
-        ThrowIfNull ();
-        try {
-            return Guid.Parse ( _ref! );
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted <see cref="Guid"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to a <see cref="Guid"/>.</exception>
+    public Guid GetGuid ( IFormatProvider? formatProvider = null ) {
+        if (Guid.TryParse ( GetString (), formatProvider, out Guid result )) {
+            return result;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException) {
-            throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, "GUID" ) );
-        }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, nameof ( Guid ) ) );
     }
 
     /// <summary>
-    /// Gets an not null value from the specified <typeparamref name="T"/>.
+    /// Parses the value contained in this <see cref="StringValue"/> as a type <typeparamref name="T"/> that implements <see cref="IParsable{T}"/>.
+    /// Throws an exception if the value couldn't be parsed to the target type.
     /// </summary>
-    /// <typeparam name="T">The type to convert the value to.</typeparam>
-    public T Get<T> ( IFormatProvider? fmtProvider = null ) where T : IParsable<T> {
-        ThrowIfNull ();
-        return T.Parse ( _ref!, fmtProvider );
-    }
-
-    void ThrowIfNull () {
-        if (IsNull) {
-            throw new InvalidOperationException ( SR.Format ( SR.ValueItem_ValueNull, argName, argType ) );
+    /// <typeparam name="T">The type to parse the value to.</typeparam>
+    /// <param name="formatProvider">The <see cref="IFormatProvider"/> to use for parsing. Defaults to <see langword="null"/>.</param>
+    /// <returns>The converted value of type <typeparamref name="T"/>.</returns>
+    /// <exception cref="FormatException">Thrown when the value cannot be parsed to type <typeparamref name="T"/>.</exception>
+    public T Get<T> ( IFormatProvider? formatProvider = null ) where T : IParsable<T> {
+        if (T.TryParse ( GetString (), formatProvider, out T? result )) {
+            return result;
         }
+        throw new FormatException ( SR.Format ( SR.ValueItem_CastException, _ref, argName, typeof ( T ).Name ) );
     }
 
     /// <inheritdoc/>
@@ -303,7 +294,7 @@ public readonly struct StringValue : ICloneable, IEquatable<StringValue>, ICompa
     /// <inheritdoc/>
     /// <exclude/>
     public static bool operator != ( StringValue i, object? other ) {
-        return !i.Equals ( other );
+        return !(i == other);
     }
 
     /// <inheritdoc/>

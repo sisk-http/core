@@ -189,6 +189,20 @@ namespace Sisk.Core.Http {
         public HttpWebSocketConnectionCollection WebSockets { get => _wsCollection; }
 
         /// <summary>
+        /// Creates an new <see cref="HttpServer"/> instance with no predefined configuration.
+        /// </summary>
+        public HttpServer () {
+            ServerConfiguration = new HttpServerConfiguration ();
+            ServerConfiguration.ListeningHosts.Add ( new ListeningHost () {
+                Ports = [
+                    ListeningPort.GetRandomPort()
+                ],
+                Router = new Router ()
+            } );
+            handler = new HttpServerHandlerRepository ( this );
+        }
+
+        /// <summary>
         /// Creates a new default configuration <see cref="Sisk.Core.Http.HttpServer"/> instance with the given Route and server configuration.
         /// </summary>
         /// <param name="configuration">The configuration object of the server.</param>
