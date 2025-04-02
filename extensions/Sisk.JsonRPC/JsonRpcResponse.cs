@@ -38,7 +38,12 @@ public sealed class JsonRpcResponse {
     internal JsonRpcResponse ( JsonValue? result, JsonRpcError? error, JsonValue id ) {
         Result = result;
         Error = error;
-        Id = id;
+        if (id.Type == JsonValueType.Undefined) {
+            Id = JsonValue.Null;
+        }
+        else {
+            Id = id;
+        }
     }
 
     /// <summary>

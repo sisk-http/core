@@ -7,7 +7,7 @@
 // File name:   JsonRpcTransportLayer.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using LightJson;
@@ -116,12 +116,17 @@ public sealed class JsonRpcTransportLayer {
             response = HandleRpcRequest ( rpcRequest );
         }
         catch (Exception ex) {
-            response = new JsonRpcResponse ( null,
-                new JsonRpcError ( JsonErrorCode.InternalError, ex.Message, JsonValue.Null ), rpcRequest?.Id ?? "0" );
+            if (_handler._server.ServerConfiguration.ThrowExceptions) {
+                throw;
+            }
+            else {
+                response = new JsonRpcResponse ( null,
+                    new JsonRpcError ( JsonErrorCode.InternalError, ex.Message, JsonValue.Null ), rpcRequest?.Id ?? "0" );
+            }
         }
 
 sendResponse:
-        if (rpcRequest is not null && rpcRequest.Id.IsNull) {
+        if (rpcRequest is not null && rpcRequest.Id.IsNull && response.Error is null) {
             return new HttpResponse () {
                 Status = HttpStatusInformation.Accepted
             };
@@ -134,10 +139,8 @@ sendResponse:
         }
     }
 
-    [DynamicDependency ( DynamicallyAccessedMemberTypes.PublicMethods, typeof ( Task<> ) )]
-    [DynamicDependency ( DynamicallyAccessedMemberTypes.PublicMethods, typeof ( TaskAwaiter<> ) )]
-    [SuppressMessage ( "Trimming", "IL2026:Using dynamic types might cause types or members to be removed by trimmer.", Justification = "<Pendente>" )]
-    [SuppressMessage ( "Trimming", "IL2072:Target parameter argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "<Pending>" )]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage ( "Trimming",
+        "IL2072:Target parameter argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "<Pending>" )]
     JsonRpcResponse HandleRpcRequest ( JsonRpcRequest request ) {
         JsonRpcResponse response;
         try {
@@ -146,7 +149,7 @@ sendResponse:
 
             if (method != null) {
                 var methodInfo = method.Method;
-                var methodParameters = methodInfo.GetParameters ();
+                var methodParameters = method.Parameters;
 
                 object? [] methodInvokationParameters = new object? [ methodParameters.Length ];
 
@@ -168,7 +171,7 @@ sendResponse:
                     }
 
                     for (int i = 0; i < jsonValueList.Count; i++) {
-                        methodInvokationParameters [ i ] = jsonValueList [ i ].MaybeNull ()?.Get ( methodParameters [ i ].ParameterType );
+                        methodInvokationParameters [ i ] = jsonValueList [ i ].MaybeNull ()?.Get ( methodParameters [ i ].ParameterType ) ?? methodParameters [ i ].DefaultValue;
                     }
                 }
                 else {
@@ -194,18 +197,24 @@ sendResponse:
                             return response;
                         }
 
-                        methodInvokationParameters [ i ] = jsonParameter.MaybeNull ()?.Get ( param.ParameterType );
+                        methodInvokationParameters [ i ] = jsonParameter.MaybeNull ()?.Get ( param.ParameterType ) ?? param.DefaultValue;
                     }
                 }
 
                 object? result = methodInfo.Invoke ( method.Target, methodInvokationParameters );
 
-                if (result is Task task) {
-                    result = ((dynamic) task).GetAwaiter ().GetResult ();
+                if (result is not null) {
+                    if (method.ReturnInformation.IsAsyncTask) {
+                        ref Task<object> actionTask = ref Unsafe.As<object, Task<object>> ( ref result );
+                        result = actionTask.GetAwaiter ().GetResult ();
+                    }
+                    else if (method.ReturnInformation.IsAsyncEnumerable) {
+                        ref IAsyncEnumerable<object> asyncEnumerable = ref Unsafe.As<object, IAsyncEnumerable<object>> ( ref result );
+                        result = asyncEnumerable.ToBlockingEnumerable ();
+                    }
                 }
 
                 JsonValue resultEncoded = JsonValue.Serialize ( result, _handler._jsonOptions );
-
                 response = new JsonRpcResponse ( resultEncoded, null, request.Id );
             }
             else {
@@ -216,13 +225,18 @@ sendResponse:
         catch (JsonRpcException jex) {
             response = new JsonRpcResponse ( null, jex.AsRpcError (), request.Id );
         }
-        catch (Exception ex) {
+        catch (Exception erx) {
+            Exception ex = erx;
+            if (erx is TargetInvocationException)
+                ex = ex.InnerException ?? ex;
+
             if (_handler._server.ServerConfiguration.ThrowExceptions) {
                 throw;
             }
             else {
+                _handler._server.ServerConfiguration.ErrorsLogsStream?.WriteException ( erx );
                 response = new JsonRpcResponse ( null,
-               new JsonRpcError ( JsonErrorCode.InternalError, ex.Message, JsonValue.Null ), request?.Id ?? "0" );
+                    new JsonRpcError ( JsonErrorCode.InternalError, ex.Message, JsonValue.Null ), request?.Id ?? "0" );
             }
         }
         return response;

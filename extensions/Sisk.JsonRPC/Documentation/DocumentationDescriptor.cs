@@ -36,6 +36,6 @@ internal class DocumentationDescriptor {
                     .ToArray () ) );
         }
 
-        return new JsonRpcDocumentation ( methods.ToArray (), metadata );
+        return new JsonRpcDocumentation ( methods.OrderBy ( m => m.MethodName ).ToArray (), metadata );
     }
 }

@@ -44,17 +44,27 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
     /// <returns></returns>
     public JsonValue EncodeDocumentation ( JsonRpcDocumentation documentation ) {
         JsonArray arr = JsonOptions.CreateJsonArray ();
+        
+        static string GetTypeName ( Type type ) {
+            if (type.IsGenericType) {
+                string genericDefinition = string.Join ( ", ", type.GetGenericArguments ().Select ( s => s.Name ) );
+                return $"{type.Name}<{genericDefinition}>";
+            }
+            else {
+                return type.Name;
+            }
+        }
 
         foreach (var method in documentation.Methods) {
 
             var item = new {
                 Name = method.MethodName,
                 Description = method.Description,
-                Returns = method.ReturnType.Name,
+                Returns = GetTypeName ( method.ReturnType ),
                 Parameters = method.Parameters
                     .Select ( p => new {
                         Name = p.ParameterName,
-                        TypeName = p.ParameterType.Name,
+                        TypeName = GetTypeName ( p.ParameterType ),
                         Description = p.Description,
                         IsOptional = p.IsOptional
                     } )

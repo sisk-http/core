@@ -11,4 +11,6 @@ using System.Reflection;
 
 namespace Sisk.JsonRPC;
 
-internal record class RpcDelegate ( MethodInfo Method, object? Target );
+internal record class RpcDelegate ( string WebMethodName, MethodInfo Method, RpcDelegateMethodParameter [] Parameters, RpcDelegateMethodReturnInformation ReturnInformation, object? Target );
+internal record class RpcDelegateMethodParameter ( Type ParameterType, string? Name, bool IsOptional, object? DefaultValue );
+internal record class RpcDelegateMethodReturnInformation ( Type ReturnType, bool IsAsyncEnumerable, bool IsAsyncTask );
