@@ -29,6 +29,11 @@ public sealed class HttpHost : IDisposable {
     public static int QueueSize { get; set; } = 1024;
 
     /// <summary>
+    /// Gets or sets the name of the server in the header name.
+    /// </summary>
+    public static string ServerNameHeader { get; set; } = "Sisk";
+
+    /// <summary>
     /// Gets or sets an <see cref="HttpHostHandler"/> instance for this <see cref="HttpHost"/>.
     /// </summary>
     public HttpHostHandler? Handler { get; set; }

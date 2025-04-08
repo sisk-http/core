@@ -191,7 +191,7 @@ public sealed class HttpHostContext {
             Headers = new List<HttpHeader>
                 {
                 new HttpHeader ("Date", DateTime.UtcNow.ToString("R")),
-                new HttpHeader ("Server", "Sisk")
+                new HttpHeader ("Server", HttpHost.ServerNameHeader)
             };
         }
     }

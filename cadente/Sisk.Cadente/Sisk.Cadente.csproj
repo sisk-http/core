@@ -45,9 +45,9 @@
 
 	<!-- version info -->
 	<PropertyGroup>
-		<AssemblyVersion>0.1.121</AssemblyVersion>
-		<FileVersion>0.1.121</FileVersion>
-		<Version>0.1.121-alpha5</Version>
+		<AssemblyVersion>0.1.134</AssemblyVersion>
+		<FileVersion>0.1.134</FileVersion>
+		<Version>0.1.134-alpha6</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->
