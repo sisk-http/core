@@ -19,7 +19,10 @@ class ProxyGateway : IDisposable {
     public ProxyGateway ( IPEndPoint endpoint ) {
         var httpHandler = new HttpClientHandler () {
             AllowAutoRedirect = false,
-            AutomaticDecompression = DecompressionMethods.None
+            AutomaticDecompression = DecompressionMethods.None,
+            ServerCertificateCustomValidationCallback = ( message, cert, chain, errors ) => {
+                return true;
+            },
         };
 
         client = new HttpClient ( httpHandler );

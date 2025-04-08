@@ -22,7 +22,7 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<Version>1.4.1.1-alpha9</Version>
+		<Version>1.4.1.1-alpha10</Version>
 		<AssemblyVersion>1.4.1</AssemblyVersion>
 		<FileVersion>1.4.1</FileVersion>
 

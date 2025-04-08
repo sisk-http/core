@@ -94,7 +94,6 @@ public static class CertificateUtil {
             var certificate = request.CreateSelfSigned ( new DateTimeOffset ( DateTime.UtcNow.AddDays ( -1 ) ), new DateTimeOffset ( DateTime.UtcNow.AddDays ( 3650 ) ) );
 
 #if NET9_0_OR_GREATER
-            // TODO: need to test this.
             return X509CertificateLoader.LoadPkcs12 ( certificate.Export ( X509ContentType.Pfx, "sisk" ), "sisk", X509KeyStorageFlags.DefaultKeySet );
 #else
             return new X509Certificate2 ( certificate.Export ( X509ContentType.Pfx, "sisk" ), "sisk", X509KeyStorageFlags.DefaultKeySet );

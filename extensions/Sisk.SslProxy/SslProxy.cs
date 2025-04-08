@@ -60,6 +60,12 @@ public sealed class SslProxy : IDisposable {
     public string? GatewayHostname { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the <see cref="SslProxy"/> should use HTTPS for the gateway
+    /// connection or plain HTTP.
+    /// </summary>
+    public bool UseGatewayHttps { get; set; } = false;
+
+    /// <summary>
     /// Gets the proxy endpoint.
     /// </summary>
     public IPEndPoint GatewayEndpoint { get => remoteEndpoint; }

@@ -44,7 +44,10 @@ class SslProxyContextHandler : HttpHostHandler {
 
         HttpMethod requestMethod = new HttpMethod ( context.Request.Method );
         string requestPath = context.Request.Path;
-        string requestUri = $"http://{ProxyHost.GatewayEndpoint.Address}:{ProxyHost.GatewayEndpoint.Port}{requestPath}";
+        string requestUri =
+            ProxyHost.UseGatewayHttps ?
+                $"https://{ProxyHost.GatewayEndpoint.Address}:{ProxyHost.GatewayEndpoint.Port}{requestPath}" :
+                $"http://{ProxyHost.GatewayEndpoint.Address}:{ProxyHost.GatewayEndpoint.Port}{requestPath}";
 
         bool isWebsocketConnection = context.Request.Headers.Any ( c => c.Name.Equals ( HttpKnownHeaderNames.SecWebSocketKey, StringComparison.OrdinalIgnoreCase ) );
 
@@ -54,6 +57,7 @@ class SslProxyContextHandler : HttpHostHandler {
         if (context.Request.ContentLength > 0) {
             Stream requestStream = context.Request.GetRequestStream ();
             proxyRequest.Content = new StreamContent ( requestStream );
+            proxyRequest.Content.Headers.ContentLength = context.Request.ContentLength;
         }
 
         for (int i = 0; i < context.Request.Headers.Length; i++) {
