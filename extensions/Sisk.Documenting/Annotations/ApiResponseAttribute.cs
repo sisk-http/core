@@ -36,6 +36,9 @@ public sealed class ApiResponseAttribute : Attribute {
     /// </summary>
     public string? ExampleLanguage { get; set; }
 
+
+    public Type? ExampleType { get; set; }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ApiResponseAttribute"/> class with the specified status code.
     /// </summary>
@@ -44,12 +47,21 @@ public sealed class ApiResponseAttribute : Attribute {
         StatusCode = statusCode;
     }
 
-    internal ApiEndpointResponse GetApiEndpointObject () {
+    internal ApiEndpointResponse GetApiEndpointObject ( ApiGenerationContext context ) {
+
+        string? example = Example;
+        string? exampleLanguage = ExampleLanguage;
+
+        if (ExampleType != null && context.BodyExampleTypeHandler?.GetBodyExampleForType ( ExampleType ) is { } exampleResult) {
+            example = exampleResult.ExampleContents;
+            exampleLanguage = exampleResult.ExampleLanguage;
+        }
+
         return new ApiEndpointResponse {
             StatusCode = StatusCode,
             Description = Description,
-            Example = Example,
-            ExampleLanguage = ExampleLanguage,
+            Example = example,
+            ExampleLanguage = exampleLanguage,
         };
     }
 }

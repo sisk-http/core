@@ -30,6 +30,16 @@ public sealed class ApiEndpointAttribute : Attribute {
     public string? Group { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the description should be inherited from XML documentation if the attribute description
+    /// is not provided.
+    /// </summary>
+    public bool InheritDescriptionFromXmlDocumentation { get; set; } = true;
+
+    public ApiEndpointAttribute () {
+        Name = string.Empty;
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ApiEndpointAttribute"/> class with the specified endpoint name.
     /// </summary>
     /// <param name="name">The name of the API endpoint.</param>

@@ -29,6 +29,8 @@ public sealed class ApiRequestAttribute : Attribute {
     /// </summary>
     public string? Example { get; set; }
 
+    public Type? ExampleType { get; set; }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ApiRequestAttribute"/> class with the specified description.
     /// </summary>
@@ -37,11 +39,20 @@ public sealed class ApiRequestAttribute : Attribute {
         Description = description;
     }
 
-    internal ApiEndpointRequestExample GetApiEndpointObject () {
+    internal ApiEndpointRequestExample GetApiEndpointObject ( ApiGenerationContext context ) {
+
+        string? example = Example;
+        string? exampleLanguage = ExampleLanguage;
+
+        if (ExampleType != null && context.BodyExampleTypeHandler?.GetBodyExampleForType ( ExampleType ) is { } exampleResult) {
+            example = exampleResult.ExampleContents;
+            exampleLanguage = exampleResult.ExampleLanguage;
+        }
+
         return new ApiEndpointRequestExample {
             Description = Description,
-            ExampleLanguage = ExampleLanguage,
-            Example = Example,
+            ExampleLanguage = exampleLanguage,
+            Example = example,
         };
     }
 }

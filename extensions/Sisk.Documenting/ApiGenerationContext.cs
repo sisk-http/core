@@ -4,15 +4,12 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   ApiIdentifier.cs
+// File name:   ApiGenerationContext.cs
 // Repository:  https://github.com/sisk-http/core
 
 namespace Sisk.Documenting;
 
-/// <summary>
-/// Represents an identifier for an API, including application details such as name, version, and description.
-/// </summary>
-public sealed class ApiIdentifier {
+public sealed class ApiGenerationContext {
 
     /// <summary>
     /// Gets or sets the name of the application.
@@ -28,4 +25,8 @@ public sealed class ApiIdentifier {
     /// Gets or sets the description of the application.
     /// </summary>
     public string? ApplicationDescription { get; set; }
+
+    public IExampleBodyTypeHandler? BodyExampleTypeHandler { get; set; }
+
+    public IExampleParameterTypeHandler? ParameterExampleTypeHandler { get; set; }
 }

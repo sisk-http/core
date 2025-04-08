@@ -357,7 +357,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 var groups = d.Endpoints.GroupBy ( e => e.Group );
                 foreach (var item in groups) {
 
-                    main += new HtmlElement ( "h2", $"{item.Key}:" );
+                    main += new HtmlElement ( "h2", $"{item.Key ?? "Requests"}:" );
 
                     foreach (var endpoint in item.OrderBy ( i => i.Path.Length )) {
                         main += new HtmlElement ( "section", section => {

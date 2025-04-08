@@ -37,14 +37,8 @@ public sealed class ApiDocumentation {
     /// </summary>
     public ApiEndpoint [] Endpoints { get; internal set; } = null!;
 
-    /// <summary>
-    /// Generates an instance of <see cref="ApiDocumentation"/> by reading documentation from the specified router and identifier.
-    /// </summary>
-    /// <param name="router">The router used to generate the documentation.</param>
-    /// <param name="identifier">The identifier for the API documentation.</param>
-    /// <returns>An instance of <see cref="ApiDocumentation"/>.</returns>
-    public static ApiDocumentation Generate ( Router router, ApiIdentifier identifier ) {
-        return ApiDocumentationReader.ReadDocumentation ( identifier, router );
+    public static ApiDocumentation Generate ( Router router, ApiGenerationContext context ) {
+        return ApiDocumentationReader.ReadDocumentation ( context, router );
     }
 
     internal ApiDocumentation () {
