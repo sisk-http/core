@@ -45,9 +45,14 @@ namespace Sisk.Core.Entity {
         public int ContentLength { get => ContentBytes.Length; }
 
         /// <summary>
-        /// Gets an booolean indicating if this <see cref="MultipartObject"/> has contents or not.
+        /// Gets an boolean indicating if this <see cref="MultipartObject"/> has contents or not.
         /// </summary>
         public bool HasContents { get => ContentLength > 0; }
+
+        /// <summary>
+        /// Gets an boolean indicating if this <see cref="MultipartObject"/> is a file or not.
+        /// </summary>
+        public bool IsFile { get => HasContents && !string.IsNullOrEmpty ( Filename ); }
 
         /// <summary>
         /// Reads the content bytes with the given encoder.
@@ -123,11 +128,10 @@ namespace Sisk.Core.Entity {
             _baseEncoding = encoding;
         }
 
-        //
-        // we should rewrite it using Spans<>, but there are so many code and it would take
-        // days...
-        // edit: we did it! but we'll mantain this method for at least one year
         internal static MultipartFormCollection ParseMultipartObjects ( HttpRequest req, byte [] body, CancellationToken cancellation = default ) {
+            if (body.Length == 0)
+                return new MultipartFormCollection ( Enumerable.Empty<MultipartObject> () );
+
             string? contentType = req.Headers [ HttpKnownHeaderNames.ContentType ]
                 ?? throw new InvalidOperationException ( SR.MultipartObject_ContentTypeMissing );
 

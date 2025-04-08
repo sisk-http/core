@@ -21,6 +21,7 @@ namespace Sisk.Core.Http.Streams {
         bool isDisposed;
         readonly HttpStreamPingPolicy pingPolicy;
 
+        internal CancellationTokenSource disposeCancellation = new CancellationTokenSource ();
         internal SemaphoreSlim sendSemaphore = new SemaphoreSlim ( 1 );
         internal WebSocketMessage? lastMessage;
         internal CancellationTokenSource asyncListenerToken = null!;
@@ -35,7 +36,7 @@ namespace Sisk.Core.Http.Streams {
         internal bool wasServerClosed;
         internal string? _identifier;
 
-        const int BUFFER_LENGTH = 1024;
+        const int FRAME_SIZE = 131072;
         int attempt;
         long length;
 
@@ -81,6 +82,15 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public event EventHandler<WebSocketMessage>? OnReceive;
 
+        /// <summary>
+        /// Creates a new <see cref="CancellationTokenSource"/> that is linked to the provided cancellation tokens and the dispose cancellation token of this instance.
+        /// </summary>
+        /// <param name="cancellationTokens">The cancellation tokens to link to the new <see cref="CancellationTokenSource"/>.</param>
+        /// <returns>A new <see cref="CancellationTokenSource"/> that is linked to the provided cancellation tokens and the dispose cancellation token of this instance.</returns>
+        public CancellationTokenSource GetLinkedCancellationSource ( params CancellationToken [] cancellationTokens ) {
+            return CancellationTokenSource.CreateLinkedTokenSource ( [ disposeCancellation.Token, .. cancellationTokens ] );
+        }
+
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             request = req;
@@ -124,7 +134,7 @@ namespace Sisk.Core.Http.Streams {
         internal async void ReceiveTask () {
             while (isListening) {
                 RecreateAsyncToken ();
-                WebSocketMessage message = new WebSocketMessage ( this, BUFFER_LENGTH );
+                WebSocketMessage message = new WebSocketMessage ( this, FRAME_SIZE );
 
                 var arrSegment = new ArraySegment<byte> ( message.__msgBytes );
                 WebSocketReceiveResult result;
@@ -259,6 +269,7 @@ namespace Sisk.Core.Http.Streams {
                 isListening = false;
                 _isClosed = true;
                 closeEvent.Set ();
+                disposeCancellation.Cancel ();
             }
             return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
                 CalculedLength = length
@@ -276,11 +287,11 @@ namespace Sisk.Core.Http.Streams {
             try {
                 try {
                     int totalLength = buffer.Length;
-                    int chunks = (int) Math.Ceiling ( (double) totalLength / BUFFER_LENGTH );
+                    int chunks = (int) Math.Ceiling ( (double) totalLength / FRAME_SIZE );
 
                     for (int i = 0; i < chunks; i++) {
-                        int ca = i * BUFFER_LENGTH;
-                        int cb = Math.Min ( ca + BUFFER_LENGTH, buffer.Length );
+                        int ca = i * FRAME_SIZE;
+                        int cb = Math.Min ( ca + FRAME_SIZE, buffer.Length );
 
                         ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
 
@@ -360,6 +371,7 @@ namespace Sisk.Core.Http.Streams {
             closeEvent.Dispose ();
             waitNextEvent.Dispose ();
             receiveThread.Join ();
+            disposeCancellation.Dispose ();
             isDisposed = true;
         }
 

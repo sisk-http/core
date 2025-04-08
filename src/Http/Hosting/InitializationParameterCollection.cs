@@ -9,6 +9,7 @@
 
 using System.Collections;
 using System.Collections.Specialized;
+using Sisk.Core.Entity;
 
 namespace Sisk.Core.Http.Hosting;
 
@@ -99,6 +100,15 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
             throw new ArgumentException ( SR.Format ( SR.InitializationParameterCollection_NullOrEmptyParameter, parameterName ) );
 
         return value!;
+    }
+
+    /// <summary>
+    /// Retrieves a <see cref="StringValue"/> instance representing the specified parameter.
+    /// </summary>
+    /// <param name="parameterName">The name of the parameter to retrieve.</param>
+    /// <returns>A <see cref="StringValue"/> instance containing the parameter name and value.</returns>
+    public StringValue GetStringValue ( string parameterName ) {
+        return new StringValue ( parameterName, "initialization parameter", this [ parameterName ] );
     }
 
     /// <inheritdoc/>

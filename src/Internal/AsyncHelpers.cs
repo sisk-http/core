@@ -16,4 +16,11 @@ static class AsyncHelpers {
         }
         return task.AsTask ().GetAwaiter ().GetResult ();
     }
+
+    public static void GetSyncronizedResult ( this ValueTask task ) {
+        if (task.IsCompleted) {
+            return;
+        }
+        task.AsTask ().GetAwaiter ().GetResult ();
+    }
 }

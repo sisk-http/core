@@ -24,6 +24,15 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     }
 
     /// <summary>
+    /// Retrieves a <see cref="MultipartObject"/> instance by its file name.
+    /// </summary>
+    /// <param name="name">The filename of the <see cref="MultipartObject"/> to retrieve.</param>
+    /// <returns>The <see cref="MultipartObject"/> instance with the specified filename, or <see langword="null"/> if no matching file is found.</returns>
+    public MultipartObject? GetFile ( string name ) {
+        return _items.LastOrDefault ( i => string.Equals ( name, i.Filename, StringComparison.OrdinalIgnoreCase ) );
+    }
+
+    /// <summary>
     /// Gets the last form item by their name. This search is case-insensitive.
     /// </summary>
     /// <param name="name">The form item name.</param>
@@ -68,6 +77,20 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
     /// </summary>
     public MultipartObject [] ToArray () {
         return _items.ToArray ();
+    }
+
+    /// <summary>
+    /// Gets a collection of <see cref="MultipartObject"/> instances that represent files.
+    /// </summary>
+    /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="MultipartObject"/> instances.</returns>
+    public IEnumerable<MultipartObject> Files {
+        get {
+            for (int i = 0; i < _items.Count; i++) {
+                MultipartObject? item = _items [ i ];
+                if (item.IsFile)
+                    yield return item;
+            }
+        }
     }
 
     /// <inheritdoc/>

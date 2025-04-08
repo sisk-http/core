@@ -366,6 +366,7 @@ finishSending:
         }
         catch (HttpRequestException requestException) {
             baseResponse.StatusCode = 400/*BadRequest*/;
+            baseResponse.StatusDescription = HttpStatusInformation.BadRequest.Description;
             executionResult.Status = HttpServerExecutionStatus.MalformedRequest;
             executionResult.ServerException = requestException;
             hasErrorLogging = false;
@@ -373,6 +374,7 @@ finishSending:
         catch (Exception ex) {
             if (!currentConfig.ThrowExceptions) {
                 baseResponse.StatusCode = 500/*InternalServerError*/;
+                baseResponse.StatusDescription = HttpStatusInformation.InternalServerError.Description;
                 executionResult.ServerException = ex;
                 executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
             }

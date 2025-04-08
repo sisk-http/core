@@ -38,8 +38,7 @@ namespace Sisk.Core.Http {
         private readonly HttpListenerRequest listenerRequest;
         private readonly HttpListenerContext context;
         private byte []? contentBytes;
-        internal bool isStreaming;
-        private HttpRequestEventSource? activeEventSource;
+        private IDisposable? streamingEntity;
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
         private StringValueCollection? query;
@@ -129,6 +128,16 @@ namespace Sisk.Core.Http {
 
             return contentBytes;
         }
+
+        /// <summary>
+        /// Gets or sets the default options used for JSON serialization.
+        /// </summary>
+        /// <remarks>
+        /// These options are used by default when serializing or deserializing JSON data through <see cref="GetJsonContent{T}()"/>,
+        /// unless custom options are provided. See <see cref="System.Text.Json.JsonSerializerOptions"/> 
+        /// for more information on available options.
+        /// </remarks>
+        public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; }
 
         /// <summary>
         /// Gets a unique random ID for this request.
@@ -358,6 +367,22 @@ namespace Sisk.Core.Http {
         public HttpContext Context { get; internal set; } = null!;
 
         /// <summary>
+        /// Gets the request contents of the body as a byte array.
+        /// </summary>
+        /// <returns>A byte array containing the body contents.</returns>
+        public byte [] GetBodyContents () => RawBody;
+
+        /// <summary>
+        /// Asynchronously reads the request contents as a memory byte array.
+        /// </summary>
+        /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the operation.</param>
+        /// <returns>A <see cref="Task"/> that returns a <see cref="Memory{T}"/> of bytes containing the body contents.</returns>
+        public async Task<Memory<byte>> GetBodyContentsAsync ( CancellationToken cancellation = default ) {
+            byte [] body = await ReadRequestStreamContentsAsync ( cancellation );
+            return body;
+        }
+
+        /// <summary>
         /// Deserializes the request body into an object of type <typeparamref name="T"/> using the provided <see cref="JsonTypeInfo{T}"/>.
         /// </summary>
         /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
@@ -376,19 +401,20 @@ namespace Sisk.Core.Http {
         /// <returns>The deserialized object, or <c>null</c> if the request body is empty.</returns>
         [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
-        public T? GetJsonContent<T> ( JsonSerializerOptions jsonOptions ) {
+        public T? GetJsonContent<T> ( JsonSerializerOptions? jsonOptions = null ) {
             var requestStream = GetRequestStream ();
-            return JsonSerializer.Deserialize<T> ( requestStream, jsonOptions );
+            return JsonSerializer.Deserialize<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions );
         }
 
         /// <summary>
-        /// Deserializes the request body into an object of type <typeparamref name="T"/> using the default <see cref="JsonSerializerOptions"/>.
+        /// Deserializes the request body into an object of type <typeparamref name="T"/> using the default
+        /// <see cref="JsonSerializerOptions"/> from <see cref="DefaultJsonSerializerOptions"/>.
         /// </summary>
         /// <typeparam name="T">The type of the object to deserialize into.</typeparam>
         /// <returns>The deserialized object, or <c>null</c> if the request body is empty.</returns>
         [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
-        public T? GetJsonContent<T> () => GetJsonContent<T> ( JsonSerializerOptions.Default );
+        public T? GetJsonContent<T> () => GetJsonContent<T> ( (JsonSerializerOptions?) null );
 
         /// <summary>
         /// Asynchronously deserializes the request body into an object of type <typeparamref name="T"/> using the provided <see cref="JsonTypeInfo{T}"/>.
@@ -411,9 +437,9 @@ namespace Sisk.Core.Http {
         /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
         [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
-        public ValueTask<T?> GetJsonContentAsync<T> ( JsonSerializerOptions jsonOptions, CancellationToken cancellation = default ) {
+        public ValueTask<T?> GetJsonContentAsync<T> ( JsonSerializerOptions? jsonOptions, CancellationToken cancellation = default ) {
             var requestStream = GetRequestStream ();
-            return JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions, cancellation );
+            return JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions, cancellation );
         }
 
         /// <summary>
@@ -424,7 +450,7 @@ namespace Sisk.Core.Http {
         /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
         [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
-        public ValueTask<T?> GetJsonContentAsync<T> ( CancellationToken cancellation = default ) => GetJsonContentAsync<T> ( JsonSerializerOptions.Default, cancellation );
+        public ValueTask<T?> GetJsonContentAsync<T> ( CancellationToken cancellation = default ) => GetJsonContentAsync<T> ( (JsonSerializerOptions?) null, cancellation );
 
         /// <summary>
         /// Reads the request body and obtains a <see cref="MultipartFormCollection"/> from it.
@@ -465,8 +491,11 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Asynchronously reads the request body and extracts form data parameters from it.
         /// </summary>
-        public Task<StringKeyStoreCollection> GetFormContentAsync () {
-            return Task.Run ( delegate () { return StringKeyStoreCollection.FromQueryString ( Body ); } );
+        /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
+        public async Task<StringKeyStoreCollection> GetFormContentAsync ( CancellationToken cancellation = default ) {
+            byte [] body = await ReadRequestStreamContentsAsync ( cancellation );
+            string bodyContents = Encoding.UTF8.GetString ( body );
+            return StringKeyStoreCollection.FromQueryString ( bodyContents );
         }
 
         /// <summary>
@@ -536,10 +565,10 @@ namespace Sisk.Core.Http {
         /// Gets an HTTP response stream for this HTTP request.
         /// </summary>
         public HttpResponseStreamManager GetResponseStream () {
-            if (isStreaming) {
+            if (streamingEntity is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            isStreaming = true;
+            streamingEntity = listenerResponse;
             return new HttpResponseStreamManager ( listenerResponse, listenerRequest, this );
         }
 
@@ -549,12 +578,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="identifier">Optional. Defines an label to the EventStream connection, useful for finding this connection's reference later.</param>
         public HttpRequestEventSource GetEventSource ( string? identifier = null ) {
-            if (isStreaming) {
+            if (streamingEntity is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            isStreaming = true;
-            activeEventSource = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
-            return activeEventSource;
+            var sse = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
+            streamingEntity = sse;
+            return sse;
         }
 
         /// <summary>
@@ -564,14 +593,13 @@ namespace Sisk.Core.Http {
         /// <param name="identifier">Optional. Defines a label to the EventStream connection, useful for finding this connection's reference later.</param>
         /// <returns>A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="HttpRequestEventSource"/> instance representing the event source for this request.</returns>
         public Task<HttpRequestEventSource> GetEventSourceAsync ( string? identifier = null ) {
-            if (isStreaming) {
+            if (streamingEntity is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            isStreaming = true;
-
             return Task.Run ( delegate () {
-                activeEventSource = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
-                return activeEventSource;
+                var sse = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
+                streamingEntity = sse;
+                return sse;
             } );
         }
 
@@ -594,12 +622,13 @@ namespace Sisk.Core.Http {
         /// <param name="identifier">Optional. Defines an label to the Web Socket connection, useful for finding this connection's reference later.</param>
         /// <returns>A task that represents the asynchronous operation, returning an instance of <see cref="HttpWebSocket"/> representing the accepted websocket connection.</returns>
         public async Task<HttpWebSocket> GetWebSocketAsync ( string? subprotocol = null, string? identifier = null ) {
-            if (isStreaming) {
+            if (streamingEntity is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            isStreaming = true;
             var accept = await context.AcceptWebSocketAsync ( subprotocol );
-            return new HttpWebSocket ( accept, this, identifier );
+            var ws = new HttpWebSocket ( accept, this, identifier );
+            streamingEntity = ws;
+            return ws;
         }
 
         /// <summary>
@@ -624,7 +653,7 @@ namespace Sisk.Core.Http {
         private void Dispose ( bool disposing ) {
             if (!disposedValue) {
                 if (disposing) {
-                    activeEventSource?.Dispose ();
+                    streamingEntity?.Dispose ();
                 }
 
                 disposedValue = true;

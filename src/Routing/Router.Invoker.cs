@@ -7,6 +7,7 @@
 // File name:   Router.Invoker.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections;
 using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -262,6 +263,15 @@ public partial class Router {
                         ref IAsyncEnumerable<object> asyncEnumerable = ref Unsafe.As<object, IAsyncEnumerable<object>> ( ref actionResult );
                         actionResult = asyncEnumerable.ToBlockingEnumerable ();
                     }
+                }
+
+                if (actionResult is IEnumerable enumerableAction) {
+
+                    // Since enumeration can occur outside the router's context (e.g., while reading the HttpContent),
+                    // errors might be thrown outside the router's context, preventing application-side error capture.
+                    // The ToArray() below forces reading the enumerator into memory, ensuring any enumeration errors
+                    // are thrown within the router's context.
+                    actionResult = ((IEnumerable<object>) enumerableAction).ToArray ();
                 }
 
                 result = ResolveAction ( actionResult );

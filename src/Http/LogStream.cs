@@ -10,6 +10,7 @@
 using System.Text;
 using System.Threading.Channels;
 using Sisk.Core.Entity;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http {
     /// <summary>
@@ -161,13 +162,224 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
-        /// Stops buffering output to the alternative stream.
+        /// Stops buffering output.
         /// </summary>
         public void StopBuffering () {
             _bufferingContent = null;
         }
 
-        private async void ProcessQueue () {
+        /// <summary>
+        /// Writes all pending logs from the queue and closes all resources used by this object.
+        /// </summary>
+        public virtual void Close () => Dispose ();
+
+        /// <summary>
+        /// Defines the time interval and size threshold for starting the task, and then starts the task. This method is an
+        /// shortcut for calling <see cref="RotatingLogPolicy.Configure(long, TimeSpan)"/> of this defined <see cref="RotatingPolicy"/> method.
+        /// </summary>
+        /// <remarks>
+        /// The first run is performed immediately after calling this method.
+        /// </remarks>
+        /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
+        /// <param name="dueTime">The time interval between checks.</param>
+        public LogStream ConfigureRotatingPolicy ( long maximumSize, TimeSpan dueTime ) {
+            var policy = RotatingPolicy;
+            policy.Configure ( maximumSize, dueTime );
+            return this;
+        }
+
+        #region Sync write methods
+        /// <summary>
+        /// Writes an exception description in the log.
+        /// </summary>
+        /// <param name="exp">The exception which will be written.</param>
+        public void WriteException ( Exception exp ) => WriteException ( exp, null );
+
+        /// <summary>
+        /// Writes an exception description in the log.
+        /// </summary>
+        /// <param name="exp">The exception which will be written.</param>
+        /// <param name="extraContext">Extra context message to append to the exception message.</param>
+        public void WriteException ( Exception exp, string? extraContext = null ) {
+            StringBuilder excpStr = new StringBuilder ();
+            WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
+            WriteLineInternal ( excpStr.ToString () );
+        }
+
+        /// <summary>
+        /// Writes an line-break at the end of the output.
+        /// </summary>
+        public void WriteLine () {
+            WriteLineInternal ( string.Empty );
+        }
+
+        /// <summary>
+        /// Writes the text and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="message">The text that will be written in the output.</param>
+        public void WriteLine ( object? message ) {
+            WriteLineInternal ( message?.ToString () ?? string.Empty );
+        }
+
+        /// <summary>
+        /// Writes the text and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="message">The text that will be written in the output.</param>
+        public void WriteLine ( string message ) {
+            WriteLineInternal ( message );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( string format, params object? [] args ) {
+            WriteLineInternal ( string.Format ( provider: null, format, args ) );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
+        /// </summary>
+        /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( IFormatProvider? formatProvider, string format, params object? [] args ) {
+            WriteLineInternal ( string.Format ( formatProvider, format, args ) );
+        }
+
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Writes the text format and arguments and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( string format, params ReadOnlySpan<object?> args ) {
+            WriteLineInternal ( string.Format ( provider: null, format, args ) );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
+        /// </summary>
+        /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( IFormatProvider? formatProvider, string format, params ReadOnlySpan<object?> args ) {
+            WriteLineInternal ( string.Format ( formatProvider, format, args ) );
+        }
+#endif
+        #endregion
+
+        #region Async write methods
+        /// <summary>
+        /// Writes an exception description in the log.
+        /// </summary>
+        /// <param name="exp">The exception which will be written.</param>
+        public Task WriteExceptionAsync ( Exception exp ) => WriteExceptionAsync ( exp, null );
+
+        /// <summary>
+        /// Writes an exception description in the log.
+        /// </summary>
+        /// <param name="exp">The exception which will be written.</param>
+        /// <param name="extraContext">Extra context message to append to the exception message.</param>
+        public async Task WriteExceptionAsync ( Exception exp, string? extraContext = null ) {
+            StringBuilder excpStr = new StringBuilder ();
+            WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
+            await WriteLineInternalAsync ( excpStr.ToString () );
+        }
+
+        /// <summary>
+        /// Writes an line-break at the end of the output.
+        /// </summary>
+        public async Task WriteLineAsync () {
+            await WriteLineInternalAsync ( string.Empty );
+        }
+
+        /// <summary>
+        /// Writes the text and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="message">The text that will be written in the output.</param>
+        public async Task WriteLineAsync ( object? message ) {
+            await WriteLineInternalAsync ( message?.ToString () ?? string.Empty );
+        }
+
+        /// <summary>
+        /// Writes the text and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="message">The text that will be written in the output.</param>
+        public async Task WriteLineAsync ( string message ) {
+            await WriteLineInternalAsync ( message );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public async Task WriteLineAsync ( string format, params object? [] args ) {
+            await WriteLineInternalAsync ( string.Format ( provider: null, format, args ) );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
+        /// </summary>
+        /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public async Task WriteLineAsync ( IFormatProvider? formatProvider, string format, params object? [] args ) {
+            await WriteLineInternalAsync ( string.Format ( formatProvider, format, args ) );
+        }
+        #endregion
+
+        #region Virtual methods
+        /// <summary>
+        /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
+        /// </summary>
+        /// <param name="line">The line which will be written to the log stream.</param>
+        protected virtual void WriteLineInternal ( string line ) {
+            string lineText = NormalizeEntries ?
+                 line.Normalize ().Trim ().ReplaceLineEndings () : line;
+
+            EnqueueMessageLine ( lineText ).GetSyncronizedResult ();
+        }
+
+        /// <summary>
+        /// Represents the asynchronous method that intercepts the line that will be written to an output log before being queued for writing.
+        /// </summary>
+        /// <param name="line">The line which will be written to the log stream.</param>
+        /// <returns>A <see cref="ValueTask"/> that represents the asynchronous operation.</returns>
+        protected virtual async ValueTask WriteLineInternalAsync ( string line ) {
+            string lineText = NormalizeEntries ?
+                line.Normalize ().Trim ().ReplaceLineEndings () : line;
+
+            await EnqueueMessageLine ( lineText );
+        }
+        #endregion
+
+        ValueTask EnqueueMessageLine ( string message ) {
+            ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
+            return channel.Writer.WriteAsync ( message );
+        }
+
+        void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
+            if (currentDepth == 0)
+                exceptionSbuilder.AppendLine ( SR.Format ( SR.LogStream_ExceptionDump_Header,
+                    context is null ? DateTime.Now.ToString ( "R" ) : $"{context}, {DateTime.Now:R}" ) );
+
+            exceptionSbuilder.AppendLine ( exp.ToString () );
+
+            if (exp.InnerException != null) {
+                if (currentDepth <= 3) {
+                    exceptionSbuilder.AppendLine ( "+++ inner exception +++" );
+                    WriteExceptionInternal ( exceptionSbuilder, exp.InnerException, null, currentDepth + 1 );
+                }
+                else {
+                    exceptionSbuilder.AppendLine ( SR.LogStream_ExceptionDump_TrimmedFooter );
+                }
+            }
+        }
+
+        async void ProcessQueue () {
             var reader = channel.Reader;
             try {
                 while (!isDisposed && await reader.WaitToReadAsync ()) {
@@ -227,121 +439,6 @@ namespace Sisk.Core.Http {
             }
         }
 
-        /// <summary>
-        /// Writes all pending logs from the queue and closes all resources used by this object.
-        /// </summary>
-        public virtual void Close () => Dispose ();
-
-        /// <summary>
-        /// Writes an exception description in the log.
-        /// </summary>
-        /// <param name="exp">The exception which will be written.</param>
-        public virtual void WriteException ( Exception exp ) => WriteException ( exp, null );
-
-        /// <summary>
-        /// Writes an exception description in the log.
-        /// </summary>
-        /// <param name="exp">The exception which will be written.</param>
-        /// <param name="extraContext">Extra context message to append to the exception message.</param>
-        public virtual void WriteException ( Exception exp, string? extraContext = null ) {
-            StringBuilder excpStr = new StringBuilder ();
-            WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
-            WriteLineInternal ( excpStr.ToString () );
-        }
-
-        /// <summary>
-        /// Writes an line-break at the end of the output.
-        /// </summary>
-        public void WriteLine () {
-            WriteLineInternal ( string.Empty );
-        }
-
-        /// <summary>
-        /// Writes the text and concats an line-break at the end into the output.
-        /// </summary>
-        /// <param name="message">The text that will be written in the output.</param>
-        public void WriteLine ( object? message ) {
-            WriteLineInternal ( message?.ToString () ?? string.Empty );
-        }
-
-        /// <summary>
-        /// Writes the text and concats an line-break at the end into the output.
-        /// </summary>
-        /// <param name="message">The text that will be written in the output.</param>
-        public void WriteLine ( string message ) {
-            WriteLineInternal ( message );
-        }
-
-        /// <summary>
-        /// Writes the text format and arguments and concats an line-break at the end into the output.
-        /// </summary>
-        /// <param name="format">The string format that represents the arguments positions.</param>
-        /// <param name="args">An array of objects that represents the string format slots values.</param>
-        public void WriteLine ( string format, params object? [] args ) {
-            WriteLineInternal ( string.Format ( provider: null, format, args ) );
-        }
-
-        /// <summary>
-        /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
-        /// </summary>
-        /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
-        /// <param name="format">The string format that represents the arguments positions.</param>
-        /// <param name="args">An array of objects that represents the string format slots values.</param>
-        public void WriteLine ( IFormatProvider? formatProvider, string format, params object? [] args ) {
-            WriteLineInternal ( string.Format ( formatProvider, format, args ) );
-        }
-
-        /// <summary>
-        /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
-        /// </summary>
-        /// <param name="line">The line which will be written to the log stream.</param>
-        protected virtual async void WriteLineInternal ( string line ) {
-            if (NormalizeEntries) {
-                await EnqueueMessageLine ( line.Normalize ().Trim ().ReplaceLineEndings () );
-            }
-            else {
-                await EnqueueMessageLine ( line );
-            }
-        }
-
-        /// <summary>
-        /// Defines the time interval and size threshold for starting the task, and then starts the task. This method is an
-        /// shortcut for calling <see cref="RotatingLogPolicy.Configure(long, TimeSpan)"/> of this defined <see cref="RotatingPolicy"/> method.
-        /// </summary>
-        /// <remarks>
-        /// The first run is performed immediately after calling this method.
-        /// </remarks>
-        /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
-        /// <param name="dueTime">The time interval between checks.</param>
-        public LogStream ConfigureRotatingPolicy ( long maximumSize, TimeSpan dueTime ) {
-            var policy = RotatingPolicy;
-            policy.Configure ( maximumSize, dueTime );
-            return this;
-        }
-
-        async ValueTask EnqueueMessageLine ( string message ) {
-            ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
-            await channel.Writer.WriteAsync ( message );
-        }
-
-        void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
-            if (currentDepth == 0)
-                exceptionSbuilder.AppendLine ( SR.Format ( SR.LogStream_ExceptionDump_Header,
-                    context is null ? DateTime.Now.ToString ( "R" ) : $"{context}, {DateTime.Now:R}" ) );
-
-            exceptionSbuilder.AppendLine ( exp.ToString () );
-
-            if (exp.InnerException != null) {
-                if (currentDepth <= 3) {
-                    exceptionSbuilder.AppendLine ( "+++ inner exception +++" );
-                    WriteExceptionInternal ( exceptionSbuilder, exp.InnerException, null, currentDepth + 1 );
-                }
-                else {
-                    exceptionSbuilder.AppendLine ( SR.LogStream_ExceptionDump_TrimmedFooter );
-                }
-            }
-        }
-
         string GetExceptionEntry ( Exception exception, string? context = null ) {
             StringBuilder exceptionSbuilder = new StringBuilder ();
             WriteExceptionInternal ( exceptionSbuilder, exception, context, 0 );
@@ -359,6 +456,7 @@ namespace Sisk.Core.Http {
                     TextWriter?.Dispose ();
                     rotatingLogPolicy?.Dispose ();
                     consumerThread.Join ();
+                    writeEvent.Dispose ();
                 }
 
                 _bufferingContent = null;

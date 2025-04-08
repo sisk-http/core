@@ -15,6 +15,7 @@ namespace Sisk.Core.Http.Streams {
     /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
     /// </summary>
     public sealed class HttpRequestEventSource : IDisposable {
+        readonly CancellationTokenSource disposeCancellation = new CancellationTokenSource ();
         readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
         readonly HttpStreamPingPolicy pingPolicy;
         readonly HttpListenerResponse res;
@@ -60,6 +61,15 @@ namespace Sisk.Core.Http.Streams {
         /// Gets an boolean indicating if this connection is open and this instance can send messages.
         /// </summary>
         public bool IsActive { get => !isClosed && !isDisposed; }
+
+        /// <summary>
+        /// Creates a new <see cref="CancellationTokenSource"/> that is linked to the provided cancellation tokens and the dispose cancellation token of this instance.
+        /// </summary>
+        /// <param name="cancellationTokens">The cancellation tokens to link to the new <see cref="CancellationTokenSource"/>.</param>
+        /// <returns>A new <see cref="CancellationTokenSource"/> that is linked to the provided cancellation tokens and the dispose cancellation token of this instance.</returns>
+        public CancellationTokenSource GetLinkedCancellationSource ( params CancellationToken [] cancellationTokens ) {
+            return CancellationTokenSource.CreateLinkedTokenSource ( [ disposeCancellation.Token, .. cancellationTokens ] );
+        }
 
         internal HttpRequestEventSource ( string? identifier, HttpListenerResponse res, HttpListenerRequest req, HttpRequest host ) {
             this.res = res ?? throw new ArgumentNullException ( nameof ( res ) );
@@ -239,6 +249,8 @@ namespace Sisk.Core.Http.Streams {
             Close ();
             sendQueue.Clear ();
             terminatingMutex.Dispose ();
+            disposeCancellation.Cancel ();
+            disposeCancellation.Dispose ();
             isDisposed = true;
         }
 
