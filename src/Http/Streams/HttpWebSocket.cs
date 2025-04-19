@@ -101,8 +101,9 @@ namespace Sisk.Core.Http.Streams {
                 req.baseServer._wsCollection.RegisterWebSocket ( this );
             }
 
-            receiveThread = new Thread ( new ThreadStart ( ReceiveTask ) );
-            receiveThread.IsBackground = true;
+            receiveThread = new Thread ( new ThreadStart ( ReceiveTask ) ) {
+                IsBackground = true
+            };
             receiveThread.Start ();
         }
 
@@ -151,7 +152,7 @@ namespace Sisk.Core.Http.Streams {
                     continue;
                 }
 
-                if (result.Count == 0 || result.CloseStatus != null) {
+                if (result.CloseStatus != null) {
                     Close ();
                     break;
                 }
