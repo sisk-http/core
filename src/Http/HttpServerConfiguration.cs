@@ -7,7 +7,6 @@
 // File name:   HttpServerConfiguration.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Globalization;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http {
@@ -23,14 +22,10 @@ namespace Sisk.Core.Http {
         public string AccessLogsFormat { get; set; } = "%ri - [%dd/%dmm/%dy %tH:%ti:%ts %tz] \"%rm %rz%rq\" %sc %lou";
 
         /// <summary>
-        /// Gets or sets the default <see cref="CultureInfo"/> object which the HTTP server will apply to the request
-        /// handlers and callbacks thread.
+        /// Gets or sets whether the HTTP server should automatically compress response content bodies using request-allowed
+        /// encoding algorithms when possible.
         /// </summary>
-        /// <remarks>
-        /// This property is obsolete. Use <see cref="CultureInfo.DefaultThreadCurrentCulture"/> instead.
-        /// </remarks>
-        [Obsolete ( "This property is obsolete and changing it will have no effect. Use CultureInfo.DefaultThreadCurrentCulture instead." )]
-        public CultureInfo? DefaultCultureInfo { get; set; }
+        public bool EnableAutomaticResponseCompression { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="LogStream"/> object which the HTTP server will write HTTP server access messages to.

@@ -249,7 +249,6 @@ namespace Sisk.Core.Http.Streams {
             Close ();
             sendQueue.Clear ();
             terminatingMutex.Dispose ();
-            disposeCancellation.Cancel ();
             disposeCancellation.Dispose ();
             isDisposed = true;
         }

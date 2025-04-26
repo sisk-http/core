@@ -308,6 +308,21 @@ public partial class HttpServer {
                 for (int j = 0; j < incameHeader.Item2.Count; j++)
                     baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
+            
+            if (currentConfig.EnableAutomaticResponseCompression
+                && servedContent is { } and not CompressedContent
+                && request.Headers.AcceptEncoding is { } acceptedEncodings) {
+
+                if (acceptedEncodings.Contains ( "br" )) {
+                    servedContent = new BrotliContent ( servedContent );
+                }
+                else if (acceptedEncodings.Contains ( "gzip" )) {
+                    servedContent = new GZipContent ( servedContent );
+                }
+                else if (acceptedEncodings.Contains ( "deflate" )) {
+                    servedContent = new DeflateContent ( servedContent );
+                }
+            }
 
             if (servedContent is ByteArrayContent barrayContent) {
                 ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
