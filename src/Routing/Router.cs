@@ -275,7 +275,6 @@ namespace Sisk.Core.Routing {
         FullyMatched,
         PathMatched,
         OptionsMatched,
-        HeadMatched,
         NotMatched
     }
 }

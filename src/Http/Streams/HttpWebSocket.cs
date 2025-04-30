@@ -7,6 +7,7 @@
 // File name:   HttpWebSocket.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using Sisk.Core.Internal;
@@ -21,9 +22,8 @@ namespace Sisk.Core.Http.Streams {
         bool isDisposed;
         readonly HttpStreamPingPolicy pingPolicy;
 
-        internal CancellationTokenSource disposeCancellation = new CancellationTokenSource ();
         internal SemaphoreSlim sendSemaphore = new SemaphoreSlim ( 1 );
-        internal WebSocketMessage? lastMessage;
+        internal ConcurrentQueue<WebSocketMessage> messageQueue = new ConcurrentQueue<WebSocketMessage> ();
         internal CancellationTokenSource asyncListenerToken = null!;
         internal ManualResetEvent closeEvent = new ManualResetEvent ( false );
         internal ManualResetEvent waitNextEvent = new ManualResetEvent ( false );
@@ -81,15 +81,6 @@ namespace Sisk.Core.Http.Streams {
         /// remote origin.
         /// </summary>
         public event EventHandler<WebSocketMessage>? OnReceive;
-
-        /// <summary>
-        /// Creates a new <see cref="CancellationTokenSource"/> that is linked to the provided cancellation tokens and the dispose cancellation token of this instance.
-        /// </summary>
-        /// <param name="cancellationTokens">The cancellation tokens to link to the new <see cref="CancellationTokenSource"/>.</param>
-        /// <returns>A new <see cref="CancellationTokenSource"/> that is linked to the provided cancellation tokens and the dispose cancellation token of this instance.</returns>
-        public CancellationTokenSource GetLinkedCancellationSource ( params CancellationToken [] cancellationTokens ) {
-            return CancellationTokenSource.CreateLinkedTokenSource ( [ disposeCancellation.Token, .. cancellationTokens ] );
-        }
 
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
@@ -162,7 +153,7 @@ namespace Sisk.Core.Http.Streams {
 
                 if (isWaitingNext & !isPingMessage) {
                     isWaitingNext = false;
-                    lastMessage = message;
+                    messageQueue.Enqueue ( message );
                     waitNextEvent.Set ();
                 }
                 else {
@@ -270,7 +261,6 @@ namespace Sisk.Core.Http.Streams {
                 isListening = false;
                 _isClosed = true;
                 closeEvent.Set ();
-                disposeCancellation.Cancel ();
             }
             return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
                 CalculedLength = length
@@ -352,12 +342,22 @@ namespace Sisk.Core.Http.Streams {
         /// Null is returned if a connection error is thrown.
         /// </remarks>
         public WebSocketMessage? WaitNext ( TimeSpan timeout ) {
+
+            WebSocketMessage? enqueuedMessage;
+            if (messageQueue.TryDequeue ( out enqueuedMessage )) {
+                return enqueuedMessage;
+            }
+
             waitNextEvent.Reset ();
             isWaitingNext = true;
 
-            waitNextEvent.WaitOne ( timeout );
+            WaitHandle.WaitAny ( [ waitNextEvent, closeEvent ] );
 
-            return lastMessage;
+            if (messageQueue.TryDequeue ( out enqueuedMessage )) {
+                return enqueuedMessage;
+            }
+
+            return null;
         }
 
         /// <inheritdoc/>
@@ -372,7 +372,6 @@ namespace Sisk.Core.Http.Streams {
             closeEvent.Dispose ();
             waitNextEvent.Dispose ();
             receiveThread.Join ();
-            disposeCancellation.Dispose ();
             isDisposed = true;
         }
 

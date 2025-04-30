@@ -121,6 +121,10 @@ public partial class HttpServer {
             baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString ( provider: null ) );
     }
 
+    private bool MethodAllowContent ( string method ) {
+        return method is not "HEAD" or "OPTIONS" or "CONNECT";
+    }
+
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private void UnbindRouters () {
         for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++) {
@@ -254,6 +258,7 @@ public partial class HttpServer {
             // get response
             routerResult = matchedListeningHost.Router.Execute ( srContext );
 
+            srContext.RouterResponse = routerResult.Response;
             executionResult.ServerException = routerResult.Exception;
             response = routerResult.Response;
             servedContent = response?.Content;
@@ -308,7 +313,7 @@ public partial class HttpServer {
                 for (int j = 0; j < incameHeader.Item2.Count; j++)
                     baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
-            
+
             if (currentConfig.EnableAutomaticResponseCompression
                 && servedContent is { } and not CompressedContent
                 && request.Headers.AcceptEncoding is { } acceptedEncodings) {
@@ -324,7 +329,10 @@ public partial class HttpServer {
                 }
             }
 
-            if (servedContent is ByteArrayContent barrayContent) {
+            if (!MethodAllowContent ( baseRequest.HttpMethod )) {
+                ;
+            }
+            else if (servedContent is ByteArrayContent barrayContent) {
                 ApplyHttpContentHeaders ( baseResponse, barrayContent.Headers );
                 ref byte [] contentBytes = ref ByteArrayAccessors.UnsafeGetContent ( barrayContent );
                 ref int offset = ref ByteArrayAccessors.UnsafeGetOffset ( barrayContent );

@@ -40,7 +40,7 @@ public partial class Router {
             return method.HasFlag ( RouteMethod.Options );
         }
         else if (ogRqMethod.Equals ( "HEAD", StringComparison.Ordinal )) {
-            return method.HasFlag ( RouteMethod.Head );
+            return method.HasFlag ( RouteMethod.Head ) || method.HasFlag ( RouteMethod.Get );
         }
         else if (ogRqMethod.Equals ( "DELETE", StringComparison.Ordinal )) {
             return method.HasFlag ( RouteMethod.Delete );

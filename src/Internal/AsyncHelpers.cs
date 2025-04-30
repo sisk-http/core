@@ -23,4 +23,15 @@ static class AsyncHelpers {
         }
         task.AsTask ().GetAwaiter ().GetResult ();
     }
+
+    public static Task WaitOneAsync ( this WaitHandle waitHandle ) {
+        ArgumentNullException.ThrowIfNull ( waitHandle );
+
+        var tcs = new TaskCompletionSource<bool> ();
+        var rwh = ThreadPool.RegisterWaitForSingleObject ( waitHandle,
+            delegate { tcs.TrySetResult ( true ); }, null, -1, true );
+        var t = tcs.Task;
+        t.ContinueWith ( ( antecedent ) => rwh.Unregister ( null ) );
+        return t;
+    }
 }
