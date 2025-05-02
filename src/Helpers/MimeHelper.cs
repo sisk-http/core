@@ -45,7 +45,7 @@ public static class MimeHelper {
 
     /// <summary>
     /// Determines whether the specified mime-type is considered an inline content type 
-    /// that can be displayed directly in the browser.
+    /// that can be displayed directly in most browsers.
     /// </summary>
     /// <param name="mimeType">The mime-type to evaluate.</param>
     /// <returns>

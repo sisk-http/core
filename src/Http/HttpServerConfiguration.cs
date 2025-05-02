@@ -39,7 +39,7 @@ namespace Sisk.Core.Http {
         public LogStream? ErrorsLogsStream { get; set; } = LogStream.ConsoleOutput;
 
         /// <summary>
-        /// Gets or sets the server's action when it receives an HTTP request outside the localhost.
+        /// Gets or sets the server's action when it receives an HTTP request outside the local host.
         /// </summary>
         /// <remarks>
         /// It is recommended to use <see cref="RequestListenAction.Drop"/> in this property when working
