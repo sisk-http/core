@@ -340,9 +340,12 @@ namespace Sisk.Core.Http {
             string lineText = NormalizeEntries ?
                  line.Normalize ().Trim ().ReplaceLineEndings () : line;
 
-            EnqueueMessageLine ( lineText ).GetSyncronizedResult ();
+            var enqueueTask = EnqueueMessageLineAsync ( lineText );
+            if (!enqueueTask.IsCompleted) {
+                enqueueTask.AsTask ().GetAwaiter ().GetResult ();
+            }
         }
-
+        
         /// <summary>
         /// Represents the asynchronous method that intercepts the line that will be written to an output log before being queued for writing.
         /// </summary>
@@ -352,15 +355,15 @@ namespace Sisk.Core.Http {
             string lineText = NormalizeEntries ?
                 line.Normalize ().Trim ().ReplaceLineEndings () : line;
 
-            await EnqueueMessageLine ( lineText );
+            await EnqueueMessageLineAsync ( lineText );
         }
         #endregion
-
-        ValueTask EnqueueMessageLine ( string message ) {
+        
+        ValueTask EnqueueMessageLineAsync ( string message ) {
             ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
             return channel.Writer.WriteAsync ( message );
         }
-
+        
         void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
             if (currentDepth == 0)
                 exceptionSbuilder.AppendLine ( SR.Format ( SR.LogStream_ExceptionDump_Header,

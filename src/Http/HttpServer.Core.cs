@@ -167,12 +167,12 @@ public partial class HttpServer {
 
         HttpContext? srContext = new HttpContext ( this );
         bool closeStream = true;
-
+        
         HttpContext._context.Value = srContext;
 
         var currentConfig = ServerConfiguration;
-        bool hasAccessLogging = currentConfig.AccessLogsStream is not null;
-        bool hasErrorLogging = currentConfig.ErrorsLogsStream is not null;
+        LogStream? accessLogStream = currentConfig.AccessLogsStream;
+        LogStream? errorLogStream = currentConfig.ErrorsLogsStream;
 
         Router.RouterExecutionResult? routerResult = null;
 
@@ -313,9 +313,10 @@ public partial class HttpServer {
                 for (int j = 0; j < incameHeader.Item2.Count; j++)
                     baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
-
+            
             if (currentConfig.EnableAutomaticResponseCompression
-                && servedContent is { } and not CompressedContent
+                && servedContent is { }
+                && servedContent is not CompressedContent
                 && request.Headers.AcceptEncoding is { } acceptedEncodings) {
 
                 if (acceptedEncodings.Contains ( "br" )) {
@@ -328,8 +329,9 @@ public partial class HttpServer {
                     servedContent = new DeflateContent ( servedContent );
                 }
             }
-
-            if (!MethodAllowContent ( baseRequest.HttpMethod )) {
+            
+            if (!MethodAllowContent ( baseRequest.HttpMethod ) || request.streamingEntity is { }) {
+                // do not send content on unallowed HTTP methods neither when the requests was streaming content
                 ;
             }
             else if (servedContent is ByteArrayContent barrayContent) {
@@ -377,22 +379,22 @@ finishSending:
         catch (ObjectDisposedException objException) {
             executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
             executionResult.ServerException = objException;
-            hasErrorLogging = false;
+            errorLogStream = null;
         }
         catch (HttpListenerException netException) {
             // often raised when the client connection is closed during content streaming
             // it's not a real error and the server should deal with this as an client disconnect
             executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
             executionResult.ServerException = netException;
-            hasErrorLogging = false;
-            hasAccessLogging = false;
+            errorLogStream = null;
+            accessLogStream = null;
         }
         catch (HttpRequestException requestException) {
             baseResponse.StatusCode = 400/*BadRequest*/;
             baseResponse.StatusDescription = HttpStatusInformation.BadRequest.Description;
             executionResult.Status = HttpServerExecutionStatus.MalformedRequest;
             executionResult.ServerException = requestException;
-            hasErrorLogging = false;
+            errorLogStream = null;
         }
         catch (Exception ex) {
             if (!currentConfig.ThrowExceptions) {
@@ -442,20 +444,23 @@ finishSending:
                 logMode = currentConfig.OptionsLogMode;
             }
             else {
-                logMode = srContext?.MatchedRoute?.LogMode ?? LogOutput.Both;
+                logMode =
+                    srContext.LogMode ??
+                    srContext?.MatchedRoute?.LogMode ??
+                    LogOutput.Both;
             }
 
-            bool canAccessLog = hasAccessLogging && logMode.HasFlag ( LogOutput.AccessLog );
-            bool canErrorLog = hasErrorLogging && logMode.HasFlag ( LogOutput.ErrorLog );
+            bool canAccessLog = logMode.HasFlag ( LogOutput.AccessLog );
+            bool canErrorLog = logMode.HasFlag ( LogOutput.ErrorLog );
 
             if (executionResult.ServerException is not null && canErrorLog) {
                 string entry = LogFormatter.FormatExceptionEntr ( executionResult );
-                currentConfig.ErrorsLogsStream?.WriteLine ( entry );
+                errorLogStream?.WriteLine ( entry );
             }
 
             if (canAccessLog) {
                 string line = LogFormatter.FormatAccessLogEntry ( currentConfig.AccessLogsFormat, executionResult );
-                ServerConfiguration.AccessLogsStream?.WriteLine ( line );
+                accessLogStream?.WriteLine ( line );
             }
 
             if (isWaitingNextEvent) {

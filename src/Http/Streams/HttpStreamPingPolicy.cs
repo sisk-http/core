@@ -13,6 +13,7 @@ namespace Sisk.Core.Http.Streams;
 /// Provides an automatic ping sender for HTTP Event Source connections.
 /// </summary>
 public sealed class HttpStreamPingPolicy : IDisposable {
+    private bool _disposed;
     private readonly HttpWebSocket? __ws_parent;
     private readonly HttpRequestEventSource? __sse_parent;
     private Timer? _timer;
@@ -30,6 +31,7 @@ public sealed class HttpStreamPingPolicy : IDisposable {
     internal HttpStreamPingPolicy ( HttpRequestEventSource parent ) {
         __sse_parent = parent;
     }
+
     internal HttpStreamPingPolicy ( HttpWebSocket parent ) {
         __ws_parent = parent;
     }
@@ -52,26 +54,46 @@ public sealed class HttpStreamPingPolicy : IDisposable {
 
         Start ();
     }
+    
+    private async void OnCallback ( object? state ) {
+        try {
+            if (_disposed || _timer is null)
+                return;
 
-    private void OnCallback ( object? state ) {
-        if (__sse_parent != null) {
-            if (!__sse_parent.IsActive) {
-                _timer!.Dispose ();
-                return;
+            if (__sse_parent != null) {
+                if (!__sse_parent.IsActive) {
+                    _timer.Dispose ();
+                    return;
+                }
+                __sse_parent.Send ( $":{DataMessage}" );
             }
-            __sse_parent.Send ( $":{DataMessage}" );
+            else if (__ws_parent != null) {
+                if (__ws_parent.IsClosed) {
+                    _timer.Dispose ();
+                    return;
+                }
+                await __ws_parent.SendAsync ( DataMessage );
+            }
         }
-        else if (__ws_parent != null) {
-            if (__ws_parent.IsClosed) {
-                _timer!.Dispose ();
-                return;
-            }
-            __ws_parent.Send ( DataMessage );
+        catch {
+            _timer = null;
+            Dispose ();
         }
     }
 
     /// <inheritdoc/>
     public void Dispose () {
+        if (_disposed)
+            return;
+
         _timer?.Dispose ();
+        _disposed = true;
+
+        GC.SuppressFinalize ( this );
+    }
+
+    /// <inheritdoc/>
+    ~HttpStreamPingPolicy () {
+        Dispose ();
     }
 }

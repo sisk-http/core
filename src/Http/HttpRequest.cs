@@ -33,12 +33,12 @@ namespace Sisk.Core.Http {
     /// </summary>
     public sealed class HttpRequest : IDisposable {
         internal HttpServer baseServer;
+        internal IDisposable? streamingEntity;
         private readonly HttpServerConfiguration contextServerConfiguration;
         private readonly HttpListenerResponse listenerResponse;
         private readonly HttpListenerRequest listenerRequest;
         private readonly HttpListenerContext context;
         private byte []? contentBytes;
-        private IDisposable? streamingEntity;
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
         private StringValueCollection? query;
@@ -602,7 +602,7 @@ namespace Sisk.Core.Http {
                 return sse;
             } );
         }
-
+        
         /// <summary>
         /// Accepts and acquires a websocket for this request. Calling this method will put this <see cref="HttpRequest"/> instance in
         /// streaming state.
@@ -611,7 +611,7 @@ namespace Sisk.Core.Http {
         /// <param name="identifier">Optional. Defines an label to the Web Socket connection, useful for finding this connection's reference later.</param>
         public HttpWebSocket GetWebSocket ( string? subprotocol = null, string? identifier = null ) {
             var wsTask = GetWebSocketAsync ( subprotocol, identifier );
-            return wsTask.GetAwaiter ().GetResult ();
+            return wsTask.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
         }
 
         /// <summary>

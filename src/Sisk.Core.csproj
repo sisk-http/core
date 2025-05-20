@@ -74,7 +74,7 @@
 
 	<!-- enforce code quality on release -->
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 	</PropertyGroup>

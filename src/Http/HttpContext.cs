@@ -85,6 +85,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         public Router? Router { get; internal set; }
 
+        /// <summary>
+        /// Gets or sets an <see cref="LogOutput"/> mode for this context, which will overwrite the
+        /// matched route log mode option.
+        /// </summary>
+        public LogOutput? LogMode { get; set; }
+        
         internal HttpContext ( HttpServer httpServer ) {
             HttpServer = httpServer;
             Request = null!; // associated later

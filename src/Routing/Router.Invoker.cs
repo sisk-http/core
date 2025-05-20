@@ -265,13 +265,19 @@ public partial class Router {
                     }
                 }
 
-                if (actionResult is IEnumerable enumerableAction) {
+                if (actionResult is IEnumerable enumerableAction && actionResult is not string) {
 
                     // Since enumeration can occur outside the router's context (e.g., while reading the HttpContent),
                     // errors might be thrown outside the router's context, preventing application-side error capture.
                     // The ToArray() below forces reading the enumerator into memory, ensuring any enumeration errors
                     // are thrown within the router's context.
-                    actionResult = ((IEnumerable<object>) enumerableAction).ToArray ();
+                    ArrayList tempArray = new ArrayList ();
+                    var enumerator = enumerableAction.GetEnumerator ();
+                    while (enumerator.MoveNext ()) {
+                        tempArray.Add ( enumerator.Current );
+                    }
+
+                    actionResult = tempArray.ToArray ();
                 }
 
                 result = ResolveAction ( actionResult );

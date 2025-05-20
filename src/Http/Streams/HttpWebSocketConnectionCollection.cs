@@ -10,6 +10,7 @@
 using System.Collections;
 
 namespace Sisk.Core.Http.Streams {
+
     /// <summary>
     /// Provides a managed object to manage <see cref="HttpWebSocket"/> connections.
     /// </summary>
@@ -34,7 +35,7 @@ namespace Sisk.Core.Http.Streams {
                     // close another websockets with same identifier
                     HttpWebSocket [] wsId = Find ( s => s == src._identifier );
                     foreach (HttpWebSocket ws in wsId) {
-                        ws.Close ();
+                        ws.Dispose ();
                     }
                     _ws.Add ( src );
                 }
@@ -94,7 +95,7 @@ namespace Sisk.Core.Http.Streams {
         public void DropAll () {
             lock (_ws) {
                 foreach (HttpWebSocket es in _ws)
-                    es.Close ();
+                    es.Dispose ();
             }
         }
 

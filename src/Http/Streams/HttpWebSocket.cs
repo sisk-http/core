@@ -7,6 +7,7 @@
 // File name:   HttpWebSocket.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
@@ -18,44 +19,24 @@ namespace Sisk.Core.Http.Streams {
     /// Provides an persistent bi-directional socket between the client and the HTTP server.
     /// </summary>
     public sealed class HttpWebSocket : IDisposable {
-        bool isListening = true;
         bool isDisposed;
+        long length;
         readonly HttpStreamPingPolicy pingPolicy;
 
+        internal byte [] receiveBuffer = new byte [ 131072 ];
         internal SemaphoreSlim sendSemaphore = new SemaphoreSlim ( 1 );
-        internal ConcurrentQueue<WebSocketMessage> messageQueue = new ConcurrentQueue<WebSocketMessage> ();
-        internal CancellationTokenSource asyncListenerToken = null!;
-        internal ManualResetEvent closeEvent = new ManualResetEvent ( false );
-        internal ManualResetEvent waitNextEvent = new ManualResetEvent ( false );
-        internal Thread receiveThread;
+        internal SemaphoreSlim receiveSemaphore = new SemaphoreSlim ( 1 );
         internal HttpListenerWebSocketContext ctx;
         internal HttpRequest request;
-        internal TimeSpan closeTimeout = TimeSpan.Zero;
         internal bool _isClosed;
-        internal bool isWaitingNext;
         internal bool wasServerClosed;
         internal string? _identifier;
-
-        const int FRAME_SIZE = 131072;
-        int attempt;
-        long length;
 
         /// <summary>
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP web socket connection.
         /// </summary>
         public HttpStreamPingPolicy PingPolicy => pingPolicy;
-
-        /// <summary>
-        /// Gets or sets the maximum wait time for synchronous listener methods like <see cref="WaitNext()"/>.
-        /// </summary>
-        public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds ( 60 );
-
-        /// <summary>
-        /// Gets or sets the maximum number of attempts to send a failed message before the server closes the connection. Set it to -1 to
-        /// don't close the connection on failed attempts.
-        /// </summary>
-        public int MaxAttempts { get; set; } = 3;
-
+        
         /// <summary>
         /// Gets or sets an object linked with this <see cref="WebSocket"/> session.
         /// </summary>
@@ -75,13 +56,7 @@ namespace Sisk.Core.Http.Streams {
         /// Gets an unique identifier label to this Web Socket connection, useful for finding this connection's reference later.
         /// </summary>
         public string? Identifier => _identifier;
-
-        /// <summary>
-        /// Represents the event which is called when this web socket receives an message from
-        /// remote origin.
-        /// </summary>
-        public event EventHandler<WebSocketMessage>? OnReceive;
-
+        
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             request = req;
@@ -91,164 +66,42 @@ namespace Sisk.Core.Http.Streams {
             if (identifier != null) {
                 req.baseServer._wsCollection.RegisterWebSocket ( this );
             }
-
-            receiveThread = new Thread ( new ThreadStart ( ReceiveTask ) ) {
-                IsBackground = true
-            };
-            receiveThread.Start ();
-        }
-
-        void RecreateAsyncToken () {
-            asyncListenerToken = new CancellationTokenSource ();
-            if (closeTimeout.TotalMilliseconds > 0)
-                asyncListenerToken.CancelAfter ( closeTimeout );
-            asyncListenerToken.Token.ThrowIfCancellationRequested ();
-        }
-
-        void TrimMessage ( WebSocketReceiveResult result, WebSocketMessage message ) {
-            if (result.Count < message.Length) {
-                byte [] trimmed = new byte [ result.Count ];
-                for (int i = 0; i < trimmed.Length; i++) {
-                    trimmed [ i ] = message.MessageBytes [ i ];
-                }
-                message.__msgBytes = trimmed;
-            }
-            message.IsClose = result.MessageType == WebSocketMessageType.Close;
-            message.IsEnd = result.EndOfMessage;
-
-            if (result.MessageType == WebSocketMessageType.Close) {
-                _isClosed = true;
-                isListening = false;
-                closeEvent.Set ();
-            }
-        }
-
-        internal async void ReceiveTask () {
-            while (isListening) {
-                RecreateAsyncToken ();
-                WebSocketMessage message = new WebSocketMessage ( this, FRAME_SIZE );
-
-                var arrSegment = new ArraySegment<byte> ( message.__msgBytes );
-                WebSocketReceiveResult result;
-
-                try {
-                    result = await ctx.WebSocket.ReceiveAsync ( arrSegment, asyncListenerToken.Token );
-                }
-                catch (Exception) {
-                    if (ctx.WebSocket.State != WebSocketState.Open
-                     && ctx.WebSocket.State != WebSocketState.Connecting) {
-                        Close ();
-                        break;
-                    }
-                    continue;
-                }
-
-                if (result.CloseStatus != null) {
-                    Close ();
-                    break;
-                }
-
-                TrimMessage ( result, message );
-                bool isPingMessage = message.GetString () == pingPolicy.DataMessage;
-
-                if (isWaitingNext & !isPingMessage) {
-                    isWaitingNext = false;
-                    messageQueue.Enqueue ( message );
-                    waitNextEvent.Set ();
-                }
-                else {
-                    OnReceive?.Invoke ( this, message );
-                }
-            }
         }
 
         /// <summary>
-        /// Configures the ping policy for this instance of HTTP Web Socket.
+        /// Sends an asynchronous text message to the WebSocket endpoint.
         /// </summary>
-        /// <param name="act">The method that runs on the ping policy for this HTTP Web Socket.</param>
-        public HttpWebSocket WithPing ( Action<HttpStreamPingPolicy> act ) {
-            act ( pingPolicy );
-            return this;
-        }
-
-        /// <summary>
-        /// Configures the ping policy for this instance of HTTP Web Socket.
-        /// </summary>
-        /// <param name="probeMessage">The payload/probe message that is sent to the client.</param>
-        /// <param name="interval">The sending interval for each probe message.</param>
-        public HttpWebSocket WithPing ( string probeMessage, TimeSpan interval ) {
-            PingPolicy.DataMessage = probeMessage;
-            PingPolicy.Interval = interval;
-            PingPolicy.Start ();
-            return this;
-        }
-
-        /// <summary>
-        /// Asynchronously sends an text message to the remote point.
-        /// </summary>
-        /// <param name="message">The target message which will be as an encoded UTF-8 string.</param>
-        public ValueTask<bool> SendAsync ( string message ) {
+        /// <param name="message">The text message to send.</param>
+        /// <param name="cancellation">The <see cref="CancellationToken"/> to use for cancellation.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous send operation, 
+        /// which returns <see langword="true"/> if the message was sent successfully; otherwise, <see langword="false"/>.</returns>
+        public ValueTask<bool> SendAsync ( string message, CancellationToken cancellation = default ) {
             ArgumentNullException.ThrowIfNull ( message );
-
-            return SendInternalAsync ( Encoding.UTF8.GetBytes ( message ), WebSocketMessageType.Text );
+            return SendInternalAsync ( Encoding.UTF8.GetBytes ( message ), WebSocketMessageType.Text, cancellation );
         }
 
         /// <summary>
-        /// Asynchronously sends an binary message to the remote point.
+        /// Sends an asynchronous binary message to the WebSocket endpoint.
         /// </summary>
-        /// <param name="buffer">The target message which will be as an encoded UTF-8 string.</param>
-        public ValueTask<bool> SendAsync ( ReadOnlyMemory<byte> buffer ) {
-            return SendInternalAsync ( buffer, WebSocketMessageType.Binary );
+        /// <param name="buffer">The binary data to send.</param>
+        /// <param name="cancellation">The <see cref="CancellationToken"/> to use for cancellation.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous send operation, 
+        /// which returns <see langword="true"/> if the message was sent successfully; otherwise, <see langword="false"/>.</returns>
+        public ValueTask<bool> SendAsync ( ReadOnlyMemory<byte> buffer, CancellationToken cancellation = default ) {
+            return SendInternalAsync ( buffer, WebSocketMessageType.Binary, cancellation );
         }
 
         /// <summary>
-        /// Sends an text message to the remote point.
-        /// </summary> 
-        /// <param name="message">The target message which will be as an encoded using the request preferred encoding.</param>
-        public bool Send ( string message ) {
-            ArgumentNullException.ThrowIfNull ( message );
-            return SendAsync ( message ).GetSyncronizedResult ();
-        }
-
-        /// <summary>
-        /// Sends an binary message to the remote point.
+        /// Closes the WebSocket connection asynchronously.
         /// </summary>
-        /// <param name="buffer">The target byte array.</param>
-        public bool Send ( byte [] buffer ) => Send ( buffer, 0, buffer.Length );
-
-        /// <summary>
-        /// Sends an binary message to the remote point.
-        /// </summary>
-        /// <param name="buffer">The target byte array.</param>
-        /// <param name="start">The index at which to begin the memory.</param>
-        /// <param name="length">The number of items in the memory.</param>
-        public bool Send ( byte [] buffer, int start, int length ) {
-            ReadOnlyMemory<byte> span = new ReadOnlyMemory<byte> ( buffer, start, length );
-            return SendAsync ( span ).GetSyncronizedResult ();
-        }
-
-        /// <summary>
-        /// Sends an binary message to the remote point.
-        /// </summary>
-        /// <param name="buffer">The target byte memory.</param>
-        public bool Send ( ReadOnlyMemory<byte> buffer ) {
-            return SendAsync ( buffer ).GetSyncronizedResult ();
-        }
-
-        /// <summary>
-        /// Closes the connection between the client and the server and returns an HTTP response indicating that the connection has been terminated.
-        /// This method will not throw an exception if the connection is already closed.
-        /// </summary>
-        public HttpResponse Close () {
+        /// <param name="cancellation">The <see cref="CancellationToken"/> to use for cancellation.</param>
+        /// <returns>A <see cref="Task{T}"/> that represents the asynchronous close operation, 
+        /// which returns an <see cref="HttpResponse"/> indicating the result of the close operation.</returns>
+        public async Task<HttpResponse> CloseAsync ( CancellationToken cancellation = default ) {
             if (!_isClosed) {
                 if (ctx.WebSocket.State != WebSocketState.Closed && ctx.WebSocket.State != WebSocketState.Aborted) {
-                    // CloseAsync can throw an exception if any party closes the connection
-                    // early before completing close handshake
-                    // when this happens, the connection is already closed by some party and then release
-                    // the resources of this websocket
                     try {
-                        ctx.WebSocket.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, CancellationToken.None )
-                            .GetAwaiter ().GetResult ();
+                        await ctx.WebSocket.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, cancellation );
                     }
                     catch (Exception) {
                         ;
@@ -258,48 +111,78 @@ namespace Sisk.Core.Http.Streams {
                     }
                 }
                 request.baseServer._wsCollection.UnregisterWebSocket ( this );
-                isListening = false;
                 _isClosed = true;
-                closeEvent.Set ();
             }
             return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
                 CalculedLength = length
             };
         }
 
-        private async ValueTask<bool> SendInternalAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType ) {
+        private async ValueTask<WebSocketMessage?> ReceiveInternalAsync ( CancellationToken cancellation ) {
+            ArraySegment<byte> buffer = new ArraySegment<byte> ( receiveBuffer );
+            WebSocketReceiveResult? result = null;
+
+            if (ctx.WebSocket.State != WebSocketState.Open)
+                return null;
+
+            using (var ms = new MemoryStream ()) {
+
+                await receiveSemaphore.WaitAsync ( cancellation );
+
+waitNextMessage:
+                if (cancellation.IsCancellationRequested)
+                    return null;
+
+                try {
+                    do {
+                        result = await ctx.WebSocket.ReceiveAsync ( buffer, cancellation );
+                        ms.Write ( buffer.Array!, buffer.Offset, result.Count );
+                    } while (!result.EndOfMessage);
+
+                    ms.Seek ( 0, SeekOrigin.Begin );
+
+                    if (result.MessageType == WebSocketMessageType.Close) {
+                        await ctx.WebSocket.CloseAsync ( WebSocketCloseStatus.NormalClosure, string.Empty, cancellation );
+                        await CloseAsync ( cancellation );
+
+                        if (result.Count == 0) {
+                            return null;
+                        }
+                    }
+
+                    var wsmessage = new WebSocketMessage ( this, ms.ToArray () );
+
+                    if (wsmessage.GetString () == pingPolicy.DataMessage) {
+                        // ignore this message
+                        goto waitNextMessage;
+                    }
+
+                    return wsmessage;
+                }
+                catch {
+                    return null;
+                }
+                finally {
+                    receiveSemaphore.Release ();
+                }
+            }
+        }
+
+        private async ValueTask<bool> SendInternalAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType, CancellationToken cancellation ) {
             if (_isClosed)
                 return false;
+            if (ctx.WebSocket.State != WebSocketState.Open && ctx.WebSocket.State != WebSocketState.CloseSent)
+                return false;
 
-            if (closeTimeout.TotalMilliseconds > 0)
-                asyncListenerToken?.CancelAfter ( closeTimeout );
-
-            await sendSemaphore.WaitAsync ( asyncListenerToken?.Token ?? default );
+            await sendSemaphore.WaitAsync ( cancellation );
             try {
-                try {
-                    int totalLength = buffer.Length;
-                    int chunks = (int) Math.Ceiling ( (double) totalLength / FRAME_SIZE );
-
-                    for (int i = 0; i < chunks; i++) {
-                        int ca = i * FRAME_SIZE;
-                        int cb = Math.Min ( ca + FRAME_SIZE, buffer.Length );
-
-                        ReadOnlyMemory<byte> chunk = buffer [ ca..cb ];
-
-                        await ctx.WebSocket.SendAsync ( chunk, msgType, i + 1 == chunks, asyncListenerToken?.Token ?? default );
-                        length += chunk.Length;
-                    }
-
-                    attempt = 0;
-                }
-                catch (Exception) {
-                    attempt++;
-                    if (MaxAttempts >= 0 && attempt >= MaxAttempts) {
-                        Close ();
-                        return false;
-                    }
-                }
+                await ctx.WebSocket.SendAsync ( buffer, msgType, true, cancellation );
+                length += buffer.Length;
                 return true;
+            }
+            catch {
+                await CloseAsync ( cancellation );
+                return false;
             }
             finally {
                 sendSemaphore.Release ();
@@ -307,58 +190,32 @@ namespace Sisk.Core.Http.Streams {
         }
 
         /// <summary>
-        /// Blocks the current call stack until the connection is terminated by the client or the server, limited to the maximum
-        /// timeout.
+        /// Receives a message from the WebSocket endpoint asynchronously.
         /// </summary>
-        /// <param name="timeout">Defines the timeout timer before the connection expires without any message.</param>
-        public void WaitForClose ( TimeSpan timeout ) {
-            closeTimeout = timeout;
-            closeEvent.WaitOne ();
+        /// <param name="cancellation">The <see cref="CancellationToken"/> to use for cancellation.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous receive operation, 
+        /// which returns a <see cref="WebSocketMessage"/> if a message is received; otherwise, <c>null</c>.</returns>
+        public ValueTask<WebSocketMessage?> ReceiveMessageAsync ( CancellationToken cancellation = default ) {
+            return ReceiveInternalAsync ( cancellation );
         }
 
         /// <summary>
-        /// Blocks the current call stack until the connection is terminated by either the client or the server.
+        /// Receives a message from the WebSocket endpoint asynchronously with a specified timeout.
         /// </summary>
-        public void WaitForClose () {
-            closeEvent.WaitOne ();
+        /// <param name="timeout">The time to wait for a message before timing out.</param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous receive operation, 
+        /// which returns a <see cref="WebSocketMessage"/> if a message is received; otherwise, <c>null</c>.</returns>
+        public ValueTask<WebSocketMessage?> ReceiveMessageAsync ( TimeSpan timeout ) {
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource ( timeout );
+            return ReceiveInternalAsync ( cancellationTokenSource.Token );
         }
 
         /// <summary>
-        /// Blocks the current thread and waits the next incoming message from this web socket instance.
+        /// Receives a message from the WebSocket endpoint asynchronously with a default timeout of 30 seconds.
         /// </summary>
-        /// <remarks>
-        /// Null is returned if a connection error is thrown.
-        /// </remarks>
-        public WebSocketMessage? WaitNext () {
-            return WaitNext ( WaitTimeout );
-        }
-
-        /// <summary>
-        /// Blocks the current thread and waits the next incoming message from this web socket instance within
-        /// the maximum defined timeout.
-        /// </summary>
-        /// <param name="timeout">The maximum time to wait until the next message.</param>
-        /// <remarks>
-        /// Null is returned if a connection error is thrown.
-        /// </remarks>
-        public WebSocketMessage? WaitNext ( TimeSpan timeout ) {
-
-            WebSocketMessage? enqueuedMessage;
-            if (messageQueue.TryDequeue ( out enqueuedMessage )) {
-                return enqueuedMessage;
-            }
-
-            waitNextEvent.Reset ();
-            isWaitingNext = true;
-
-            WaitHandle.WaitAny ( [ waitNextEvent, closeEvent ] );
-
-            if (messageQueue.TryDequeue ( out enqueuedMessage )) {
-                return enqueuedMessage;
-            }
-
-            return null;
-        }
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous receive operation, 
+        /// which returns a <see cref="WebSocketMessage"/> if a message is received; otherwise, <c>null</c>.</returns>
+        public ValueTask<WebSocketMessage?> ReceiveMessageAsync () => ReceiveMessageAsync ( TimeSpan.FromSeconds ( 30 ) );
 
         /// <inheritdoc/>
         public void Dispose () {
@@ -367,12 +224,12 @@ namespace Sisk.Core.Http.Streams {
 
             GC.SuppressFinalize ( this );
 
-            Close ();
             pingPolicy.Dispose ();
-            closeEvent.Dispose ();
-            waitNextEvent.Dispose ();
-            receiveThread.Join ();
+            receiveSemaphore.Dispose ();
+            sendSemaphore.Dispose ();
+
             isDisposed = true;
+            _isClosed = true;
         }
 
         /// <exclude/>
@@ -388,16 +245,6 @@ namespace Sisk.Core.Http.Streams {
         internal byte [] __msgBytes;
 
         /// <summary>
-        /// Gets an boolean indicating that this message is the last chunk of the message.
-        /// </summary>
-        public bool IsEnd { get; internal set; }
-
-        /// <summary>
-        /// Gets an boolean indicating that this message is an remote closing message.
-        /// </summary>
-        public bool IsClose { get; internal set; }
-
-        /// <summary>
         /// Gets an byte array with the message contents.
         /// </summary>
         public byte [] MessageBytes => __msgBytes;
@@ -410,13 +257,13 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets the sender <see cref="HttpWebSocket"/> object instance which received this message.
         /// </summary>
-        public HttpWebSocket Sender { get; internal set; }
+        public HttpWebSocket Sender { get; }
 
         /// <summary>
         /// Reads the message bytes as string using the specified encoding.
         /// </summary>
         /// <param name="encoding">The encoding which will be used to decode the message.</param>
-        public string GetString ( System.Text.Encoding encoding ) {
+        public string GetString ( Encoding encoding ) {
             return encoding.GetString ( MessageBytes );
         }
 
@@ -427,9 +274,9 @@ namespace Sisk.Core.Http.Streams {
             return GetString ( Sender.HttpRequest.RequestEncoding );
         }
 
-        internal WebSocketMessage ( HttpWebSocket httpws, int bufferLen ) {
+        internal WebSocketMessage ( HttpWebSocket httpws, byte [] msgBytes ) {
             Sender = httpws;
-            __msgBytes = new byte [ bufferLen ];
+            __msgBytes = msgBytes;
         }
     }
 }

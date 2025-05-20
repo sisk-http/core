@@ -149,13 +149,13 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
     /// <inheritdoc/>
     /// <exclude/>
     public bool ContainsKey ( string key ) {
-        return ContainsKey ( key );
+        return _decorator [ key ] != null;
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     public void CopyTo ( KeyValuePair<string, string?> [] array, int arrayIndex ) {
-        throw new NotImplementedException ();
+        throw new NotSupportedException ();
     }
 
     /// <inheritdoc/>
