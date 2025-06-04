@@ -10,6 +10,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -34,6 +35,7 @@ namespace Sisk.Core.Http {
     public sealed class HttpRequest : IDisposable {
         internal HttpServer baseServer;
         internal IDisposable? streamingEntity;
+        internal IPAddress remoteAddr = null!;
         private readonly HttpServerConfiguration contextServerConfiguration;
         private readonly HttpListenerResponse listenerResponse;
         private readonly HttpListenerRequest listenerRequest;
@@ -44,7 +46,6 @@ namespace Sisk.Core.Http {
         private StringValueCollection? query;
 
         private readonly Uri requestUri;
-        private readonly IPAddress remoteAddr;
         private readonly HttpMethod requestMethod;
 
         private int currentFrame;
@@ -63,7 +64,6 @@ namespace Sisk.Core.Http {
 
             requestUri = context.Request.Url ?? throw new HttpRequestException ( SR.HttpRequest_Error );
             ContentLength = listenerRequest.ContentLength64;
-            remoteAddr = ReadRequestRemoteAddr ();
             requestMethod = new HttpMethod ( listenerRequest.HttpMethod );
         }
 
@@ -72,9 +72,14 @@ namespace Sisk.Core.Http {
             return outEnc.GetString ( inEnc.GetBytes ( input ) );
         }
 
-        IPAddress ReadRequestRemoteAddr () {
+        internal IPAddress ReadRequestRemoteAddr () {
             if (contextServerConfiguration.ForwardingResolver is { } fr) {
-                return fr.OnResolveClientAddress ( this, listenerRequest.RemoteEndPoint );
+                try {
+                    return fr.OnResolveClientAddress ( this, listenerRequest.RemoteEndPoint );
+                }
+                catch (Exception ex) {
+                    throw new TargetInvocationException ( SR.Format ( SR.ForwardingResolverInvocationException, "remote address", fr.GetType ().Name ), ex );
+                }
             }
             else {
                 return new IPAddress ( listenerRequest.RemoteEndPoint.Address.GetAddressBytes () );
@@ -154,7 +159,12 @@ namespace Sisk.Core.Http {
         public bool IsSecure {
             get {
                 if (contextServerConfiguration.ForwardingResolver is { } fr) {
-                    return fr.OnResolveSecureConnection ( this, listenerRequest.IsSecureConnection );
+                    try {
+                        return fr.OnResolveSecureConnection ( this, listenerRequest.IsSecureConnection );
+                    }
+                    catch (Exception ex) {
+                        throw new TargetInvocationException ( SR.Format ( SR.ForwardingResolverInvocationException, "encryptation state", fr.GetType ().Name ), ex );
+                    }
                 }
                 else {
                     return listenerRequest.IsSecureConnection;
@@ -602,7 +612,7 @@ namespace Sisk.Core.Http {
                 return sse;
             } );
         }
-        
+
         /// <summary>
         /// Accepts and acquires a websocket for this request. Calling this method will put this <see cref="HttpRequest"/> instance in
         /// streaming state.

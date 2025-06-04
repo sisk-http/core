@@ -45,14 +45,23 @@ static class LogFormatter {
         ExtractIncidences ( formatSpan, formatRanges );
 
         Index lastIndexStart = Index.FromStart ( 0 );
+
         for (int i = 0; i < incidences; i++) {
+
             ref Range currentRange = ref formatRanges [ i ];
             ReadOnlySpan<char> term = formatSpan [ new Range ( currentRange.Start.Value + 1, currentRange.End ) ];
             string result;
 
             if (term is [ '{', .., '}' ]) {
-                result = executionResult.Request.Headers [ new string ( term [ 1..^1 ] ) ]
-                    ?? string.Empty;
+                string headerName = new string ( term [ 1..^1 ] );
+                if (headerName.StartsWith ( ':' )) {
+                    result = executionResult.Response?.GetHeaderValue ( headerName [ 1.. ] )
+                        ?? string.Empty;
+                }
+                else {
+                    result = executionResult.Request.Headers [ headerName ]
+                        ?? string.Empty;
+                }
             }
             else {
                 result = MatchTermExpression ( term, executionResult )
@@ -63,6 +72,11 @@ static class LogFormatter {
             sb.Append ( result );
 
             lastIndexStart = currentRange.End;
+        }
+
+        if (lastIndexStart.Value < formatSpan.Length) {
+            // add remainder
+            sb.Append ( formatSpan [ lastIndexStart.. ] );
         }
 
         return sb.ToString ();

@@ -17,7 +17,7 @@ namespace Sisk.Core.Http.Streams;
 /// </summary>
 public sealed class HttpResponseStreamManager {
     internal HttpListenerResponse listenerResponse;
-    private bool hasSentData;
+    internal bool hasSentData;
 
     // calculated on chunked encoding, but set on SetContentLength
     internal long calculatedLength;
@@ -38,8 +38,11 @@ public sealed class HttpResponseStreamManager {
             return listenerResponse.SendChunked;
         }
         set {
+            if (hasSentData)
+                throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
+
             listenerResponse.SendChunked = value;
-            if (listenerResponse.ContentLength64 > 0)
+            if (value && listenerResponse.ContentLength64 > 0)
                 listenerResponse.ContentLength64 = 0;
         }
     }
@@ -57,6 +60,8 @@ public sealed class HttpResponseStreamManager {
     public void SetContentLength ( long contentLength ) {
         if (SendChunked)
             SendChunked = false;
+        if (hasSentData)
+            throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
 
         listenerResponse.ContentLength64 = contentLength;
     }
@@ -123,8 +128,7 @@ public sealed class HttpResponseStreamManager {
     /// </summary>
     /// <param name="buffer">The read only memory that includes the buffer which will be written to the HTTP response.</param>
     public void Write ( ReadOnlySpan<byte> buffer ) {
-        hasSentData = true;
-        listenerResponse.OutputStream.Write ( buffer );
+        ResponseStream.Write ( buffer );
     }
 
     /// <summary>
@@ -132,8 +136,7 @@ public sealed class HttpResponseStreamManager {
     /// </summary>
     /// <param name="buffer">The byte array that includes the buffer which will be written to the HTTP response.</param>
     public void Write ( byte [] buffer ) {
-        hasSentData = true;
-        listenerResponse.OutputStream.Write ( buffer );
+        ResponseStream.Write ( buffer );
     }
 
     /// <summary>
@@ -226,10 +229,11 @@ internal sealed class ResponseStreamWriter : Stream {
     }
 
     public override void Write ( Byte [] buffer, Int32 offset, Int32 count ) {
-        if (Parent.listenerResponse.ContentLength64 == 0) {
+        if (Parent.listenerResponse.ContentLength64 <= 0) {
             Parent.SendChunked = true;
         }
+        Parent.hasSentData = true;
         BaseStream.Write ( buffer, offset, count );
-        Interlocked.Add ( ref Parent.calculatedLength, buffer.Length );
+        Interlocked.Add ( ref Parent.calculatedLength, count );
     }
 }

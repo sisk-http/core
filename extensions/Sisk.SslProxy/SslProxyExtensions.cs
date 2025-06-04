@@ -53,9 +53,10 @@ public static class SslProxyExtensions {
             certificate = CertificateUtil.CreateTrustedDevelopmentCertificate ( [ "localhost", .. usableHosts ] );
         }
 
-        var secureProxy = new SslProxy ( sslListeningPort, certificate, endpoint );
-        secureProxy.GatewayHostname = primaryPort.Hostname;
-        secureProxy.ProxyAuthorization = proxyAuthorization?.ToString ();
+        var secureProxy = new SslProxy ( sslListeningPort, certificate, endpoint ) {
+            GatewayHostname = primaryPort.Hostname,
+            ProxyAuthorization = proxyAuthorization?.ToString ()
+        };
 
         var serverHandler = new SslProxyServerHandler ( secureProxy );
         builder.UseHandler ( serverHandler );

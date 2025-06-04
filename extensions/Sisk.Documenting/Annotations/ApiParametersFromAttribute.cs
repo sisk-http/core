@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   ApiParametersFrom.cs
+// File name:   ApiParametersFromAttribute.cs
 // Repository:  https://github.com/sisk-http/core
 
 namespace Sisk.Documenting.Annotations;

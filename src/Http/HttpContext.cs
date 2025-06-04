@@ -33,6 +33,12 @@ namespace Sisk.Core.Http {
         public static bool IsRequestContext { get => _context.Value is not null; }
 
         /// <summary>
+        /// Gets the current running <see cref="HttpContext"/>.
+        /// </summary>
+        /// <returns>The current <see cref="HttpContext"/> instance, otherwise, <see langword="null"/>.</returns>
+        public static HttpContext? GetCurrentContext () => _context.Value;
+
+        /// <summary>
         /// Gets or sets an <see cref="HttpHeaderCollection"/> indicating HTTP headers which
         /// will overwrite headers set by CORS, router response or request handlers.
         /// </summary>
@@ -90,7 +96,7 @@ namespace Sisk.Core.Http {
         /// matched route log mode option.
         /// </summary>
         public LogOutput? LogMode { get; set; }
-        
+
         internal HttpContext ( HttpServer httpServer ) {
             HttpServer = httpServer;
             Request = null!; // associated later

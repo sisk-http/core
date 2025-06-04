@@ -196,6 +196,22 @@ namespace Sisk.Core.Http {
         }
         #endregion
 
+        /// <summary>
+        /// Gets the value of a specific header from the request and content headers.
+        /// </summary>
+        /// <param name="headerName">The name of the header to retrieve.</param>
+        /// <returns>The header value, or <see langword="null"/> if the header is not found.</returns>
+        public string? GetHeaderValue ( string headerName ) {
+            if (Headers.TryGetValue ( headerName, out var headerValue )) {
+                return string.Join ( ", ", headerValue );
+            }
+            else if (Content is { } content && content.Headers.TryGetValues ( headerName, out var contentHeaderValues )) {
+                return string.Join ( ", ", contentHeaderValues );
+            }
+
+            return null;
+        }
+
         /// <inheritdoc/>
         public override string ToString () {
             return Status.ToString ();

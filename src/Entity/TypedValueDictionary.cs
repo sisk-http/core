@@ -162,6 +162,40 @@ public class TypedValueDictionary : IDictionary<string, object?> {
         }
     }
 
+    /// <summary>
+    /// Gets the value associated with the specified key.
+    /// </summary>
+    /// <param name="key">The key of the value to get.</param>
+    /// <returns>The value associated with the specified key, or <see langword="null"/> if the key is not found.</returns>
+    public object? GetValue ( string key ) {
+        if (TryGetValue ( key, out var value )) {
+            return value;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the value associated with the specified key, and converts it to the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type to convert the value to.</typeparam>
+    /// <param name="key">The key of the value to get.</param>
+    /// <returns>The value associated with the specified key, converted to the specified type, or the default value for the type if the key is not found.</returns>
+    public T? GetValue<T> ( string key ) {
+        if (TryGetValue<T> ( key, out var value )) {
+            return value;
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// Sets the value associated with the specified key.
+    /// </summary>
+    /// <param name="key">The key of the value to set.</param>
+    /// <param name="value">The value to set.</param>
+    public void SetValue ( string key, object? value ) {
+        this [ key ] = value;
+    }
+
     /// <inheritdoc />
     /// <exclude />
     public object? this [ string key ] { get => _values [ key ]; set => _values [ key ] = value; }

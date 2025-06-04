@@ -40,7 +40,8 @@ class SslProxyContextHandler : HttpHostHandler {
         ProxyGateway state = (ProxyGateway) context.Client.State!;
 
         CancellationTokenSource gatewayCancellation = new CancellationTokenSource ();
-        gatewayCancellation.CancelAfter ( ProxyHost.GatewayTimeout );
+        gatewayCancellation.CancelAfter ( 10000 );
+        gatewayCancellation.Token.ThrowIfCancellationRequested ();
 
         HttpMethod requestMethod = new HttpMethod ( context.Request.Method );
         string requestPath = context.Request.Path;

@@ -29,6 +29,8 @@ static partial class SR {
     public const string HttpRequest_InputStreamAlreadyLoaded = "Unable to read InputStream as it has already been read.";
     public const string HttpRequest_AlreadyInStreamingState = "This HTTP request is already streaming another context.";
 
+    public const string ForwardingResolverInvocationException = "Failed to resolve the {0} through the defined ForwardingResolver '{1}'. See the inner exception for details.";
+
     public const string HttpResponse_404_DefaultMessage = "The requested resource was not found in this server.";
     public const string HttpResponse_405_DefaultMessage = "Method not allowed.";
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";

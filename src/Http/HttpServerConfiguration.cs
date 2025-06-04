@@ -17,9 +17,14 @@ namespace Sisk.Core.Http {
         private long _maximumContentLength;
 
         /// <summary>
+        /// Represents the default access logging format for incoming HTTP requests.
+        /// </summary>
+        public const string DefaultAccessLogFormat = "%ri - [%dd/%dmm/%dy %tH:%ti:%ts %tz] \"%rm %rz%rq\" %sc %lou";
+
+        /// <summary>
         /// Gets or sets the access logging format for incoming HTTP requests.
         /// </summary>
-        public string AccessLogsFormat { get; set; } = "%ri - [%dd/%dmm/%dy %tH:%ti:%ts %tz] \"%rm %rz%rq\" %sc %lou";
+        public string AccessLogsFormat { get; set; } = DefaultAccessLogFormat;
 
         /// <summary>
         /// Gets or sets whether the HTTP server should automatically compress response content bodies using request-allowed

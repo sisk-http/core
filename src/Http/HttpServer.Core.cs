@@ -10,6 +10,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
 using Sisk.Core.Internal;
@@ -167,7 +168,7 @@ public partial class HttpServer {
 
         HttpContext? srContext = new HttpContext ( this );
         bool closeStream = true;
-        
+
         HttpContext._context.Value = srContext;
 
         var currentConfig = ServerConfiguration;
@@ -192,9 +193,10 @@ public partial class HttpServer {
 
             // context initialization
             request = new HttpRequest ( this, context );
-
             srContext.Request = request;
             request.Context = srContext;
+
+            request.remoteAddr = request.ReadRequestRemoteAddr ();
 
             if (currentConfig.RemoteRequestsAction == RequestListenAction.Drop && baseRequest.IsLocal == false) {
                 executionResult.Status = HttpServerExecutionStatus.RemoteRequestDropped;
@@ -204,7 +206,12 @@ public partial class HttpServer {
 
             string dnsSafeHost = request.Uri.Host;
             if (currentConfig.ForwardingResolver is ForwardingResolver fr) {
-                dnsSafeHost = fr.OnResolveRequestHost ( request, dnsSafeHost );
+                try {
+                    dnsSafeHost = fr.OnResolveRequestHost ( request, dnsSafeHost );
+                }
+                catch (Exception ex) {
+                    throw new TargetInvocationException ( SR.Format ( SR.ForwardingResolverInvocationException, "request hostname", fr.GetType ().Name ), ex );
+                }
             }
 
             // detect the listening host for this listener
@@ -313,7 +320,7 @@ public partial class HttpServer {
                 for (int j = 0; j < incameHeader.Item2.Count; j++)
                     baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
-            
+
             if (currentConfig.EnableAutomaticResponseCompression
                 && servedContent is { }
                 && servedContent is not CompressedContent
@@ -329,7 +336,7 @@ public partial class HttpServer {
                     servedContent = new DeflateContent ( servedContent );
                 }
             }
-            
+
             if (!MethodAllowContent ( baseRequest.HttpMethod ) || request.streamingEntity is { }) {
                 // do not send content on unallowed HTTP methods neither when the requests was streaming content
                 ;
@@ -409,11 +416,8 @@ finishSending:
         }
         finally {
 
-            sw.Stop ();
-
             executionResult.ResponseSize = response?.CalculedLength ?? baseResponse.ContentLength64;
-            executionResult.RequestSize = request.ContentLength;
-            executionResult.Elapsed = sw.Elapsed;
+            executionResult.RequestSize = baseRequest.ContentLength64;
 
             servedContent?.Dispose ();
 
@@ -432,6 +436,7 @@ finishSending:
                 }
             }
 
+            executionResult.Elapsed = sw.Elapsed;
             handler.HttpRequestClose ( executionResult );
 
             if (executionResult.ServerException is not null)

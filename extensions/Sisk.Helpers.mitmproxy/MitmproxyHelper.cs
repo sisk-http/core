@@ -36,8 +36,9 @@ public static class MitmproxyHelper {
         ushort proxyPort = 0,
         bool silent = false,
         Action<ChildProcessStartInfo>? setupAction = null ) {
-        var proxy = new MitmproxyProvider ( proxyPort, setupAction );
-        proxy.Silent = silent;
+        var proxy = new MitmproxyProvider ( proxyPort, setupAction ) {
+            Silent = silent
+        };
 
         builder.UseHandler ( proxy );
         builder.UseStartupMessage ( () => $"""

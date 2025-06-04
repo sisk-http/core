@@ -39,8 +39,24 @@ public static class MimeHelper {
     /// Gets an boolean indicating if the specified file is an well-known plain text file.
     /// </summary>
     /// <param name="fileExtension">The file extension, with or without the initial dot.</param>
-    public static bool IsPlainTextFile ( string fileExtension ) {
+    public static bool IsPlainTextFile ( string? fileExtension ) {
+        if (fileExtension is null)
+            return false;
         return PlainTextFileExtensions.IsTextFile ( fileExtension.TrimStart ( '.' ) );
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the specified MIME type is a plain text MIME type.
+    /// </summary>
+    /// <param name="mimeType">The MIME type to check.</param>
+    /// <returns><see langword="true"/> if the MIME type is a plain text MIME type; otherwise, <see langword="false"/>.</returns>
+    public static bool IsPlainTextMimeType ( string? mimeType ) {
+        if (mimeType is null)
+            return false;
+        return
+            mimeType.StartsWith ( "text/", StringComparison.OrdinalIgnoreCase ) ||
+            mimeType.StartsWith ( "message/", StringComparison.OrdinalIgnoreCase ) ||
+            PlainTextFileMimeTypes.PlainTextMimeTypes.Contains ( mimeType, StringComparer.OrdinalIgnoreCase );
     }
 
     /// <summary>
