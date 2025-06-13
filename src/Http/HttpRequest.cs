@@ -18,6 +18,7 @@ using System.Text.Json.Serialization.Metadata;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http.Streams;
+using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http {
@@ -33,6 +34,7 @@ namespace Sisk.Core.Http {
     /// Represents an HTTP request received by a Sisk server.
     /// </summary>
     public sealed class HttpRequest : IDisposable {
+
         internal HttpServer baseServer;
         internal IDisposable? streamingEntity;
         internal IPAddress remoteAddr = null!;
@@ -98,8 +100,14 @@ namespace Sisk.Core.Http {
                     }
                 }
                 else if (ContentLength < 0) {
-                    contentBytes = Array.Empty<byte> ();
-                    throw new HttpRequestException ( SR.HttpRequest_NoContentLength );
+                    using (var memoryStream = new MemoryStream ()) {
+                        long maxLength = contextServerConfiguration.MaximumContentLength <= 0 ?
+                            Int32.MaxValue :
+                            contextServerConfiguration.MaximumContentLength;
+
+                        await StreamUtil.CopyToLimitedAsync ( listenerRequest.InputStream, memoryStream, 81920, maxLength, cancellation );
+                        contentBytes = memoryStream.ToArray ();
+                    }
                 }
                 else // = 0
                 {
@@ -122,8 +130,14 @@ namespace Sisk.Core.Http {
                     }
                 }
                 else if (ContentLength < 0) {
-                    contentBytes = Array.Empty<byte> ();
-                    throw new HttpRequestException ( SR.HttpRequest_NoContentLength );
+                    using (var memoryStream = new MemoryStream ()) {
+                        long maxLength = contextServerConfiguration.MaximumContentLength <= 0 ?
+                            Int32.MaxValue :
+                            contextServerConfiguration.MaximumContentLength;
+
+                        StreamUtil.CopyToLimited ( listenerRequest.InputStream, memoryStream, 81920, maxLength );
+                        contentBytes = memoryStream.ToArray ();
+                    }
                 }
                 else // = 0
                 {
@@ -142,7 +156,7 @@ namespace Sisk.Core.Http {
         /// unless custom options are provided. See <see cref="System.Text.Json.JsonSerializerOptions"/> 
         /// for more information on available options.
         /// </remarks>
-        public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; }
+        public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; } = new JsonSerializerOptions ( JsonSerializerDefaults.Web );
 
         /// <summary>
         /// Gets a unique random ID for this request.
@@ -399,8 +413,14 @@ namespace Sisk.Core.Http {
         /// <param name="typeInfo">The <see cref="JsonTypeInfo{T}"/> to use for deserialization.</param>
         /// <returns>The deserialized object, or <c>null</c> if the request body is empty.</returns>
         public T? GetJsonContent<T> ( JsonTypeInfo<T> typeInfo ) {
-            var requestStream = GetRequestStream ();
-            return JsonSerializer.Deserialize<T> ( requestStream, typeInfo );
+            if (ContentLength >= 0) {
+                var requestStream = GetRequestStream ();
+                return JsonSerializer.Deserialize<T> ( requestStream, typeInfo );
+            }
+            else {
+                var content = GetBodyContents ();
+                return JsonSerializer.Deserialize<T> ( content, typeInfo );
+            }
         }
 
         /// <summary>
@@ -412,8 +432,14 @@ namespace Sisk.Core.Http {
         [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         public T? GetJsonContent<T> ( JsonSerializerOptions? jsonOptions = null ) {
-            var requestStream = GetRequestStream ();
-            return JsonSerializer.Deserialize<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions );
+            if (ContentLength >= 0) {
+                var requestStream = GetRequestStream ();
+                return JsonSerializer.Deserialize<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions );
+            }
+            else {
+                var content = GetBodyContents ();
+                return JsonSerializer.Deserialize<T> ( content, jsonOptions ?? DefaultJsonSerializerOptions );
+            }
         }
 
         /// <summary>
@@ -433,9 +459,15 @@ namespace Sisk.Core.Http {
         /// <param name="typeInfo">The <see cref="JsonTypeInfo{T}"/> to use for deserialization.</param>
         /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
         /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
-        public ValueTask<T?> GetJsonContentAsync<T> ( JsonTypeInfo<T> typeInfo, CancellationToken cancellation = default ) {
-            var requestStream = GetRequestStream ();
-            return JsonSerializer.DeserializeAsync<T> ( requestStream, typeInfo, cancellation );
+        public async ValueTask<T?> GetJsonContentAsync<T> ( JsonTypeInfo<T> typeInfo, CancellationToken cancellation = default ) {
+            if (ContentLength >= 0) {
+                var requestStream = GetRequestStream ();
+                return await JsonSerializer.DeserializeAsync<T> ( requestStream, typeInfo, cancellation );
+            }
+            else {
+                var content = await GetBodyContentsAsync ( cancellation );
+                return JsonSerializer.Deserialize<T> ( content.Span, typeInfo );
+            }
         }
 
         /// <summary>
@@ -447,9 +479,15 @@ namespace Sisk.Core.Http {
         /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous deserialization operation.</returns>
         [RequiresDynamicCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
         [RequiresUnreferencedCode ( SR.RequiresUnreferencedCode__JsonDeserialize )]
-        public ValueTask<T?> GetJsonContentAsync<T> ( JsonSerializerOptions? jsonOptions, CancellationToken cancellation = default ) {
-            var requestStream = GetRequestStream ();
-            return JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions, cancellation );
+        public async ValueTask<T?> GetJsonContentAsync<T> ( JsonSerializerOptions? jsonOptions, CancellationToken cancellation = default ) {
+            if (ContentLength >= 0) {
+                var requestStream = GetRequestStream ();
+                return await JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions, cancellation );
+            }
+            else {
+                var content = await GetBodyContentsAsync ( cancellation );
+                return JsonSerializer.Deserialize<T> ( content.Span, jsonOptions ?? DefaultJsonSerializerOptions );
+            }
         }
 
         /// <summary>

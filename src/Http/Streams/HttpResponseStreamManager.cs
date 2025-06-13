@@ -28,6 +28,8 @@ public sealed class HttpResponseStreamManager {
 
         if (host.Context.MatchedRoute?.UseCors == true)
             HttpServer.SetCorsHeaders ( listenerRequest, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, listenerResponse );
+
+        SendChunked = true;
     }
 
     /// <summary>
@@ -42,8 +44,6 @@ public sealed class HttpResponseStreamManager {
                 throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
 
             listenerResponse.SendChunked = value;
-            if (value && listenerResponse.ContentLength64 > 0)
-                listenerResponse.ContentLength64 = 0;
         }
     }
 
@@ -140,10 +140,21 @@ public sealed class HttpResponseStreamManager {
     }
 
     /// <summary>
+    /// Writes a range of bytes from a byte array to the HTTP response stream.
+    /// </summary>
+    /// <param name="buffer">The byte array to write data from.</param>
+    /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin writing bytes.</param>
+    /// <param name="count">The maximum number of bytes to write.</param>
+    public void Write ( byte [] buffer, int offset, int count ) {
+        ResponseStream.Write ( buffer, offset, count );
+    }
+
+    /// <summary>
     /// Closes this HTTP response stream connection between the server and the client and returns an empty <see cref="HttpResponse"/> to
     /// finish the HTTP server context.
     /// </summary>
     public HttpResponse Close () {
+        ResponseStream.Flush ();
         return new HttpResponse ( HttpResponse.HTTPRESPONSE_SERVER_CLOSE ) {
             CalculedLength = calculatedLength
         };
@@ -229,7 +240,7 @@ internal sealed class ResponseStreamWriter : Stream {
     }
 
     public override void Write ( Byte [] buffer, Int32 offset, Int32 count ) {
-        if (Parent.listenerResponse.ContentLength64 <= 0) {
+        if (Parent.listenerResponse.ContentLength64 <= 0 && !Parent.hasSentData) {
             Parent.SendChunked = true;
         }
         Parent.hasSentData = true;

@@ -31,7 +31,7 @@ public sealed class JsonRpcTransportLayer {
     /// <summary>
     /// Gets the event handler for WebSocket message reception.
     /// </summary>
-    public EventHandler<WebSocketMessage> WebSocket { get => new EventHandler<WebSocketMessage> ( ImplWebSocket ); }
+    public RouteAction WebSocket { get => new RouteAction ( ImplWebSocket ); }
 
     /// <summary>
     /// Gets the action to handle HTTP POST requests.
@@ -43,28 +43,30 @@ public sealed class JsonRpcTransportLayer {
     /// </summary>
     public RouteAction HttpGet { get => new RouteAction ( ImplTransportGetHttp ); }
 
-    void ImplWebSocket ( object? sender, WebSocketMessage message ) {
-        JsonRpcRequest? rpcRequest = null;
-        JsonRpcResponse response;
+    async Task ImplWebSocket ( HttpRequest request ) {
+        var websocket = await request.GetWebSocketAsync ();
 
-        string messageJson = message.GetString ();
+        while (await websocket.ReceiveMessageAsync ( TimeSpan.FromMinutes ( 30 ) ) is { } message) {
 
-        if (!JsonValue.TryDeserialize ( messageJson, _handler._jsonOptions, out JsonValue jsonRequestObject )) {
-            response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, "Invalid JSON-RPC message received." ) );
+            JsonRpcRequest? rpcRequest = null;
+            JsonRpcResponse response;
 
-            string responseJson = JsonValue.Serialize ( response, _handler._jsonOptions ).ToString ();
-            message.Sender.Send ( responseJson );
+            string messageJson = message.GetString ();
 
-            return;
+            if (await _handler._jsonOptions.TryDeserializeAsync ( messageJson ) is { Success: true } jsonRequestObject) {
+                rpcRequest = new JsonRpcRequest ( jsonRequestObject.Result.GetJsonObject () );
+                response = HandleRpcRequest ( rpcRequest );
+
+                string responseJson = _handler._jsonOptions.SerializeJson ( response );
+                await message.Sender.SendAsync ( responseJson );
+            }
+            else {
+                response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, "Invalid JSON-RPC message received." ) );
+
+                string responseJson = _handler._jsonOptions.SerializeJson ( response );
+                await message.Sender.SendAsync ( responseJson );
+            }
         }
-
-        Task.Run ( () => {
-            rpcRequest = new JsonRpcRequest ( jsonRequestObject.GetJsonObject () );
-            response = HandleRpcRequest ( rpcRequest );
-
-            string responseJson = JsonValue.Serialize ( response, _handler._jsonOptions ).ToString ();
-            message.Sender.Send ( responseJson );
-        } );
     }
 
     HttpResponse ImplTransportGetHttp ( HttpRequest request ) {

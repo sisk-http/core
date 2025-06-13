@@ -73,7 +73,7 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     /// Returns an array representation of this <see cref="CircularBuffer{T}"/> items in their defined
     /// positions within the capacity.
     /// </summary>
-    public T [] ToArray () => items;
+    public T [] ToArray () => items [ 0..addedItems ];
 
     /// <summary>
     /// Creates an new <see cref="ReadOnlySpan{T}"/> over the circular buffer.

@@ -7,7 +7,9 @@
 // File name:   SizeHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace Sisk.Core.Helpers;
 
@@ -15,6 +17,9 @@ namespace Sisk.Core.Helpers;
 /// Provides useful size-dedicated helper members.
 /// </summary>
 public sealed class SizeHelper {
+
+    static readonly Regex parserRegex = new Regex ( @"^\s*([\d,\.]+)\s*([kmgtpe]?b?)?\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled );
+
     /// <summary>
     /// Represents the number of bytes in one kibibyte (KiB).
     /// This is calculated as 1024 bytes.
@@ -58,6 +63,55 @@ public sealed class SizeHelper {
     /// <returns>A string representing the byte count in a human-readable format.</returns>
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public static string HumanReadableSize ( long byteCount ) => HumanReadableSize ( (double) byteCount );
+
+    /// <summary>
+    /// Parses a human-readable size string (e.g., "10 KB", "2.5 MB") into a long representing the number of bytes.
+    /// </summary>
+    /// <param name="humanReadableSize">The human-readable size string to parse.</param>
+    /// <returns>The size in bytes, represented as a long.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="humanReadableSize"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="humanReadableSize"/> is not in a valid format.</exception>
+    public static long Parse ( string humanReadableSize ) {
+        ArgumentException.ThrowIfNullOrWhiteSpace ( humanReadableSize, nameof ( humanReadableSize ) );
+
+        var match = parserRegex.Match ( humanReadableSize );
+
+        if (!match.Success) {
+            throw new ArgumentException ( SR.SizeHelper_InvalidParsingString, nameof ( humanReadableSize ) );
+        }
+
+        var numberString = match.Groups [ 1 ].Value;
+        var unitString = match.Groups [ 2 ].Value.ToLowerInvariant ();
+
+        numberString = numberString.Replace ( " ", null );
+
+        if (!double.TryParse ( numberString, CultureInfo.InvariantCulture, out double number )) {
+            throw new ArgumentException ( SR.SizeHelper_InvalidParsingString, nameof ( humanReadableSize ) );
+        }
+
+        switch (unitString) {
+            case "k":
+            case "kb":
+                return (long) (number * UnitKb);
+            case "m":
+            case "mb":
+                return (long) (number * UnitMb);
+            case "g":
+            case "gb":
+                return (long) (number * UnitGb);
+            case "t":
+            case "tb":
+                return (long) (number * UnitTb);
+            case "p":
+            case "pb":
+                return (long) (number * UnitPb);
+            case "e":
+            case "eb":
+                return (long) (number * UnitEb);
+        }
+
+        return (long) number;
+    }
 
     /// <summary>
     /// Converts a byte count into a human-readable string representation.

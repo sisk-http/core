@@ -27,12 +27,32 @@ namespace Sisk.Core.Entity {
         /// Gets this <see cref="MultipartObject"/> provided file name. If this object ins't disposing a file,
         /// nothing is returned.
         /// </summary>
-        public string? Filename { get; private set; }
+        public string? Filename {
+            get {
+                var contentDisposition = Headers.ContentDisposition;
+                if (contentDisposition != null) {
+                    var collection = StringValueCollection.FromCookieString ( contentDisposition );
+                    return collection [ "filename" ];
+                }
+                return null;
+            }
+        }
 
         /// <summary>
         /// Gets this <see cref="MultipartObject"/> field name.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name {
+            get {
+                var contentDisposition = Headers.ContentDisposition;
+                if (contentDisposition != null) {
+                    var collection = StringValueCollection.FromCookieString ( contentDisposition );
+                    if (collection [ "name" ] is { } name) {
+                        return name;
+                    }
+                }
+                throw new Sisk.Core.Http.HttpRequestException ( SR.Format ( SR.MultipartFormReader_InvalidData, "part must have a name." ) );
+            }
+        }
 
         /// <summary>
         /// Gets this <see cref="MultipartObject"/> form data content in bytes.
@@ -43,6 +63,11 @@ namespace Sisk.Core.Entity {
         /// Gets this <see cref="MultipartObject"/> form data content length in byte count.
         /// </summary>
         public int ContentLength { get => ContentBytes.Length; }
+
+        /// <summary>
+        /// Gets the Content-Type header value from this multipart-object.
+        /// </summary>
+        public string? ContentType { get => Headers [ HttpKnownHeaderNames.ContentType ]; }
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="MultipartObject"/> has contents or not.
@@ -117,21 +142,16 @@ namespace Sisk.Core.Entity {
             return MultipartObjectCommonFormat.Unknown;
         }
 
-        internal MultipartObject ( NameValueCollection headers, string? filename, string name, byte []? body, Encoding encoding ) {
+        internal MultipartObject ( NameValueCollection headers, byte [] body, Encoding encoding ) {
             Headers = new HttpHeaderCollection ();
             Headers.ImportNameValueCollection ( headers );
             Headers.MakeReadOnly ();
 
-            Filename = filename;
-            Name = name;
-            ContentBytes = body ?? Array.Empty<byte> ();
+            ContentBytes = body;
             _baseEncoding = encoding;
         }
 
         internal static MultipartFormCollection ParseMultipartObjects ( HttpRequest req, byte [] body, CancellationToken cancellation = default ) {
-            if (body.Length == 0)
-                return new MultipartFormCollection ( Enumerable.Empty<MultipartObject> () );
-
             string? contentType = req.Headers [ HttpKnownHeaderNames.ContentType ]
                 ?? throw new InvalidOperationException ( SR.MultipartObject_ContentTypeMissing );
 
@@ -147,9 +167,11 @@ namespace Sisk.Core.Entity {
                 }
             }
 
-            if (boundary is null) {
+            if (boundary is null)
                 throw new InvalidOperationException ( SR.MultipartObject_BoundaryMissing );
-            }
+
+            if (body.Length == 0)
+                return new MultipartFormCollection ( Enumerable.Empty<MultipartObject> () );
 
             byte [] boundaryBytes = req.RequestEncoding.GetBytes ( boundary );
             MultipartFormReader reader = new MultipartFormReader ( body, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions );

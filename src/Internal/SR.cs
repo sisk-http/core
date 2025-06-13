@@ -13,7 +13,7 @@ static partial class SR {
     public const string MultipartObject_ContentTypeMissing = "Content-Type header cannot be null when retriving a multipart form content";
     public const string MultipartObject_BoundaryMissing = "No boundary was specified for this multipart form content.";
     public const string MultipartObject_EmptyFieldName = "Content-part object position {0} cannot have an empty field name.";
-    public const string MultipartFormReader_InvalidData = "Cannot read the specified multipart-form data request. At byte position {0}: {1}";
+    public const string MultipartFormReader_InvalidData = "Cannot read the specified multipart-form data request: {0}";
     public const string MultipartFormReader_Exception = "Caught an exception while trying to read the multipart form request: {0}";
 
     public const string HttpContextBagRepository_UndefinedDynamicProperty = "The specified type {0} was not defined in this context bag repository.";
@@ -103,6 +103,9 @@ static partial class SR {
     public const string ValueItem_CastException = "Cannot cast the value \"{0}\" at parameter {1} into an {2}.";
 
     public const string Collection_ReadOnly = "Cannot insert items to this collection as it is read-only.";
+
+    public const string StreamUtil_CopyOverflow = "The source content larger than the maximum allowed.";
+    public const string SizeHelper_InvalidParsingString = "The argument does not match any supported format.";
 
     public const string RequiresUnreferencedCode = "This method requires access to unreferenced code, which may break AOT compilation and trimming.";
     public const string RequiresUnreferencedCode__RouterSetObject = "This method requires access to unreferenced code, which may break AOT compilation and trimming. Use the SetObject(Type, Object) or SetObject<TObject>(TObject) overloads instead.";

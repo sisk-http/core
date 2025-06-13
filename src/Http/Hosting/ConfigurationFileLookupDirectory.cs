@@ -23,5 +23,10 @@ public enum ConfigurationFileLookupDirectory {
     /// <summary>
     /// The <see cref="IConfigurationReader"/> should search in the executable base directory.
     /// </summary>
-    AppDirectory = 1 << 2
+    AppDirectory = 1 << 2,
+
+    /// <summary>
+    /// Represents all possible directories.
+    /// </summary>
+    All = CurrentDirectory | AppDirectory
 }

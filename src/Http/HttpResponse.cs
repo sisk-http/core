@@ -107,14 +107,8 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code.
         /// </summary>
-        /// <param name="status">The <see cref="HttpStatusCode"/> of this HTTP response.</param>
-        public HttpResponse ( HttpStatusCode status ) : this ( status, null ) { }
-
-        /// <summary>
-        /// Creates an new <see cref="HttpResponse"/> instance with given status code.
-        /// </summary>
         /// <param name="status">The status code of this HTTP response.</param>
-        public HttpResponse ( int status ) : this ( (HttpStatusCode) status, null ) { }
+        public HttpResponse ( int status ) : this ( (HttpStatusCode) status, (HttpContent?) null ) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP content.
@@ -134,6 +128,13 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="stringContent">The UTF-8 string content.</param>
         public HttpResponse ( string stringContent ) : this ( HttpStatusCode.OK, new StringContent ( stringContent ) ) { }
+
+        /// <summary>
+        /// Creates an new <see cref="HttpResponse"/> instance with given status code and string content.
+        /// </summary>
+        /// <param name="status">The <see cref="HttpStatusCode"/> of this HTTP response.</param>
+        /// <param name="stringContent">The UTF-8 string content.</param>
+        public HttpResponse ( HttpStatusCode status, string stringContent ) : this ( status, new StringContent ( stringContent ) ) { }
 
         /// <summary>
         /// Creates an new <see cref="HttpResponse"/> instance with given status code and HTTP contents.

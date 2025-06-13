@@ -1,13 +1,15 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json; // For JsonSerializer
 using System.Threading.Tasks;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+
+namespace tests.Tests;
 
 public class SimpleMultipartObjectInfo
 {
@@ -18,8 +20,6 @@ public class SimpleMultipartObjectInfo
     public long Length { get; set; }
     public string? ContentPreview { get; set; }
 }
-
-namespace tests.Tests;
 
 public class TestPoco
 {
@@ -192,7 +192,7 @@ public class HttpRequestTests
     {
         using (var client = Server.GetHttpClient())
         {
-            var httpContent = new StringContent("", Encoding.UTF8, "application/json");
+            var httpContent = new StringContent("null", Encoding.UTF8, "application/json");
             var response = await client.PostAsync("tests/httprequest/getJsonContent", httpContent);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -205,7 +205,7 @@ public class HttpRequestTests
     {
         using (var client = Server.GetHttpClient())
         {
-            var httpContent = new StringContent("", Encoding.UTF8, "application/json");
+            var httpContent = new StringContent("null", Encoding.UTF8, "application/json");
             var response = await client.PostAsync("tests/httprequest/getJsonContentAsync", httpContent);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -252,7 +252,7 @@ public class HttpRequestTests
     {
         using (var client = Server.GetHttpClient())
         {
-            var httpContent = new FormUrlEncodedContent(new Dictionary<string, string>());
+            var httpContent = new FormUrlEncodedContent([]);
             var response = await client.PostAsync("tests/httprequest/getFormContent", httpContent);
             response.EnsureSuccessStatusCode();
             var echoedForm = await response.Content.ReadFromJsonAsync<Dictionary<string, string?>>();
@@ -266,7 +266,7 @@ public class HttpRequestTests
     {
         using (var client = Server.GetHttpClient())
         {
-            var httpContent = new FormUrlEncodedContent(new Dictionary<string, string>());
+            var httpContent = new FormUrlEncodedContent([]);
             var response = await client.PostAsync("tests/httprequest/getFormContentAsync", httpContent);
             response.EnsureSuccessStatusCode();
             var echoedForm = await response.Content.ReadFromJsonAsync<Dictionary<string, string?>>();
@@ -343,8 +343,9 @@ public class HttpRequestTests
         using (var client = Server.GetHttpClient())
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "tests/httprequest/getMultipartFormContent");
-            var malformedContent = new StringContent("", Encoding.UTF8, "multipart/form-data; boundary=----somerandomboundary");
+            var malformedContent = new StringContent("", Encoding.UTF8);
             request.Content = malformedContent;
+            request.Content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data;"); // do not send a boundary
             var response = await client.SendAsync(request);
             Assert.AreEqual(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -434,7 +435,8 @@ public class HttpRequestTests
 
             var response = await client.PostAsync("tests/httprequest/getRequestStream/afterGetJsonContent", httpContent);
 
-            if (!response.IsSuccessStatusCode) {
+            if (!response.IsSuccessStatusCode)
+            {
                 string error = await response.Content.ReadAsStringAsync();
                 Assert.Fail($"Server returned error: {response.StatusCode} - {error}");
             }
