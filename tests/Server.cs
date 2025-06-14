@@ -519,5 +519,6 @@ public class SimpleMultipartObjectInfo
     public string? FileName { get; set; }
     public string? ContentType { get; set; }
     public long Length { get; set; } // Length of the content bytes
-    public string? ContentPreview { get; set; } // Optional: small preview for text-based files
+    public string? ContentPreview { get; set; } // Optional: small preview for text-based files or Base64 for binary
+    public Dictionary<string, string>? PartHeaders { get; set; }
 }

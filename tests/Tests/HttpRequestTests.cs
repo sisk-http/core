@@ -11,16 +11,6 @@ using System.Threading.Tasks;
 
 namespace tests.Tests;
 
-public class SimpleMultipartObjectInfo
-{
-    public string? Name { get; set; }
-    public string? Value { get; set; }
-    public string? FileName { get; set; }
-    public string? ContentType { get; set; }
-    public long Length { get; set; }
-    public string? ContentPreview { get; set; }
-}
-
 public class TestPoco
 {
     public string? Name { get; set; }
@@ -272,96 +262,6 @@ public class HttpRequestTests
             var echoedForm = await response.Content.ReadFromJsonAsync<Dictionary<string, string?>>();
             Assert.IsNotNull(echoedForm);
             Assert.AreEqual(0, echoedForm.Count);
-        }
-    }
-
-    [TestMethod]
-    public async Task GetMultipartFormContent_ServerParsesAndEchoes_ClientVerifies()
-    {
-        using (var client = Server.GetHttpClient())
-        using (var multipartContent = new MultipartFormDataContent("boundary----" + Guid.NewGuid().ToString()))
-        {
-            string textFieldName = "textField";
-            string textFieldValue = "textValue123";
-            string fileName = "testfile.txt";
-            string fileContentString = "This is the content of the test file.";
-            string fileContentType = "text/plain";
-            byte[] fileContentBytes = Encoding.UTF8.GetBytes(fileContentString);
-
-            multipartContent.Add(new StringContent(textFieldValue, Encoding.UTF8), textFieldName);
-            var fileBytesContent = new ByteArrayContent(fileContentBytes);
-            fileBytesContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(fileContentType);
-            multipartContent.Add(fileBytesContent, "fileField", fileName);
-
-            var response = await client.PostAsync("tests/httprequest/getMultipartFormContent", multipartContent);
-            response.EnsureSuccessStatusCode();
-
-            var echoedObjects = await response.Content.ReadFromJsonAsync<List<SimpleMultipartObjectInfo>>();
-            Assert.IsNotNull(echoedObjects);
-            Assert.AreEqual(2, echoedObjects.Count);
-
-            var textObj = echoedObjects.FirstOrDefault(o => o.Name == textFieldName);
-            Assert.IsNotNull(textObj, $"Text field '{textFieldName}' not found in response.");
-            Assert.AreEqual(textFieldValue, textObj.Value);
-            Assert.IsNull(textObj.FileName);
-
-            var fileObj = echoedObjects.FirstOrDefault(o => o.Name == "fileField");
-            Assert.IsNotNull(fileObj, "File field 'fileField' not found in response.");
-            Assert.AreEqual(fileName, fileObj.FileName);
-            Assert.AreEqual(fileContentType, fileObj.ContentType);
-            Assert.AreEqual(fileContentBytes.Length, fileObj.Length);
-            Assert.AreEqual(fileContentString, fileObj.ContentPreview);
-        }
-    }
-
-    [TestMethod]
-    public async Task GetMultipartFormContentAsync_ServerParsesAndEchoes_ClientVerifies()
-    {
-        using (var client = Server.GetHttpClient())
-        using (var multipartContent = new MultipartFormDataContent("boundary----" + Guid.NewGuid().ToString()))
-        {
-            string fieldName = "asyncField";
-            string fieldValue = "asyncValue789";
-            multipartContent.Add(new StringContent(fieldValue, Encoding.UTF8), fieldName);
-
-            var response = await client.PostAsync("tests/httprequest/getMultipartFormContentAsync", multipartContent);
-            response.EnsureSuccessStatusCode();
-
-            var echoedObjects = await response.Content.ReadFromJsonAsync<List<SimpleMultipartObjectInfo>>();
-            Assert.IsNotNull(echoedObjects);
-            Assert.AreEqual(1, echoedObjects.Count);
-
-            var fieldObj = echoedObjects.FirstOrDefault(o => o.Name == fieldName);
-            Assert.IsNotNull(fieldObj, $"Field '{fieldName}' not found in response.");
-            Assert.AreEqual(fieldValue, fieldObj.Value);
-        }
-    }
-
-    [TestMethod]
-    public async Task GetMultipartFormContent_MalformedBody_ServerReturnsBadRequest()
-    {
-        using (var client = Server.GetHttpClient())
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, "tests/httprequest/getMultipartFormContent");
-            var malformedContent = new StringContent("", Encoding.UTF8);
-            request.Content = malformedContent;
-            request.Content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data;"); // do not send a boundary
-            var response = await client.SendAsync(request);
-            Assert.AreEqual(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
-        }
-    }
-
-    [TestMethod]
-    public async Task GetMultipartFormContent_MissingContentTypeBoundary_ServerReturnsBadRequest()
-    {
-        using (var client = Server.GetHttpClient())
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, "tests/httprequest/getMultipartFormContent");
-            var bodyContent = new StringContent("--boundary\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\nvalue\r\n--boundary--\r\n");
-            bodyContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/form-data");
-            request.Content = bodyContent;
-            var response = await client.SendAsync(request);
-            Assert.AreEqual(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
         }
     }
 
