@@ -26,7 +26,7 @@ namespace Sisk.Core.Http {
         internal RotatingLogPolicy? rotatingLogPolicy;
 
         private string? filePath;
-        private bool isDisposed;
+        private bool isDisposed, isDisposing;
         private CircularBuffer<string>? _bufferingContent;
 
         /// <summary>
@@ -345,7 +345,7 @@ namespace Sisk.Core.Http {
                 enqueueTask.AsTask ().GetAwaiter ().GetResult ();
             }
         }
-        
+
         /// <summary>
         /// Represents the asynchronous method that intercepts the line that will be written to an output log before being queued for writing.
         /// </summary>
@@ -358,12 +358,12 @@ namespace Sisk.Core.Http {
             await EnqueueMessageLineAsync ( lineText );
         }
         #endregion
-        
+
         ValueTask EnqueueMessageLineAsync ( string message ) {
             ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
             return channel.Writer.WriteAsync ( message );
         }
-        
+
         void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
             if (currentDepth == 0)
                 exceptionSbuilder.AppendLine ( SR.Format ( SR.LogStream_ExceptionDump_Header,
@@ -438,7 +438,8 @@ namespace Sisk.Core.Http {
                 }
             }
             finally {
-                writeEvent.Set ();
+                if (!isDisposing)
+                    writeEvent.Set ();
             }
         }
 
@@ -454,6 +455,7 @@ namespace Sisk.Core.Http {
         protected virtual void Dispose ( bool disposing ) {
             if (!isDisposed) {
                 if (disposing) {
+                    isDisposing = true;
                     channel.Writer.Complete ();
                     Flush ();
                     TextWriter?.Dispose ();
