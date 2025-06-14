@@ -26,7 +26,7 @@ namespace Sisk.Core.Http {
         internal RotatingLogPolicy? rotatingLogPolicy;
 
         private string? filePath;
-        private bool isDisposed, isDisposing;
+        private bool isDisposed;
         private CircularBuffer<string>? _bufferingContent;
 
         /// <summary>
@@ -433,12 +433,12 @@ namespace Sisk.Core.Http {
                             }
                         }
                     }
-
-                    writeEvent.Set ();
                 }
+
+                writeEvent.Set ();
             }
             finally {
-                if (!isDisposing)
+                if (!isDisposed)
                     writeEvent.Set ();
             }
         }
@@ -455,7 +455,6 @@ namespace Sisk.Core.Http {
         protected virtual void Dispose ( bool disposing ) {
             if (!isDisposed) {
                 if (disposing) {
-                    isDisposing = true;
                     channel.Writer.Complete ();
                     Flush ();
                     TextWriter?.Dispose ();
