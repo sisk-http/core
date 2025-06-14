@@ -1,14 +1,14 @@
 ﻿using Sisk.Core.Entity; // Added for MultipartFormCollection and MultipartObject
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
-using Sisk.Core.Routing;
 using Sisk.Core.Http.Streams; // Added for HttpRequestEventSource
-using System.Threading; // Added for Thread.Sleep
-using System.Threading.Tasks; // Added for async Task and Task.Delay
+using Sisk.Core.Routing;
 using System.Collections.Generic; // Added for List and Dictionary
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
+using System.Threading; // Added for Thread.Sleep
+using System.Threading.Tasks; // Added for async Task and Task.Delay
 
 namespace tests;
 
@@ -23,6 +23,7 @@ public sealed class Server
     public static void AssemblyInit(TestContext testContext)
     {
         Instance = HttpServer.CreateBuilder()
+            .UseCors(new CrossOriginResourceSharingHeaders(allowOrigin: "*", allowMethods: ["GET", "POST", "PUT"]))
             .UseRouter(router =>
             {
                 router.MapGet("/tests/plaintext", delegate (HttpRequest request)
@@ -599,44 +600,42 @@ public sealed class Server
                 // SSE Routes
                 router.SetRoute(RouteMethod.Get, "/tests/sse/sync", (req) =>
                 {
-                    var eventSource = req.OpenEventSource();
+                    var eventSource = req.GetEventSource();
                     eventSource.AppendHeader("X-Test-SSE", "sync");
                     eventSource.Send("message 1 part 1");
                     eventSource.Send("message 1 part 2");
-                    eventSource.Send("message 2 part 1", eventName: "customSync");
-                    eventSource.Send("message 2 part 2", eventName: "customSync");
+                    eventSource.Send("message 2 part 1", fieldName: "customSync");
+                    eventSource.Send("message 2 part 2", fieldName: "customSync");
                     return eventSource.Close();
                 });
 
                 router.SetRoute(RouteMethod.Get, "/tests/sse/async", async (HttpRequest req) =>
                 {
-                    var eventSource = req.OpenEventSource();
+                    var eventSource = await req.GetEventSourceAsync();
                     eventSource.AppendHeader("X-Test-SSE", "async");
                     await eventSource.SendAsync("async message 1");
                     await Task.Delay(50);
-                    await eventSource.SendAsync("async message 2", eventName: "customAsync");
+                    await eventSource.SendAsync("async message 2", fieldName: "customAsync");
                     await Task.Delay(50);
                     await eventSource.SendAsync("async message 3");
                     return eventSource.Close();
                 });
 
-                var sseCorsRoute = router.SetRoute(RouteMethod.Get, "/tests/sse/cors", (req) =>
+                router.SetRoute(RouteMethod.Get, "/tests/sse/cors", (req) =>
                 {
-                    var eventSource = req.OpenEventSource();
-                    // eventSource.AppendHeader("Access-Control-Allow-Origin", "*"); // This will be handled by UseCors = true
+                    var eventSource = req.GetEventSource();
                     eventSource.AppendHeader("X-Test-SSE", "cors");
                     eventSource.Send("cors message 1");
                     return eventSource.Close();
                 });
-                sseCorsRoute.UseCors = true;
 
                 router.SetRoute(RouteMethod.Get, "/tests/sse/empty", (req) =>
                 {
-                    var eventSource = req.OpenEventSource();
+                    var eventSource = req.GetEventSource();
                     eventSource.Send(""); // Default event name "message", empty data
                     eventSource.Send(null); // Default event name "message", null data (becomes empty)
-                    eventSource.Send("", eventName: "customEmpty"); // Custom event name, empty data
-                    eventSource.Send(null, eventName: "customNull"); // Custom event name, null data (becomes empty)
+                    eventSource.Send("", fieldName: "customEmpty"); // Custom event name, empty data
+                    eventSource.Send(null, fieldName: "customNull"); // Custom event name, null data (becomes empty)
                     return eventSource.Close();
                 });
             })

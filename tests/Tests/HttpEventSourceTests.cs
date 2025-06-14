@@ -17,7 +17,8 @@ namespace tests.Tests // Ensure this namespace matches other test files
         public string EventName { get; set; } = "message"; // Default SSE event name
         public string Data { get; set; } = "";
 
-        public override string ToString() => $"event: {EventName}\ndata: {Data}\n\n";
+        public override string ToString() => $"(Event=\"{EventName}\" Data=\"{Data}\")";
+
         public override bool Equals(object? obj)
         {
             return obj is SseEvent other &&
@@ -60,15 +61,19 @@ namespace tests.Tests // Ensure this namespace matches other test files
                         currentEvent = new SseEvent(); // Reset for next event
                         dataBuffer.Clear();
                     }
-                    else if (line.StartsWith("event:"))
+                    else if (line.Contains(':'))
                     {
-                        currentEvent.EventName = line.Substring("event:".Length).Trim();
+                        var parts = line.Split(':', StringSplitOptions.TrimEntries);
+                        events.Add(new SseEvent()
+                        {
+                            Data = parts[1],
+                            EventName = parts[0]
+                        });
                     }
-                    else if (line.StartsWith("data:"))
+                    else
                     {
-                        dataBuffer.AppendLine(line.Substring("data:".Length).TrimStart(' '));
+                        Assert.Fail("invalid SSE line");
                     }
-                    // Ignore id, retry, and comment lines for these tests
                 }
                 // In case the stream ends without a final blank line but there's data buffered
                 if (dataBuffer.Length > 0)
@@ -92,21 +97,12 @@ namespace tests.Tests // Ensure this namespace matches other test files
                     Assert.AreEqual("sync", headerValues?.FirstOrDefault(), "X-Test-SSE header value incorrect.");
 
                     var receivedEvents = await ReadSseEventsAsync(response);
-
-                    // Server sends:
-                    // eventSource.Send("message 1 part 1");
-                    // eventSource.Send("message 1 part 2");
-                    // eventSource.Send("message 2 part 1", eventName: "customSync");
-                    // eventSource.Send("message 2 part 2", eventName: "customSync");
-                    // ReadSseEventsAsync currently combines data lines for the same event.
-                    // The server code sends "message 1 part 1" and "message 1 part 2" as separate events by default
-                    // because .Send() is called multiple times.
-                    // Let's adjust expected based on server logic: each Send is one event.
-
                     var expectedEvents = new List<SseEvent>
                     {
-                        new SseEvent { EventName = "message", Data = "message 1 part 1" },
-                        new SseEvent { EventName = "customSync", Data = "message 2 part 1" }
+                        new SseEvent { EventName = "data", Data = "message 1 part 1" },
+                        new SseEvent { EventName = "data", Data = "message 1 part 2" },
+                        new SseEvent { EventName = "customSync", Data = "message 2 part 1" },
+                        new SseEvent { EventName = "customSync", Data = "message 2 part 2" }
                     };
 
                     CollectionAssert.AreEqual(expectedEvents, receivedEvents, "The received SSE events do not match the expected events.");
@@ -131,9 +127,9 @@ namespace tests.Tests // Ensure this namespace matches other test files
 
                     var expectedEvents = new List<SseEvent>
                     {
-                        new SseEvent { EventName = "message", Data = "async message 1" },
+                        new SseEvent { EventName = "data", Data = "async message 1" },
                         new SseEvent { EventName = "customAsync", Data = "async message 2" },
-                        new SseEvent { EventName = "message", Data = "async message 3" }
+                        new SseEvent { EventName = "data", Data = "async message 3" }
                     };
 
                     CollectionAssert.AreEqual(expectedEvents, receivedEvents, "The received asynchronous SSE events do not match the expected events.");
@@ -165,7 +161,7 @@ namespace tests.Tests // Ensure this namespace matches other test files
 
                     var expectedEvents = new List<SseEvent>
                     {
-                        new SseEvent { EventName = "message", Data = "cors message 1" }
+                        new SseEvent { EventName = "data", Data = "cors message 1" }
                     };
 
                     CollectionAssert.AreEqual(expectedEvents, receivedEvents, "The received SSE events for CORS test do not match the expected events.");
@@ -187,8 +183,8 @@ namespace tests.Tests // Ensure this namespace matches other test files
 
                     var expectedEvents = new List<SseEvent>
                     {
-                        new SseEvent { EventName = "message", Data = "" },
-                        new SseEvent { EventName = "message", Data = "" },
+                        new SseEvent { EventName = "data", Data = "" },
+                        new SseEvent { EventName = "data", Data = "" },
                         new SseEvent { EventName = "customEmpty", Data = "" },
                         new SseEvent { EventName = "customNull", Data = "" }
                     };
