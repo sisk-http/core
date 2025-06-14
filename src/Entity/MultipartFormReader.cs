@@ -16,21 +16,17 @@ using Sisk.Core.Internal;
 namespace Sisk.Core.Entity;
 
 internal sealed class MultipartFormReader {
-    readonly byte [] boundaryBytes;
     readonly byte [] bytes;
     readonly Encoding encoding;
-    readonly bool debugEnabled;
 
     const byte CR = 0x0D;
     const byte LF = 0x0A;
     const byte COLON = 0x3A;
     const byte SPACE = 0x20;
 
-    public MultipartFormReader ( byte [] inputBytes, byte [] boundaryBytes, Encoding baseEncoding, bool debugEnabled ) {
-        this.boundaryBytes = boundaryBytes;
+    public MultipartFormReader ( byte [] inputBytes, Encoding baseEncoding, bool debugEnabled ) {
         encoding = baseEncoding;
         bytes = inputBytes;
-        this.debugEnabled = debugEnabled;
     }
 
     public MultipartObject [] Read ( CancellationToken cancellation = default ) {

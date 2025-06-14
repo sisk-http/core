@@ -155,26 +155,13 @@ namespace Sisk.Core.Entity {
             string? contentType = req.Headers [ HttpKnownHeaderNames.ContentType ]
                 ?? throw new InvalidOperationException ( SR.MultipartObject_ContentTypeMissing );
 
-            string [] contentTypePieces = contentType.Split ( ';' );
-            string? boundary = null;
-            for (int i = 0; i < contentTypePieces.Length; i++) {
-                cancellation.ThrowIfCancellationRequested ();
-                string obj = contentTypePieces [ i ];
-                string [] kv = obj.Split ( "=" );
-                if (kv.Length != 2) { continue; }
-                if (kv [ 0 ].Trim () == "boundary") {
-                    boundary = kv [ 1 ].Trim ();
-                }
-            }
-
-            if (boundary is null)
+            if (!contentType.Contains ( "boundary=" ))
                 throw new InvalidOperationException ( SR.MultipartObject_BoundaryMissing );
 
             if (body.Length == 0)
                 return new MultipartFormCollection ( Enumerable.Empty<MultipartObject> () );
 
-            byte [] boundaryBytes = req.RequestEncoding.GetBytes ( boundary );
-            MultipartFormReader reader = new MultipartFormReader ( body, boundaryBytes, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions );
+            MultipartFormReader reader = new MultipartFormReader ( body, req.RequestEncoding, req.baseServer.ServerConfiguration.ThrowExceptions );
             var objects = reader.Read ( cancellation );
 
             return new MultipartFormCollection ( objects );
