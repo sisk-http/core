@@ -9,6 +9,9 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading; // Added for Thread.Sleep
 using System.Threading.Tasks; // Added for async Task and Task.Delay
+using Sisk.Core.WebSockets; // Added for WebSocket support
+using System.Net.WebSockets; // Added for WebSocketMessageType
+using System.Security.Cryptography; // Added for SHA256
 
 namespace tests;
 
@@ -637,6 +640,289 @@ public sealed class Server
                     eventSource.Send("", fieldName: "customEmpty"); // Custom event name, empty data
                     eventSource.Send(null, fieldName: "customNull"); // Custom event name, null data (becomes empty)
                     return eventSource.Close();
+                });
+
+                // WebSocket routes
+                router.MapWebSocket("/tests/ws/echo", async (HttpRequest request, WebSocket client) =>
+                {
+                    await client.SendTextAsync($"Connected to /tests/ws/echo. Your headers: {string.Join(", ", request.Headers.Select(h => $"{h.Key}={h.Value}"))}");
+                    WebSocketReceiveResult? result;
+                    do
+                    {
+                        var buffer = new byte[1024 * 4];
+                        result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client initiated close", CancellationToken.None);
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            await client.SendTextAsync($"Echo: {receivedMessage}");
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Binary)
+                        {
+                            var binaryData = new ArraySegment<byte>(buffer, 0, result.Count);
+                            await client.SendBinaryAsync(binaryData);
+                        }
+                    } while (!result.CloseStatus.HasValue);
+                });
+
+                router.MapWebSocket("/tests/ws/checksum", async (HttpRequest request, WebSocket client) =>
+                {
+                    await client.SendTextAsync("Connected to /tests/ws/checksum. Send data as binary, then checksum as text (SHA256 hex).");
+                    byte[]? lastReceivedBinary = null;
+
+                    WebSocketReceiveResult? result;
+                    do
+                    {
+                        var buffer = new byte[1024 * 8]; // Increased buffer for potentially larger data
+                        result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client initiated close", CancellationToken.None);
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Binary)
+                        {
+                            lastReceivedBinary = new byte[result.Count];
+                            Array.Copy(buffer, 0, lastReceivedBinary, 0, result.Count);
+                            await client.SendTextAsync($"Received {result.Count} bytes. Send SHA256 checksum as text.");
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            string receivedChecksum = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            if (lastReceivedBinary != null)
+                            {
+                                using (var sha256 = SHA256.Create())
+                                {
+                                    byte[] hashBytes = sha256.ComputeHash(lastReceivedBinary);
+                                    string computedChecksum = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                                    if (computedChecksum == receivedChecksum.ToLowerInvariant())
+                                    {
+                                        await client.SendTextAsync("Checksum VALID");
+                                    }
+                                    else
+                                    {
+                                        await client.SendTextAsync($"Checksum INVALID. Expected: {computedChecksum}, Got: {receivedChecksum}");
+                                    }
+                                }
+                                lastReceivedBinary = null; // Reset for next binary message
+                            }
+                            else
+                            {
+                                await client.SendTextAsync("Please send binary data first before sending a checksum.");
+                            }
+                        }
+                    } while (!result.CloseStatus.HasValue);
+                });
+
+                router.MapWebSocket("/tests/ws/queue", async (HttpRequest request, WebSocket client) =>
+                {
+                    await client.SendTextAsync("Connected to /tests/ws/queue. Messages will be processed in order.");
+                    var messageQueue = new Queue<string>();
+                    var cts = new CancellationTokenSource();
+                    bool processing = false;
+
+                    // Start a processing task
+                    _ = Task.Run(async () =>
+                    {
+                        processing = true;
+                        while (!cts.Token.IsCancellationRequested || messageQueue.Count > 0)
+                        {
+                            if (messageQueue.TryDequeue(out string? messageContent))
+                            {
+                                await client.SendTextAsync($"Processing: {messageContent}");
+                                await Task.Delay(100, cts.Token); // Simulate work
+                                await client.SendTextAsync($"Processed: {messageContent}");
+                            }
+                            else
+                            {
+                                await Task.Delay(50, cts.Token); // Wait for more messages
+                            }
+                        }
+                        processing = false;
+                    }, cts.Token);
+
+                    WebSocketReceiveResult? result;
+                    do
+                    {
+                        var buffer = new byte[1024 * 4];
+                        result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            if (receivedMessage.Equals("STOP_PROCESSING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                cts.Cancel();
+                                await client.SendTextAsync("Stopping message processing queue.");
+                            }
+                            else
+                            {
+                                messageQueue.Enqueue(receivedMessage);
+                                await client.SendTextAsync($"Queued: {receivedMessage}");
+                            }
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            cts.Cancel();
+                            // Wait a bit for the processing task to finish up if it's active
+                            for(int i=0; i < 10 && processing; ++i) await Task.Delay(100);
+                            await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client initiated close", CancellationToken.None);
+                        }
+                    } while (!result.CloseStatus.HasValue && !cts.IsCancellationRequested);
+
+                    // Ensure remaining messages are processed if client didn't explicitly stop
+                    if (cts.IsCancellationRequested && messageQueue.Count > 0)
+                    {
+                       await client.SendTextAsync($"Client disconnected, processing {messageQueue.Count} remaining messages...");
+                       while (messageQueue.TryDequeue(out string? messageContent))
+                       {
+                           await client.SendTextAsync($"Processing: {messageContent}");
+                           await Task.Delay(100); // Simulate work
+                           await client.SendTextAsync($"Processed: {messageContent}");
+                       }
+                    }
+                    if (!client.CloseStatus.HasValue)
+                    {
+                        await client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Queue processing finished.", CancellationToken.None);
+                    }
+                });
+
+                router.MapWebSocket("/tests/ws/headers", async (HttpRequest request, WebSocket client) =>
+                {
+                    var headersDict = new Dictionary<string, string>();
+                    foreach (var header in request.Headers)
+                    {
+                        if (header.Value != null)
+                           headersDict[header.Key] = header.Value;
+                    }
+                    // Sisk.Core.Http.JsonContent requires a concrete type for serialization or an object.
+                    // Using Dictionary<string, string> is fine.
+                    var jsonContent = JsonContent.Create(headersDict);
+                    string headersJson = Encoding.UTF8.GetString(jsonContent.WriteToByteArray());
+                    await client.SendTextAsync(headersJson);
+                    await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Headers sent", CancellationToken.None);
+                });
+
+                router.MapWebSocket("/tests/ws/async-server", async (HttpRequest request, WebSocket client) =>
+                {
+                    await client.SendTextAsync("Connected to /tests/ws/async-server. Server will handle messages asynchronously.");
+
+                    WebSocketReceiveResult? result;
+                    do
+                    {
+                        var buffer = new byte[1024 * 4];
+                        result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                        if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            // Don't await this task, let it run in the background
+                            _ = Task.Run(async () => {
+                                await Task.Delay(500); // Simulate async work
+                                await client.SendTextAsync($"Async response to: {receivedMessage}");
+                            });
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client initiated close", CancellationToken.None);
+                        }
+                    } while (!result.CloseStatus.HasValue);
+                });
+
+                router.MapWebSocket("/tests/ws/disconnect", async (HttpRequest request, WebSocket client) =>
+                {
+                    // This handler is primarily for testing server-side behavior on client disconnect.
+                    // We can log or set a flag that a test could later verify.
+                    // For now, just acknowledge connection and wait for disconnect.
+                    Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {client.GetHashCode()} connected. Waiting for disconnect.");
+                    try
+                    {
+                         WebSocketReceiveResult? result;
+                         var buffer = new byte[1024];
+                         do
+                         {
+                             result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                             if (result.MessageType == WebSocketMessageType.Text) {
+                                 // Optional: echo back to confirm connection is live
+                                 await client.SendTextAsync("Still connected...");
+                             }
+                         } while (!result.CloseStatus.HasValue);
+                         Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {client.GetHashCode()} initiated disconnect with status: {result.CloseStatus}, Description: {result.CloseStatusDescription}");
+                    }
+                    catch (WebSocketException wsex) when (wsex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely || wsex.WebSocketErrorCode == WebSocketError.OperationAborted)
+                    {
+                        // This is where you'd handle unexpected disconnects
+                        Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {client.GetHashCode()} disconnected unexpectedly. Error: {wsex.Message}");
+                        // Perform cleanup tasks here if necessary
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[WebSocket /tests/ws/disconnect] Error for client {client.GetHashCode()}: {ex.Message}");
+                    }
+                    finally
+                    {
+                         Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {client.GetHashCode()} session ended.");
+                         // Ensure connection is closed if not already
+                         if (client.State != WebSocketState.Closed && client.State != WebSocketState.Aborted)
+                         {
+                            await client.CloseAsync(WebSocketCloseStatus.InternalServerError, "Server finalizing session.", CancellationToken.None);
+                         }
+                    }
+                });
+
+                router.MapWebSocket("/tests/ws/subprotocol", async (HttpRequest request, WebSocket client) =>
+                {
+                    // Server logic to select a sub-protocol
+                    string? selectedProtocol = null;
+                    if (request.Headers.TryGetValue("Sec-WebSocket-Protocol", out string? clientProtocolsHeader))
+                    {
+                        var clientProtocols = clientProtocolsHeader?.Split(',').Select(p => p.Trim());
+                        // Example: server supports "chat.v1" and "chat.v2"
+                        string[] supportedServerProtocols = { "chat.v1", "chat.v2", "custom.protocol" };
+                        if (clientProtocols != null)
+                        {
+                            foreach (var pName in clientProtocols)
+                            {
+                                if (supportedServerProtocols.Contains(pName, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    selectedProtocol = pName; // Select the first supported protocol
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Important: The actual sub-protocol negotiation is handled by Sisk itself
+                    // when you pass `requestedSubProtocol` to `HttpServer.UpgradeToWebSocketAsync`.
+                    // Sisk's MapWebSocket does this internally if a match is found.
+                    // This handler just needs to know *which* protocol was selected to behave accordingly.
+                    // The selected protocol is available in `client.SubProtocol`.
+
+                    if (!string.IsNullOrEmpty(client.SubProtocol))
+                    {
+                        await client.SendTextAsync($"Sub-protocol '{client.SubProtocol}' negotiated and selected.");
+                    }
+                    else
+                    {
+                        await client.SendTextAsync("No common sub-protocol negotiated, or client did not request one.");
+                    }
+
+                    // Echo functionality for testing with the negotiated protocol
+                    WebSocketReceiveResult? result;
+                    do
+                    {
+                        var buffer = new byte[1024 * 4];
+                        result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            await client.SendTextAsync($"({client.SubProtocol ?? "no-protocol"}): {receivedMessage}");
+                        }
+                    } while (!result.CloseStatus.HasValue);
+
+                    await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Sub-protocol test finished", CancellationToken.None);
                 });
             })
             .Build();
