@@ -4,6 +4,8 @@ using Sisk.Core.Routing;
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
+using System.Collections.Generic; // Added for List and Dictionary
+using Sisk.Core.Entity; // Added for MultipartFormCollection and MultipartObject
 
 namespace tests;
 
@@ -475,6 +477,111 @@ public sealed class Server
                     catch (Exception ex)
                     {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}");
+                    }
+                });
+
+                router.SetRoute(RouteMethod.Post, "/tests/multipart/echo", async (HttpRequest req) => {
+                    try
+                    {
+                        Sisk.Core.Entity.MultipartFormCollection multipartCollection = await req.GetMultipartFormContentAsync();
+                        var result = new List<SimpleMultipartObjectInfo>();
+                        if (multipartCollection == null)
+                        {
+                            // This case might not be hit if GetMultipartFormContentAsync throws an exception
+                            // for non-multipart content or other issues. Included for completeness.
+                            return new HttpResponse(System.Net.HttpStatusCode.BadRequest, "No multipart content found or error during parsing.");
+                        }
+
+                        foreach (var mpo in multipartCollection.Values)
+                        {
+                            var info = new SimpleMultipartObjectInfo();
+                            info.Name = mpo.Name;
+                            info.FileName = mpo.Filename;
+                            info.ContentType = mpo.ContentTypeHeader?.Value ?? mpo.ContentType;
+                            info.Length = mpo.ContentBytes?.Length ?? 0;
+
+                            info.PartHeaders = new Dictionary<string, string>();
+                            if (mpo.Headers != null)
+                            {
+                                foreach (var headerKey in mpo.Headers.Keys)
+                                {
+                                    if (headerKey != null)
+                                    {
+                                       info.PartHeaders[headerKey] = mpo.Headers[headerKey];
+                                    }
+                                }
+                            }
+
+                            Encoding partEncoding = Encoding.UTF8;
+                            string? charset = null;
+                            if (!string.IsNullOrEmpty(mpo.ContentTypeHeader?.Value))
+                            {
+                                try
+                                {
+                                    var mediaType = new System.Net.Mime.ContentType(mpo.ContentTypeHeader.Value);
+                                    if (!string.IsNullOrEmpty(mediaType.CharSet))
+                                    {
+                                        charset = mediaType.CharSet;
+                                        partEncoding = Encoding.GetEncoding(charset);
+                                    }
+                                }
+                                catch (Exception) { /* Ignore invalid ContentType or charset, use default UTF-8 */ }
+                            } else if (!string.IsNullOrEmpty(mpo.ContentType)) {
+                                 try
+                                {
+                                    var mediaType = new System.Net.Mime.ContentType(mpo.ContentType);
+                                    if (!string.IsNullOrEmpty(mediaType.CharSet))
+                                    {
+                                        charset = mediaType.CharSet;
+                                        partEncoding = Encoding.GetEncoding(charset);
+                                    }
+                                }
+                                catch (Exception) { /* Ignore invalid ContentType or charset, use default UTF-8 */ }
+                            }
+
+                            if (mpo.IsFile)
+                            {
+                                info.Value = null;
+                                if (mpo.ContentBytes != null)
+                                {
+                                    bool isTextContent = false;
+                                    if (charset != null) {
+                                        isTextContent = true;
+                                    } else if (mpo.ContentType != null) {
+                                        string cTypeLower = mpo.ContentType.ToLowerInvariant();
+                                        isTextContent = cTypeLower.StartsWith("text/") ||
+                                                        cTypeLower.Contains("json") ||
+                                                        cTypeLower.Contains("xml") ||
+                                                        cTypeLower.Contains("html") ||
+                                                        cTypeLower.Contains("javascript");
+                                    }
+
+                                    if (isTextContent)
+                                    {
+                                        info.ContentPreview = partEncoding.GetString(mpo.ContentBytes);
+                                    }
+                                    else
+                                    {
+                                        info.ContentPreview = Convert.ToBase64String(mpo.ContentBytes);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                info.Value = mpo.ReadContentAsString(partEncoding);
+                                info.ContentPreview = info.Value;
+                            }
+                            result.Add(info);
+                        }
+                        return new HttpResponse(JsonContent.Create(result));
+                    }
+                    catch (Sisk.Core.Http.HttpRequestException httpReqEx)
+                    {
+                        return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {httpReqEx.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error processing multipart request: {ex.Message}");
                     }
                 });
             })
