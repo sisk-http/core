@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Sisk.Core.Internal;
 
-internal class StreamUtil {
+internal sealed class StreamUtil {
 
     public static void CopyToLimited ( Stream source, Stream destination, int bufferSize, long maxLength ) {
         byte [] buffer = ArrayPool<byte>.Shared.Rent ( bufferSize );
