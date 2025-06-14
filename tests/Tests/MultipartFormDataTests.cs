@@ -270,8 +270,10 @@ public class MultipartFormDataTests
             // Example: Content-Disposition: form-data; name="partWithCustomHeader"; filename="dataWithHeader.txt"
             // The exact value might vary slightly based on how HttpClient formats it.
             // A Contains check might be more robust for Content-Disposition if exact formatting is tricky.
-            Assert.IsTrue(partObj.PartHeaders["Content-Disposition"].Contains($"name=\"{fieldName}\""), "Content-Disposition should contain the correct name.");
-            Assert.IsTrue(partObj.PartHeaders["Content-Disposition"].Contains($"filename=\"dataWithHeader.txt\""), "Content-Disposition should contain the correct filename.");
+
+            var contentDisposition = ContentDispositionHeaderValue.Parse(partObj.PartHeaders["Content-Disposition"]);
+            Assert.IsTrue(contentDisposition.Name == fieldName, "Content-Disposition should contain the correct name.");
+            Assert.IsTrue(contentDisposition.FileName == "dataWithHeader.txt", "Content-Disposition should contain the correct filename.");
         }
     }
 
@@ -334,8 +336,10 @@ public class MultipartFormDataTests
 
             byte[] textBytes = Encoding.UTF8.GetBytes(textContentWithMixedEndings);
             var fileBytesContent = new ByteArrayContent(textBytes);
-            fileBytesContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
-            fileBytesContent.Headers.ContentType.CharSet = Encoding.UTF8.WebName; // "utf-8"
+            fileBytesContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType)
+            {
+                CharSet = Encoding.UTF8.WebName // "utf-8"
+            };
 
             multipartContent.Add(fileBytesContent, fieldName, fileName);
 
@@ -377,8 +381,10 @@ public class MultipartFormDataTests
 
             byte[] fileBytes = encoding.GetBytes(testString);
             var byteArrayContent = new ByteArrayContent(fileBytes);
-            byteArrayContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
-            byteArrayContent.Headers.ContentType.CharSet = charsetName;
+            byteArrayContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain")
+            {
+                CharSet = charsetName
+            };
             multipartContent.Add(byteArrayContent, filePartName, fileName);
 
             var response = await client.PostAsync("tests/multipart/echo", multipartContent);
@@ -421,8 +427,10 @@ public class MultipartFormDataTests
 
             byte[] fileBytes = encoding.GetBytes(testString);
             var byteArrayContent = new ByteArrayContent(fileBytes);
-            byteArrayContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
-            byteArrayContent.Headers.ContentType.CharSet = charsetName;
+            byteArrayContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain")
+            {
+                CharSet = charsetName
+            };
             multipartContent.Add(byteArrayContent, filePartName, fileName);
 
             var response = await client.PostAsync("tests/multipart/echo", multipartContent);
@@ -464,8 +472,10 @@ public class MultipartFormDataTests
 
             byte[] fileBytes = encoding.GetBytes(testString);
             var byteArrayContent = new ByteArrayContent(fileBytes);
-            byteArrayContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
-            byteArrayContent.Headers.ContentType.CharSet = charsetName;
+            byteArrayContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain")
+            {
+                CharSet = charsetName
+            };
             multipartContent.Add(byteArrayContent, filePartName, fileName);
 
             var response = await client.PostAsync("tests/multipart/echo", multipartContent);

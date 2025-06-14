@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Collections.Specialized;
+using System.Net.Http.Headers;
 using System.Text;
 using Sisk.Core.Http;
 
@@ -31,8 +32,8 @@ namespace Sisk.Core.Entity {
             get {
                 var contentDisposition = Headers.ContentDisposition;
                 if (contentDisposition != null) {
-                    var collection = StringValueCollection.FromCookieString ( contentDisposition );
-                    return collection [ "filename" ];
+                    var parsedResult = ContentDispositionHeaderValue.Parse ( contentDisposition );
+                    return parsedResult.FileName ?? parsedResult.FileNameStar;
                 }
                 return null;
             }
@@ -45,8 +46,7 @@ namespace Sisk.Core.Entity {
             get {
                 var contentDisposition = Headers.ContentDisposition;
                 if (contentDisposition != null) {
-                    var collection = StringValueCollection.FromCookieString ( contentDisposition );
-                    if (collection [ "name" ] is { } name) {
+                    if (ContentDispositionHeaderValue.Parse ( contentDisposition ).Name is { } name) {
                         return name;
                     }
                 }

@@ -1,11 +1,11 @@
-﻿using Sisk.Core.Http;
+﻿using Sisk.Core.Entity; // Added for MultipartFormCollection and MultipartObject
+using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Routing;
+using System.Collections.Generic; // Added for List and Dictionary
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
-using System.Collections.Generic; // Added for List and Dictionary
-using Sisk.Core.Entity; // Added for MultipartFormCollection and MultipartObject
 
 namespace tests;
 
@@ -480,7 +480,8 @@ public sealed class Server
                     }
                 });
 
-                router.SetRoute(RouteMethod.Post, "/tests/multipart/echo", async (HttpRequest req) => {
+                router.SetRoute(RouteMethod.Post, "/tests/multipart/echo", async (HttpRequest req) =>
+                {
                     try
                     {
                         Sisk.Core.Entity.MultipartFormCollection multipartCollection = await req.GetMultipartFormContentAsync();
@@ -494,31 +495,33 @@ public sealed class Server
 
                         foreach (var mpo in multipartCollection.Values)
                         {
-                            var info = new SimpleMultipartObjectInfo();
-                            info.Name = mpo.Name;
-                            info.FileName = mpo.Filename;
-                            info.ContentType = mpo.ContentTypeHeader?.Value ?? mpo.ContentType;
-                            info.Length = mpo.ContentBytes?.Length ?? 0;
+                            var info = new SimpleMultipartObjectInfo
+                            {
+                                Name = mpo.Name,
+                                FileName = mpo.Filename,
+                                ContentType = mpo.ContentType,
+                                Length = mpo.ContentBytes?.Length ?? 0,
 
-                            info.PartHeaders = new Dictionary<string, string>();
+                                PartHeaders = []
+                            };
                             if (mpo.Headers != null)
                             {
                                 foreach (var headerKey in mpo.Headers.Keys)
                                 {
                                     if (headerKey != null)
                                     {
-                                       info.PartHeaders[headerKey] = mpo.Headers[headerKey];
+                                        info.PartHeaders[headerKey] = mpo.Headers[headerKey];
                                     }
                                 }
                             }
 
                             Encoding partEncoding = Encoding.UTF8;
                             string? charset = null;
-                            if (!string.IsNullOrEmpty(mpo.ContentTypeHeader?.Value))
+                            if (!string.IsNullOrEmpty(mpo.ContentType))
                             {
                                 try
                                 {
-                                    var mediaType = new System.Net.Mime.ContentType(mpo.ContentTypeHeader.Value);
+                                    var mediaType = new System.Net.Mime.ContentType(mpo.ContentType);
                                     if (!string.IsNullOrEmpty(mediaType.CharSet))
                                     {
                                         charset = mediaType.CharSet;
@@ -526,8 +529,10 @@ public sealed class Server
                                     }
                                 }
                                 catch (Exception) { /* Ignore invalid ContentType or charset, use default UTF-8 */ }
-                            } else if (!string.IsNullOrEmpty(mpo.ContentType)) {
-                                 try
+                            }
+                            else if (!string.IsNullOrEmpty(mpo.ContentType))
+                            {
+                                try
                                 {
                                     var mediaType = new System.Net.Mime.ContentType(mpo.ContentType);
                                     if (!string.IsNullOrEmpty(mediaType.CharSet))
@@ -545,9 +550,12 @@ public sealed class Server
                                 if (mpo.ContentBytes != null)
                                 {
                                     bool isTextContent = false;
-                                    if (charset != null) {
+                                    if (charset != null)
+                                    {
                                         isTextContent = true;
-                                    } else if (mpo.ContentType != null) {
+                                    }
+                                    else if (mpo.ContentType != null)
+                                    {
                                         string cTypeLower = mpo.ContentType.ToLowerInvariant();
                                         isTextContent = cTypeLower.StartsWith("text/") ||
                                                         cTypeLower.Contains("json") ||
@@ -627,5 +635,5 @@ public class SimpleMultipartObjectInfo
     public string? ContentType { get; set; }
     public long Length { get; set; } // Length of the content bytes
     public string? ContentPreview { get; set; } // Optional: small preview for text-based files or Base64 for binary
-    public Dictionary<string, string>? PartHeaders { get; set; }
+    public Dictionary<string, string?>? PartHeaders { get; set; }
 }
