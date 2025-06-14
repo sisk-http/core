@@ -7,6 +7,7 @@
 // File name:   Router.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -26,10 +27,13 @@ sealed class ActionHandler {
 
 
 namespace Sisk.Core.Routing {
+
     /// <summary>
     /// Represents a collection of <see cref="Route"/> and main executor of actions in the <see cref="HttpServer"/>.
     /// </summary>
-    public sealed partial class Router {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage ( "Naming", "CA1710:Identifiers should not have incorrect suffix",
+        Justification = "Breaking change. Not going forward on this one." )]
+    public sealed partial class Router : IReadOnlyCollection<Route> {
         internal sealed record RouterExecutionResult ( HttpResponse? Response, Route? Route, RouteMatchResult Result, Exception? Exception );
 
         internal HttpServer? parentServer;
@@ -138,6 +142,9 @@ namespace Sisk.Core.Routing {
                     return new HttpResponse ( HttpStatusCode.MethodNotAllowed );
                 }
             } );
+
+        /// <inheritdoc/>
+        public int Count => ((IReadOnlyCollection<Route>) _routesList).Count;
 
         /// <summary>
         /// Gets all routes defined on this router instance.
@@ -268,6 +275,15 @@ namespace Sisk.Core.Routing {
 
         internal void FreeHttpServer () {
             parentServer = null;
+        }
+
+        /// <inheritdoc/>
+        public IEnumerator<Route> GetEnumerator () {
+            return ((IEnumerable<Route>) _routesList).GetEnumerator ();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator () {
+            return ((IEnumerable) _routesList).GetEnumerator ();
         }
     }
 

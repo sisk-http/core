@@ -211,6 +211,20 @@ public partial class Router {
     #endregion
 
     #region SetRoute methods
+
+    /// <summary>
+    /// Defines the specified collection of routes.
+    /// </summary>
+    /// <param name="routes">The routes to be defined.</param>
+#if NET9_0_OR_GREATER
+    public void SetRoutes ( params IEnumerable<Route> routes ) {
+#else
+    public void SetRoutes ( params Route [] routes ) {
+#endif
+        foreach (var route in routes)
+            SetRoute ( route );
+    }
+
     /// <summary>
     /// Defines an route with their method, path and action function.
     /// </summary>
