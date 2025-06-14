@@ -3,23 +3,24 @@
       <a href="https://sisk.proj.pw/" target="_blank"><img width="160" src="./.github/Icon.png"></a>
   </p>
   <h1>Sisk Framework</h1>
-
+  
   [Discover Sisk](https://www.sisk-framework.org/)
   | [Documentation](https://docs.sisk-framework.org/)
   | [Blog](https://blog.sisk-framework.org/)
   | [Changelogs](https://github.com/sisk-http/archive/tree/master/changelogs)
   | [Benchmarks](https://github.com/sisk-http/benchmarks)
-
+  
   <div>
-
+  
+  <a href="">[![Tests](https://github.com/sisk-http/core/actions/workflows/dotnet-tests.yml/badge.svg)](https://github.com/sisk-http/core/actions/workflows/dotnet-tests.yml)</a>
   <a href="">[![Nuget](https://img.shields.io/nuget/dt/Sisk.HttpServer?logo=nuget)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
   <a href="">[![Nuget](https://img.shields.io/nuget/v/Sisk.HttpServer?label=last%20version)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
   <a href="">[![Nuget](https://img.shields.io/github/license/sisk-http/core)](https://github.com/sisk-http/core/blob/master/LICENSE.txt)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/.net_version-8_|_9-purple?logo=dotnet)](#)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
-
+  
   </div>
-
+  
   **Sisk** is a set of libraries for web development that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
 
 </div>
@@ -45,12 +46,10 @@ dotnet add package Sisk.HttpServer
 
 In this repository, you have the source code of:
   
-  - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
-  - [Sisk.SslProxy](extensions/Sisk.SslProxy): an experimental SSL proxy provider for Sisk.
-  - [Sisk.IniConfiguration](extensions/Sisk.IniConfiguration): an INI-document configuration provider for Sisk.
-  - [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
-  - [Sisk.JsonRpc](extensions/Sisk.JsonRPC): this package provides an JSON-RPC 2.0 interface for Sisk projects.
-  - [Sisk.Cadente](extensions/Sisk.Cadente): an experimental "ultrafast" implementation of the HTTP/1.1 protocol in pure C#.
+- [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
+- [Sisk.IniConfiguration](extensions/Sisk.IniConfiguration): an INI-document configuration provider for Sisk.
+- [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
+- [Sisk.Cadente](extensions/Sisk.Cadente): an experimental "ultrafast" implementation of the HTTP/1.1 protocol in pure C#.
 
 ## Getting started
 
@@ -61,20 +60,24 @@ Due to its explicit nature, its behavior is fully predictable. The main differen
 You can build applications that are not necessarily a complete web application, but that have an web module, such as receiving an OAuth authorization token, hosting a UI to control your application, monitoring logs, etc. Sisk is very flexible and abstract.
 
 ```c#
-using Sisk.Core.Http;
-
 class Program
 {
     static async Task Main(string[] args)
     {
-        using var app = HttpServer.CreateBuilder(5555).Build();
-
+        using var app = HttpServer.CreateBuilder()
+            .UseListeningPort("http://localhost:5000/")
+            .Build();
+        
         app.Router.MapGet("/", request =>
         {
-            return new HttpResponse("Hello, world!");
+            return new HttpResponse()
+            {
+                Status = 200,
+                Content = new StringContent("Hello, world!")
+            };
         });
-
-        await app.StartAsync(); // 🚀 app is listening on http://localhost:5555/
+        
+        await app.StartAsync();
     }
 }
 ```
