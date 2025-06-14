@@ -5,11 +5,11 @@ using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.WebSockets;
-using System.Security.Cryptography;
 
 namespace tests;
 
@@ -148,141 +148,183 @@ public sealed class Server
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getJsonContent", (req) =>
                 {
-                    try {
+                    try
+                    {
                         var poco = req.GetJsonContent<tests.Tests.TestPoco>();
-                        if (poco != null) {
+                        if (poco != null)
+                        {
                             string jsonString = System.Text.Json.JsonSerializer.Serialize(poco);
                             return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
                         }
                         return new HttpResponse("null");
-                    } catch (System.Text.Json.JsonException ex) {
+                    }
+                    catch (System.Text.Json.JsonException ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"JsonException: {ex.Message}");
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}");
                     }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getJsonContentAsync", async (HttpRequest req) =>
                 {
-                    try {
+                    try
+                    {
                         var poco = await req.GetJsonContentAsync<tests.Tests.TestPoco>();
-                         if (poco != null) {
+                        if (poco != null)
+                        {
                             string jsonString = System.Text.Json.JsonSerializer.Serialize(poco);
                             return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
                         }
                         return new HttpResponse("null");
-                    } catch (System.Text.Json.JsonException ex) {
+                    }
+                    catch (System.Text.Json.JsonException ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"JsonException: {ex.Message}");
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}");
                     }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getJsonContentWithOptions", (req) =>
                 {
-                    try {
+                    try
+                    {
                         var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                         var poco = req.GetJsonContent<tests.Tests.TestPoco>(options);
-                        if (poco != null) {
+                        if (poco != null)
+                        {
                             string jsonString = System.Text.Json.JsonSerializer.Serialize(poco, options);
                             return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
                         }
                         return new HttpResponse("null");
-                    } catch (System.Text.Json.JsonException ex) {
+                    }
+                    catch (System.Text.Json.JsonException ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"JsonException (options): {ex.Message}");
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}");
                     }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getJsonContentAsyncWithOptions", async (HttpRequest req) =>
                 {
-                    try {
+                    try
+                    {
                         var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                         var poco = await req.GetJsonContentAsync<tests.Tests.TestPoco>(options);
-                        if (poco != null) {
+                        if (poco != null)
+                        {
                             string jsonString = System.Text.Json.JsonSerializer.Serialize(poco, options);
                             return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
                         }
                         return new HttpResponse("null");
-                    } catch (System.Text.Json.JsonException ex) {
+                    }
+                    catch (System.Text.Json.JsonException ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"JsonException (options, async): {ex.Message}");
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}");
                     }
                 });
 
-                router.SetRoute(RouteMethod.Post, "/tests/httprequest/getFormContent", (req) => {
-                    try {
+                router.SetRoute(RouteMethod.Post, "/tests/httprequest/getFormContent", (req) =>
+                {
+                    try
+                    {
                         Sisk.Core.Entity.StringKeyStoreCollection form = req.GetFormContent();
                         var dictionary = form.ToDictionary(kv => kv.Key, kv => kv.Value.FirstOrDefault());
                         string jsonString = System.Text.Json.JsonSerializer.Serialize(dictionary);
                         return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}");
                     }
                 });
 
-                router.SetRoute(RouteMethod.Post, "/tests/httprequest/getFormContentAsync", async (HttpRequest req) => {
-                    try {
+                router.SetRoute(RouteMethod.Post, "/tests/httprequest/getFormContentAsync", async (HttpRequest req) =>
+                {
+                    try
+                    {
                         Sisk.Core.Entity.StringKeyStoreCollection form = await req.GetFormContentAsync();
                         var dictionary = form.ToDictionary(kv => kv.Key, kv => kv.Value.FirstOrDefault());
                         string jsonString = System.Text.Json.JsonSerializer.Serialize(dictionary);
                         return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}");
                     }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getMultipartFormContent", (req) =>
                 {
-                    try {
+                    try
+                    {
                         Sisk.Core.Entity.MultipartFormCollection multipartCollection = req.GetMultipartFormContent();
                         var simplifiedResult = multipartCollection.Values.Select(mpo => new SimpleMultipartObjectInfo { Name = mpo.Name, Value = mpo.IsFile ? null : mpo.ReadContentAsString(), FileName = mpo.IsFile ? mpo.Filename : null, ContentType = mpo.ContentType, Length = mpo.ContentBytes?.Length ?? 0, ContentPreview = mpo.IsFile && (mpo.ContentType?.StartsWith("text/") == true) && mpo.ContentBytes != null ? Encoding.UTF8.GetString(mpo.ContentBytes.Take(100).ToArray()) : (mpo.IsFile ? null : mpo.ReadContentAsString()) }).ToList();
                         string jsonString = System.Text.Json.JsonSerializer.Serialize(simplifiedResult);
                         return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
-                    } catch (Sisk.Core.Http.HttpRequestException ex) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {ex.Message}"); }
+                    }
+                    catch (Sisk.Core.Http.HttpRequestException ex) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {ex.Message}"); }
                     catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}"); }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getMultipartFormContentAsync", async (HttpRequest req) =>
                 {
-                    try {
+                    try
+                    {
                         Sisk.Core.Entity.MultipartFormCollection multipartCollection = await req.GetMultipartFormContentAsync();
                         var simplifiedResult = multipartCollection.Values.Select(mpo => new SimpleMultipartObjectInfo { Name = mpo.Name, Value = mpo.IsFile ? null : mpo.ReadContentAsString(), FileName = mpo.IsFile ? mpo.Filename : null, ContentType = mpo.ContentType, Length = mpo.ContentBytes?.Length ?? 0, ContentPreview = mpo.IsFile && (mpo.ContentType?.StartsWith("text/") == true) && mpo.ContentBytes != null ? Encoding.UTF8.GetString(mpo.ContentBytes.Take(100).ToArray()) : (mpo.IsFile ? null : mpo.ReadContentAsString()) }).ToList();
                         string jsonString = System.Text.Json.JsonSerializer.Serialize(simplifiedResult);
                         return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json"));
-                    } catch (Sisk.Core.Http.HttpRequestException ex) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {ex.Message}"); }
+                    }
+                    catch (Sisk.Core.Http.HttpRequestException ex) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {ex.Message}"); }
                     catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}"); }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getRequestStream/read", async (HttpRequest req) =>
                 {
-                    try {
+                    try
+                    {
                         using (System.IO.Stream requestStream = req.GetRequestStream())
-                        using (var reader = new System.IO.StreamReader(requestStream, Encoding.UTF8)) {
+                        using (var reader = new System.IO.StreamReader(requestStream, Encoding.UTF8))
+                        {
                             string content = await reader.ReadToEndAsync();
                             return new HttpResponse(new StringContent(content, Encoding.UTF8));
                         }
-                    } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}"); }
+                    }
+                    catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}"); }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getRequestStream/empty", async (HttpRequest req) =>
                 {
-                    try {
+                    try
+                    {
                         using (System.IO.Stream requestStream = req.GetRequestStream())
-                        using (var reader = new System.IO.StreamReader(requestStream, Encoding.UTF8)) {
+                        using (var reader = new System.IO.StreamReader(requestStream, Encoding.UTF8))
+                        {
                             string content = await reader.ReadToEndAsync();
                             if (string.IsNullOrEmpty(content)) return new HttpResponse(System.Net.HttpStatusCode.OK, "Stream was empty as expected.");
                             return new HttpResponse(System.Net.HttpStatusCode.BadRequest, "Stream was not empty.");
                         }
-                    } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}"); }
+                    }
+                    catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}"); }
                 });
 
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getRequestStream/afterGetBodyContents", (req) => { try { _ = req.GetBodyContents(); req.GetRequestStream(); return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, "GetRequestStream did not throw after GetBodyContents."); } catch (InvalidOperationException) { return new HttpResponse(System.Net.HttpStatusCode.OK, "Caught InvalidOperationException as expected."); } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}"); } });
                 router.SetRoute(RouteMethod.Post, "/tests/httprequest/getRequestStream/afterRawBody", (req) => { try { _ = req.RawBody; req.GetRequestStream(); return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, "GetRequestStream did not throw after RawBody access."); } catch (InvalidOperationException) { return new HttpResponse(System.Net.HttpStatusCode.OK, "Caught InvalidOperationException as expected."); } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}"); } });
-                router.SetRoute(RouteMethod.Post, "/tests/httprequest/getRequestStream/afterGetJsonContent", (req) => { try { _ = req.GetJsonContent<tests.Tests.TestPoco>(); using (System.IO.Stream requestStream = req.GetRequestStream()){ byte[] buffer = new byte[10]; int bytesRead = requestStream.Read(buffer, 0, buffer.Length); if (bytesRead == 0) { var contentBytesField = typeof(Sisk.Core.Http.HttpRequest).GetField("contentBytes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance); object? contentBytesValue = contentBytesField?.GetValue(req); if (contentBytesValue == null) return new HttpResponse(System.Net.HttpStatusCode.OK, "Stream returned and was consumed (0 bytes read), contentBytes is null."); else return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, "Stream returned and was consumed, but contentBytes was not null."); } return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Stream returned but was not fully consumed (read {bytesRead} bytes)."); } } catch (InvalidOperationException ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected InvalidOperationException: {ex.Message}"); } catch (System.Text.Json.JsonException jEx) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"Json body error: {jEx.Message}"); } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}"); } });
-                router.SetRoute(RouteMethod.Post, "/tests/multipart/echo", async (HttpRequest req) => { try { Sisk.Core.Entity.MultipartFormCollection multipartCollection = await req.GetMultipartFormContentAsync(); var result = new List<SimpleMultipartObjectInfo>(); if (multipartCollection == null) return new HttpResponse(System.Net.HttpStatusCode.BadRequest, "No multipart content found or error during parsing."); foreach (var mpo in multipartCollection.Values) { var info = new SimpleMultipartObjectInfo { Name = mpo.Name, FileName = mpo.Filename, ContentType = mpo.ContentType, Length = mpo.ContentBytes?.Length ?? 0, PartHeaders = new Dictionary<string, string?>() }; if (mpo.Headers != null) foreach (var headerKey in mpo.Headers.Keys) if (headerKey != null && mpo.Headers[headerKey] != null) info.PartHeaders[headerKey] = string.Join(", ", mpo.Headers.GetValues(headerKey) ?? []); Encoding partEncoding = Encoding.UTF8; string? charset = null; if (!string.IsNullOrEmpty(mpo.ContentType)) try { var mediaType = new System.Net.Mime.ContentType(mpo.ContentType); if (!string.IsNullOrEmpty(mediaType.CharSet)) { charset = mediaType.CharSet; partEncoding = Encoding.GetEncoding(charset); } } catch { } if (mpo.IsFile) { info.Value = null; if (mpo.ContentBytes != null) { bool isTextContent = charset != null || (mpo.ContentType != null && (mpo.ContentType.ToLowerInvariant().StartsWith("text/") || mpo.ContentType.ToLowerInvariant().Contains("json") || mpo.ContentType.ToLowerInvariant().Contains("xml") || mpo.ContentType.ToLowerInvariant().Contains("html") || mpo.ContentType.ToLowerInvariant().Contains("javascript"))); info.ContentPreview = isTextContent ? partEncoding.GetString(mpo.ContentBytes) : Convert.ToBase64String(mpo.ContentBytes); } } else { info.Value = mpo.ReadContentAsString(partEncoding); info.ContentPreview = info.Value; } result.Add(info); } string jsonString = System.Text.Json.JsonSerializer.Serialize(result); return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json")); } catch (Sisk.Core.Http.HttpRequestException httpReqEx) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {httpReqEx.Message}"); } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error processing multipart request: {ex.Message}"); } });
+                router.SetRoute(RouteMethod.Post, "/tests/httprequest/getRequestStream/afterGetJsonContent", (req) => { try { _ = req.GetJsonContent<tests.Tests.TestPoco>(); using (System.IO.Stream requestStream = req.GetRequestStream()) { byte[] buffer = new byte[10]; int bytesRead = requestStream.Read(buffer, 0, buffer.Length); if (bytesRead == 0) { var contentBytesField = typeof(Sisk.Core.Http.HttpRequest).GetField("contentBytes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance); object? contentBytesValue = contentBytesField?.GetValue(req); if (contentBytesValue == null) return new HttpResponse(System.Net.HttpStatusCode.OK, "Stream returned and was consumed (0 bytes read), contentBytes is null."); else return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, "Stream returned and was consumed, but contentBytes was not null."); } return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Stream returned but was not fully consumed (read {bytesRead} bytes)."); } } catch (InvalidOperationException ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected InvalidOperationException: {ex.Message}"); } catch (System.Text.Json.JsonException jEx) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"Json body error: {jEx.Message}"); } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}"); } });
+                router.SetRoute(RouteMethod.Post, "/tests/multipart/echo", async (HttpRequest req) => { try { Sisk.Core.Entity.MultipartFormCollection multipartCollection = await req.GetMultipartFormContentAsync(); var result = new List<SimpleMultipartObjectInfo>(); if (multipartCollection == null) return new HttpResponse(System.Net.HttpStatusCode.BadRequest, "No multipart content found or error during parsing."); foreach (var mpo in multipartCollection.Values) { var info = new SimpleMultipartObjectInfo { Name = mpo.Name, FileName = mpo.Filename, ContentType = mpo.ContentType, Length = mpo.ContentBytes?.Length ?? 0, PartHeaders = [] }; if (mpo.Headers != null) foreach (var headerKey in mpo.Headers.Keys) if (headerKey != null && mpo.Headers[headerKey] != null) info.PartHeaders[headerKey] = string.Join(", ", mpo.Headers.GetValues(headerKey) ?? []); Encoding partEncoding = Encoding.UTF8; string? charset = null; if (!string.IsNullOrEmpty(mpo.ContentType)) try { var mediaType = new System.Net.Mime.ContentType(mpo.ContentType); if (!string.IsNullOrEmpty(mediaType.CharSet)) { charset = mediaType.CharSet; partEncoding = Encoding.GetEncoding(charset); } } catch { } if (mpo.IsFile) { info.Value = null; if (mpo.ContentBytes != null) { bool isTextContent = charset != null || (mpo.ContentType != null && (mpo.ContentType.ToLowerInvariant().StartsWith("text/") || mpo.ContentType.ToLowerInvariant().Contains("json") || mpo.ContentType.ToLowerInvariant().Contains("xml") || mpo.ContentType.ToLowerInvariant().Contains("html") || mpo.ContentType.ToLowerInvariant().Contains("javascript"))); info.ContentPreview = isTextContent ? partEncoding.GetString(mpo.ContentBytes) : Convert.ToBase64String(mpo.ContentBytes); } } else { info.Value = mpo.ReadContentAsString(partEncoding); info.ContentPreview = info.Value; } result.Add(info); } string jsonString = System.Text.Json.JsonSerializer.Serialize(result); return new HttpResponse(new StringContent(jsonString, Encoding.UTF8, "application/json")); } catch (Sisk.Core.Http.HttpRequestException httpReqEx) { return new HttpResponse(System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {httpReqEx.Message}"); } catch (Exception ex) { return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, $"Server error processing multipart request: {ex.Message}"); } });
 
                 // SSE Routes
                 router.SetRoute(RouteMethod.Get, "/tests/sse/sync", (req) => { var es = req.GetEventSource(); es.AppendHeader("X-Test-SSE", "sync"); es.Send("message 1 part 1"); es.Send("message 1 part 2"); es.Send("message 2 part 1", fieldName: "customSync"); es.Send("message 2 part 2", fieldName: "customSync"); return es.Close(); });
@@ -298,7 +340,8 @@ public sealed class Server
                     // Use string.Join to handle potential multiple values for a header key
                     await client.SendAsync($"Connected to /tests/ws/echo. Your headers: {string.Join(", ", request.Headers.Select(h => $"{h.Key}={string.Join("; ", h.Value)}"))}");
                     WebSocketMessage? msg;
-                    do {
+                    do
+                    {
                         msg = await client.ReceiveMessageAsync();
                         if (msg == null) break;
                         await client.SendAsync(msg.MessageBytes);
@@ -312,15 +355,20 @@ public sealed class Server
                     await client.SendAsync("Connected to /tests/ws/checksum. Send data as binary, then checksum as text (SHA256 hex).");
                     byte[]? lastReceivedBinary = null;
                     WebSocketMessage? msg;
-                    do {
+                    do
+                    {
                         msg = await client.ReceiveMessageAsync();
                         if (msg == null) break;
-                        if (lastReceivedBinary == null) {
+                        if (lastReceivedBinary == null)
+                        {
                             lastReceivedBinary = msg.MessageBytes;
                             await client.SendAsync($"Received {lastReceivedBinary?.Length ?? 0} bytes. Send SHA256 checksum as text.");
-                        } else {
+                        }
+                        else
+                        {
                             string receivedChecksum = msg.GetString(request.RequestEncoding);
-                            using (var sha256 = SHA256.Create()) {
+                            using (var sha256 = SHA256.Create())
+                            {
                                 byte[] hashBytes = sha256.ComputeHash(lastReceivedBinary);
                                 string computedChecksum = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                                 await client.SendAsync(computedChecksum == receivedChecksum.ToLowerInvariant() ? "Checksum VALID" : $"Checksum INVALID. Expected: {computedChecksum}, Got: {receivedChecksum}");
@@ -328,61 +376,6 @@ public sealed class Server
                             lastReceivedBinary = null;
                         }
                     } while (msg != null);
-                    return await client.CloseAsync();
-                });
-
-                router.SetRoute(RouteMethod.Get, "/tests/ws/queue", async (HttpRequest request) =>
-                {
-                    HttpWebSocket client = await request.GetWebSocketAsync();
-                    await client.SendAsync("Connected to /tests/ws/queue. Messages will be processed in order.");
-                    var messageQueue = new Queue<string>();
-                    using var cts = new CancellationTokenSource();
-                    bool processing = false;
-                    object padlock = new object();
-
-                    void StartProcessing() {
-                        lock(padlock) if(processing) return; else processing = true;
-                        _ = Task.Run(async () => {
-                            try {
-                                while(!cts.IsCancellationRequested || messageQueue.Count > 0) {
-                                    if(cts.IsCancellationRequested && messageQueue.Count == 0) break;
-                                    if(messageQueue.TryDequeue(out var content)) {
-                                        if(!client.IsClosed) await client.SendAsync($"Processing: {content}", cts.Token);
-                                        await Task.Delay(100, cts.Token);
-                                        if(!client.IsClosed) await client.SendAsync($"Processed: {content}", cts.Token);
-                                    } else {
-                                        await Task.Delay(50, cts.Token);
-                                    }
-                                }
-                            } catch (OperationCanceledException) {}
-                            catch (WebSocketException) {}
-                            catch (ObjectDisposedException) {}
-                            finally { lock(padlock) processing = false; }
-                        }, cts.Token);
-                    }
-
-                    WebSocketMessage? msg;
-                    try {
-                        do {
-                            msg = await client.ReceiveMessageAsync(cts.Token);
-                            if(msg == null) break;
-                            var strMsg = msg.GetString(request.RequestEncoding);
-                            if(strMsg.Equals("STOP_PROCESSING", StringComparison.OrdinalIgnoreCase)) {
-                                cts.Cancel();
-                                if(!client.IsClosed) await client.SendAsync("Stopping message processing queue.");
-                            } else {
-                                messageQueue.Enqueue(strMsg);
-                                if(!client.IsClosed) await client.SendAsync($"Queued: {strMsg}");
-                                StartProcessing();
-                            }
-                        } while (msg != null && !cts.IsCancellationRequested);
-                    } catch (OperationCanceledException) {}
-                    catch (WebSocketException) {}
-                    finally { if(!cts.IsCancellationRequested) cts.Cancel(); }
-
-                    int cycles = 0;
-                    while(processing && messageQueue.Count > 0 && cycles++ < 100) try { await Task.Delay(100, cts.Token); } catch { break; }
-                    if(messageQueue.Count > 0 && !client.IsClosed) await client.SendAsync($"Processing queue ended with {messageQueue.Count} items remaining.");
                     return await client.CloseAsync();
                 });
 
@@ -401,14 +394,17 @@ public sealed class Server
                     HttpWebSocket client = await request.GetWebSocketAsync();
                     await client.SendAsync("Connected to /tests/ws/async-server. Server will handle messages asynchronously.");
                     WebSocketMessage? msg;
-                    do {
+                    do
+                    {
                         msg = await client.ReceiveMessageAsync();
                         if (msg == null) break;
                         var receivedMessage = msg.GetString(request.RequestEncoding);
-                        _ = Task.Run(async () => {
+                        _ = Task.Run(async () =>
+                        {
                             await Task.Delay(500);
-                            try { if(!client.IsClosed) await client.SendAsync($"Async response to: {receivedMessage}"); }
-                            catch (WebSocketException) {} catch (ObjectDisposedException) {}
+                            try { if (!client.IsClosed) await client.SendAsync($"Async response to: {receivedMessage}"); }
+                            catch (WebSocketException) { }
+                            catch (ObjectDisposedException) { }
                         });
                     } while (msg != null);
                     return await client.CloseAsync();
@@ -417,27 +413,35 @@ public sealed class Server
                 router.SetRoute(RouteMethod.Get, "/tests/ws/disconnect", async (HttpRequest request) =>
                 {
                     HttpWebSocket? client = null; string clientHash = "N/A";
-                    try {
+                    try
+                    {
                         client = await request.GetWebSocketAsync(); clientHash = client.GetHashCode().ToString();
                         Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {clientHash} connected. Waiting for disconnect.");
                         WebSocketMessage? msg;
-                        do {
+                        do
+                        {
                             msg = await client.ReceiveMessageAsync();
                             if (msg == null) { Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {clientHash} disconnected unexpectedly (ReceiveMessageAsync returned null)."); break; }
-                            if(!client.IsClosed) await client.SendAsync("Still connected...");
+                            if (!client.IsClosed) await client.SendAsync("Still connected...");
                         } while (msg != null);
                         return await client.CloseAsync();
-                    } catch (WebSocketException wsex) {
+                    }
+                    catch (WebSocketException wsex)
+                    {
                         Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {clientHash} disconnected with WebSocketException. Error: {wsex.Message}, WebSocketError: {wsex.WebSocketErrorCode}");
                         if (client != null && !client.IsClosed) return await client.CloseAsync();
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, "WebSocket session ended due to a client error.");
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         Console.WriteLine($"[WebSocket /tests/ws/disconnect] Error for client {clientHash}: {ex.Message}");
                         if (client != null && !client.IsClosed) return await client.CloseAsync();
                         return new HttpResponse(System.Net.HttpStatusCode.InternalServerError, "WebSocket session ended due to a server error.");
-                    } finally {
+                    }
+                    finally
+                    {
                         Console.WriteLine($"[WebSocket /tests/ws/disconnect] Client {clientHash} session ended.");
-                        if (client != null && !client.IsClosed) try { await client.CloseAsync(); } catch {}
+                        if (client != null && !client.IsClosed) try { await client.CloseAsync(); } catch { }
                     }
                 });
 
@@ -456,7 +460,7 @@ public sealed class Server
 
                         if (clientProtocols.Any())
                         {
-                            string[] supportedServerProtocols = { "chat.v1", "chat.v2", "custom.protocol" };
+                            string[] supportedServerProtocols = { "custom.protocol" };
                             foreach (var pName in clientProtocols)
                             {
                                 if (supportedServerProtocols.Contains(pName, StringComparer.OrdinalIgnoreCase))
@@ -472,7 +476,8 @@ public sealed class Server
                         ? $"Sub-protocol '{selectedProtocol}' negotiated and selected."
                         : "No common sub-protocol negotiated, or client did not request one.");
                     WebSocketMessage? msg;
-                    do {
+                    do
+                    {
                         msg = await client.ReceiveMessageAsync();
                         if (msg == null) break;
                         await client.SendAsync($"({selectedProtocol ?? "no-protocol"}): {msg.GetString(request.RequestEncoding)}");

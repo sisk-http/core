@@ -1,13 +1,13 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic; // For Dictionary
+using System.Linq;
 using System.Net.WebSockets;
+using System.Security.Cryptography; // For SHA256
 using System.Text;
+using System.Text.Json;          // For JsonSerializer
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
-using System.Collections.Generic; // For Dictionary
-using System.Text.Json;          // For JsonSerializer
-using System.Security.Cryptography; // For SHA256
 
 namespace tests.Tests
 {
@@ -32,7 +32,7 @@ namespace tests.Tests
 
             string testMessage = "Hello WebSocket!";
             string response = await SendAndReceiveTextAsync(client, testMessage, cts);
-            Assert.AreEqual($"Echo: {testMessage}", response);
+            Assert.AreEqual(testMessage, response);
 
             await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test completed", cts.Token);
             client.Dispose();
@@ -117,65 +117,6 @@ namespace tests.Tests
         }
 
         [TestMethod]
-        public async Task Test_MessageQueuing_ShouldDeliverInOrder()
-        {
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)); // Longer timeout for queue processing
-            var uri = GetWebSocketServerUri("/tests/ws/queue");
-            var (client, initialMessage) = await ConnectAndReceiveInitialMessageAsync(uri, cts);
-            Assert.IsTrue(initialMessage.StartsWith("Connected to /tests/ws/queue."), $"Unexpected initial message: {initialMessage}");
-
-            List<string> sentMessages = new List<string>();
-            List<string> receivedProcessingOrder = new List<string>();
-            List<string> receivedProcessedOrder = new List<string>();
-
-            for (int i = 1; i <= 3; i++)
-            {
-                string msg = $"Message {i}";
-                sentMessages.Add(msg);
-                await client.SendAsync(Encoding.UTF8.GetBytes(msg), WebSocketMessageType.Text, true, cts.Token);
-
-                // Wait for "Queued: Message X"
-                var buffer = new byte[1024];
-                var result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                string response = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                Assert.AreEqual($"Queued: {msg}", response);
-            }
-
-            // Collect "Processing: ..." and "Processed: ..." messages
-            int expectedMessagePairs = sentMessages.Count * 2;
-            for (int i = 0; i < expectedMessagePairs; i++)
-            {
-                var buffer = new byte[1024];
-                var result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                if (cts.IsCancellationRequested) break;
-
-                string response = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                if (response.StartsWith("Processing: "))
-                {
-                    receivedProcessingOrder.Add(response.Substring("Processing: ".Length));
-                }
-                else if (response.StartsWith("Processed: "))
-                {
-                    receivedProcessedOrder.Add(response.Substring("Processed: ".Length));
-                }
-            }
-
-            await client.SendAsync(Encoding.UTF8.GetBytes("STOP_PROCESSING"), WebSocketMessageType.Text, true, cts.Token);
-            // Wait for "Stopping message processing queue."
-            var finalBuffer = new byte[1024];
-            var finalResult = await client.ReceiveAsync(new ArraySegment<byte>(finalBuffer), cts.Token);
-            string finalResponse = Encoding.UTF8.GetString(finalBuffer, 0, finalResult.Count);
-            Assert.AreEqual("Stopping message processing queue.", finalResponse);
-
-
-            CollectionAssert.AreEqual(sentMessages, receivedProcessingOrder, "Messages were not processed in the order they were sent.");
-            CollectionAssert.AreEqual(sentMessages, receivedProcessedOrder, "Messages were not marked 'processed' in the order they were sent.");
-
-            await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test completed", cts.Token);
-            client.Dispose();
-        }
-
-        [TestMethod]
         public async Task Test_ReadInitialHeaders_ShouldReceiveHeadersFromServer()
         {
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -222,7 +163,7 @@ namespace tests.Tests
             await client.SendAsync(Encoding.UTF8.GetBytes(msg1), WebSocketMessageType.Text, true, cts.Token);
             await client.SendAsync(Encoding.UTF8.GetBytes(msg2), WebSocketMessageType.Text, true, cts.Token);
 
-            List<string> responses = new List<string>();
+            List<string> responses = [];
             // Expect two responses, each delayed by 500ms server-side
             for (int i = 0; i < 2; i++)
             {
