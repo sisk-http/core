@@ -180,31 +180,32 @@ namespace tests.Tests
         {
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             var uri = GetWebSocketServerUri("/tests/ws/headers");
+            ClientWebSocket? client = null; // Declare here for Dispose
 
-            var client = new ClientWebSocket();
-            client.Options.SetRequestHeader("X-Custom-Test-Header", "TestValue123");
-            client.Options.SetRequestHeader("Another-Header", "Hello Sisk");
+            try
+            {
+                // Use the modified helper to connect and receive the first message
+                (client, string headersJson) = await ConnectAndReceiveInitialMessageAsync(uri, cts, options =>
+                {
+                    options.SetRequestHeader("X-Custom-Test-Header", "TestValue123");
+                    options.SetRequestHeader("Another-Header", "Hello Sisk");
+                });
 
-            await client.ConnectAsync(uri, cts.Token);
+                var receivedHeaders = JsonSerializer.Deserialize<Dictionary<string, string>>(headersJson);
 
-            var buffer = new byte[4096]; // Might need a larger buffer for many headers
-            var result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-            string headersJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                Assert.IsNotNull(receivedHeaders, "Failed to deserialize headers JSON.");
+                Assert.IsTrue(receivedHeaders.ContainsKey("X-Custom-Test-Header"), "Custom header 'X-Custom-Test-Header' not found.");
+                Assert.AreEqual("TestValue123", receivedHeaders["X-Custom-Test-Header"]);
+                Assert.IsTrue(receivedHeaders.ContainsKey("Another-Header"), "Custom header 'Another-Header' not found.");
+                Assert.AreEqual("Hello Sisk", receivedHeaders["Another-Header"]);
+                Assert.IsTrue(receivedHeaders.ContainsKey("Host"), "Standard 'Host' header not found.");
 
-            var receivedHeaders = JsonSerializer.Deserialize<Dictionary<string, string>>(headersJson);
-
-            Assert.IsNotNull(receivedHeaders, "Failed to deserialize headers JSON.");
-            Assert.IsTrue(receivedHeaders.ContainsKey("X-Custom-Test-Header"), "Custom header 'X-Custom-Test-Header' not found.");
-            Assert.AreEqual("TestValue123", receivedHeaders["X-Custom-Test-Header"]);
-            Assert.IsTrue(receivedHeaders.ContainsKey("Another-Header"), "Custom header 'Another-Header' not found.");
-            Assert.AreEqual("Hello Sisk", receivedHeaders["Another-Header"]);
-            Assert.IsTrue(receivedHeaders.ContainsKey("Host"), "Standard 'Host' header not found.");
-            // User-Agent might be added by ClientWebSocket or OS, so check for presence if needed
-            // Assert.IsTrue(receivedHeaders.ContainsKey("User-Agent"), "Standard 'User-Agent' header not found.");
-
-
-            await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test completed", cts.Token);
-            client.Dispose();
+                await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test completed", cts.Token);
+            }
+            finally
+            {
+                client?.Dispose();
+            }
         }
 
         [TestMethod]
@@ -330,19 +331,12 @@ namespace tests.Tests
         }
 
         // Helper method to connect and receive initial message
-        private async Task<(ClientWebSocket, string)> ConnectAndReceiveInitialMessageAsync(Uri uri, CancellationTokenSource cts, ClientWebSocketOptions? options = null)
+        private async Task<(ClientWebSocket, string)> ConnectAndReceiveInitialMessageAsync(Uri uri, CancellationTokenSource cts, Action<ClientWebSocketOptions>? configureOptions = null)
         {
             var client = new ClientWebSocket();
-            if (options != null)
+            if (configureOptions != null)
             {
-                foreach (var KVP in options.RequestHeaders)
-                {
-                    client.Options.SetRequestHeader(KVP.Key, KVP.Value);
-                }
-                foreach (var protocol in options.RequestedSubProtocols)
-                {
-                    client.Options.AddSubProtocol(protocol);
-                }
+                configureOptions(client.Options);
             }
 
             await client.ConnectAsync(uri, cts.Token);
