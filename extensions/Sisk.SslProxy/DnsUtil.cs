@@ -15,6 +15,12 @@ namespace Sisk.Ssl;
 
 static class DnsUtil {
     public static IPEndPoint ResolveEndpoint ( ListeningPort port, bool onlyUseIPv4 = false ) {
+
+        // Check if port.Hostname is already an IP address
+        if (IPAddress.TryParse ( port.Hostname, out IPAddress? ipAddress )) {
+            return new IPEndPoint ( ipAddress, port.Port );
+        }
+
         var hostEntry = Dns.GetHostEntry ( port.Hostname );
 
         if (hostEntry.AddressList.Length == 0)
