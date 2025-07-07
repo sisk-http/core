@@ -36,7 +36,7 @@ namespace Sisk.Core.Http.Streams {
         /// Gets the <see cref="HttpStreamPingPolicy"/> for this HTTP web socket connection.
         /// </summary>
         public HttpStreamPingPolicy PingPolicy => pingPolicy;
-        
+
         /// <summary>
         /// Gets or sets an object linked with this <see cref="WebSocket"/> session.
         /// </summary>
@@ -56,7 +56,7 @@ namespace Sisk.Core.Http.Streams {
         /// Gets an unique identifier label to this Web Socket connection, useful for finding this connection's reference later.
         /// </summary>
         public string? Identifier => _identifier;
-        
+
         internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             request = req;

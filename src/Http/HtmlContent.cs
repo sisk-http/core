@@ -15,7 +15,7 @@ namespace Sisk.Core.Http;
 /// Provides HTTP content based on HTML contents.
 /// </summary>
 public class HtmlContent : StringContent {
-    
+
     /// <summary>
     /// Creates an new <see cref="HtmlContent"/> class with given HTML content and encoding.
     /// </summary>

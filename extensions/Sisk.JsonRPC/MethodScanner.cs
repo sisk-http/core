@@ -14,7 +14,7 @@ using Sisk.JsonRPC.Annotations;
 namespace Sisk.JsonRPC;
 
 internal static class MethodScanner {
-    
+
     public static IEnumerable<RpcDelegate> ScanMethods ( [DynamicallyAccessedMembers ( DynamicallyAccessedMemberTypes.All )] Type type, bool prefixTypes, object? target ) {
         const BindingFlags Flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
 

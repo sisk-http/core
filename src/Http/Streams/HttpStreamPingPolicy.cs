@@ -54,7 +54,7 @@ public sealed class HttpStreamPingPolicy : IDisposable {
 
         Start ();
     }
-    
+
     private async void OnCallback ( object? state ) {
         try {
             if (_disposed || _timer is null)

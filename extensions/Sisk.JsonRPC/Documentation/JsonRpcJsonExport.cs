@@ -44,7 +44,7 @@ public sealed class JsonRpcJsonExport : IJsonRpcDocumentationExporter {
     /// <returns></returns>
     public JsonValue EncodeDocumentation ( JsonRpcDocumentation documentation ) {
         JsonArray arr = JsonOptions.CreateJsonArray ();
-        
+
         static string GetTypeName ( Type type ) {
             if (type.IsGenericType) {
                 string genericDefinition = string.Join ( ", ", type.GetGenericArguments ().Select ( s => s.Name ) );
