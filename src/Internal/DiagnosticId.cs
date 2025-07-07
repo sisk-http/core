@@ -11,4 +11,5 @@ namespace Sisk.Core.Internal;
 
 static class DiagnosticId {
     public const string Sisk_HttpContext_Current_Experimental = "SISK0230";
+    public const string Sisk_DisconnectToken_Experimental = "SISK0231";
 }

@@ -10,6 +10,8 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
@@ -388,13 +390,10 @@ finishSending:
             executionResult.ServerException = objException;
             errorLogStream = null;
         }
-        catch (HttpListenerException netException) {
-            // often raised when the client connection is closed during content streaming
+        catch (HttpListenerException) {
+            // often raised when the client connection is closed during content streaming or aborted
             // it's not a real error and the server should deal with this as an client disconnect
             executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
-            executionResult.ServerException = netException;
-            errorLogStream = null;
-            accessLogStream = null;
         }
         catch (HttpRequestException requestException) {
             baseResponse.StatusCode = 400/*BadRequest*/;

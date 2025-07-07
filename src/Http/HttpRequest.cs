@@ -46,6 +46,7 @@ namespace Sisk.Core.Http {
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
         private StringValueCollection? query;
+        private CancellationToken disconnectToken;
 
         private readonly Uri requestUri;
         private readonly HttpMethod requestMethod;
@@ -157,6 +158,23 @@ namespace Sisk.Core.Http {
         /// for more information on available options.
         /// </remarks>
         public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; } = new JsonSerializerOptions ( JsonSerializerDefaults.Web );
+
+        /// <summary>
+        /// Gets a <see cref="CancellationToken"/> that is triggered when the connection is disconnected.
+        /// </summary>
+        /// <remarks>
+        /// Warning: this property is currently experimental and may not work correctly in production. This feature may be changed,
+        /// renamed, or removed in later versions of Sisk.
+        /// </remarks>
+        [Experimental ( DiagnosticId.Sisk_DisconnectToken_Experimental )]
+        public CancellationToken DisconnectToken {
+            get {
+                if (disconnectToken == default) {
+                    disconnectToken = TcpConnectionMonitor.GetDisconnectToken ( listenerRequest.RemoteEndPoint.Port );
+                }
+                return disconnectToken;
+            }
+        }
 
         /// <summary>
         /// Gets a unique random ID for this request.
