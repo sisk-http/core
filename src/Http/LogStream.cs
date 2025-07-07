@@ -35,6 +35,11 @@ namespace Sisk.Core.Http {
         public static LogStream ConsoleOutput { get => new LogStream ( Console.Out ); }
 
         /// <summary>
+        /// Gets a <see cref="LogStream"/> without any output stream.
+        /// </summary>
+        public static LogStream Empty { get => new LogStream (); }
+
+        /// <summary>
         /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.
         /// </summary>
         public RotatingLogPolicy RotatingPolicy {
@@ -68,7 +73,8 @@ namespace Sisk.Core.Http {
         /// When setting this method, if the file directory doens't exists, it is created.
         /// </remarks>
         public string? FilePath {
-            get => filePath; set {
+            get => filePath;
+            set {
                 if (value is not null) {
                     filePath = Path.GetFullPath ( value );
 

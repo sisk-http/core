@@ -33,7 +33,7 @@ namespace Sisk.Core.Entity {
                 var contentDisposition = Headers.ContentDisposition;
                 if (contentDisposition != null) {
                     var parsedResult = ContentDispositionHeaderValue.Parse ( contentDisposition );
-                    return parsedResult.FileName ?? parsedResult.FileNameStar;
+                    return (parsedResult.FileName ?? parsedResult.FileNameStar)?.Trim ( '"' );
                 }
                 return null;
             }
@@ -47,7 +47,7 @@ namespace Sisk.Core.Entity {
                 var contentDisposition = Headers.ContentDisposition;
                 if (contentDisposition != null) {
                     if (ContentDispositionHeaderValue.Parse ( contentDisposition ).Name is { } name) {
-                        return name;
+                        return name.Trim ( '"' );
                     }
                 }
                 throw new Sisk.Core.Http.HttpRequestException ( SR.Format ( SR.MultipartFormReader_InvalidData, "part must have a name." ) );

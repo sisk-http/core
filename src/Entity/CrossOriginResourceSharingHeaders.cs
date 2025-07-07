@@ -85,13 +85,15 @@ namespace Sisk.Core.Entity {
         /// <param name="allowHeaders">The values of the Access-Control-Allow-Headers header.</param>
         /// <param name="exposeHeaders">The values of the Access-Control-Expose-Headers header.</param>
         /// <param name="maxAge">The value of the Access-Control-Max-Age header.</param>
+        /// <param name="allowCredentials">The value of the Access-Control-Allow-Credentials header.</param>
         public CrossOriginResourceSharingHeaders (
             string? allowOrigin = null,
             string []? allowOrigins = null,
             string []? allowMethods = null,
             string []? allowHeaders = null,
             string []? exposeHeaders = null,
-            TimeSpan? maxAge = null ) {
+            TimeSpan? maxAge = null,
+            bool allowCredentials = false ) {
 
             ExposeHeaders = exposeHeaders ?? Array.Empty<string> ();
             AllowOrigins = allowOrigins ?? Array.Empty<string> ();
@@ -99,6 +101,7 @@ namespace Sisk.Core.Entity {
             AllowMethods = allowMethods ?? Array.Empty<string> ();
             AllowOrigin = allowOrigin;
             MaxAge = maxAge ?? TimeSpan.Zero;
+            AllowCredentials = allowCredentials;
         }
 
         /// <summary>

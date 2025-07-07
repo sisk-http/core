@@ -8,6 +8,8 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
+using System.Net.Mime;
+using System.Text;
 using Sisk.Core.Helpers;
 
 namespace Sisk.Core.Http.Streams;
@@ -45,6 +47,30 @@ public sealed class HttpResponseStreamManager {
 
             listenerResponse.SendChunked = value;
         }
+    }
+
+    /// <summary>
+    /// Returns a <see cref="StreamWriter"/> for writing to the response stream, setting the content type and encoding.
+    /// </summary>
+    /// <param name="contentType">The content type of the response, or <see langword="null"/> to omit the content type header.</param>
+    /// <param name="encoding">The encoding to use for the response, or <see langword="null"/> to use the default encoding.</param>
+    /// <param name="newLine">The new line string literal for the writer.</param>
+    /// <returns>A <see cref="StreamWriter"/> for writing to the response stream.</returns>
+    public StreamWriter GetStreamWriter ( string? contentType, Encoding? encoding, string? newLine = "\r\n" ) {
+        Encoding _encoding = encoding ?? Encoding.Default;
+
+        if (contentType is { }) {
+            var contentTypeParsed = new ContentType ( contentType ) {
+                CharSet = _encoding.WebName
+            };
+            SetHeader ( HttpKnownHeaderNames.ContentType, contentTypeParsed );
+        }
+
+        SendChunked = true;
+        return new StreamWriter ( ResponseStream, _encoding ) {
+            NewLine = newLine,
+            AutoFlush = true
+        };
     }
 
     /// <summary>

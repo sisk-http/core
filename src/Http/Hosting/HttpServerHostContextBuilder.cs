@@ -72,10 +72,7 @@ public sealed class HttpServerHostContextBuilder {
     /// Adds an function that will be executed immediately before starting the HTTP server.
     /// </summary>
     /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
-    public HttpServerHostContextBuilder UseBootstraper ( Action bootstrapAction ) {
-        _context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( (bootstrapAction, "Bootstrap action") );
-        return this;
-    }
+    public HttpServerHostContextBuilder UseBootstraper ( Action bootstrapAction ) => UseBootstraper ( "Bootstrap action", bootstrapAction );
 
     /// <summary>
     /// Adds an function that will be executed immediately before starting the HTTP server.
@@ -87,6 +84,24 @@ public sealed class HttpServerHostContextBuilder {
         return this;
     }
 
+    /// <summary>
+    /// Adds an asynchronous function that will be executed immediately before starting the HTTP server.
+    /// </summary>
+    /// <param name="asyncBootstrapAction">The asynchronous action which will be executed before the HTTP server start.</param>
+    public HttpServerHostContextBuilder UseBootstraper ( Func<Task> asyncBootstrapAction ) => UseBootstraper ( "Bootstrap action", asyncBootstrapAction );
+
+    /// <summary>
+    /// Adds an asynchronous function that will be executed immediately before starting the HTTP server.
+    /// </summary>
+    /// <param name="name">Defines an custom label for the bootstraping action name.</param>
+    /// <param name="asyncBootstrapAction">The asynchronous action which will be executed before the HTTP server start.</param>
+    /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseBootstraper ( string name, Func<Task> asyncBootstrapAction ) {
+        _context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( (delegate {
+            asyncBootstrapAction ().GetAwaiter ().GetResult ();
+        }, name) );
+        return this;
+    }
     /// <summary>
     /// Enables the portable configuration for this application, which imports settings, parameters,
     /// and other information from a JSON settings file.
