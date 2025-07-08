@@ -160,7 +160,7 @@ namespace Sisk.Core.Http {
         public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; } = new JsonSerializerOptions ( JsonSerializerDefaults.Web );
 
         /// <summary>
-        /// Gets a <see cref="CancellationToken"/> that is triggered when the connection is disconnected.
+        /// Gets a <see cref="CancellationToken"/> that is triggered when the client connection is aborted.
         /// </summary>
         /// <remarks>
         /// Warning: this property is currently experimental and may not work correctly in production. This feature may be changed,
@@ -662,11 +662,9 @@ namespace Sisk.Core.Http {
             if (streamingEntity is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            return Task.Run ( delegate () {
-                var sse = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
-                streamingEntity = sse;
-                return sse;
-            } );
+            var sse = new HttpRequestEventSource ( identifier, listenerResponse, listenerRequest, this );
+            streamingEntity = sse;
+            return Task.FromResult ( sse );
         }
 
         /// <summary>

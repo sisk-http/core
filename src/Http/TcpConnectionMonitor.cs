@@ -17,16 +17,72 @@ using System.Threading.Tasks;
 
 namespace Sisk.Core.Http;
 
-static class TcpConnectionMonitor {
+/// <summary>
+/// Provides methods for monitoring TCP connections.
+/// </summary>
+public static class TcpConnectionMonitor {
 
-    static IPGlobalProperties ipGlobal = IPGlobalProperties.GetIPGlobalProperties ();
+    static int _poolingPrecision;
+    static TimeSpan timeout = TimeSpan.FromHours ( 24 );
+    static IPGlobalProperties? ipGlobal;
+    static long lelapsed;
+    static TcpConnectionInformation [] cachedData = Array.Empty<TcpConnectionInformation> ();
 
-    public static CancellationToken GetDisconnectToken ( int localPort ) {
+    /// <summary>
+    /// Gets or sets the maximum time that a disconnection cancellation token 
+    /// should last before being automatically canceled.
+    /// </summary>
+    public static TimeSpan Timeout {
+        get {
+            return timeout;
+        }
+        set {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( timeout.TotalSeconds );
+            timeout = value;
+        }
+    }
 
-        CancellationTokenSource source = new CancellationTokenSource ( TimeSpan.FromHours ( 24 ) );
+    /// <summary>
+    /// Gets or sets the pooling precision.
+    /// </summary>
+    /// <value>
+    /// The pooling precision in milliseconds. Must be a positive value.
+    /// </value>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the value is negative or zero.
+    /// </exception>
+    public static int PoolingPrecision {
+        get {
+            return _poolingPrecision;
+        }
+        set {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( value );
+            _poolingPrecision = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets a cancellation token that is triggered when a TCP connection on the specified local port is disconnected.
+    /// </summary>
+    /// <param name="tcpLocalPort">The local TCP port to monitor.</param>
+    /// <returns>A <see cref="CancellationToken"/> that is triggered when the TCP connection is no longer in the <see cref="TcpState.Established"/> state.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="tcpLocalPort"/> is negative, zero, or greater than <see cref="ushort.MaxValue"/>.
+    /// </exception>
+    public static CancellationToken GetDisconnectToken ( int tcpLocalPort ) {
+
+        ArgumentOutOfRangeException.ThrowIfGreaterThan ( tcpLocalPort, ushort.MaxValue );
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( tcpLocalPort );
+
+        if (ipGlobal is null) {
+            ipGlobal = IPGlobalProperties.GetIPGlobalProperties ();
+        }
+
+        CancellationTokenSource source = new CancellationTokenSource ( timeout );
+
         _ = Task.Run ( () => {
-            while (GetTcpConnectionState ( localPort ) == TcpState.Established) {
-                Thread.Sleep ( 100 );
+            while (source.IsCancellationRequested == false && GetTcpConnectionState ( tcpLocalPort ) == TcpState.Established) {
+                Thread.Sleep ( PoolingPrecision );
             }
             source.Cancel ();
         } );
@@ -34,9 +90,22 @@ static class TcpConnectionMonitor {
         return source.Token;
     }
 
+    static TcpConnectionInformation [] GetConnections () {
+
+        if (ipGlobal is null)
+            return Array.Empty<TcpConnectionInformation> ();
+
+        long tick = Environment.TickCount64;
+        if (tick - lelapsed >= (PoolingPrecision * TimeSpan.TicksPerMillisecond)) {
+            cachedData = ipGlobal.GetActiveTcpConnections ();
+            lelapsed = tick;
+        }
+        return cachedData;
+    }
+
     static TcpState GetTcpConnectionState ( int localPort ) {
         try {
-            var tcpConnections = ipGlobal.GetActiveTcpConnections ();
+            var tcpConnections = GetConnections ();
             var connection = tcpConnections.FirstOrDefault ( c => c.LocalEndPoint.Port == localPort );
 
             if (connection is not null) {
