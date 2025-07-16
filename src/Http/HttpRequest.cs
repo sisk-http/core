@@ -38,6 +38,7 @@ namespace Sisk.Core.Http {
         internal HttpServer baseServer;
         internal IDisposable? streamingEntity;
         internal IPAddress remoteAddr = null!;
+        internal CancellationTokenSource? disconnectTokenSource;
         private readonly HttpServerConfiguration contextServerConfiguration;
         private readonly HttpListenerResponse listenerResponse;
         private readonly HttpListenerRequest listenerRequest;
@@ -46,7 +47,6 @@ namespace Sisk.Core.Http {
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
         private StringValueCollection? query;
-        private CancellationToken disconnectToken;
 
         private readonly Uri requestUri;
         private readonly HttpMethod requestMethod;
@@ -169,10 +169,10 @@ namespace Sisk.Core.Http {
         [Experimental ( DiagnosticId.Sisk_DisconnectToken_Experimental )]
         public CancellationToken DisconnectToken {
             get {
-                if (disconnectToken == default) {
-                    disconnectToken = TcpConnectionMonitor.GetDisconnectToken ( listenerRequest.RemoteEndPoint.Port );
+                if (disconnectTokenSource is null) {
+                    disconnectTokenSource = TcpConnectionMonitor.GetDisconnectTokenSource ( listenerRequest.RemoteEndPoint.Port );
                 }
-                return disconnectToken;
+                return disconnectTokenSource.Token;
             }
         }
 
@@ -718,6 +718,13 @@ namespace Sisk.Core.Http {
             if (!disposedValue) {
                 if (disposing) {
                     streamingEntity?.Dispose ();
+                    streamingEntity = null;
+
+                    disconnectTokenSource?.Cancel ();
+                    disconnectTokenSource?.Dispose ();
+                    disconnectTokenSource = null;
+
+                    contentBytes = null;
                 }
 
                 disposedValue = true;
@@ -727,6 +734,11 @@ namespace Sisk.Core.Http {
         void IDisposable.Dispose () {
             Dispose ( disposing: true );
             GC.SuppressFinalize ( this );
+        }
+
+        ///
+        ~HttpRequest () {
+            Dispose ( disposing: false );
         }
     }
 }

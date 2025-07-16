@@ -160,7 +160,7 @@ public partial class HttpServer {
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     private void ProcessRequest ( HttpListenerContext context ) {
-        HttpRequest request = null!;
+        HttpRequest? request = null;
         HttpResponse? response = null;
 
         Stopwatch sw = Stopwatch.StartNew ();
@@ -308,7 +308,7 @@ public partial class HttpServer {
             baseResponse.KeepAlive = currentConfig.KeepAlive;
 
             #endregion
-
+            
             #region Step 4 - Response computing
             HttpHeaderCollection responseHeaders = response.Headers;
             responseHeaders.AddRange ( srContext.ExtraHeaders );
@@ -438,8 +438,9 @@ finishSending:
             executionResult.Elapsed = sw.Elapsed;
             handler.HttpRequestClose ( executionResult );
 
-            if (executionResult.ServerException is not null)
+            if (executionResult.ServerException is not null) {
                 handler.Exception ( executionResult.ServerException );
+            }
 
             LogOutput logMode;
 

@@ -69,7 +69,7 @@ public static class TcpConnectionMonitor {
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="tcpLocalPort"/> is negative, zero, or greater than <see cref="ushort.MaxValue"/>.
     /// </exception>
-    public static CancellationToken GetDisconnectToken ( int tcpLocalPort ) {
+    public static CancellationTokenSource GetDisconnectTokenSource ( int tcpLocalPort ) {
 
         ArgumentOutOfRangeException.ThrowIfGreaterThan ( tcpLocalPort, ushort.MaxValue );
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( tcpLocalPort );
@@ -81,13 +81,17 @@ public static class TcpConnectionMonitor {
         CancellationTokenSource source = new CancellationTokenSource ( timeout );
 
         _ = Task.Run ( () => {
-            while (source.IsCancellationRequested == false && GetTcpConnectionState ( tcpLocalPort ) == TcpState.Established) {
+            while (true) {
                 Thread.Sleep ( PoolingPrecision );
+
+                if (source.IsCancellationRequested)
+                    break;
+                if (GetTcpConnectionState ( tcpLocalPort ) != TcpState.Established)
+                    break;
             }
-            source.Cancel ();
         } );
 
-        return source.Token;
+        return source;
     }
 
     static TcpConnectionInformation [] GetConnections () {
@@ -96,7 +100,7 @@ public static class TcpConnectionMonitor {
             return Array.Empty<TcpConnectionInformation> ();
 
         long tick = Environment.TickCount64;
-        if (tick - lelapsed >= (PoolingPrecision * TimeSpan.TicksPerMillisecond)) {
+        if (tick - lelapsed >= (PoolingPrecision * 2 * TimeSpan.TicksPerMillisecond)) {
             cachedData = ipGlobal.GetActiveTcpConnections ();
             lelapsed = tick;
         }
