@@ -40,7 +40,7 @@ class SslProxyContextHandler : HttpHostHandler {
         ProxyGateway state = (ProxyGateway) context.Client.State!;
 
         CancellationTokenSource gatewayCancellation = new CancellationTokenSource ();
-        gatewayCancellation.CancelAfter ( 10000 );
+        gatewayCancellation.CancelAfter ( ProxyHost.GatewayTimeout );
         gatewayCancellation.Token.ThrowIfCancellationRequested ();
 
         HttpMethod requestMethod = new HttpMethod ( context.Request.Method );
@@ -123,28 +123,36 @@ class SslProxyContextHandler : HttpHostHandler {
 
     static async Task CopyToAsyncUnchecked ( Stream from, Stream to, byte []? eof, CancellationToken cancellationToken ) {
         try {
-            if (!from.CanRead) {
-                if (to.CanWrite) {
-                    throw new Exception ( "@to is not writable" );
-                }
-
-                throw new Exception ( "@from is not readable" );
-            }
-
             const int DefaultCopySize = 81920;
-            Memory<byte> eofMemory = eof;
-
             byte [] buffer = ArrayPool<byte>.Shared.Rent ( DefaultCopySize );
-            var bufferMemory = new Memory<byte> ( buffer );
             try {
-                int bytesRead;
-                while ((bytesRead = await from.ReadAsync ( bufferMemory, cancellationToken ).ConfigureAwait ( false )) != 0) {
+                if (eof is null) {
+                    // Non-chunked path: just copy until the stream ends. This relies on the source
+                    // stream being properly bounded by Content-Length, which HttpClient should ensure.
+                    int bytesRead;
+                    while ((bytesRead = await from.ReadAsync ( buffer, cancellationToken ).ConfigureAwait ( false )) != 0) {
+                        await to.WriteAsync ( buffer.AsMemory ( 0, bytesRead ), cancellationToken ).ConfigureAwait ( false );
+                    }
+                }
+                else {
+                    // Chunked path: copy until we see the EOF marker ("0\r\n\r\n").
+                    // This implementation is robust against the marker being split across multiple reads.
+                    int eofMatchIndex = 0;
+                    int bytesRead;
+                    while ((bytesRead = await from.ReadAsync ( buffer, cancellationToken ).ConfigureAwait ( false )) != 0) {
+                        await to.WriteAsync ( buffer.AsMemory ( 0, bytesRead ), cancellationToken ).ConfigureAwait ( false );
 
-                    var bufferedResult = bufferMemory [ 0..bytesRead ];
-                    await to.WriteAsync ( bufferedResult, cancellationToken ).ConfigureAwait ( false );
-
-                    if (eof != null && bufferedResult [ Index.FromEnd ( eofMemory.Length ).. ].Span.SequenceEqual ( eofMemory.Span )) {
-                        break;
+                        for (int i = 0; i < bytesRead; i++) {
+                            if (buffer [ i ] == eof [ eofMatchIndex ]) {
+                                eofMatchIndex++;
+                                if (eofMatchIndex == eof.Length) {
+                                    return;
+                                }
+                            }
+                            else {
+                                eofMatchIndex = (buffer [ i ] == eof [ 0 ]) ? 1 : 0;
+                            }
+                        }
                     }
                 }
             }

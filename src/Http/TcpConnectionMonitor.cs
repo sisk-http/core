@@ -86,8 +86,10 @@ public static class TcpConnectionMonitor {
 
                 if (source.IsCancellationRequested)
                     break;
-                if (GetTcpConnectionState ( tcpLocalPort ) != TcpState.Established)
+                if (GetTcpConnectionState ( tcpLocalPort ) != TcpState.Established) {
+                    source.Cancel ();
                     break;
+                }
             }
         } );
 
