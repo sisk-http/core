@@ -17,6 +17,35 @@ using System.Threading.Tasks;
 
 namespace Sisk.Core.Http;
 
+/**
+ * This current implementation of TcpConnectionMonitor is fragile and can lead to certain problems:
+ * 
+ * When run through a proxy, it may not work correctly, as it will depend on many proxy properties. For example: the proxy may not terminate a connection with the gateway if it is pooling connections
+ * and have a connection terminated between the client and the proxy. Another example is that the proxy may not terminate the connection between
+ * the proxy and the gateway if the client is with an HTTP/2 connection and wants to cancel a connection through a RST_STREAM frame.
+ * 
+ * Not always a discarded request indicates that your TCP connection has been terminated.
+ * 
+ * In addition, this implementation adds a lot of pressure to the GC while in use. When a disconnection token is created,
+ * the pooling starts in a separate thread checking if that TCP connection is still active. When it is no longer active, the token
+ * is canceled.
+ * 
+ * When delivering a response, the token is also canceled; it is the default behavior to prevent pooling from continuing to live after
+ * the delivery of the response.
+ * 
+ * The problem is that, each pooling iteration an allocation is made for all active TCP connections, and with each iteration this array
+ * is discarded and replaced by a new array. The discarded array becomes garbage and depending on the generation the GC collects it. Therefore,
+ * the GC keeps doing this all the time for every connection that is being monitored for disconnection.
+ * 
+ * The definitive solution should cover:
+ * - compatibility with the use of proxies, gateways, cdns...
+ * - cross-platform between Windows, Linux and MacOS.
+ * 
+ * As Sisk works through HTTP/1.1 of HttpListener, one possibility would be to detect when one of the input streams
+ * or output stops providing information. But guess what? They don't always stop providing information when a connection is
+ * terminated, because in Windows they are controlled by an external interface (http.sys).
+ */
+
 /// <summary>
 /// Provides methods for monitoring TCP connections.
 /// </summary>
