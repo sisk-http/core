@@ -91,7 +91,7 @@ namespace Sisk.Core.Http {
                     string gzippedFilename = $"{fileInfo.FullName}.{safeDatetime}{ext}.gz";
 
                     try {
-                        _logStream.rotatingPolicyLocker.Reset ();
+                        _logStream.rotatingPolicyLocker.Wait ();
 
                         using (FileStream logSs = fileInfo.Open ( FileMode.OpenOrCreate ))
                         using (FileStream gzFileSs = new FileInfo ( gzippedFilename ).Create ())
@@ -107,7 +107,7 @@ namespace Sisk.Core.Http {
                         ;
                     }
                     finally {
-                        _logStream.rotatingPolicyLocker.Set ();
+                        _logStream.rotatingPolicyLocker.Release ();
                     }
                 }
             }

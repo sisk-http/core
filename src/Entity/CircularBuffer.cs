@@ -1,13 +1,6 @@
-﻿// The Sisk Framework source code
-// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
-//
-// The code below is licensed under the MIT license as
-// of the date of its publication, available at
-//
-// File name:   CircularBuffer.cs
-// Repository:  https://github.com/sisk-http/core
-
 using System.Collections;
+using System.Collections.Generic; // Added for IEnumerable<T>
+using System.Linq; // Added for LINQ methods like Any()
 
 namespace Sisk.Core.Entity;
 
@@ -107,17 +100,27 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     public int Count => addedItems;
 
     /// <inheritdoc/>
-    public T this [ int index ] => items [ index ];
+    public T this [ int index ] {
+        get {
+            if (index < 0 || index >= Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+            return items [ index ];
+        }
+    }
 
     /// <inheritdoc/>
-    /// <exclude/>
     public IEnumerator<T> GetEnumerator () {
-        return ((IEnumerable<T>) items).GetEnumerator ();
+        for (int i = 0; i < addedItems; i++)
+        {
+            yield return this[i]; // Use the indexer to get the correct logical order
+        }
     }
 
     /// <inheritdoc/>
     /// <exclude/>
     IEnumerator IEnumerable.GetEnumerator () {
-        return items.GetEnumerator ();
+        return GetEnumerator (); // Call the generic GetEnumerator
     }
 }

@@ -18,26 +18,35 @@ namespace Sisk.Core.Http {
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage ( "Naming", "CA1711:Identifiers should not have incorrect suffix",
         Justification = "Breaking change. Not going forward on this one." )]
-    public class LogStream : IDisposable {
-        private readonly Channel<object?> channel = Channel.CreateUnbounded<object?> ( new UnboundedChannelOptions () { SingleReader = true, SingleWriter = false } );
-        private readonly Task consumerThread;
-        internal readonly ManualResetEvent writeEvent = new ManualResetEvent ( false );
-        internal readonly ManualResetEvent rotatingPolicyLocker = new ManualResetEvent ( true );
+    public class LogStream : IDisposable, IAsyncDisposable {
+
+        private readonly Channel<object> _channel = Channel.CreateBounded<object> ( new BoundedChannelOptions ( 10_000 ) {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false
+        } );
+
+        private readonly Task _consumerTask;
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource ();
+        internal readonly SemaphoreSlim rotatingPolicyLocker = new SemaphoreSlim ( 1, 1 );
         internal RotatingLogPolicy? rotatingLogPolicy;
 
-        private string? filePath;
-        private bool isDisposed;
+        private string? _filePath;
+        private bool _isDisposed;
         private CircularBuffer<string>? _bufferingContent;
 
-        /// <summary>
-        /// Gets a <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
-        /// </summary>
-        public static readonly LogStream ConsoleOutput = new LogStream ( Console.Out );
+        private static readonly Lazy<LogStream> _consoleOutputLazy = new Lazy<LogStream> ( () => new LogStream ( Console.Out ) );
+        private static readonly Lazy<LogStream> _emptyLazy = new Lazy<LogStream> ( () => new LogStream () );
 
         /// <summary>
-        /// Gets a <see cref="LogStream"/> without any output stream.
+        /// Gets a shared <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
         /// </summary>
-        public static readonly LogStream Empty = new LogStream ();
+        public static LogStream ConsoleOutput => _consoleOutputLazy.Value;
+
+        /// <summary>
+        /// Gets a shared <see cref="LogStream"/> without any output stream.
+        /// </summary>
+        public static LogStream Empty => _emptyLazy.Value;
 
         /// <summary>
         /// Gets the defined <see cref="RotatingLogPolicy"/> for this <see cref="LogStream"/>.
@@ -53,12 +62,12 @@ namespace Sisk.Core.Http {
         /// Gets an boolean indicating if this <see cref="LogStream"/> is buffering output messages
         /// to their internal message buffer.
         /// </summary>
-        public bool IsBuffering { get => _bufferingContent is not null; }
+        public bool IsBuffering => _bufferingContent is not null;
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="LogStream"/> was disposed.
         /// </summary>
-        public bool Disposed { get => isDisposed; }
+        public bool Disposed => _isDisposed;
 
         /// <summary>
         /// Gets or sets a boolean that indicates that every input must be trimmed and have their
@@ -73,17 +82,17 @@ namespace Sisk.Core.Http {
         /// When setting this method, if the file directory doens't exists, it is created.
         /// </remarks>
         public string? FilePath {
-            get => filePath;
+            get => _filePath;
             set {
                 if (value is not null) {
-                    filePath = Path.GetFullPath ( value );
+                    _filePath = Path.GetFullPath ( value );
 
-                    string? dirPath = Path.GetDirectoryName ( filePath );
+                    string? dirPath = Path.GetDirectoryName ( _filePath );
                     if (dirPath is not null)
                         Directory.CreateDirectory ( dirPath );
                 }
                 else {
-                    filePath = null;
+                    _filePath = null;
                 }
             }
         }
@@ -103,8 +112,12 @@ namespace Sisk.Core.Http {
         /// Creates an new <see cref="LogStream"/> instance with no predefined outputs.
         /// </summary>
         public LogStream () {
-            consumerThread = new Task ( ProcessQueue, TaskCreationOptions.LongRunning );
-            consumerThread.Start ();
+            // Start a long-running background task to process the log queue.
+            _consumerTask = Task.Factory.StartNew (
+                ProcessQueueAsync,
+                _cancellationTokenSource.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default );
         }
 
         /// <summary>
@@ -135,10 +148,19 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
-        /// Clears the current log queue and blocks the current thread until all content is written to the underlying streams.
+        /// Blocks the current thread until all currently enqueued content is written to the underlying streams.
         /// </summary>
         public void Flush () {
-            writeEvent.WaitOne ();
+            FlushAsync ().ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+        }
+
+        /// <summary>
+        /// Asynchronously waits until all currently enqueued content is written to the underlying streams.
+        /// </summary>
+        public async Task FlushAsync () {
+            var flushSignal = new FlushSignal ();
+            await _channel.Writer.WriteAsync ( flushSignal );
+            await flushSignal.Completion.Task;
         }
 
         /// <summary>
@@ -153,6 +175,7 @@ namespace Sisk.Core.Http {
 
             lock (_bufferingContent) {
                 string [] lines = _bufferingContent.ToArray ();
+                Array.Reverse ( lines );
                 return string.Join ( Environment.NewLine, lines );
             }
         }
@@ -162,8 +185,11 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="lines">The amount of lines to store in the buffer.</param>
         public void StartBuffering ( int lines ) {
-            if (_bufferingContent is not null)
+            if (_bufferingContent is not null) {
+                _bufferingContent.Resize ( lines );
                 return;
+            }
+
             _bufferingContent = new CircularBuffer<string> ( lines );
         }
 
@@ -177,7 +203,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        public virtual void Close () => Dispose ();
+        public void Close () => Dispose ();
 
         /// <summary>
         /// Defines the time interval and size threshold for starting the task, and then starts the task. This method is an
@@ -253,27 +279,6 @@ namespace Sisk.Core.Http {
         public void WriteLine ( IFormatProvider? formatProvider, string format, params object? [] args ) {
             WriteLineInternal ( string.Format ( formatProvider, format, args ) );
         }
-
-#if NET9_0_OR_GREATER
-        /// <summary>
-        /// Writes the text format and arguments and concats an line-break at the end into the output.
-        /// </summary>
-        /// <param name="format">The string format that represents the arguments positions.</param>
-        /// <param name="args">An array of objects that represents the string format slots values.</param>
-        public void WriteLine ( string format, params ReadOnlySpan<object?> args ) {
-            WriteLineInternal ( string.Format ( provider: null, format, args ) );
-        }
-
-        /// <summary>
-        /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
-        /// </summary>
-        /// <param name="formatProvider">The format provider to use when formatting the string. If null, the current culture is used.</param>
-        /// <param name="format">The string format that represents the arguments positions.</param>
-        /// <param name="args">An array of objects that represents the string format slots values.</param>
-        public void WriteLine ( IFormatProvider? formatProvider, string format, params ReadOnlySpan<object?> args ) {
-            WriteLineInternal ( string.Format ( formatProvider, format, args ) );
-        }
-#endif
         #endregion
 
         #region Async write methods
@@ -335,18 +340,26 @@ namespace Sisk.Core.Http {
         public async Task WriteLineAsync ( IFormatProvider? formatProvider, string format, params object? [] args ) {
             await WriteLineInternalAsync ( string.Format ( formatProvider, format, args ) ).ConfigureAwait ( false );
         }
+
+
         #endregion
 
         #region Virtual methods
         /// <summary>
         /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
+        /// This method will block if the log queue is full.
         /// </summary>
         /// <param name="line">The line which will be written to the log stream.</param>
         protected virtual void WriteLineInternal ( string line ) {
+            if (_isDisposed)
+                return;
+
             string lineText = NormalizeEntries ?
                  line.Normalize ().Trim ().ReplaceLineEndings () : line;
 
-            EnqueueMessageLine ( lineText );
+            if (!_channel.Writer.TryWrite ( lineText )) {
+                throw new InvalidOperationException ( SR.LogStream_FailedWrite );
+            }
         }
 
         /// <summary>
@@ -355,24 +368,20 @@ namespace Sisk.Core.Http {
         /// <param name="line">The line which will be written to the log stream.</param>
         /// <returns>A <see cref="ValueTask"/> that represents the asynchronous operation.</returns>
         protected virtual async ValueTask WriteLineInternalAsync ( string line ) {
+            if (_isDisposed)
+                return;
+
             string lineText = NormalizeEntries ?
                 line.Normalize ().Trim ().ReplaceLineEndings () : line;
 
-            await EnqueueMessageLineAsync ( lineText ).ConfigureAwait ( false );
-        }
-        #endregion
-
-        ValueTask EnqueueMessageLineAsync ( string message ) {
-            ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
-            return channel.Writer.WriteAsync ( message );
-        }
-
-        void EnqueueMessageLine ( string message ) {
-            ArgumentNullException.ThrowIfNull ( message, nameof ( message ) );
-            if (!channel.Writer.TryWrite ( message )) {
-                throw new InvalidOperationException ( SR.LogStream_FailedWrite );
+            try {
+                await _channel.Writer.WriteAsync ( lineText, _cancellationTokenSource.Token ).ConfigureAwait ( false );
+            }
+            catch (ChannelClosedException) {
+                // Channel was closed, which is expected during shutdown. Ignore.
             }
         }
+        #endregion
 
         void WriteExceptionInternal ( StringBuilder exceptionSbuilder, Exception exp, string? context = null, int currentDepth = 0 ) {
             if (currentDepth == 0)
@@ -392,49 +401,55 @@ namespace Sisk.Core.Http {
             }
         }
 
-        async void ProcessQueue () {
-            var reader = channel.Reader;
+        private async Task ProcessQueueAsync () {
             try {
-                while (!isDisposed && await reader.WaitToReadAsync ()) {
-                    writeEvent.Reset ();
+                await foreach (var item in _channel.Reader.ReadAllAsync ( _cancellationTokenSource.Token )) {
+                    if (item is FlushSignal flushSignal) {
+                        flushSignal.Completion.TrySetResult ( true );
+                        continue;
+                    }
 
-                    while (!isDisposed && reader.TryRead ( out var item )) {
-                        rotatingPolicyLocker.WaitOne ();
+                    string? dataStr = item?.ToString ();
+                    if (dataStr is null)
+                        continue;
 
-                        string? dataStr = item?.ToString ();
-
-                        if (dataStr is null)
-                            continue;
-
-                        try {
-                            TextWriter?.WriteLine ( dataStr );
-                        }
-                        catch (Exception ex) {
-                            Console.WriteLine ( GetExceptionEntry ( ex, "Exception raised from the LogStream TextWriter instance" ) );
-                        }
-
-                        try {
-                            if (filePath is not null)
-                                File.AppendAllText ( filePath, dataStr + Environment.NewLine, Encoding );
-                        }
-                        catch (Exception ex) {
-                            Console.WriteLine ( GetExceptionEntry ( ex, "Exception raised from the LogStream FilePath instance" ) );
-                        }
-
-                        try {
-                            _bufferingContent?.Add ( dataStr );
-                        }
-                        catch (Exception ex) {
-                            Console.WriteLine ( GetExceptionEntry ( ex, "Exception raised from the LogStream BufferingContent instance" ) );
-                        }
+                    await rotatingPolicyLocker.WaitAsync ( _cancellationTokenSource.Token );
+                    try {
+                        WriteToOutputs ( dataStr );
+                    }
+                    finally {
+                        rotatingPolicyLocker.Release ();
                     }
                 }
-
-                writeEvent.Set ();
             }
-            finally {
-                if (!isDisposed)
-                    writeEvent.Set ();
+            catch (OperationCanceledException) {
+            }
+            catch (Exception ex) {
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, "Unhandled exception in LogStream consumer task." ) );
+            }
+        }
+
+        private void WriteToOutputs ( string dataStr ) {
+            try {
+                TextWriter?.WriteLine ( dataStr );
+            }
+            catch (Exception ex) {
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, "Exception from LogStream TextWriter" ) );
+            }
+
+            try {
+                if (_filePath is not null)
+                    File.AppendAllText ( _filePath, dataStr + Environment.NewLine, Encoding );
+            }
+            catch (Exception ex) {
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, $"Exception writing to LogStream file: {_filePath}" ) );
+            }
+
+            try {
+                _bufferingContent?.Add ( dataStr );
+            }
+            catch (Exception ex) {
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, "Exception from LogStream internal buffer" ) );
             }
         }
 
@@ -444,29 +459,63 @@ namespace Sisk.Core.Http {
             return exceptionSbuilder.ToString ();
         }
 
-        /// <inheritdoc/>
-        ~LogStream () {
-            Dispose ();
+        /// <summary>
+        /// Asynchronously writes all pending logs from the queue and closes all resources used by this object.
+        /// </summary>
+        public async ValueTask DisposeAsync () {
+            if (_isDisposed) {
+                return;
+            }
+            _isDisposed = true;
+
+            _channel.Writer.TryComplete ();
+            if (!_cancellationTokenSource.IsCancellationRequested) {
+                _cancellationTokenSource.Cancel ();
+            }
+
+            await _consumerTask;
+
+            TextWriter?.Dispose ();
+            rotatingLogPolicy?.Dispose ();
+            _cancellationTokenSource.Dispose ();
+            rotatingPolicyLocker.Dispose ();
+            _bufferingContent = null;
+
+            GC.SuppressFinalize ( this );
         }
 
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
         public void Dispose () {
-            if (isDisposed)
+            if (_isDisposed) {
                 return;
+            }
+            _isDisposed = true;
 
-            channel.Writer.Complete ();
-            Flush ();
+            _channel.Writer.TryComplete ();
+            if (!_cancellationTokenSource.IsCancellationRequested) {
+                _cancellationTokenSource.Cancel ();
+            }
+
+            _consumerTask.Wait ();
+
             TextWriter?.Dispose ();
             rotatingLogPolicy?.Dispose ();
-            consumerThread.Wait ();
-            writeEvent.Dispose ();
-
+            _cancellationTokenSource.Dispose ();
+            rotatingPolicyLocker.Dispose ();
             _bufferingContent = null;
-            isDisposed = true;
 
             GC.SuppressFinalize ( this );
+        }
+
+        /// <inheritdoc/>
+        ~LogStream () {
+            Dispose ();
+        }
+
+        private sealed class FlushSignal {
+            public TaskCompletionSource<bool> Completion { get; } = new TaskCompletionSource<bool> ( TaskCreationOptions.RunContinuationsAsynchronously );
         }
     }
 }

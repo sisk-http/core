@@ -46,3 +46,33 @@ Test state:
 
 - Code status: not written
 - Assistant result: ...
+
+### Entities tests
+
+Write tests for Sisk entities.
+
+- CircularBuffer
+- HttpHeaderCollection
+- StringValue
+- StringValueCollection
+- TypedValueDictionary
+
+Test state:
+
+- Code status: not written
+- Assistant result: ...
+
+### Helpers tests
+
+Write tests for Sisk helpers
+
+- CookieHelper
+- HeaderHelper
+- MimeHelper
+- PathHelper
+- SizeHelper
+
+Test state:
+
+- Code status: not written
+- Assistant result: ...
