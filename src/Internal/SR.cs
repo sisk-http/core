@@ -54,6 +54,7 @@ static partial class SR {
 
     public const string LogStream_NotBuffering = "This LogStream is not buffering. To peek lines, call StartBuffering() first.";
     public const string LogStream_NoOutput = "No output writter was set up for this LogStream.";
+    public const string LogStream_FailedWrite = "Failed to write to the LogStream writer channel.";
     public const string LogStream_ExceptionDump_Header = "Exception thrown at {0}";
     public const string LogStream_ExceptionDump_TrimmedFooter = " + ... other trimmed inner exceptions";
     public const string LogStream_NoFormat = "No format is defined in this LogStream.";

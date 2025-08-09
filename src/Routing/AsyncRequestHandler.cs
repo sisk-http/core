@@ -27,7 +27,7 @@ public abstract class AsyncRequestHandler : IRequestHandler {
     public abstract Task<HttpResponse?> ExecuteAsync ( HttpRequest request, HttpContext context );
 
     HttpResponse? IRequestHandler.Execute ( HttpRequest request, HttpContext context ) {
-        return ExecuteAsync ( request, context ).GetAwaiter ().GetResult ();
+        return ExecuteAsync ( request, context ).ConfigureAwait ( false ).GetAwaiter ().GetResult ();
     }
 
     /// <summary>

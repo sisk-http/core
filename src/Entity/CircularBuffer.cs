@@ -51,11 +51,25 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     }
 
     /// <summary>
+    /// Adds a range of items of <typeparamref name="T"/> into the circular buffer.
+    /// </summary>
+    /// <param name="items">The items to add.</param>
+    public void AddRange ( IEnumerable<T> items ) {
+        lock (items) {
+            foreach (T item in items) {
+                Add ( item );
+            }
+        }
+    }
+
+    /// <summary>
     /// Clears the circular buffer contents and recreates the array.
     /// </summary>
     public void Clear () {
-        items = new T [ capacity ];
-        addedItems = 0;
+        lock (items) {
+            items = new T [ capacity ];
+            addedItems = 0;
+        }
     }
 
     /// <summary>
@@ -65,8 +79,10 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     public void Resize ( int capacity ) {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( capacity );
 
-        Array.Resize ( ref items, capacity );
-        this.capacity = capacity;
+        lock (items) {
+            Array.Resize ( ref items, capacity );
+            this.capacity = capacity;
+        }
     }
 
     /// <summary>

@@ -256,7 +256,7 @@ public partial class Router {
                     }
 
                     ref Task<object> actionTask = ref Unsafe.As<object, Task<object>> ( ref actionResult );
-                    actionResult = actionTask.GetAwaiter ().GetResult ();
+                    actionResult = actionTask.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
                 }
                 else if (matchedRoute._isAsyncEnumerable) {
                     if (currentConfig.ConvertIAsyncEnumerableIntoEnumerable) {

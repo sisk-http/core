@@ -157,7 +157,7 @@ public class TypedValueDictionary : IDictionary<string, object?> {
             return value;
         }
         else {
-            value = await getter ();
+            value = await getter ().ConfigureAwait ( false );
             return Set ( value );
         }
     }

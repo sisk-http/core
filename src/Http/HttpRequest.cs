@@ -38,7 +38,6 @@ namespace Sisk.Core.Http {
         internal HttpServer baseServer;
         internal IDisposable? streamingEntity;
         internal IPAddress remoteAddr = null!;
-        internal CancellationTokenSource? disconnectTokenSource;
         private readonly HttpServerConfiguration contextServerConfiguration;
         private readonly HttpListenerResponse listenerResponse;
         private readonly HttpListenerRequest listenerRequest;
@@ -96,7 +95,7 @@ namespace Sisk.Core.Http {
                 }
                 else if (ContentLength > 0) {
                     using (var memoryStream = new MemoryStream ( (int) ContentLength )) {
-                        await listenerRequest.InputStream.CopyToAsync ( memoryStream, cancellation );
+                        await listenerRequest.InputStream.CopyToAsync ( memoryStream, cancellation ).ConfigureAwait ( false );
                         contentBytes = memoryStream.ToArray ();
                     }
                 }
@@ -106,7 +105,7 @@ namespace Sisk.Core.Http {
                             Int32.MaxValue :
                             contextServerConfiguration.MaximumContentLength;
 
-                        await StreamUtil.CopyToLimitedAsync ( listenerRequest.InputStream, memoryStream, 81920, maxLength, cancellation );
+                        await StreamUtil.CopyToLimitedAsync ( listenerRequest.InputStream, memoryStream, 81920, maxLength, cancellation ).ConfigureAwait ( false );
                         contentBytes = memoryStream.ToArray ();
                     }
                 }
@@ -158,23 +157,6 @@ namespace Sisk.Core.Http {
         /// for more information on available options.
         /// </remarks>
         public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; } = new JsonSerializerOptions ( JsonSerializerDefaults.Web );
-
-        /// <summary>
-        /// Gets a <see cref="CancellationToken"/> that is triggered when the client connection is aborted.
-        /// </summary>
-        /// <remarks>
-        /// Warning: this property is currently experimental and may not work correctly in production. This feature may be changed,
-        /// renamed, or removed in later versions of Sisk.
-        /// </remarks>
-        [Experimental ( DiagnosticId.Sisk_DisconnectToken_Experimental )]
-        public CancellationToken DisconnectToken {
-            get {
-                if (disconnectTokenSource is null) {
-                    disconnectTokenSource = TcpConnectionMonitor.GetDisconnectTokenSource ( listenerRequest.RemoteEndPoint.Port );
-                }
-                return disconnectTokenSource.Token;
-            }
-        }
 
         /// <summary>
         /// Gets a unique random ID for this request.
@@ -420,7 +402,7 @@ namespace Sisk.Core.Http {
         /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the operation.</param>
         /// <returns>A <see cref="Task"/> that returns a <see cref="Memory{T}"/> of bytes containing the body contents.</returns>
         public async Task<Memory<byte>> GetBodyContentsAsync ( CancellationToken cancellation = default ) {
-            byte [] body = await ReadRequestStreamContentsAsync ( cancellation );
+            byte [] body = await ReadRequestStreamContentsAsync ( cancellation ).ConfigureAwait ( false );
             return body;
         }
 
@@ -480,10 +462,10 @@ namespace Sisk.Core.Http {
         public async ValueTask<T?> GetJsonContentAsync<T> ( JsonTypeInfo<T> typeInfo, CancellationToken cancellation = default ) {
             if (ContentLength >= 0) {
                 var requestStream = GetRequestStream ();
-                return await JsonSerializer.DeserializeAsync<T> ( requestStream, typeInfo, cancellation );
+                return await JsonSerializer.DeserializeAsync<T> ( requestStream, typeInfo, cancellation ).ConfigureAwait ( false );
             }
             else {
-                var content = await GetBodyContentsAsync ( cancellation );
+                var content = await GetBodyContentsAsync ( cancellation ).ConfigureAwait ( false );
                 return JsonSerializer.Deserialize<T> ( content.Span, typeInfo );
             }
         }
@@ -500,10 +482,10 @@ namespace Sisk.Core.Http {
         public async ValueTask<T?> GetJsonContentAsync<T> ( JsonSerializerOptions? jsonOptions, CancellationToken cancellation = default ) {
             if (ContentLength >= 0) {
                 var requestStream = GetRequestStream ();
-                return await JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions, cancellation );
+                return await JsonSerializer.DeserializeAsync<T> ( requestStream, jsonOptions ?? DefaultJsonSerializerOptions, cancellation ).ConfigureAwait ( false );
             }
             else {
-                var content = await GetBodyContentsAsync ( cancellation );
+                var content = await GetBodyContentsAsync ( cancellation ).ConfigureAwait ( false );
                 return JsonSerializer.Deserialize<T> ( content.Span, jsonOptions ?? DefaultJsonSerializerOptions );
             }
         }
@@ -539,7 +521,7 @@ namespace Sisk.Core.Http {
         /// <exception cref="HttpRequestException">If an error occurs while parsing the multipart form content.</exception>
         public async Task<MultipartFormCollection> GetMultipartFormContentAsync ( CancellationToken cancellation = default ) {
             try {
-                byte [] body = await ReadRequestStreamContentsAsync ( cancellation );
+                byte [] body = await ReadRequestStreamContentsAsync ( cancellation ).ConfigureAwait ( false );
                 return MultipartObject.ParseMultipartObjects ( this, body, cancellation );
             }
             catch (Exception ex) {
@@ -559,7 +541,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="cancellation">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
         public async Task<StringKeyStoreCollection> GetFormContentAsync ( CancellationToken cancellation = default ) {
-            byte [] body = await ReadRequestStreamContentsAsync ( cancellation );
+            byte [] body = await ReadRequestStreamContentsAsync ( cancellation ).ConfigureAwait ( false );
             string bodyContents = Encoding.UTF8.GetString ( body );
             return StringKeyStoreCollection.FromQueryString ( bodyContents );
         }
@@ -689,7 +671,7 @@ namespace Sisk.Core.Http {
             if (streamingEntity is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_AlreadyInStreamingState );
             }
-            var accept = await context.AcceptWebSocketAsync ( subprotocol );
+            var accept = await context.AcceptWebSocketAsync ( subprotocol ).ConfigureAwait ( false );
             var ws = new HttpWebSocket ( accept, this, identifier );
             streamingEntity = ws;
             return ws;
@@ -719,10 +701,6 @@ namespace Sisk.Core.Http {
                 if (disposing) {
                     streamingEntity?.Dispose ();
                     streamingEntity = null;
-
-                    disconnectTokenSource?.Cancel ();
-                    disconnectTokenSource?.Dispose ();
-                    disconnectTokenSource = null;
 
                     contentBytes = null;
                 }

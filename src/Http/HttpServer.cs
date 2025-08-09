@@ -255,7 +255,7 @@ namespace Sisk.Core.Http {
         /// Calling this method, it starts the HTTP server if it ins't started yet.
         /// </remarks>
         public async Task<HttpServerExecutionResult> WaitNextAsync () {
-            return await Task.Run ( WaitNext );
+            return await Task.Run ( WaitNext ).ConfigureAwait ( false );
         }
 
 
