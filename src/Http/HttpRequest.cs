@@ -17,6 +17,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
+using Sisk.Core.Http.Abstractions;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
@@ -39,9 +40,9 @@ namespace Sisk.Core.Http {
         internal IDisposable? streamingEntity;
         internal IPAddress remoteAddr = null!;
         private readonly HttpServerConfiguration contextServerConfiguration;
-        private readonly HttpListenerResponse listenerResponse;
-        private readonly HttpListenerRequest listenerRequest;
-        private readonly HttpListenerContext context;
+        private readonly AbstractHttpResponse listenerResponse;
+        private readonly AbstractHttpRequest listenerRequest;
+        private readonly AbstractHttpContext context;
         private byte []? contentBytes;
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
@@ -55,7 +56,7 @@ namespace Sisk.Core.Http {
 
         internal HttpRequest (
             HttpServer server,
-            HttpListenerContext context ) {
+            AbstractHttpContext context ) {
 
             this.context = context;
             baseServer = server;

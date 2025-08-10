@@ -9,6 +9,7 @@
 
 using System.Net;
 using System.Text;
+using Sisk.Core.Http.Abstractions;
 
 namespace Sisk.Core.Http.Streams {
     /// <summary>
@@ -17,8 +18,8 @@ namespace Sisk.Core.Http.Streams {
     public sealed class HttpRequestEventSource : IDisposable {
         readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
         readonly HttpStreamPingPolicy pingPolicy;
-        readonly HttpListenerResponse res;
-        readonly HttpListenerRequest req;
+        readonly AbstractHttpResponse res;
+        readonly AbstractHttpRequest req;
         readonly HttpRequest reqObj;
         readonly HttpServer hostServer;
         TimeSpan keepAlive = TimeSpan.Zero;
@@ -61,7 +62,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public bool IsActive { get => !isClosed && !isDisposed; }
 
-        internal HttpRequestEventSource ( string? identifier, HttpListenerResponse res, HttpListenerRequest req, HttpRequest host ) {
+        internal HttpRequestEventSource ( string? identifier, AbstractHttpResponse res, AbstractHttpRequest req, HttpRequest host ) {
             this.res = res ?? throw new ArgumentNullException ( nameof ( res ) );
             this.req = req ?? throw new ArgumentNullException ( nameof ( req ) );
             Identifier = identifier;
@@ -71,10 +72,10 @@ namespace Sisk.Core.Http.Streams {
 
             hostServer._eventCollection.RegisterEventSource ( this );
 
-            res.AddHeader ( HttpKnownHeaderNames.CacheControl, "no-store, no-cache" );
-            res.AddHeader ( HttpKnownHeaderNames.ContentType, "text/event-stream; charset=utf-8" );
+            res.AppendHeader ( HttpKnownHeaderNames.CacheControl, "no-store, no-cache" );
+            res.AppendHeader ( HttpKnownHeaderNames.ContentType, "text/event-stream; charset=utf-8" );
             if (host.baseServer.ServerConfiguration.SendSiskHeader)
-                res.AddHeader ( HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy );
+                res.AppendHeader ( HttpKnownHeaderNames.XPoweredBy, HttpServer.PoweredBy );
 
             if (host.Context.MatchedRoute?.UseCors == true)
                 HttpServer.SetCorsHeaders ( req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res );
@@ -109,7 +110,7 @@ namespace Sisk.Core.Http.Streams {
             if (hasSentData) {
                 throw new InvalidOperationException ( SR.Httpserver_Commons_HeaderAfterContents );
             }
-            res.AddHeader ( name, value );
+            res.AppendHeader ( name, value );
         }
 
         /// <summary>

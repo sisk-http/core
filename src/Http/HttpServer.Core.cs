@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
+using Sisk.Core.Http.Abstractions;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 
@@ -23,7 +24,7 @@ namespace Sisk.Core.Http;
 public partial class HttpServer {
 
 
-    internal static void ApplyHttpContentHeaders ( HttpListenerResponse response, HttpContentHeaders contentHeaders ) {
+    internal static void ApplyHttpContentHeaders ( AbstractHttpResponse response, HttpContentHeaders contentHeaders ) {
         // content-length is applied outside this method
         // do not include that here
 
@@ -78,7 +79,7 @@ public partial class HttpServer {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal static void SetCorsHeaders ( HttpListenerRequest baseRequest, CrossOriginResourceSharingHeaders? cors, HttpListenerResponse baseResponse ) {
+    internal static void SetCorsHeaders ( AbstractHttpRequest baseRequest, CrossOriginResourceSharingHeaders? cors, AbstractHttpResponse baseResponse ) {
         if (cors is null)
             return;
 
@@ -159,14 +160,14 @@ public partial class HttpServer {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private void ProcessRequest ( HttpListenerContext context ) {
+    private void ProcessRequest ( AbstractHttpContext context ) {
         HttpRequest? request = null;
         HttpResponse? response = null;
 
         Stopwatch sw = Stopwatch.StartNew ();
 
-        HttpListenerResponse baseResponse = context.Response;
-        HttpListenerRequest baseRequest = context.Request;
+        AbstractHttpResponse baseResponse = context.Response;
+        AbstractHttpRequest baseRequest = context.Request;
 
         HttpContext? srContext = new HttpContext ( this );
         bool closeStream = true;
@@ -308,7 +309,7 @@ public partial class HttpServer {
             baseResponse.KeepAlive = currentConfig.KeepAlive;
 
             #endregion
-            
+
             #region Step 4 - Response computing
             HttpHeaderCollection responseHeaders = response.Headers;
             responseHeaders.AddRange ( srContext.ExtraHeaders );

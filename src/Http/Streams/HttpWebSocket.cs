@@ -11,6 +11,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
+using Sisk.Core.Http.Abstractions;
 using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http.Streams {
@@ -26,7 +27,7 @@ namespace Sisk.Core.Http.Streams {
         internal byte [] receiveBuffer = new byte [ 131072 ];
         internal SemaphoreSlim sendSemaphore = new SemaphoreSlim ( 1 );
         internal SemaphoreSlim receiveSemaphore = new SemaphoreSlim ( 1 );
-        internal HttpListenerWebSocketContext ctx;
+        internal AbstractWebSocketContext ctx;
         internal HttpRequest request;
         internal bool _isClosed;
         internal bool wasServerClosed;
@@ -57,7 +58,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public string? Identifier => _identifier;
 
-        internal HttpWebSocket ( HttpListenerWebSocketContext ctx, HttpRequest req, string? identifier ) {
+        internal HttpWebSocket ( AbstractWebSocketContext ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             request = req;
             _identifier = identifier;
@@ -99,9 +100,9 @@ namespace Sisk.Core.Http.Streams {
         /// which returns an <see cref="HttpResponse"/> indicating the result of the close operation.</returns>
         public async Task<HttpResponse> CloseAsync ( CancellationToken cancellation = default ) {
             if (!_isClosed) {
-                if (ctx.WebSocket.State != WebSocketState.Closed && ctx.WebSocket.State != WebSocketState.Aborted) {
+                if (ctx.State != WebSocketState.Closed && ctx.State != WebSocketState.Aborted) {
                     try {
-                        await ctx.WebSocket.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, cancellation );
+                        await ctx.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, cancellation );
                     }
                     catch (Exception) {
                         ;
@@ -122,7 +123,7 @@ namespace Sisk.Core.Http.Streams {
             ArraySegment<byte> buffer = new ArraySegment<byte> ( receiveBuffer );
             WebSocketReceiveResult? result = null;
 
-            if (ctx.WebSocket.State != WebSocketState.Open)
+            if (ctx.State != WebSocketState.Open)
                 return null;
 
             using (var ms = new MemoryStream ()) {
@@ -135,14 +136,14 @@ waitNextMessage:
 
                 try {
                     do {
-                        result = await ctx.WebSocket.ReceiveAsync ( buffer, cancellation );
+                        result = await ctx.ReceiveAsync ( buffer, cancellation );
                         ms.Write ( buffer.Array!, buffer.Offset, result.Count );
                     } while (!result.EndOfMessage);
 
                     ms.Seek ( 0, SeekOrigin.Begin );
 
                     if (result.MessageType == WebSocketMessageType.Close) {
-                        await ctx.WebSocket.CloseAsync ( WebSocketCloseStatus.NormalClosure, string.Empty, cancellation );
+                        await ctx.CloseAsync ( WebSocketCloseStatus.NormalClosure, string.Empty, cancellation );
                         await CloseAsync ( cancellation );
 
                         if (result.Count == 0) {
@@ -171,12 +172,12 @@ waitNextMessage:
         private async ValueTask<bool> SendInternalAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType, CancellationToken cancellation ) {
             if (_isClosed)
                 return false;
-            if (ctx.WebSocket.State != WebSocketState.Open && ctx.WebSocket.State != WebSocketState.CloseSent)
+            if (ctx.State != WebSocketState.Open && ctx.State != WebSocketState.CloseSent)
                 return false;
 
             await sendSemaphore.WaitAsync ( cancellation );
             try {
-                await ctx.WebSocket.SendAsync ( buffer, msgType, true, cancellation );
+                await ctx.SendAsync ( buffer, msgType, true, cancellation );
                 length += buffer.Length;
                 return true;
             }

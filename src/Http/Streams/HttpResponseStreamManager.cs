@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Mime;
 using System.Text;
 using Sisk.Core.Helpers;
+using Sisk.Core.Http.Abstractions;
 
 namespace Sisk.Core.Http.Streams;
 
@@ -18,13 +19,13 @@ namespace Sisk.Core.Http.Streams;
 /// Represents a way to manage HTTP requests with their output streams, without relying on synchronous content.
 /// </summary>
 public sealed class HttpResponseStreamManager {
-    internal HttpListenerResponse listenerResponse;
+    internal AbstractHttpResponse listenerResponse;
     internal bool hasSentData;
 
     // calculated on chunked encoding, but set on SetContentLength
     internal long calculatedLength;
 
-    internal HttpResponseStreamManager ( HttpListenerResponse listenerResponse, HttpListenerRequest listenerRequest, HttpRequest host ) {
+    internal HttpResponseStreamManager ( AbstractHttpResponse listenerResponse, AbstractHttpRequest listenerRequest, HttpRequest host ) {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException ( nameof ( listenerResponse ) );
         ResponseStream = new ResponseStreamWriter ( listenerResponse.OutputStream, this );
 
@@ -114,7 +115,7 @@ public sealed class HttpResponseStreamManager {
             listenerResponse.ContentType = _value;
         }
         else {
-            listenerResponse.AddHeader ( headerName, _value );
+            listenerResponse.AppendHeader ( headerName, _value );
         }
     }
 
