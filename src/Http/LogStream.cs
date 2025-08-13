@@ -261,6 +261,25 @@ namespace Sisk.Core.Http {
             WriteLineInternal ( message );
         }
 
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Writes the text format and arguments and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( string format, params ReadOnlySpan<object?> args ) {
+            WriteLineInternal ( string.Format ( provider: null, format, args ) );
+        }
+
+        /// <summary>
+        /// Writes the text format and arguments and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public void WriteLine ( string format, params IEnumerable<object?> args ) {
+            WriteLineInternal ( string.Format ( provider: null, format, args ) );
+        }
+#else
         /// <summary>
         /// Writes the text format and arguments and concats an line-break at the end into the output.
         /// </summary>
@@ -269,6 +288,7 @@ namespace Sisk.Core.Http {
         public void WriteLine ( string format, params object? [] args ) {
             WriteLineInternal ( string.Format ( provider: null, format, args ) );
         }
+#endif
 
         /// <summary>
         /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.
@@ -322,6 +342,16 @@ namespace Sisk.Core.Http {
             await WriteLineInternalAsync ( message ).ConfigureAwait ( false );
         }
 
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Writes the text format and arguments and concats an line-break at the end into the output.
+        /// </summary>
+        /// <param name="format">The string format that represents the arguments positions.</param>
+        /// <param name="args">An array of objects that represents the string format slots values.</param>
+        public async Task WriteLineAsync ( string format, params IEnumerable<object?> args ) {
+            await WriteLineInternalAsync ( string.Format ( provider: null, format, args ) ).ConfigureAwait ( false );
+        }
+#else
         /// <summary>
         /// Writes the text format and arguments and concats an line-break at the end into the output.
         /// </summary>
@@ -330,6 +360,7 @@ namespace Sisk.Core.Http {
         public async Task WriteLineAsync ( string format, params object? [] args ) {
             await WriteLineInternalAsync ( string.Format ( provider: null, format, args ) ).ConfigureAwait ( false );
         }
+#endif
 
         /// <summary>
         /// Writes the text format and arguments and appends a line-break at the end into the output, using the specified format provider.

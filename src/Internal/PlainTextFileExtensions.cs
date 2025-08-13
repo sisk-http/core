@@ -227,6 +227,7 @@ static class PlainTextFileExtensions {
         "php5",
         "phpt",
         "phtml",
+        "ps1",
         "pir",
         "pl",
         "pm",
