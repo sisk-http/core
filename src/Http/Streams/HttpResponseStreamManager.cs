@@ -19,13 +19,13 @@ namespace Sisk.Core.Http.Streams;
 /// Represents a way to manage HTTP requests with their output streams, without relying on synchronous content.
 /// </summary>
 public sealed class HttpResponseStreamManager {
-    internal AbstractHttpResponse listenerResponse;
+    internal HttpServerEngineContextResponse listenerResponse;
     internal bool hasSentData;
 
     // calculated on chunked encoding, but set on SetContentLength
     internal long calculatedLength;
 
-    internal HttpResponseStreamManager ( AbstractHttpResponse listenerResponse, AbstractHttpRequest listenerRequest, HttpRequest host ) {
+    internal HttpResponseStreamManager ( HttpServerEngineContextResponse listenerResponse, HttpServerEngineContextRequest listenerRequest, HttpRequest host ) {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException ( nameof ( listenerResponse ) );
         ResponseStream = new ResponseStreamWriter ( listenerResponse.OutputStream, this );
 

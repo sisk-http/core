@@ -18,8 +18,8 @@ namespace Sisk.Core.Http.Streams {
     public sealed class HttpRequestEventSource : IDisposable {
         readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
         readonly HttpStreamPingPolicy pingPolicy;
-        readonly AbstractHttpResponse res;
-        readonly AbstractHttpRequest req;
+        readonly HttpServerEngineContextResponse res;
+        readonly HttpServerEngineContextRequest req;
         readonly HttpRequest reqObj;
         readonly HttpServer hostServer;
         TimeSpan keepAlive = TimeSpan.Zero;
@@ -62,7 +62,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public bool IsActive { get => !isClosed && !isDisposed; }
 
-        internal HttpRequestEventSource ( string? identifier, AbstractHttpResponse res, AbstractHttpRequest req, HttpRequest host ) {
+        internal HttpRequestEventSource ( string? identifier, HttpServerEngineContextResponse res, HttpServerEngineContextRequest req, HttpRequest host ) {
             this.res = res ?? throw new ArgumentNullException ( nameof ( res ) );
             this.req = req ?? throw new ArgumentNullException ( nameof ( req ) );
             Identifier = identifier;

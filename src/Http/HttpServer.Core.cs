@@ -24,7 +24,7 @@ namespace Sisk.Core.Http;
 public partial class HttpServer {
 
 
-    internal static void ApplyHttpContentHeaders ( AbstractHttpResponse response, HttpContentHeaders contentHeaders ) {
+    internal static void ApplyHttpContentHeaders ( HttpServerEngineContextResponse response, HttpContentHeaders contentHeaders ) {
         // content-length is applied outside this method
         // do not include that here
 
@@ -79,7 +79,7 @@ public partial class HttpServer {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal static void SetCorsHeaders ( AbstractHttpRequest baseRequest, CrossOriginResourceSharingHeaders? cors, AbstractHttpResponse baseResponse ) {
+    internal static void SetCorsHeaders ( HttpServerEngineContextRequest baseRequest, CrossOriginResourceSharingHeaders? cors, HttpServerEngineContextResponse baseResponse ) {
         if (cors is null)
             return;
 
@@ -125,8 +125,9 @@ public partial class HttpServer {
             baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString ( provider: null ) );
     }
 
-    private bool MethodAllowContent ( string method ) {
-        return method is not "HEAD" or "OPTIONS" or "CONNECT";
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private bool MethodAllowResponseContent ( string method ) {
+        return method != "HEAD" && method != "OPTIONS" && method != "CONNECT";
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -153,21 +154,24 @@ public partial class HttpServer {
         if (_isDisposing || !_isListening)
             return;
 
-        httpListener.BeginGetContext ( ListenerCallback, null );
-        HttpListenerContext context = httpListener.EndGetContext ( result );
+        HttpServerEngine? engine = result.AsyncState as HttpServerEngine;
+        Debug.Assert ( engine != null );
+
+        engine.BeginGetContext ( ListenerCallback, engine );
+        HttpServerEngineContext context = engine.EndGetContext ( result );
 
         ProcessRequest ( context );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private void ProcessRequest ( AbstractHttpContext context ) {
+    private void ProcessRequest ( HttpServerEngineContext context ) {
         HttpRequest? request = null;
         HttpResponse? response = null;
 
         Stopwatch sw = Stopwatch.StartNew ();
 
-        AbstractHttpResponse baseResponse = context.Response;
-        AbstractHttpRequest baseRequest = context.Request;
+        HttpServerEngineContextResponse baseResponse = context.Response;
+        HttpServerEngineContextRequest baseRequest = context.Request;
 
         HttpContext? srContext = new HttpContext ( this );
         bool closeStream = true;
@@ -189,7 +193,7 @@ public partial class HttpServer {
         try {
 
             if (currentConfig.AsyncRequestProcessing == false) {
-                Monitor.Enter ( httpListener );
+                Monitor.Enter ( this );
             }
 
             #region Step 1 - DNS/Listening host matching
@@ -340,7 +344,7 @@ public partial class HttpServer {
                 }
             }
 
-            if (!MethodAllowContent ( baseRequest.HttpMethod ) || request.streamingEntity is { }) {
+            if (!MethodAllowResponseContent ( baseRequest.HttpMethod ) || request.streamingEntity is { }) {
                 // do not send content on unallowed HTTP methods neither when the requests was streaming content
                 ;
             }
@@ -476,7 +480,7 @@ finishSending:
             }
 
             if (!currentConfig.AsyncRequestProcessing) {
-                Monitor.Exit ( httpListener );
+                Monitor.Exit ( this );
             }
 
             (request as IDisposable)?.Dispose ();

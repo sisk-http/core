@@ -40,9 +40,9 @@ namespace Sisk.Core.Http {
         internal IDisposable? streamingEntity;
         internal IPAddress remoteAddr = null!;
         private readonly HttpServerConfiguration contextServerConfiguration;
-        private readonly AbstractHttpResponse listenerResponse;
-        private readonly AbstractHttpRequest listenerRequest;
-        private readonly AbstractHttpContext context;
+        private readonly HttpServerEngineContextResponse listenerResponse;
+        private readonly HttpServerEngineContextRequest listenerRequest;
+        private readonly HttpServerEngineContext context;
         private byte []? contentBytes;
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
@@ -56,7 +56,7 @@ namespace Sisk.Core.Http {
 
         internal HttpRequest (
             HttpServer server,
-            AbstractHttpContext context ) {
+            HttpServerEngineContext context ) {
 
             this.context = context;
             baseServer = server;

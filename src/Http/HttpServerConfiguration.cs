@@ -7,6 +7,7 @@
 // File name:   HttpServerConfiguration.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Http.Abstractions;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http {
@@ -42,6 +43,11 @@ namespace Sisk.Core.Http {
         /// transcriptions to.
         /// </summary>
         public LogStream? ErrorsLogsStream { get; set; } = LogStream.ConsoleOutput;
+
+        /// <summary>
+        /// Gets or sets the HTTP server processing engine.
+        /// </summary>
+        public HttpServerEngine Engine { get; set; } = HttpListenerAbstractEngine.Shared;
 
         /// <summary>
         /// Gets or sets the server's action when it receives an HTTP request outside the local host.
@@ -152,6 +158,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         public void Dispose () {
             ListeningHosts.Clear ();
+            Engine.Dispose ();
             AccessLogsStream?.Dispose ();
             ErrorsLogsStream?.Dispose ();
         }

@@ -27,7 +27,7 @@ namespace Sisk.Core.Http.Streams {
         internal byte [] receiveBuffer = new byte [ 131072 ];
         internal SemaphoreSlim sendSemaphore = new SemaphoreSlim ( 1 );
         internal SemaphoreSlim receiveSemaphore = new SemaphoreSlim ( 1 );
-        internal AbstractWebSocketContext ctx;
+        internal HttpServerEngineWebSocket ctx;
         internal HttpRequest request;
         internal bool _isClosed;
         internal bool wasServerClosed;
@@ -58,7 +58,7 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public string? Identifier => _identifier;
 
-        internal HttpWebSocket ( AbstractWebSocketContext ctx, HttpRequest req, string? identifier ) {
+        internal HttpWebSocket ( HttpServerEngineWebSocket ctx, HttpRequest req, string? identifier ) {
             this.ctx = ctx;
             request = req;
             _identifier = identifier;
@@ -121,7 +121,7 @@ namespace Sisk.Core.Http.Streams {
 
         private async ValueTask<WebSocketMessage?> ReceiveInternalAsync ( CancellationToken cancellation ) {
             ArraySegment<byte> buffer = new ArraySegment<byte> ( receiveBuffer );
-            WebSocketReceiveResult? result = null;
+            ValueWebSocketReceiveResult result;
 
             if (ctx.State != WebSocketState.Open)
                 return null;

@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
+using Sisk.Core.Http.Abstractions;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
@@ -35,7 +36,7 @@ namespace Sisk.Core.Http {
 
         private bool _isListening;
         private bool _isDisposing;
-        private readonly HttpListener httpListener = new HttpListener ();
+        private bool _disposed;
         private ListeningHost? _onlyListeningHost;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection ();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection ();
@@ -275,6 +276,11 @@ namespace Sisk.Core.Http {
                 throw new InvalidOperationException ( SR.Httpserver_NoListeningHost );
             }
 
+            var engine = ServerConfiguration.Engine;
+            if (engine is null) {
+                throw new InvalidOperationException ( SR.Httpserver_NoEngine );
+            }
+
             ObjectDisposedException.ThrowIf ( _isDisposing, this );
 
             _listeningPrefixes = new HashSet<string> ();
@@ -290,13 +296,12 @@ namespace Sisk.Core.Http {
                 }
             }
 
-            httpListener.Prefixes.Clear ();
+            engine.ClearPrefixes ();
             foreach (string prefix in _listeningPrefixes)
-                httpListener.Prefixes.Add ( prefix );
+                engine.AddListeningPrefix ( prefix );
 
             _isListening = true;
-            httpListener.IgnoreWriteExceptions = true;
-            httpListener.TimeoutManager.IdleConnection = ServerConfiguration.IdleConnectionTimeout;
+            engine.IdleConnectionTimeout = ServerConfiguration.IdleConnectionTimeout;
 
             handler.ServerStarting ( this );
             BindRouters ();
@@ -308,8 +313,8 @@ namespace Sisk.Core.Http {
                 _onlyListeningHost = null;
             }
 
-            httpListener.Start ();
-            httpListener.BeginGetContext ( ListenerCallback, null );
+            engine.StartServer ();
+            engine.BeginGetContext ( ListenerCallback, engine );
 
             handler.ServerStarted ( this );
         }
@@ -320,7 +325,7 @@ namespace Sisk.Core.Http {
         public void Stop () {
             handler.Stopping ( this );
             _isListening = false;
-            httpListener.Stop ();
+            ServerConfiguration.Engine.StopServer ();
 
             UnbindRouters ();
             handler.Stopped ( this );
@@ -331,11 +336,21 @@ namespace Sisk.Core.Http {
         /// permanently closes the HTTP server.
         /// </summary>
         public void Dispose () {
+            if (_disposed)
+                return;
+
             _isDisposing = true;
-            httpListener.Close ();
             ServerConfiguration.Dispose ();
             waitNextEvent.Set ();
             waitNextEvent.Dispose ();
+            _disposed = true;
+
+            GC.SuppressFinalize ( this );
+        }
+
+        /// <exclude/>
+        ~HttpServer () {
+            Dispose ();
         }
     }
 }
