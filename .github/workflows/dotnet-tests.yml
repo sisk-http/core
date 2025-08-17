@@ -10,14 +10,19 @@ on:
     branches: [ "main" ]
 
 jobs:
-  buildnet9:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sisk-engine: [ 'Default', 'Cadente' ]
+    
     defaults:
       run:
         shell: bash
-        working-directory: ./tests
+        working-directory: ./tests/Sisk.Core
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.sisk-engine }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     
     steps:
@@ -26,5 +31,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.x
-    - name: Test
+    - name: Test with ${{ matrix.sisk-engine }} engine
+      env:
+        SISK_TEST_ENGINE: ${{ matrix.sisk-engine }}
       run: dotnet test --verbosity normal

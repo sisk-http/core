@@ -13,7 +13,9 @@ using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System;
 using System.Threading.Tasks;
+using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
@@ -30,8 +32,16 @@ public sealed class Server {
 
     [AssemblyInitialize]
     public static void AssemblyInit ( TestContext testContext ) {
-        Instance = HttpServer.CreateBuilder ()
-            .UseCors ( new CrossOriginResourceSharingHeaders ( allowOrigin: "*", allowMethods: [ "GET", "POST", "PUT" ] ) )
+        var builder = HttpServer.CreateBuilder()
+            .UseCors(new CrossOriginResourceSharingHeaders(allowOrigin: "*", allowMethods: ["GET", "POST", "PUT"]));
+
+        if (string.Equals(Environment.GetEnvironmentVariable("SISK_TEST_ENGINE"), "Cadente", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Using Cadente test engine.");
+            builder.UseEngine(new CadenteHttpServerEngine());
+        }
+
+        Instance = builder
             .UseRouter ( router => {
                 // Original HTTP Routes
                 router.MapGet ( "/tests/plaintext", delegate ( HttpRequest request ) {
