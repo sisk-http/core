@@ -11,7 +11,7 @@ using System.Net;
 using System.Net.Mime;
 using System.Text;
 using Sisk.Core.Helpers;
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 
 namespace Sisk.Core.Http.Streams;
 

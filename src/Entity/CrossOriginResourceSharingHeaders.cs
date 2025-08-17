@@ -20,6 +20,18 @@ namespace Sisk.Core.Entity {
         public const string AutoAllowOrigin = "<SISK_AUTO_ALLOW_ORIGIN_NAME>";
 
         /// <summary>
+        /// When applied to the <see cref="AllowHeaders"/> property, the HTTP server automatically applies
+        /// the incoming request headers to the Access-Control-Allow-Origin header.
+        /// </summary>
+        public const string AutoFromRequestHeaders = "<SISK_AUTO_FROM_REQUEST_HEADERS>";
+
+        /// <summary>
+        /// When applied to the <see cref="AllowMethods"/> property, the HTTP server automatically applies
+        /// the incoming request method to the Access-Control-Allow-Origin header.
+        /// </summary>
+        public const string AutoFromRequestMethod = "<SISK_AUTO_FROM_REQUEST_METHOD>";
+
+        /// <summary>
         /// Gets an instance of an empty CrossOriginResourceSharingHeaders.
         /// </summary>
         public static CrossOriginResourceSharingHeaders Empty { get => new (); }

@@ -103,6 +103,16 @@ public static class HttpKnownHeaderNames {
     public const string AccessControlMaxAge = "Access-Control-Max-Age";
 
     /// <summary>
+    /// The HTTP Access-Control-Request-Headers header.
+    /// </summary>
+    public const string AccessControlRequestHeaders = "Access-Control-Request-Headers";
+
+    /// <summary>
+    /// The HTTP Access-Control-Request-Method header.
+    /// </summary>
+    public const string AccessControlRequestMethod = "Access-Control-Request-Method";
+
+    /// <summary>
     /// The HTTP Age header.
     /// <para>Indicates the age of the object in a cache, helping clients understand how fresh the cached response is.</para>
     /// </summary>

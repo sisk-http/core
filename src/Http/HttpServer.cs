@@ -8,7 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
@@ -58,6 +58,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets an <see cref="bool"/> indicating if Sisk can be used with the current environment.
         /// </summary>
+        [Obsolete ( "This property is no longer supported. To find out if HttpListener is supported, use HttpListener.IsSupported." )]
         public static bool IsSupported { get => HttpListener.IsSupported; }
 
         /// <summary>

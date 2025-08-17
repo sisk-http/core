@@ -35,6 +35,8 @@ static partial class SR {
     public const string HttpResponse_405_DefaultMessage = "Method not allowed.";
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";
 
+    public const string Httpengine_Default = "An exception was thrown by the linked HTTP engine on this server. See the inner exception for more details.";
+
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
     public const string Httpserver_NoEngine = "Cannot start the HTTP server with no engine.";
     public const string Httpserver_StartMessage = "The HTTP server is listening at:";

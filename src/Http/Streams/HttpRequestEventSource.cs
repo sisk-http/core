@@ -9,7 +9,7 @@
 
 using System.Net;
 using System.Text;
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 
 namespace Sisk.Core.Http.Streams {
     /// <summary>

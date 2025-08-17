@@ -32,7 +32,13 @@ public sealed class HttpHostClient {
     /// </summary>
     public object? State { get; set; }
 
-    internal HttpHostClient ( IPEndPoint clientEndpoint ) {
+    /// <summary>
+    /// Gets a token that raises whether the HTTP client was disconnected.
+    /// </summary>
+    public CancellationToken DisconnectToken { get; internal set; }
+
+    internal HttpHostClient ( IPEndPoint clientEndpoint, CancellationToken cancellation ) {
         ClientEndpoint = clientEndpoint;
+        DisconnectToken = cancellation;
     }
 }

@@ -17,7 +17,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Sisk.Core.Http.Streams;
 
-namespace Sisk.Core.Http.Abstractions;
+namespace Sisk.Core.Http.Engine;
 
 using System.Net.WebSockets;
 
@@ -95,6 +95,14 @@ public abstract class HttpServerEngineContext {
     /// The <see cref="HttpServerEngineContextResponse"/> representing the HTTP response.
     /// </value>
     public abstract HttpServerEngineContextResponse Response { get; }
+
+    /// <summary>
+    /// Gets a value that indicates whether the HTTP connection has been aborted.
+    /// </summary>
+    /// <value>
+    /// A <see cref="CancellationToken"/> that can be used to signal that the HTTP connection has been aborted.
+    /// </value>
+    public virtual CancellationToken ContextAbortedToken { get; } = CancellationToken.None;
 
     /// <summary>
     /// Accepts a WebSocket connection asynchronously.

@@ -19,8 +19,10 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHost : IDisposable {
 
+    private readonly IPEndPoint _endpoint;
     private readonly TcpListener _listener;
     private bool disposedValue;
+    private bool isListening;
 
     /// <summary>
     /// Gets or sets the client queue size of all <see cref="HttpHost"/> instances. This value indicates how many
@@ -34,6 +36,11 @@ public sealed class HttpHost : IDisposable {
     public static string ServerNameHeader { get; set; } = "Sisk";
 
     /// <summary>
+    /// Gets the endpoint of the <see cref="HttpHost"/>.
+    /// </summary>
+    public IPEndPoint Endpoint => _endpoint;
+
+    /// <summary>
     /// Gets or sets an <see cref="HttpHostHandler"/> instance for this <see cref="HttpHost"/>.
     /// </summary>
     public HttpHostHandler? Handler { get; set; }
@@ -41,7 +48,7 @@ public sealed class HttpHost : IDisposable {
     /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHost"/> has been disposed.
     /// </summary>
-    public bool IsDisposed { get => disposedValue; }
+    public bool IsDisposed => disposedValue;
 
     /// <summary>
     /// Gets or sets the HTTPS options for secure connections. Setting an <see cref="Sisk.Cadente.HttpsOptions"/> object in this
@@ -59,6 +66,7 @@ public sealed class HttpHost : IDisposable {
     /// </summary>
     /// <param name="endpoint">The <see cref="IPEndPoint"/> to listen on.</param>
     public HttpHost ( IPEndPoint endpoint ) {
+        _endpoint = endpoint;
         _listener = new TcpListener ( endpoint );
     }
 
@@ -73,6 +81,9 @@ public sealed class HttpHost : IDisposable {
     /// Starts the HTTP host and begins listening for incoming connections.
     /// </summary>
     public void Start () {
+        if (isListening)
+            return;
+
         ObjectDisposedException.ThrowIf ( disposedValue, this );
 
         _listener.Server.NoDelay = true;
@@ -88,9 +99,25 @@ public sealed class HttpHost : IDisposable {
 
         _listener.Start ( QueueSize );
         _listener.BeginAcceptTcpClient ( ReceiveClient, null );
+
+        isListening = true;
+    }
+
+    /// <summary>
+    /// Stops the HTTP host from listening for incoming HTTP requests.
+    /// </summary>
+    public void Stop () {
+        if (!isListening)
+            return;
+
+        isListening = false;
+        _listener.Stop ();
     }
 
     private async void ReceiveClient ( IAsyncResult result ) {
+
+        if (!isListening)
+            return;
 
         _listener.BeginAcceptTcpClient ( ReceiveClient, null );
         var client = _listener.EndAcceptTcpClient ( result );
@@ -99,6 +126,8 @@ public sealed class HttpHost : IDisposable {
     }
 
     private async Task HandleTcpClient ( TcpClient client ) {
+
+        bool clientIsAlive = true;
         try {
             client.ReceiveTimeout = TimeoutManager._ClientReadTimeoutSeconds;
             client.SendTimeout = TimeoutManager._ClientWriteTimeoutSeconds;
@@ -116,8 +145,27 @@ public sealed class HttpHost : IDisposable {
                 connectionStream = clientStream;
             }
 
+            CancellationTokenSource disconnectToken = new CancellationTokenSource ();
+            Task disconnectPoolingTask = Task.Factory.StartNew ( delegate {
+
+                int itcount = 0;
+                while (clientIsAlive) {
+                    if (client.Client.Poll ( 1, SelectMode.SelectRead )) {
+                        itcount++;
+
+                        if (itcount >= 3) {
+                            disconnectToken.Cancel ();
+                            clientIsAlive = false;
+                        }
+                    }
+
+                    Thread.Sleep ( 100 );
+                }
+
+            }, TaskCreationOptions.LongRunning );
+
             IPEndPoint clientEndpoint = (IPEndPoint) client.Client.RemoteEndPoint!;
-            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint );
+            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint, disconnectToken.Token );
 
             using (HttpConnection connection = new HttpConnection ( hostClient, connectionStream, this, clientEndpoint )) {
 
@@ -142,6 +190,7 @@ public sealed class HttpHost : IDisposable {
             }
         }
         finally {
+            clientIsAlive = false;
             client.Dispose ();
         }
     }
@@ -149,6 +198,7 @@ public sealed class HttpHost : IDisposable {
     private void Dispose ( bool disposing ) {
         if (!disposedValue) {
             if (disposing) {
+                _listener.Stop ();
                 _listener.Dispose ();
             }
 
@@ -171,5 +221,10 @@ public sealed class HttpHost : IDisposable {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose ( disposing: true );
         GC.SuppressFinalize ( this );
+    }
+
+    /// <inheritdoc/>
+    ~HttpHost () {
+        Dispose ( disposing: false );
     }
 }

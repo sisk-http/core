@@ -51,7 +51,7 @@ sealed class HttpConnection : IDisposable {
                     return HttpConnectionState.ConnectionClosed;
                 }
 
-                HttpHostContext managedSession = new HttpHostContext ( nextRequest, _client, _connectionStream );
+                HttpHostContext managedSession = new HttpHostContext ( _host, nextRequest, _client, _connectionStream );
                 await _host.InvokeContextCreated ( managedSession );
 
                 if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {

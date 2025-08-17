@@ -19,7 +19,9 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHostContext {
 
+    private HttpHost _host;
     private Stream _connectionStream;
+    internal CancellationTokenSource abortedSource = new CancellationTokenSource ();
     internal bool ResponseHeadersAlreadySent = false;
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -52,9 +54,15 @@ public sealed class HttpHostContext {
     /// </summary>
     public HttpHostClient Client { get; }
 
-    internal HttpHostContext ( HttpRequestBase baseRequest, HttpHostClient client, Stream connectionStream ) {
+    /// <summary>
+    /// Gets the associated <see cref="HttpHost"/> which created this HTTP context.
+    /// </summary>
+    public HttpHost Host => _host;
+
+    internal HttpHostContext ( HttpHost host, HttpRequestBase baseRequest, HttpHostClient client, Stream connectionStream ) {
         Client = client;
         _connectionStream = connectionStream;
+        _host = host;
 
         HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
         Request = new HttpRequest ( baseRequest, requestStream );
@@ -189,7 +197,7 @@ public sealed class HttpHostContext {
             StatusDescription = "Ok";
 
             Headers = new List<HttpHeader>
-                {
+            {
                 new HttpHeader ("Date", DateTime.UtcNow.ToString("R")),
                 new HttpHeader ("Server", HttpHost.ServerNameHeader)
             };

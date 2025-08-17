@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using Sisk.Core.Entity;
+using Sisk.Core.Http.Engine;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
 
@@ -217,6 +218,26 @@ public sealed class HttpServerHostContextBuilder {
     /// <param name="handler">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
     public HttpServerHostContextBuilder UseHttpServer ( Action<HttpServer> handler ) {
         handler ( _context.HttpServer );
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the HTTP server engine.
+    /// </summary>
+    /// <param name="engine">The <see cref="HttpServerEngine"/> to use.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseEngine ( HttpServerEngine engine ) {
+        configuration.Engine = engine;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the HTTP server engine using a default constructor.
+    /// </summary>
+    /// <typeparam name="TEngine">The type of the HTTP server engine to use, which must inherit from <see cref="HttpServerEngine"/> and have a parameterless constructor.</typeparam>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseEngine<TEngine> () where TEngine : HttpServerEngine, new() {
+        configuration.Engine = new TEngine ();
         return this;
     }
 

@@ -16,7 +16,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sisk.Core.Http.Abstractions;
+namespace Sisk.Core.Http.Engine;
 
 /// <summary>
 /// Provides an implementation of <see cref="HttpServerEngine"/> using <see cref="HttpListener"/>.
@@ -88,6 +88,8 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         public override HttpServerEngineContextRequest Request => new HttpListenerContextRequestAbstraction ( _context );
 
         public override HttpServerEngineContextResponse Response => new HttpListenerContextResponseAbstraction ( _context );
+
+        public override CancellationToken ContextAbortedToken => throw new HttpEngineException ( new NotSupportedException () );
 
         public override async Task<HttpServerEngineWebSocket> AcceptWebSocketAsync ( string? subProtocol ) {
             var ws = await _context.AcceptWebSocketAsync ( subProtocol ).ConfigureAwait ( false );

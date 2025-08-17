@@ -7,7 +7,7 @@
 // File name:   HttpServerConfiguration.cs
 // Repository:  https://github.com/sisk-http/core
 
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http {

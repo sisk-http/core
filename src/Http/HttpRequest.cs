@@ -17,7 +17,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
@@ -217,7 +217,7 @@ namespace Sisk.Core.Http {
                     }
                     else {
                         headers = new HttpHeaderCollection ();
-                        headers.ImportNameValueCollection ( (WebHeaderCollection) listenerRequest.Headers );
+                        headers.ImportNameValueCollection ( listenerRequest.Headers );
                     }
 
                     headers.MakeReadOnly ();
@@ -245,6 +245,11 @@ namespace Sisk.Core.Http {
                 return cookies;
             }
         }
+
+        /// <summary>
+        /// Gets a cancellation token that is signaled when the client disconnects.
+        /// </summary>
+        public CancellationToken DisconnectToken { get => context.ContextAbortedToken; }
 
         /// <summary>
         /// Get the requested host (without port) for this <see cref="HttpRequest"/>.

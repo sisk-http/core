@@ -15,7 +15,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 using Sisk.Core.Internal;
 using Sisk.Core.Routing;
 
@@ -83,11 +83,27 @@ public partial class HttpServer {
         if (cors is null)
             return;
 
-        if (cors.AllowHeaders.Length > 0)
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join ( ", ", cors.AllowHeaders ) );
+        if (cors.AllowHeaders.Length > 0) {
+            if (cors.AllowHeaders [ 0 ] == CrossOriginResourceSharingHeaders.AutoFromRequestHeaders) {
+                string requestHeaders =
+                    baseRequest.Headers [ HttpKnownHeaderNames.AccessControlRequestHeaders ] ??
+                    string.Join ( ", ", baseRequest.Headers.AllKeys.Where ( x => !string.IsNullOrEmpty ( x ) ).Distinct ( StringComparer.OrdinalIgnoreCase ) );
+                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowHeaders, requestHeaders );
+            }
+            else {
+                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join ( ", ", cors.AllowHeaders ) );
+            }
+        }
 
-        if (cors.AllowMethods.Length > 0)
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowMethods, string.Join ( ", ", cors.AllowMethods ) );
+        if (cors.AllowMethods.Length > 0) {
+            if (cors.AllowMethods [ 0 ] == CrossOriginResourceSharingHeaders.AutoFromRequestMethod) {
+                string requestMethod = baseRequest.Headers [ HttpKnownHeaderNames.AccessControlRequestMethod ] ?? baseRequest.HttpMethod;
+                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowMethods, requestMethod.ToUpperInvariant () );
+            }
+            else {
+                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowMethods, string.Join ( ", ", cors.AllowMethods ) );
+            }
+        }
 
         if (cors.AllowOrigin is { } allowOriginValue) {
 

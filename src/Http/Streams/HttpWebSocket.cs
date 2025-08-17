@@ -11,7 +11,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
-using Sisk.Core.Http.Abstractions;
+using Sisk.Core.Http.Engine;
 using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http.Streams {

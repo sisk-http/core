@@ -3,7 +3,7 @@
 	<!-- supported frameworks -->
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-		<RootNamespace>Sisk.Cadente</RootNamespace>
+		<RootNamespace>Sisk.Cadente.CoreEngine</RootNamespace>
 		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 
@@ -27,11 +27,11 @@
 
 	<!-- nuget package info -->
 	<PropertyGroup>
-		<PackageId>Sisk.Cadente</PackageId>
-		<Title>Sisk.Cadente</Title>
+		<PackageId>Sisk.Cadente.CoreEngine</PackageId>
+		<Title>Sisk.Cadente.CoreEngine</Title>
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
-		<Product>Sisk.Cadente</Product>
+		<Product>Sisk.Cadente.CoreEngine</Product>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<Description>Cadente is a high-performance managed implementation of HTTP/1.1 with SSL support for .NET.</Description>
 		<Summary>Cadente is a high-performance managed implementation of HTTP/1.1 with SSL support for .NET.</Summary>
@@ -98,6 +98,11 @@
 
 	<ItemGroup>
 		<EditorConfigFiles Remove=".\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+	  <ProjectReference Include="..\Sisk.Cadente\Sisk.Cadente.csproj" />
 	</ItemGroup>
 
 	<!-- global imports -->
