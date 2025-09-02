@@ -27,6 +27,7 @@ namespace Sisk.Cadente.CoreEngine {
         private readonly HttpHostContext.HttpResponse _response;
         private readonly HttpHostContext _httpHostContext;
         private CadenteHttpServerEngineContext? _context;
+        private WebHeaderCollection _headers = new ();
 
         internal void SetContext ( CadenteHttpServerEngineContext context ) {
             _context = context;
@@ -93,26 +94,10 @@ namespace Sisk.Cadente.CoreEngine {
         }
 
         /// <inheritdoc/>
-        public override WebHeaderCollection Headers {
-            get {
-                var headers = new WebHeaderCollection ();
-                foreach (var header in _response.Headers) {
-                    headers.Add ( header.Name, header.Value );
-                }
-                return headers;
-            }
-            set {
-                _response.Headers.Clear ();
-                foreach (var key in value.AllKeys) {
-                    if (key is null)
-                        continue;
-                    _response.Headers.Add ( new HttpHeader ( key, value [ key ] ?? "" ) );
-                }
-            }
-        }
+        public override Stream OutputStream => _response.GetResponseStream ();
 
         /// <inheritdoc/>
-        public override Stream OutputStream => _response.GetResponseStream ();
+        public override IHttpEngineHeaderList Headers => new CadenteEngineHeaderList ( _response );
 
         /// <inheritdoc/>
         public override void Abort () {

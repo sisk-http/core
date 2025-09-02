@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+       <SISK_TEST_ENGINE>Cadente</SISK_TEST_ENGINE>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

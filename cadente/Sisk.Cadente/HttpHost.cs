@@ -98,9 +98,9 @@ public sealed class HttpHost : IDisposable {
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
 
         _listener.Start ( QueueSize );
-        _listener.BeginAcceptTcpClient ( ReceiveClient, null );
-
         isListening = true;
+
+        _listener.BeginAcceptTcpClient ( ReceiveClient, null );
     }
 
     /// <summary>
@@ -148,18 +148,22 @@ public sealed class HttpHost : IDisposable {
             CancellationTokenSource disconnectToken = new CancellationTokenSource ();
             Task disconnectPoolingTask = Task.Factory.StartNew ( delegate {
 
-                int itcount = 0;
-                while (clientIsAlive) {
-                    if (client.Client.Poll ( 1, SelectMode.SelectRead )) {
-                        itcount++;
-
-                        if (itcount >= 3) {
-                            disconnectToken.Cancel ();
-                            clientIsAlive = false;
+                try {
+                    int itcount = 0;
+                    while (clientIsAlive && itcount < 3) {
+                        if (client.Client.Poll ( 1, SelectMode.SelectRead )) {
+                            itcount++;
                         }
-                    }
 
-                    Thread.Sleep ( 100 );
+                        Thread.Sleep ( 100 );
+                    }
+                }
+                catch {
+                    ;
+                }
+                finally {
+                    disconnectToken.Cancel ();
+                    clientIsAlive = false;
                 }
 
             }, TaskCreationOptions.LongRunning );
@@ -198,6 +202,7 @@ public sealed class HttpHost : IDisposable {
     private void Dispose ( bool disposing ) {
         if (!disposedValue) {
             if (disposing) {
+                isListening = false;
                 _listener.Stop ();
                 _listener.Dispose ();
             }

@@ -33,7 +33,7 @@ public partial class HttpServer {
 
         Span<string> definedHeaders;
         if (response.Headers.Count > 0) {
-            definedHeaders = response.Headers.AllKeys;
+            definedHeaders = response.Headers.DefinedHeaderNames;
         }
         else {
             definedHeaders = Span<string>.Empty;
@@ -88,20 +88,20 @@ public partial class HttpServer {
                 string requestHeaders =
                     baseRequest.Headers [ HttpKnownHeaderNames.AccessControlRequestHeaders ] ??
                     string.Join ( ", ", baseRequest.Headers.AllKeys.Where ( x => !string.IsNullOrEmpty ( x ) ).Distinct ( StringComparer.OrdinalIgnoreCase ) );
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowHeaders, requestHeaders );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowHeaders, requestHeaders );
             }
             else {
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join ( ", ", cors.AllowHeaders ) );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowHeaders, string.Join ( ", ", cors.AllowHeaders ) );
             }
         }
 
         if (cors.AllowMethods.Length > 0) {
             if (cors.AllowMethods [ 0 ] == CrossOriginResourceSharingHeaders.AutoFromRequestMethod) {
                 string requestMethod = baseRequest.Headers [ HttpKnownHeaderNames.AccessControlRequestMethod ] ?? baseRequest.HttpMethod;
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowMethods, requestMethod.ToUpperInvariant () );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowMethods, requestMethod.ToUpperInvariant () );
             }
             else {
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowMethods, string.Join ( ", ", cors.AllowMethods ) );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowMethods, string.Join ( ", ", cors.AllowMethods ) );
             }
         }
 
@@ -111,10 +111,10 @@ public partial class HttpServer {
 
                 string? requestOrigin = baseRequest.Headers [ HttpKnownHeaderNames.Origin ];
                 if (requestOrigin != null)
-                    baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, requestOrigin );
+                    baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowOrigin, requestOrigin );
             }
             else {
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowOrigin, cors.AllowOrigin );
             }
         }
         else if (cors.AllowOrigins?.Length > 0) {
@@ -124,7 +124,7 @@ public partial class HttpServer {
                 for (int i = 0; i < cors.AllowOrigins.Length; i++) {
                     string definedOrigin = cors.AllowOrigins [ i ];
                     if (string.Equals ( definedOrigin, origin, StringComparison.OrdinalIgnoreCase )) {
-                        baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowOrigin, origin );
+                        baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowOrigin, origin );
                         break;
                     }
                 }
@@ -132,13 +132,13 @@ public partial class HttpServer {
         }
 
         if (cors.AllowCredentials == true)
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlAllowCredentials, "true" );
+            baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlAllowCredentials, "true" );
 
         if (cors.ExposeHeaders.Length > 0)
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlExposeHeaders, string.Join ( ", ", cors.ExposeHeaders ) );
+            baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlExposeHeaders, string.Join ( ", ", cors.ExposeHeaders ) );
 
         if (cors.MaxAge > TimeSpan.Zero)
-            baseResponse.Headers.Set ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString ( provider: null ) );
+            baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.AccessControlMaxAge, cors.MaxAge.TotalSeconds.ToString ( provider: null ) );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -266,9 +266,9 @@ public partial class HttpServer {
             #region Step 2 - Request validation
 
             if (currentConfig.IncludeRequestIdHeader)
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.XRequestID, baseRequest.RequestTraceIdentifier.ToString () );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.XRequestID, baseRequest.RequestTraceIdentifier.ToString () );
             if (currentConfig.SendSiskHeader)
-                baseResponse.Headers.Set ( HttpKnownHeaderNames.XPoweredBy, PoweredBy );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.XPoweredBy, PoweredBy );
 
             long userMaxContentLength = currentConfig.MaximumContentLength;
             bool isContentLenOutsideUserBounds = userMaxContentLength > 0 && request.ContentLength > userMaxContentLength;
@@ -341,7 +341,7 @@ public partial class HttpServer {
                     continue;
 
                 for (int j = 0; j < incameHeader.Item2.Count; j++)
-                    baseResponse.Headers.Add ( incameHeader.Item1, incameHeader.Item2 [ j ] );
+                    baseResponse.Headers.AppendHeader ( incameHeader.Item1, incameHeader.Item2 [ j ] );
             }
 
             if (currentConfig.EnableAutomaticResponseCompression

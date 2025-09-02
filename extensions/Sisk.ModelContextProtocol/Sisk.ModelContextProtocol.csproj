@@ -1,0 +1,80 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		
+		<Title>Sisk.ModelContextProtocol</Title>
+		<PackageId>Sisk.ModelContextProtocol</PackageId>
+		
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.ModelContextProtocol</Product>
+		<Description>Esse pacote fornece uma implementação do protocolo MCP (Model Context Protocol) para o Sisk Framework.</Description>
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
+		<PackageIcon>mcp-ico.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PackageTags>mcp,http-server,http,web framework</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		
+		<AssemblyVersion>1.4</AssemblyVersion>
+		<FileVersion>1.4</FileVersion>
+		<Version>1.4</Version>
+		
+		<NeutralLanguage>en</NeutralLanguage>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		
+		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
+		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\.github\mcp-ico.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\.nuget\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EditorConfigFiles Remove=".\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="CypherPotato.LightJson" Version="0.14.1" />
+	</ItemGroup>
+
+	<!-- global imports -->
+	<ItemGroup>
+		<Using Include="System" />
+		<Using Include="System.Collections.Generic" />
+		<Using Include="System.Threading" />
+		<Using Include="System.Threading.Tasks" />
+		<Using Include="System.IO" />
+		<Using Include="System.Net.Http" />
+		<Using Include="System.Linq" />
+		<Using Include="LightJson" />
+		<Using Include="Sisk.Core.Http" />
+	</ItemGroup>
+
+</Project>

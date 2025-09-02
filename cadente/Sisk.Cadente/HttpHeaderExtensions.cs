@@ -13,10 +13,19 @@ using System.Text;
 
 namespace Sisk.Cadente;
 
-internal static class HttpHeaderExtensions {
+/// <summary>
+/// Provides extension methods for collections of <see cref="HttpHeader"/>.
+/// </summary>
+public static class HttpHeaderExtensions {
+
+    /// <summary>
+    /// Sets an <see cref="HttpHeader"/> in the list. If a header with the same name already exists, it is removed before the new header is added.
+    /// This operation is thread-safe.
+    /// </summary>
+    /// <param name="headers">The list of <see cref="HttpHeader"/> to modify.</param>
+    /// <param name="header">The <see cref="HttpHeader"/> to set.</param>
     public static void Set ( this List<HttpHeader> headers, in HttpHeader header ) {
         lock (((ICollection) headers).SyncRoot) {
-
             var span = CollectionsMarshal.AsSpan ( headers );
             for (int i = span.Length - 1; i >= 0; i--) {
                 if (Ascii.EqualsIgnoreCase ( span [ i ].NameBytes.Span, header.NameBytes.Span )) {

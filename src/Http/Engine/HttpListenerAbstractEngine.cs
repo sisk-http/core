@@ -128,7 +128,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         public override bool SendChunked { get => derived.SendChunked; set => derived.SendChunked = value; }
         public override long ContentLength64 { get => derived.ContentLength64; set => derived.ContentLength64 = value; }
         public override string? ContentType { get => derived.ContentType; set => derived.ContentType = value; }
-        public override WebHeaderCollection Headers { get => derived.Headers; set => derived.Headers = value; }
+        public override IHttpEngineHeaderList Headers { get => new HttpListenerContextResponseHeaderList ( derived.Headers ); }
         public override Stream OutputStream { get => derived.OutputStream; }
 
         public override void Abort () {
@@ -145,6 +145,34 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
 
         public override void Dispose () {
             (derived as IDisposable)?.Dispose ();
+        }
+
+        sealed class HttpListenerContextResponseHeaderList ( WebHeaderCollection _headers ) : IHttpEngineHeaderList {
+            WebHeaderCollection headers = _headers;
+
+            public int Count => headers.Count;
+
+            public string [] DefinedHeaderNames => headers.AllKeys;
+
+            public void AppendHeader ( string name, string value ) {
+                headers.Add ( name, value );
+            }
+
+            public void Clear () {
+                headers.Clear ();
+            }
+
+            public bool Contains ( string name ) {
+                return headers.GetValues ( name ) is { Length: > 0 };
+            }
+
+            public string [] GetHeader ( string name ) {
+                return headers.GetValues ( name ) ?? Array.Empty<string> ();
+            }
+
+            public void SetHeader ( string name, string value ) {
+                headers.Set ( name, value );
+            }
         }
     }
 

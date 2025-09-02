@@ -8,11 +8,41 @@
 // Repository:  https://github.com/sisk-http/core
 
 using Sisk.Core.Helpers;
+using Sisk.Core.Http;
 using Sisk.Core.Internal;
 
 namespace Sisk.Core.Routing;
 
 partial class Router {
+
+    /// <summary>
+    /// Gets the corresponding <see cref="RouteMethod"/> for a given <see cref="HttpMethod"/>, with a fallback option.
+    /// </summary>
+    /// <param name="httpMethod">The <see cref="HttpMethod"/> to convert.</param>
+    /// <param name="fallback">The <see cref="RouteMethod"/> to return if no direct mapping is found. Defaults to <see cref="RouteMethod.Get"/>.</param>
+    /// <returns>The mapped <see cref="RouteMethod"/> or the fallback value.</returns>
+    public static RouteMethod GetRouteMethod ( HttpMethod httpMethod, RouteMethod fallback = RouteMethod.Get ) {
+        return GetRouteMethod ( httpMethod.Method, fallback );
+    }
+
+    /// <summary>
+    /// Gets the corresponding <see cref="RouteMethod"/> for a given HTTP method string, with a fallback option.
+    /// </summary>
+    /// <param name="httpMethod">The HTTP method string (e.g., "GET", "POST") to convert.</param>
+    /// <param name="fallback">The <see cref="RouteMethod"/> to return if no direct mapping is found. Defaults to <see cref="RouteMethod.Get"/>.</param>
+    /// <returns>The mapped <see cref="RouteMethod"/> or the fallback value.</returns>
+    public static RouteMethod GetRouteMethod ( string httpMethod, RouteMethod fallback = RouteMethod.Get ) {
+        return httpMethod.ToUpperInvariant () switch {
+            "GET" => RouteMethod.Get,
+            "POST" => RouteMethod.Post,
+            "PUT" => RouteMethod.Put,
+            "PATCH" => RouteMethod.Patch,
+            "DELETE" => RouteMethod.Delete,
+            "HEAD" => RouteMethod.Head,
+            "OPTIONS" => RouteMethod.Options,
+            _ => fallback
+        };
+    }
 
     /// <summary>
     /// Combines an array of string parts into a single path.

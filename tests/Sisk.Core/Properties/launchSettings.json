@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "tests": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "SISK_TEST_ENGINE": "Cadente"
+      }
+    }
+  }
+}

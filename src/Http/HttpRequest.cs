@@ -9,7 +9,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
+using System.Net.WebSockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -50,6 +53,12 @@ namespace Sisk.Core.Http {
 
         private readonly Uri requestUri;
         private readonly HttpMethod requestMethod;
+
+#if NET9_0_OR_GREATER
+        private readonly Guid traceIdentifier = Guid.CreateVersion7 ();
+#else
+        private readonly Guid traceIdentifier = Guid.NewGuid ();
+#endif
 
         private int currentFrame;
         private bool disposedValue;
@@ -160,9 +169,9 @@ namespace Sisk.Core.Http {
         public static JsonSerializerOptions? DefaultJsonSerializerOptions { get; set; } = new JsonSerializerOptions ( JsonSerializerDefaults.Web );
 
         /// <summary>
-        /// Gets a unique random ID for this request.
+        /// Gets a unique identifier for this request.
         /// </summary>
-        public Guid RequestId { get => listenerRequest.RequestTraceIdentifier; }
+        public Guid RequestId { get => traceIdentifier; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request was locally made by an secure
@@ -310,6 +319,40 @@ namespace Sisk.Core.Http {
         /// </summary>
         public Encoding RequestEncoding {
             get => listenerRequest.ContentEncoding;
+        }
+
+        /// <summary>
+        /// Gets the proper <see cref="CultureInfo"/> to handle this request.
+        /// </summary>
+        public CultureInfo Culture {
+            get {
+                string? acceptLanguage = Headers.AcceptLanguage;
+                if (acceptLanguage is null)
+                    return CultureInfo.CurrentCulture;
+
+                // parse languages
+                List<StringWithQualityHeaderValue> acceptedLanguages = new ();
+                foreach (var lang in acceptLanguage.Split ( ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )) {
+
+                    if (StringWithQualityHeaderValue.TryParse ( lang, out var qualityHeaderValue )) {
+                        acceptedLanguages.Add ( qualityHeaderValue );
+                    }
+                }
+
+                // order by quality and retrive the culture info
+                var cultureInfos = CultureInfo.GetCultures ( CultureTypes.AllCultures );
+                foreach (var lang in acceptedLanguages.OrderByDescending ( o => o.Quality ?? 1 )) {
+
+                    foreach (var culture in cultureInfos) {
+
+                        if (string.Equals ( lang.Value, culture.Name, StringComparison.OrdinalIgnoreCase )) {
+                            return culture;
+                        }
+                    }
+                }
+
+                return CultureInfo.CurrentCulture;
+            }
         }
 
         /// <summary>

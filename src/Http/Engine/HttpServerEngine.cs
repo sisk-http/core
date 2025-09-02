@@ -342,9 +342,9 @@ public abstract class HttpServerEngineContextResponse : IDisposable {
     /// Gets or sets the HTTP headers.
     /// </summary>
     /// <value>
-    /// The <see cref="WebHeaderCollection"/> containing the HTTP headers.
+    /// The <see cref="IHttpEngineHeaderList"/> containing the HTTP headers.
     /// </value>
-    public abstract WebHeaderCollection Headers { get; set; }
+    public abstract IHttpEngineHeaderList Headers { get; }
 
     /// <summary>
     /// Appends a header to the response.
