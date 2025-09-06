@@ -152,32 +152,43 @@ public sealed class McpProvider {
 
                 JsonObject result = [];
 
-                try {
-                    var context = new McpToolContext () {
-                        Cancellation = cancellation,
-                        Server = this,
-                        Request = request,
-                        Arguments = toolInput,
-                        ToolName = toolName,
-                        Metadata = requestObject [ "params" ] [ "_meta" ].MaybeNull ()?.GetJsonObject () ?? []
-                    };
-
-                    var toolResult = await tool.ExecuteAsync ( context );
-                    if (toolResult.Result.IsJsonArray) {
-                        result [ "content" ] = toolResult.Result;
-                    }
-                    else {
-                        result [ "content" ] = new JsonArray ( [ toolResult.Result ] );
-                    }
-                    result [ "isError" ] = false;
-                }
-                catch (Exception ex) {
+                if (tool.Schema.Validate ( toolInput ) is { IsValid: false } validationError) {
                     result [ "content" ] = new JsonArray ( [new JsonObject()
                     {
                         ["type"] = "text",
-                        ["text"] = "Error executing tool: " + ex.Message
+                        ["text"] = "Error executing tool: failed to validate the JSON schema of the function call. See errors below.\r\n" +
+                            string.Join("\r\n", validationError.Errors.Select(e => $"- [{e.Path}] {e.Message}"))
                     }] );
                     result [ "isError" ] = true;
+                }
+                else {
+                    try {
+                        var context = new McpToolContext () {
+                            Cancellation = cancellation,
+                            Server = this,
+                            Request = request,
+                            Arguments = toolInput,
+                            ToolName = toolName,
+                            Metadata = requestObject [ "params" ] [ "_meta" ].MaybeNull ()?.GetJsonObject () ?? []
+                        };
+
+                        var toolResult = await tool.ExecuteAsync ( context );
+                        if (toolResult.Result.IsJsonArray) {
+                            result [ "content" ] = toolResult.Result;
+                        }
+                        else {
+                            result [ "content" ] = new JsonArray ( [ toolResult.Result ] );
+                        }
+                        result [ "isError" ] = false;
+                    }
+                    catch (Exception ex) {
+                        result [ "content" ] = new JsonArray ( [new JsonObject()
+                        {
+                            ["type"] = "text",
+                            ["text"] = "Error executing tool: " + ex.Message
+                        }] );
+                        result [ "isError" ] = true;
+                    }
                 }
 
                 var toolCallResponse = new JsonRpcResponse ( result, id );
@@ -187,7 +198,7 @@ public sealed class McpProvider {
                 return new McpJsonResponse ( new JsonRpcResponse ( new JsonObject (), id ), sessionId );
             }
             else if (method.StartsWith ( "notifications/" )) {
-                return new McpJsonResponse ( new JsonRpcResponse ( new JsonObject (), id ), sessionId ) { Status = HttpStatusCode.Accepted };
+                return new HttpResponse ( HttpStatusCode.Accepted );
             }
             else {
                 return new McpJsonResponse ( new JsonObject () {

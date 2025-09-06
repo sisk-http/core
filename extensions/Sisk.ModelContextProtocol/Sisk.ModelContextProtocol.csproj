@@ -13,7 +13,7 @@
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.ModelContextProtocol</Product>
-		<Description>Esse pacote fornece uma implementação do protocolo MCP (Model Context Protocol) para o Sisk Framework.</Description>
+		<Description>This package provides an implementation of the MCP (Model Context Protocol) protocol for the Sisk Framework.</Description>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<PackageIcon>mcp-ico.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -21,9 +21,9 @@
 		<PackageTags>mcp,http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		
-		<AssemblyVersion>1.4</AssemblyVersion>
-		<FileVersion>1.4</FileVersion>
-		<Version>1.4</Version>
+		<AssemblyVersion>1.5.1.0</AssemblyVersion>
+		<FileVersion>1.5.1.0</FileVersion>
+		<Version>1.5.1.0-alpha1</Version>
 		
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
