@@ -12,37 +12,40 @@ namespace Sisk.BasicAuth;
 /// <summary>
 /// Represents basic authentication credentials for an HTTP request.
 /// </summary>
-/// <definition>
-/// public class BasicAuthenticationCredentials
-/// </definition> 
-/// <type>
-/// Class
-/// </type>
-public class BasicAuthenticationCredentials {
+public sealed class BasicAuthenticationCredentials : IEquatable<BasicAuthenticationCredentials> {
+
     /// <summary>
     /// Gets the user id component from this credentials.
     /// </summary>
-    /// <definition>
-    /// public string UserId { get; }
-    /// </definition> 
-    /// <type>
-    /// Property
-    /// </type>
-    public string UserId { get; private set; }
+    public string UserId { get; }
 
     /// <summary>
     /// Gets the plain password component from this credentials.
     /// </summary>
-    /// <definition>
-    /// public string Password { get; }
-    /// </definition> 
-    /// <type>
-    /// Property
-    /// </type>
-    public string Password { get; private set; }
+    public string Password { get; }
 
     internal BasicAuthenticationCredentials ( string username, string password ) {
         UserId = username;
         Password = password;
+    }
+
+    /// <inheritdoc/>
+    public bool Equals ( BasicAuthenticationCredentials? other ) {
+        return GetHashCode () == other?.GetHashCode ();
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals ( object? obj ) {
+        return obj is BasicAuthenticationCredentials other && Equals ( other );
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode () {
+        return HashCode.Combine ( UserId, Password );
+    }
+
+    /// <inheritdoc/>
+    public override string ToString () {
+        return $"BasicAuthenticationCredentials {{Uid={UserId}}}";
     }
 }
