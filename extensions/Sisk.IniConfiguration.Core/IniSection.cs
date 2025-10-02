@@ -238,12 +238,14 @@ public sealed class IniSection : IDictionary<string, string []>, IEquatable<IniS
 
     /// <inheritdoc/>
     public override int GetHashCode () {
-        int hash = Name.GetHashCode ();
+        int hash = IniReader.IniNamingComparer.GetHashCode ( Name );
 
         for (int i = 0; i < items.Count; i++) {
             KeyValuePair<string, string> item = items [ i ];
 
-            hash = HashCode.Combine ( hash, item.Key, item.Value );
+            hash ^= HashCode.Combine (
+                IniReader.IniNamingComparer.GetHashCode ( item.Key ),
+                IniReader.IniNamingComparer.GetHashCode ( item.Value ) );
         }
 
         return hash;

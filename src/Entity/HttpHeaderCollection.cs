@@ -11,13 +11,15 @@ using System.Net;
 using Sisk.Core.Http;
 using Header = Sisk.Core.Http.HttpKnownHeaderNames;
 
+#pragma warning disable IL0025
+
 namespace Sisk.Core.Entity;
 
 /// <summary>
 /// Represents an collection of HTTP headers with their name and values.
 /// </summary>
 public sealed class HttpHeaderCollection : StringKeyStoreCollection {
-    static readonly StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
+    private static readonly StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
 
     /// <summary>
     /// Create an new instance of the <see cref="HttpHeaderCollection"/> class.

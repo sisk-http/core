@@ -17,7 +17,7 @@ namespace Sisk.IniConfiguration.Core.Serialization;
 public sealed class IniReader : IDisposable {
 
     /// <summary>
-    /// Gets or sets the default <see cref="StringComparer"/> used by the INI reader and instances 
+    /// Gets or sets the default <see cref="StringComparer"/> used by the INI reader and instances
     /// to compare key names.
     /// </summary>
     public static StringComparer IniNamingComparer { get; set; } = StringComparer.InvariantCultureIgnoreCase;
@@ -58,6 +58,9 @@ public sealed class IniReader : IDisposable {
                 continue;
 
             string lineTrimmed = line.TrimStart ();
+            if (lineTrimmed.Length == 0)
+                continue;
+
             char assertingChar = lineTrimmed [ 0 ];
 
             // assert comments
@@ -72,17 +75,19 @@ public sealed class IniReader : IDisposable {
                 if (sectionName is null)
                     continue;
 
-                var commitingSection = new IniSection ( lastSectionName, items );
-                creatingSections.Add ( commitingSection );
+                // Commit the previous section before starting a new one
+                if (items.Count > 0) {
+                    var commitingSection = new IniSection ( lastSectionName, items );
+                    creatingSections.Add ( commitingSection );
+                    items = new List<KeyValuePair<string, string>> ();
+                }
 
-                items.Clear ();
                 lastSectionName = sectionName;
             }
 
             // assert property
             else {
                 var property = ParsePropertyName ( lineTrimmed );
-
                 items.Add ( new KeyValuePair<string, string> ( property.propertyName ?? string.Empty, property.propertyValue ?? string.Empty ) );
             }
         }
@@ -99,7 +104,7 @@ public sealed class IniReader : IDisposable {
 
         int propertySeparator = line.IndexOfAny ( [ Token.PROPERTY_DELIMITER, Token.NEW_LINE, Token.RETURN ] );
         if (propertySeparator < 0) {
-            // eof?
+
             return (new string ( line ).Trim (), null);
         }
 
@@ -111,9 +116,9 @@ public sealed class IniReader : IDisposable {
             if (string.IsNullOrEmpty ( valueInitial )) {
                 return (propertyName, null);
             }
-            else if (valueInitial [ 0 ] == Token.STRING_QUOTE_1) {
 
-                if (valueInitial.EndsWith ( Token.STRING_QUOTE_1 )) {
+            if (valueInitial [ 0 ] == Token.STRING_QUOTE_1) {
+                if (valueInitial.Length > 1 && valueInitial.EndsWith ( Token.STRING_QUOTE_1 )) {
                     return (propertyName, valueInitial [ 1..^1 ]);
                 }
                 else {
@@ -122,8 +127,7 @@ public sealed class IniReader : IDisposable {
                 }
             }
             else if (valueInitial [ 0 ] == Token.STRING_QUOTE_2) {
-
-                if (valueInitial.EndsWith ( Token.STRING_QUOTE_2 )) {
+                if (valueInitial.Length > 1 && valueInitial.EndsWith ( Token.STRING_QUOTE_2 )) {
                     return (propertyName, valueInitial [ 1..^1 ]);
                 }
                 else {
@@ -131,8 +135,15 @@ public sealed class IniReader : IDisposable {
                     return (propertyName, valueParsed);
                 }
             }
-            else {
+            else if (valueInitial.StartsWith ( "<<<" )) {
+                string delimiter = valueInitial [ 3.. ].Trim ();
+                if (!string.IsNullOrEmpty ( delimiter )) {
+                    return (propertyName, ParseHeredocValue ( delimiter ));
+                }
 
+                return (propertyName, valueInitial);
+            }
+            else {
                 if (valueInitial.AsSpan ().IndexOfAny ( [ Token.COMMENT_1, Token.COMMENT_2 ] ) is int commentIndex and >= 0) {
                     valueInitial = valueInitial [ 0..commentIndex ].TrimEnd ();
                 }
@@ -141,34 +152,65 @@ public sealed class IniReader : IDisposable {
             }
         }
         else {
-            // eof!
             return (new string ( line ).Trim (), null);
         }
     }
 
+    string ParseHeredocValue ( string delimiter ) {
+        StringBuilder sb = new StringBuilder ();
+        string? line;
+        while ((line = reader.ReadLine ()) != null) {
+            if (line.Trim ().Equals ( delimiter, StringComparison.Ordinal )) {
+                break;
+            }
+            sb.AppendLine ( line );
+        }
+        if (sb.Length > 0) {
+            int len = sb.Length;
+            if (len > 0 && sb [ len - 1 ] == '\n') {
+                len--;
+                if (len > 0 && sb [ len - 1 ] == '\r') {
+                    len--;
+                }
+                sb.Length = len;
+            }
+        }
+        return sb.ToString ();
+    }
+
+
     string ParseValue ( string initialValue, char eof ) {
+
+        if (initialValue.StartsWith ( eof ) &&
+            initialValue.IndexOf ( eof, 1 ) is { } lastIndex and >= 0) {
+
+            return initialValue [ 1..lastIndex ];
+        }
+
         StringBuilder sb = new StringBuilder ();
         sb.AppendLine ( initialValue );
 
-        bool exploded = true;
         string? line;
         while ((line = reader.ReadLine ()) != null) {
 
-            sb.AppendLine ( line );
-
-            if (line.IndexOf ( eof ) >= 0) {
-                exploded = false;
+            if (line.IndexOf ( eof ) is { } endOfLine and >= 0) {
+                sb.AppendLine ( line [ ..endOfLine ] );
                 break;
+            }
+            else {
+                sb.AppendLine ( line );
             }
         }
 
-        string s = sb.ToString ().Trim ();
-        if (exploded) {
-            return s [ 1.. ];
+        string result = sb.ToString ().Trim ();
+        if (result.StartsWith ( eof )) {
+            result = result [ 1.. ];
         }
-        else {
-            return s [ 1..^1 ];
+        if (result.EndsWith ( eof )) {
+            result = result [ ..^1 ];
         }
+
+        return result;
     }
 
     string? ParseSectionName ( in ReadOnlySpan<char> line ) {
@@ -204,4 +246,3 @@ public sealed class IniReader : IDisposable {
         GC.SuppressFinalize ( this );
     }
 }
-

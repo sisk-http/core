@@ -53,6 +53,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+		<ProjectReference Include="..\..\..\..\LightJson\Sources\LightJson\LightJson.csproj" />
 		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 

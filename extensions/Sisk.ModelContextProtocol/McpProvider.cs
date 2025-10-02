@@ -7,12 +7,8 @@
 // File name:   McpProvider.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Sisk.ModelContextProtocol;
 

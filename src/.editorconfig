@@ -241,6 +241,13 @@ dotnet_naming_style.begins_with_i.capitalization = pascal_case
 
 # CA1822: Mark members as static
 dotnet_diagnostic.CA1822.severity = none
+csharp_style_prefer_simple_property_accessors = true:suggestion
+
+# IDE0025: Use expression body for property
+dotnet_diagnostic.IDE0025.severity = silent
+
+# IDE0008: Use explicit type
+dotnet_diagnostic.IDE0008.severity = silent
 
 [*.{cs,vb}]
 dotnet_style_operator_placement_when_wrapping = beginning_of_line
@@ -250,7 +257,7 @@ end_of_line = crlf
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
-dotnet_style_prefer_auto_properties = true:silent
+dotnet_style_prefer_auto_properties = false:silent
 dotnet_style_object_initializer = true:suggestion
 dotnet_style_collection_initializer = false:suggestion
 dotnet_style_prefer_simplified_boolean_expressions = true:suggestion

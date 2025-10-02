@@ -1,6 +1,13 @@
+// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   CircularBuffer.cs
+// Repository:  https://github.com/sisk-http/core
+
 using System.Collections;
-using System.Collections.Generic; // Added for IEnumerable<T>
-using System.Linq; // Added for LINQ methods like Any()
 
 namespace Sisk.Core.Entity;
 
@@ -12,8 +19,8 @@ namespace Sisk.Core.Entity;
 public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     private T [] items;
 
-    int capacity,
-        addedItems;
+    private int capacity,
+                addedItems;
 
     /// <summary>
     /// Creates an new instance of the <see cref="CircularBuffer{T}"/> with the specified
@@ -82,17 +89,21 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     /// Returns an array representation of this <see cref="CircularBuffer{T}"/> items in their defined
     /// positions within the capacity.
     /// </summary>
-    public T [] ToArray () => items [ 0..addedItems ];
+    public T [] ToArray () {
+        return items [ 0..addedItems ];
+    }
 
     /// <summary>
     /// Creates an new <see cref="ReadOnlySpan{T}"/> over the circular buffer.
     /// </summary>
-    public ReadOnlySpan<T> ToSpan () => new ReadOnlySpan<T> ( items );
+    public ReadOnlySpan<T> ToSpan () {
+        return new ReadOnlySpan<T> ( items );
+    }
 
     /// <summary>
     /// Gets the current capacity of this <see cref="CircularBuffer{T}"/>.
     /// </summary>
-    public int Capacity { get => capacity; }
+    public int Capacity => capacity;
 
     /// <summary>
     /// Gets the amount of added items in this circular buffer.
@@ -100,21 +111,12 @@ public sealed class CircularBuffer<T> : IEnumerable<T>, IReadOnlyList<T> {
     public int Count => addedItems;
 
     /// <inheritdoc/>
-    public T this [ int index ] {
-        get {
-            if (index < 0 || index >= Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            return items [ index ];
-        }
-    }
+    public T this [ int index ] => index < 0 || index >= Count ? throw new ArgumentOutOfRangeException ( nameof ( index ) ) : items [ index ];
 
     /// <inheritdoc/>
     public IEnumerator<T> GetEnumerator () {
-        for (int i = 0; i < addedItems; i++)
-        {
-            yield return this[i]; // Use the indexer to get the correct logical order
+        for (int i = 0; i < addedItems; i++) {
+            yield return this [ i ]; // Use the indexer to get the correct logical order
         }
     }
 

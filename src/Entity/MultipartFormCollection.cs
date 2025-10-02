@@ -87,8 +87,9 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
         get {
             for (int i = 0; i < _items.Count; i++) {
                 MultipartObject? item = _items [ i ];
-                if (item.IsFile)
+                if (item.IsFile) {
                     yield return item;
+                }
             }
         }
     }

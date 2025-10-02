@@ -10,8 +10,6 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Sisk.Core.Entity;
@@ -266,7 +264,7 @@ public partial class HttpServer {
             #region Step 2 - Request validation
 
             if (currentConfig.IncludeRequestIdHeader)
-                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.XRequestID, baseRequest.RequestTraceIdentifier.ToString () );
+                baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.XRequestID, request.RequestId.ToString () );
             if (currentConfig.SendSiskHeader)
                 baseResponse.Headers.SetHeader ( HttpKnownHeaderNames.XPoweredBy, PoweredBy );
 
@@ -489,10 +487,8 @@ finishSending:
                 accessLogStream?.WriteLine ( line );
             }
 
-            if (isWaitingNextEvent) {
-                waitingExecutionResult = executionResult;
-                waitNextEvent.Set ();
-                isWaitingNextEvent = false;
+            if (syncCompletionSources.TryPop ( out var pendingSyncCompletionSource )) {
+                pendingSyncCompletionSource.TrySetResult ( executionResult );
             }
 
             if (!currentConfig.AsyncRequestProcessing) {

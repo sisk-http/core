@@ -15,7 +15,7 @@ namespace Sisk.IniConfiguration.Core;
 /// <summary>
 /// Represents an INI document.
 /// </summary>
-public sealed class IniDocument {
+public sealed class IniDocument : IEquatable<IniDocument> {
 
     /// <summary>
     /// Gets all INI sections defined in this INI document.
@@ -51,7 +51,7 @@ public sealed class IniDocument {
         if (!throwIfNotExists && !File.Exists ( filePath ))
             return new IniDocument ();
 
-        using TextReader reader = new StreamReader ( filePath, encoding ?? Encoding.UTF8 );
+        using TextReader reader = new StreamReader ( filePath, encoding ?? Encoding.Default );
         using IniReader parser = new IniReader ( reader );
         return parser.Read ();
     }
@@ -63,7 +63,7 @@ public sealed class IniDocument {
     /// <param name="stream">The input stream where the INI document is.</param>
     /// <param name="encoding">Optional. The encoding used to read the stream. Defaults to UTF-8.</param>
     public static IniDocument FromStream ( Stream stream, Encoding? encoding = null ) {
-        using TextReader reader = new StreamReader ( stream, encoding ?? Encoding.UTF8 );
+        using TextReader reader = new StreamReader ( stream, encoding ?? Encoding.Default );
         using IniReader parser = new IniReader ( reader );
         return parser.Read ();
     }
@@ -146,6 +146,33 @@ public sealed class IniDocument {
     }
 
     /// <summary>
+    /// Saves the INI document to a file.
+    /// </summary>
+    /// <param name="filePath">The path to the file where the INI document will be saved.</param>
+    /// <param name="encoding">The encoding to use when writing the file. Defaults to <see cref="Encoding.Default"/>.</param>
+    public void SaveTo ( string filePath, Encoding? encoding = default ) {
+        using var fs = File.OpenWrite ( filePath );
+        using var sw = new StreamWriter ( fs, encoding ?? Encoding.Default );
+        using var iw = new IniWriter ( sw );
+
+        iw.Write ( this );
+        sw.Flush ();
+    }
+
+    /// <summary>
+    /// Saves the INI document to a stream.
+    /// </summary>
+    /// <param name="stream">The stream to which the INI document will be written.</param>
+    /// <param name="encoding">The encoding to use when writing to the stream. Defaults to <see cref="Encoding.Default"/>.</param>
+    public void SaveTo ( Stream stream, Encoding? encoding = default ) {
+        using var sw = new StreamWriter ( stream, encoding ?? Encoding.Default );
+        using var iw = new IniWriter ( sw );
+
+        iw.Write ( this );
+        sw.Flush ();
+    }
+
+    /// <summary>
     /// Gets the INI document string from this <see cref="IniDocument"/>.
     /// </summary>
     public override string ToString () {
@@ -154,5 +181,41 @@ public sealed class IniDocument {
             iw.Write ( this );
             return sw.ToString ();
         }
+    }
+
+    /// <inheritdoc/>
+    public bool Equals ( IniDocument? other ) {
+
+        if (other is null)
+            return false;
+
+        if (Sections.Count != other.Sections.Count)
+            return false;
+
+        for (int i = 0; i < Sections.Count; i++) {
+            var a = Sections [ i ];
+            var b = other.Sections [ i ];
+
+            if (!a.Equals ( b ))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode () {
+        var hcode = new HashCode ();
+
+        foreach (var section in Sections) {
+            hcode.Add ( section );
+        }
+
+        return hcode.ToHashCode ();
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals ( object? obj ) {
+        return obj is IniDocument doc && Equals ( doc );
     }
 }

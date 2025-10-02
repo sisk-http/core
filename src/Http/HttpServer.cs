@@ -7,8 +7,8 @@
 // File name:   HttpServer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections.Concurrent;
 using System.Net;
-using Sisk.Core.Http.Engine;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
@@ -43,9 +43,7 @@ namespace Sisk.Core.Http {
         internal HashSet<string>? _listeningPrefixes;
         internal HttpServerHandlerRepository handler;
 
-        internal AutoResetEvent waitNextEvent = new AutoResetEvent ( false );
-        internal bool isWaitingNextEvent;
-        internal HttpServerExecutionResult? waitingExecutionResult;
+        internal ConcurrentStack<TaskCompletionSource<HttpServerExecutionResult>> syncCompletionSources = new ();
 
         static HttpServer () {
             Version assVersion = System.Reflection.Assembly.GetExecutingAssembly ().GetName ().Version!;
@@ -230,36 +228,49 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
-        /// Waits for the next execution result from the server. This method obtains the next completed context from the HTTP server,
-        /// both with the request and its response. This method does not interrupt the asynchronous processing of requests.
+        /// Waits for the next HTTP request to be processed, with a specified timeout.
         /// </summary>
-        /// <remarks>
-        /// Calling this method, it starts the HTTP server if it ins't started yet.
-        /// </remarks>
-        public HttpServerExecutionResult WaitNext () {
-            if (!IsListening)
-                Start ();
-            if (isWaitingNextEvent)
-                throw new InvalidOperationException ( SR.Httpserver_WaitNext_Race_Condition );
-
-            waitingExecutionResult = null;
-            isWaitingNextEvent = true;
-            waitNextEvent.WaitOne ();
-
-            return waitingExecutionResult!;
+        /// <param name="timeout">The time span to wait for the next request. If not specified, the default timeout is used.</param>
+        /// <returns>The result of the HTTP server execution.</returns>
+        public HttpServerExecutionResult WaitNext ( TimeSpan timeout = default ) {
+            return WaitNextAsync ( timeout ).GetAwaiter ().GetResult ();
         }
 
         /// <summary>
-        /// Waits for the next execution result from the server asynchronously. This method obtains the next completed context from the HTTP server,
-        /// both with the request and its response. This method does not interrupt the asynchronous processing of requests.
+        /// Waits for the next HTTP request to be processed, with a specified cancellation token.
         /// </summary>
-        /// <remarks>
-        /// Calling this method, it starts the HTTP server if it ins't started yet.
-        /// </remarks>
-        public async Task<HttpServerExecutionResult> WaitNextAsync () {
-            return await Task.Run ( WaitNext ).ConfigureAwait ( false );
+        /// <param name="cancellation">The cancellation token to signal when the operation should be cancelled.</param>
+        /// <returns>The result of the HTTP server execution.</returns>
+        public HttpServerExecutionResult WaitNext ( CancellationToken cancellation = default ) {
+            return WaitNextAsync ( cancellation ).GetAwaiter ().GetResult ();
         }
 
+        /// <summary>
+        /// Asynchronously waits for the next HTTP request to be processed, with a specified timeout.
+        /// </summary>
+        /// <param name="timeout">The time span to wait for the next request. If not specified, the default timeout is used.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the result of the HTTP server execution.</returns>
+        public Task<HttpServerExecutionResult> WaitNextAsync ( TimeSpan timeout = default ) {
+            var ctx = new CancellationTokenSource ( timeout );
+            return WaitNextAsync ( ctx.Token );
+        }
+
+        /// <summary>
+        /// Asynchronously waits for the next HTTP request to be processed, with a specified cancellation token.
+        /// </summary>
+        /// <param name="cancellation">The cancellation token to signal when the operation should be cancelled.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the result of the HTTP server execution.</returns>
+        public async Task<HttpServerExecutionResult> WaitNextAsync ( CancellationToken cancellation = default ) {
+            if (!IsListening)
+                Start ();
+
+            var source = new TaskCompletionSource<HttpServerExecutionResult> ();
+            syncCompletionSources.Push ( source );
+
+            using (var cancellationSource = cancellation.Register ( () => source.SetCanceled ( cancellation ) )) {
+                return await source.Task.ConfigureAwait ( false );
+            }
+        }
 
         /// <summary>
         /// Restarts this HTTP server, sending all processing responses and starting them again, reading the listening ports again.
@@ -273,6 +284,9 @@ namespace Sisk.Core.Http {
         /// Starts listening to the set port and handling requests on this server.
         /// </summary>
         public void Start () {
+            if (_isListening) {
+                return;
+            }
             if (ServerConfiguration.ListeningHosts is null) {
                 throw new InvalidOperationException ( SR.Httpserver_NoListeningHost );
             }
@@ -324,6 +338,10 @@ namespace Sisk.Core.Http {
         /// Stops the server from listening and stops the request handler.
         /// </summary>
         public void Stop () {
+            if (!_isListening) {
+                return;
+            }
+
             handler.Stopping ( this );
             _isListening = false;
             ServerConfiguration.Engine.StopServer ();
@@ -340,10 +358,12 @@ namespace Sisk.Core.Http {
             if (_disposed)
                 return;
 
+            foreach (var waitinSources in syncCompletionSources) {
+                waitinSources.TrySetCanceled ();
+            }
+
             _isDisposing = true;
             ServerConfiguration.Dispose ();
-            waitNextEvent.Set ();
-            waitNextEvent.Dispose ();
             _disposed = true;
 
             GC.SuppressFinalize ( this );

@@ -44,9 +44,9 @@
 
 	<!-- version info -->
 	<PropertyGroup>
-		<AssemblyVersion>1.5.0</AssemblyVersion>
-		<FileVersion>1.5.0</FileVersion>
-		<Version>1.5.0-beta</Version>
+		<AssemblyVersion>1.5.1</AssemblyVersion>
+		<FileVersion>1.5.1</FileVersion>
+		<Version>1.5.1-beta1</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->
@@ -99,11 +99,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+		<EditorConfigFiles Remove=".\.editorconfig" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<EditorConfigFiles Remove=".\.editorconfig" />
+	  <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
 </Project>
