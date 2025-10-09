@@ -121,7 +121,7 @@ namespace Sisk.Core.Routing {
                 string? accept = context.Request.Headers.Accept;
 
                 if (accept?.Contains ( "text/html", StringComparison.Ordinal ) == true) {
-                    return DefaultMessagePage.CreateDefaultResponse ( HttpStatusCode.NotFound, SR.HttpResponse_404_DefaultMessage );
+                    return DefaultMessagePage.Instance.CreateMessageHtml ( HttpStatusCode.NotFound, SR.HttpResponse_404_DefaultMessage );
                 }
                 else {
                     return new HttpResponse ( HttpStatusCode.NotFound );
@@ -136,7 +136,7 @@ namespace Sisk.Core.Routing {
                 string? accept = context.Request.Headers.Accept;
 
                 if (accept?.Contains ( "text/html", StringComparison.Ordinal ) == true) {
-                    return DefaultMessagePage.CreateDefaultResponse ( HttpStatusCode.MethodNotAllowed, SR.HttpResponse_405_DefaultMessage );
+                    return DefaultMessagePage.Instance.CreateMessageHtml ( HttpStatusCode.MethodNotAllowed, SR.HttpResponse_405_DefaultMessage );
                 }
                 else {
                     return new HttpResponse ( HttpStatusCode.MethodNotAllowed );

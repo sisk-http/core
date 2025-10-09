@@ -7,7 +7,6 @@
 // File name:   HttpRequestEventSource.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
 using System.Text;
 using Sisk.Core.Http.Engine;
 
@@ -19,7 +18,6 @@ namespace Sisk.Core.Http.Streams {
         readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
         readonly HttpStreamPingPolicy pingPolicy;
         readonly HttpServerEngineContextResponse res;
-        readonly HttpServerEngineContextRequest req;
         readonly HttpRequest reqObj;
         readonly HttpServer hostServer;
         TimeSpan keepAlive = TimeSpan.Zero;
@@ -64,7 +62,6 @@ namespace Sisk.Core.Http.Streams {
 
         internal HttpRequestEventSource ( string? identifier, HttpServerEngineContextResponse res, HttpServerEngineContextRequest req, HttpRequest host ) {
             this.res = res ?? throw new ArgumentNullException ( nameof ( res ) );
-            this.req = req ?? throw new ArgumentNullException ( nameof ( req ) );
             Identifier = identifier;
             hostServer = host.baseServer;
             reqObj = host;

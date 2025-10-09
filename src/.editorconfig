@@ -249,6 +249,36 @@ dotnet_diagnostic.IDE0025.severity = silent
 # IDE0008: Use explicit type
 dotnet_diagnostic.IDE0008.severity = silent
 
+# IDE0011: Add braces
+dotnet_diagnostic.IDE0011.severity = suggestion
+
+# IDE0040: Add accessibility modifiers
+dotnet_diagnostic.IDE0040.severity = suggestion
+
+# IDE0161: Convert to file-scoped namespace
+dotnet_diagnostic.IDE0161.severity = suggestion
+
+# IDE0022: Use block body for method
+dotnet_diagnostic.IDE0022.severity = suggestion
+
+# IDE0045: Convert to conditional expression
+dotnet_diagnostic.IDE0045.severity = none
+
+# IDE0036: Order modifiers
+dotnet_diagnostic.IDE0036.severity = none
+
+# IDE0078: Use pattern matching
+dotnet_diagnostic.IDE0078.severity = suggestion
+
+# IDE0100: Remove redundant equality
+dotnet_diagnostic.IDE0100.severity = none
+
+# IDE0046: Convert to conditional expression
+dotnet_diagnostic.IDE0046.severity = none
+
+# IDE0027: Use expression body for accessor
+dotnet_diagnostic.IDE0027.severity = none
+
 [*.{cs,vb}]
 dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4

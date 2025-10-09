@@ -47,9 +47,9 @@
 
 	<!-- version info -->
 	<PropertyGroup>
-		<AssemblyVersion>1.5</AssemblyVersion>
-		<FileVersion>1.5</FileVersion>
-		<Version>1.5.1</Version>
+		<AssemblyVersion>1.5.2</AssemblyVersion>
+		<FileVersion>1.5.2</FileVersion>
+		<Version>1.5.2</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->

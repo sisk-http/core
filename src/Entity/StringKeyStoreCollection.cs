@@ -20,8 +20,8 @@ namespace Sisk.Core.Entity;
 /// Represents a collection of string keys associated with multiple string values.
 /// </summary>
 public class StringKeyStoreCollection : IDictionary<string, string []> {
-    readonly internal List<(string, List<string>)> items;
-    bool isReadOnly;
+    internal readonly List<(string, List<string>)> items;
+    private bool isReadOnly;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StringKeyStoreCollection"/> class,
@@ -479,7 +479,8 @@ public class StringKeyStoreCollection : IDictionary<string, string []> {
     }
 
     void ICollection<KeyValuePair<string, string []>>.CopyTo ( KeyValuePair<string, string []> [] array, int arrayIndex ) {
-        ((ICollection<KeyValuePair<string, string []>>) items).CopyTo ( array, arrayIndex );
+        var collection = items.Select ( s => new KeyValuePair<string, string []> ( s.Item1, s.Item2.ToArray () ) ).ToArray ();
+        ((ICollection<KeyValuePair<string, string []>>) collection).CopyTo ( array, arrayIndex );
     }
 
     bool ICollection<KeyValuePair<string, string []>>.Contains ( KeyValuePair<string, string []> item ) {

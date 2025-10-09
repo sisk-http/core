@@ -14,11 +14,31 @@ namespace Sisk.Core.Http;
 /// <summary>
 /// Provides methods for creating informative static pages used by Sisk.
 /// </summary>
-public static class DefaultMessagePage {
+public sealed class DefaultMessagePage {
+
+    /// <summary>
+    /// Gets the singleton instance of the default message page.
+    /// </summary>
+    /// <remarks>Use this property to access a shared, pre-configured instance of <see
+    /// cref="DefaultMessagePage"/>. This instance is thread-safe and intended for scenarios where a standard message
+    /// page is required without customization.</remarks>
+    public static DefaultMessagePage Instance { get; } = new DefaultMessagePage ();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DefaultMessagePage"/> class.
+    /// </summary>
+    public DefaultMessagePage () {
+    }
+
+    /// <summary>
+    /// Gets or sets the footer note text used by the page code.
+    /// </summary>
+    public string FooterNote { get; set; } = $"Sisk/{HttpServer.SiskVersion.ToString ( 3 )}";
+
     /// <summary>
     /// Gets or sets the page CSS string used by the page code.
     /// </summary>
-    public static string DefaultPageCSS { get; set; } =
+    public string Styles { get; set; } =
         """
         body {
             background-color: #eeeeee;
@@ -54,7 +74,7 @@ public static class DefaultMessagePage {
     /// </summary>
     /// <param name="firstHeader">The static page header text.</param>
     /// <param name="description">The static page description text.</param>
-    public static string CreateDefaultPageHtml ( string firstHeader, string description ) {
+    public string CreateMessageHtml ( string firstHeader, string description ) {
         firstHeader = HttpUtility.HtmlEncode ( firstHeader );
         description = HttpUtility.HtmlEncode ( description );
 
@@ -69,13 +89,13 @@ public static class DefaultMessagePage {
 
                 <body>
                     <style>
-                        {{DefaultPageCSS}}
+                        {{Styles}}
                     </style>
                     <main>
                         <h1>{{firstHeader}}</h1>
                         <p>{{description}}</p>
                         <hr>
-                        <small>Sisk/{{HttpServer.SiskVersion.ToString ( 3 )}}</small>
+                        <small>{{FooterNote}}</small>
                     </main>
                 </body>
             </html>
@@ -87,8 +107,8 @@ public static class DefaultMessagePage {
     /// </summary>
     /// <param name="status">The static page status code.</param>
     /// <param name="longDescription">The static page description text.</param>
-    public static HttpResponse CreateDefaultResponse ( in HttpStatusInformation status, string longDescription ) {
-        string html = CreateDefaultPageHtml ( status.Description, longDescription );
+    public HttpResponse CreateMessageHtml ( in HttpStatusInformation status, string longDescription ) {
+        string html = CreateMessageHtml ( status.Description, longDescription );
         return new HttpResponse () {
             Status = status,
             Content = new HtmlContent ( html )
