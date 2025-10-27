@@ -20,7 +20,16 @@ public sealed class PrefixedLogStream : LogStream {
     /// <summary>
     /// Gets or sets a function that returns the prefix to be added to log messages.
     /// </summary>
-    public Func<string> PrefixFunction { get; set; } = delegate { return string.Empty; };
+    /// <remarks>The assigned function should return the desired prefix as a string. If the function returns
+    /// null, it is treated as an empty string in most scenarios.</remarks>
+    public Func<string?> PrefixFunction { get; set; } = delegate { return string.Empty; };
+
+    /// <summary>
+    /// Gets or sets the function that provides a suffix string value.
+    /// </summary>
+    /// <remarks>The assigned function should return the desired suffix as a string. If the function returns
+    /// null, it is treated as an empty string in most scenarios.</remarks>
+    public Func<string?> SuffixFunction { get; set; } = delegate { return string.Empty; };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PrefixedLogStream"/> class with the specified prefix function.
@@ -60,13 +69,15 @@ public sealed class PrefixedLogStream : LogStream {
 
     /// <inheritdoc/>
     protected override void WriteLineInternal ( string line ) {
-        string prefix = PrefixFunction ();
-        base.WriteLineInternal ( string.Concat ( prefix, line ) );
+        string? prefix = PrefixFunction ();
+        string? suffix = SuffixFunction ();
+        base.WriteLineInternal ( string.Concat ( prefix, line, suffix ) );
     }
 
     /// <inheritdoc/>
     protected override ValueTask WriteLineInternalAsync ( string line ) {
-        string prefix = PrefixFunction ();
-        return base.WriteLineInternalAsync ( string.Concat ( prefix, line ) );
+        string? prefix = PrefixFunction ();
+        string? suffix = SuffixFunction ();
+        return base.WriteLineInternalAsync ( string.Concat ( prefix, line, suffix ) );
     }
 }

@@ -15,13 +15,12 @@ namespace Sisk.Core.Http.Streams {
     /// An <see cref="HttpRequestEventSource"/> instance opens a persistent connection to the request, which sends events in text/event-stream format.
     /// </summary>
     public sealed class HttpRequestEventSource : IDisposable {
-        readonly ManualResetEvent terminatingMutex = new ManualResetEvent ( false );
+
+        readonly TaskCompletionSource sseTerminationSource = new ();
         readonly HttpStreamPingPolicy pingPolicy;
         readonly HttpServerEngineContextResponse res;
         readonly HttpRequest reqObj;
         readonly HttpServer hostServer;
-        TimeSpan keepAlive = TimeSpan.Zero;
-        DateTime lastSuccessfullMessage = DateTime.Now;
         int length;
 
         internal Queue<string> sendQueue = new Queue<string> ();
@@ -76,18 +75,6 @@ namespace Sisk.Core.Http.Streams {
 
             if (host.Context.MatchedRoute?.UseCors == true)
                 HttpServer.SetCorsHeaders ( req, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, res );
-        }
-
-        private void KeepAliveTask () {
-            while (IsActive) {
-                if (lastSuccessfullMessage < DateTime.Now - keepAlive) {
-                    Dispose ();
-                    break;
-                }
-                else {
-                    Thread.Sleep ( 1000 );
-                }
-            }
         }
 
         /// <summary>
@@ -149,30 +136,46 @@ namespace Sisk.Core.Http.Streams {
         }
 
         /// <summary>
-        /// Asynchronously waits for the connection to close before continuing execution. This method
-        /// is released when either the client or the server reaches an sending failure.
+        /// Keeps the event source alive indefinitely.
         /// </summary>
-        public void KeepAlive () {
+        [Obsolete ( "This method is deprecated. Use WaitForFail or WaitForFailAsync instead." )]
+        public void KeepAlive () => WaitForFail ( TimeSpan.MaxValue );
+
+        /// <summary>
+        /// Waits for the event source to fail or reach the specified idle tolerance.
+        /// </summary>
+        /// <param name="maximumIdleTolerance">The maximum time to wait before considering the event source failed.</param>
+        public void WaitForFail ( TimeSpan maximumIdleTolerance ) => WaitForFailAsync ( maximumIdleTolerance ).GetAwaiter ().GetResult ();
+
+        /// <summary>
+        /// Asynchronously waits for the event source to fail or reach the specified idle tolerance.
+        /// </summary>
+        /// <param name="maximumIdleTolerance">The maximum time to wait before considering the event source failed.</param>
+        /// <returns>A task that completes when the event source fails or the idle tolerance is reached.</returns>
+        public async Task WaitForFailAsync ( TimeSpan maximumIdleTolerance ) {
             if (!IsActive) {
                 throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
             }
-            terminatingMutex.WaitOne ();
+
+            CancellationTokenSource cts = new CancellationTokenSource ( maximumIdleTolerance );
+            cts.Token.Register ( () => sseTerminationSource.TrySetCanceled () );
+
+            await sseTerminationSource.Task.ConfigureAwait ( false );
         }
 
         /// <summary>
-        /// Asynchronously waits for the connection to close before continuing execution with
-        /// an maximum keep alive timeout. This method is released when either the client or the server reaches an sending failure.
+        /// Asynchronously waits for the event source to fail or be canceled.
         /// </summary>
-        /// <param name="maximumIdleTolerance">The maximum timeout interval for an idle connection to automatically release this method.</param>
-        public void WaitForFail ( TimeSpan maximumIdleTolerance ) {
+        /// <param name="cancellation">A token to cancel the wait operation.</param>
+        /// <returns>A task that completes when the event source fails or is canceled.</returns>
+        public async Task WaitForFailAsync ( CancellationToken cancellation ) {
             if (!IsActive) {
                 throw new InvalidOperationException ( SR.HttpRequestEventSource_KeepAliveDisposed );
             }
-            keepAlive = maximumIdleTolerance;
 
-            new Task ( KeepAliveTask ).Start ();
+            cancellation.Register ( () => sseTerminationSource.TrySetCanceled () );
 
-            terminatingMutex.WaitOne ();
+            await sseTerminationSource.Task.ConfigureAwait ( false );
         }
 
         /// <summary>
@@ -182,6 +185,22 @@ namespace Sisk.Core.Http.Streams {
             if (!isClosed) {
                 isClosed = true;
                 Flush ();
+                Dispose ();
+                hostServer._eventCollection.UnregisterEventSource ( this );
+            }
+            return new HttpResponse ( HttpResponse.HTTPRESPONSE_SERVER_CLOSE ) {
+                CalculedLength = length
+            };
+        }
+
+        /// <summary>
+        /// Asynchronously closes the event listener and its connection.
+        /// </summary>
+        /// <returns>An <see cref="HttpResponse"/> indicating the server close response.</returns>
+        public async Task<HttpResponse> CloseAsync () {
+            if (!isClosed) {
+                isClosed = true;
+                await FlushAsync ().ConfigureAwait ( false );
                 Dispose ();
                 hostServer._eventCollection.UnregisterEventSource ( this );
             }
@@ -203,10 +222,10 @@ namespace Sisk.Core.Http.Streams {
                 try {
                     res.OutputStream.Write ( itemBytes );
                     length += itemBytes.Length;
-                    lastSuccessfullMessage = DateTime.Now;
                 }
                 catch (Exception) {
-                    Dispose ();
+                    Dispose ( false );
+                    break;
                 }
             }
         }
@@ -217,32 +236,36 @@ namespace Sisk.Core.Http.Streams {
                 try {
                     await res.OutputStream.WriteAsync ( itemBytes );
                     length += itemBytes.Length;
-                    lastSuccessfullMessage = DateTime.Now;
                 }
                 catch (Exception) {
-                    Dispose ();
+                    Dispose ( false );
+                    break;
                 }
             }
+        }
+
+        void Dispose ( bool closing ) {
+            if (isDisposed)
+                return;
+            if (closing && !isClosed)
+                Close ();
+
+            sendQueue.Clear ();
+            sseTerminationSource.TrySetResult ();
+            isDisposed = true;
         }
 
         /// <summary>
         /// Flushes and releases the used resources of this class instance.
         /// </summary>
         public void Dispose () {
-            if (isDisposed)
-                return;
-
             GC.SuppressFinalize ( this );
-
-            Close ();
-            sendQueue.Clear ();
-            terminatingMutex.Dispose ();
-            isDisposed = true;
+            Dispose ( closing: false );
         }
 
         /// <exclude/>
         ~HttpRequestEventSource () {
-            Dispose ();
+            Dispose ( closing: true );
         }
     }
 }

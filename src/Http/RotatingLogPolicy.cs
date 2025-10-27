@@ -7,7 +7,6 @@
 // File name:   RotatingLogPolicy.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.IO.Compression;
 using System.Timers;
 
 namespace Sisk.Core.Http {
@@ -30,6 +29,11 @@ namespace Sisk.Core.Http {
         public TimeSpan Due { get; private set; }
 
         /// <summary>
+        /// Gets or sets the compressor used to compress the log files.
+        /// </summary>
+        public RotatingLogPolicyCompressor Compressor { get; set; } = new GZipRotatingLogPolicyCompressor ();
+
+        /// <summary>
         /// Creates an new <see cref="RotatingLogPolicy"/> instance with the given <see cref="LogStream"/> object to watch.
         /// </summary>
         public RotatingLogPolicy ( LogStream ls ) {
@@ -48,7 +52,8 @@ namespace Sisk.Core.Http {
         /// </remarks>
         /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
         /// <param name="due">The time interval between checks.</param>
-        public void Configure ( long maximumSize, TimeSpan due ) {
+        /// <param name="compressor">The optional compressor to use for log file compression. If <see langword="null"/>, the default compressor (GZip) will be used.</param>
+        public void Configure ( long maximumSize, TimeSpan due, RotatingLogPolicyCompressor? compressor = null ) {
             if (checkTimer?.Enabled == true) {
                 return;
             }
@@ -61,6 +66,7 @@ namespace Sisk.Core.Http {
 
             MaximumSize = maximumSize;
             Due = due;
+            Compressor = compressor ?? new GZipRotatingLogPolicyCompressor ();
 
             checkTimer ??= new System.Timers.Timer () {
                 AutoReset = false
@@ -85,26 +91,29 @@ namespace Sisk.Core.Http {
                 FileInfo fileInfo = new FileInfo ( file );
 
                 if (fileInfo.Length > MaximumSize) {
+
                     DateTime now = DateTime.Now;
+
                     string ext = fileInfo.Extension;
                     string safeDatetime = $"{now.Day:D2}-{now.Month:D2}-{now.Year}T{now.Hour:D2}-{now.Minute:D2}-{now.Second:D2}.{now.Millisecond:D4}";
-                    string gzippedFilename = $"{fileInfo.FullName}.{safeDatetime}{ext}.gz";
+                    string preFormattedFileName = $"{fileInfo.FullName}.{safeDatetime}{ext}";
+                    string finalFileName = Compressor.GetCompressedFileName ( preFormattedFileName );
 
                     try {
                         _logStream.rotatingPolicyLocker.Wait ();
 
-                        using (FileStream logSs = fileInfo.Open ( FileMode.OpenOrCreate ))
-                        using (FileStream gzFileSs = new FileInfo ( gzippedFilename ).Create ())
-                        using (GZipStream gzSs = new GZipStream ( gzFileSs, CompressionMode.Compress )) {
-                            if (logSs.CanRead)
-                                logSs.CopyTo ( gzSs );
+                        using (FileStream baseLogStream = fileInfo.Open ( FileMode.OpenOrCreate ))
+                        using (FileStream compressedFileStream = new FileInfo ( finalFileName ).Create ())
+                        using (Stream compressingStream = Compressor.GetCompressingStream ( compressedFileStream )) {
+                            if (baseLogStream.CanRead)
+                                baseLogStream.CopyTo ( compressingStream );
 
-                            if (logSs.CanWrite)
-                                logSs.SetLength ( 0 );
+                            if (baseLogStream.CanWrite)
+                                baseLogStream.SetLength ( 0 );
                         }
                     }
-                    catch {
-                        ;
+                    catch (Exception ex) {
+                        _logStream.WriteException ( ex, $"Raised from RotatingLogPolicy while compressing log file '{fileInfo.FullName}'." );
                     }
                     finally {
                         _logStream.rotatingPolicyLocker.Release ();

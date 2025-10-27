@@ -13,11 +13,12 @@ namespace Sisk.Ssl;
 
 class ProxyGateway : IDisposable {
     HttpClient client;
+    HttpClientHandler httpHandler;
 
     public IPEndPoint GatewayEndpoint { get; }
 
     public ProxyGateway ( IPEndPoint endpoint ) {
-        var httpHandler = new HttpClientHandler () {
+        httpHandler = new HttpClientHandler () {
             AllowAutoRedirect = false,
             AutomaticDecompression = DecompressionMethods.None,
             ServerCertificateCustomValidationCallback = ( message, cert, chain, errors ) => {
@@ -34,6 +35,7 @@ class ProxyGateway : IDisposable {
     }
 
     public void Dispose () {
+        httpHandler.Dispose ();
         client.Dispose ();
     }
 }

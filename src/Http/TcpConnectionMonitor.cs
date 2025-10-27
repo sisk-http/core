@@ -7,14 +7,6 @@
 // File name:   TcpConnectionMonitor.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Sisk.Core.Http;
 
 // This current implementation of TcpConnectionMonitor is fragile and can lead to certain problems:

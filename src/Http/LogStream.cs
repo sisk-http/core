@@ -10,7 +10,6 @@
 using System.Text;
 using System.Threading.Channels;
 using Sisk.Core.Entity;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http {
     /// <summary>
@@ -207,7 +206,7 @@ namespace Sisk.Core.Http {
 
         /// <summary>
         /// Defines the time interval and size threshold for starting the task, and then starts the task. This method is an
-        /// shortcut for calling <see cref="RotatingLogPolicy.Configure(long, TimeSpan)"/> of this defined <see cref="RotatingPolicy"/> method.
+        /// shortcut for calling <see cref="RotatingLogPolicy.Configure(long, TimeSpan, RotatingLogPolicyCompressor)"/> of this defined <see cref="RotatingPolicy"/> method.
         /// </summary>
         /// <remarks>
         /// The first run is performed immediately after calling this method.
