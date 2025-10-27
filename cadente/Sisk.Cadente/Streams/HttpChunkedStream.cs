@@ -42,28 +42,30 @@ internal class HttpChunkedStream : Stream {
         if (innerStreamReturnedZero)
             return 0;
 
-        Span<byte> readBuffer = stackalloc byte [ Math.Min ( count - 2, CHUNKED_MAX_SIZE ) ];
+        Span<byte> destination = buffer.AsSpan ( offset, count );
+        if (destination.Length < 2)
+            throw new ArgumentException ( "The provided buffer slice must be at least 2 bytes long.", nameof ( count ) );
+
+        Span<byte> readBuffer = stackalloc byte [ Math.Min ( destination.Length - 2, CHUNKED_MAX_SIZE ) ];
         int read = _stream.Read ( readBuffer );
         byte [] readBytesEncoded = Encoding.ASCII.GetBytes ( $"{read:x}\r\n" );
+
+        if (destination.Length < readBytesEncoded.Length + read + 2)
+            throw new ArgumentException ( "The provided buffer slice is not large enough to hold the chunked response.", nameof ( count ) );
 
         if (read == 0) {
             innerStreamReturnedZero = true;
         }
 
-        Array.Copy (
-            sourceArray: readBytesEncoded,
-            sourceIndex: 0,
-            destinationArray: buffer,
-            destinationIndex: 0,
-            length: readBytesEncoded.Length );
+        ReadOnlySpan<byte> headerSpan = readBytesEncoded.AsSpan ();
+        headerSpan.CopyTo ( destination );
 
-        int copyStart = readBytesEncoded.Length;
+        int copyStart = headerSpan.Length;
+        readBuffer [ 0..read ].CopyTo ( destination [ copyStart.. ] );
 
-        readBuffer [ 0..read ].CopyTo ( buffer.AsSpan () [ copyStart.. ] );
-
-        int bufferEnd = readBytesEncoded.Length + read;
-        buffer [ bufferEnd + 0 ] = 0x0D;
-        buffer [ bufferEnd + 1 ] = 0x0A;
+        int bufferEnd = headerSpan.Length + read;
+        destination [ bufferEnd + 0 ] = 0x0D;
+        destination [ bufferEnd + 1 ] = 0x0A;
 
         written += read;
 

@@ -73,6 +73,9 @@ public static class CertificateUtil {
     /// </summary>
     /// <param name="dnsNames">The certificate DNS names.</param>
     public static X509Certificate2 CreateDevelopmentCertificate ( params string [] dnsNames ) {
+        if (dnsNames.Length == 0)
+            throw new ArgumentException ( "At least one DNS name must be specified.", nameof ( dnsNames ) );
+
         SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder ();
         sanBuilder.AddIpAddress ( IPAddress.Loopback );
         sanBuilder.AddIpAddress ( IPAddress.IPv6Loopback );

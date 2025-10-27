@@ -127,10 +127,12 @@ public sealed class HttpHost : IDisposable {
 
     private async Task HandleTcpClient ( TcpClient client ) {
 
-        bool clientIsAlive = true;
         try {
-            client.ReceiveTimeout = TimeoutManager._ClientReadTimeoutSeconds;
-            client.SendTimeout = TimeoutManager._ClientWriteTimeoutSeconds;
+            int clientReadTimeoutMs = (int) TimeoutManager.ClientReadTimeout.TotalMilliseconds;
+            int clientWriteTimeoutMs = (int) TimeoutManager.ClientWriteTimeout.TotalMilliseconds;
+
+            client.ReceiveTimeout = clientReadTimeoutMs;
+            client.SendTimeout = clientWriteTimeoutMs;
 
             if (Handler is null)
                 return;
@@ -145,31 +147,11 @@ public sealed class HttpHost : IDisposable {
                 connectionStream = clientStream;
             }
 
-            CancellationTokenSource disconnectToken = new CancellationTokenSource ();
-            Task disconnectPoolingTask = Task.Factory.StartNew ( delegate {
-
-                try {
-                    int itcount = 0;
-                    while (clientIsAlive && itcount < 3) {
-                        if (client.Client.Poll ( 1, SelectMode.SelectRead )) {
-                            itcount++;
-                        }
-
-                        Thread.Sleep ( 100 );
-                    }
-                }
-                catch {
-                    ;
-                }
-                finally {
-                    disconnectToken.Cancel ();
-                    clientIsAlive = false;
-                }
-
-            }, TaskCreationOptions.LongRunning );
-
             IPEndPoint clientEndpoint = (IPEndPoint) client.Client.RemoteEndPoint!;
-            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint, disconnectToken.Token );
+            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint, CancellationToken.None );
+
+            connectionStream.ReadTimeout = clientReadTimeoutMs;
+            connectionStream.WriteTimeout = clientWriteTimeoutMs;
 
             using (HttpConnection connection = new HttpConnection ( hostClient, connectionStream, this, clientEndpoint )) {
 
@@ -194,7 +176,6 @@ public sealed class HttpHost : IDisposable {
             }
         }
         finally {
-            clientIsAlive = false;
             client.Dispose ();
         }
     }

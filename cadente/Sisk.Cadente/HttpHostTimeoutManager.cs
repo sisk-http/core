@@ -14,24 +14,15 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHostTimeoutManager {
 
-    internal int _ClientReadTimeoutSeconds = 30;
-    internal int _ClientWriteTimeoutSeconds = 30;
-
     /// <summary>
     /// Gets or sets the timeout for client read operations.
     /// </summary>
-    public TimeSpan ClientReadTimeout {
-        get => TimeSpan.FromSeconds ( _ClientReadTimeoutSeconds );
-        set => _ClientReadTimeoutSeconds = (int) value.TotalSeconds;
-    }
+    public TimeSpan ClientReadTimeout { get; set; } = TimeSpan.FromSeconds ( 30 );
 
     /// <summary>
     /// Gets or sets the timeout for client write operations.
     /// </summary>
-    public TimeSpan ClientWriteTimeout {
-        get => TimeSpan.FromSeconds ( _ClientWriteTimeoutSeconds );
-        set => _ClientWriteTimeoutSeconds = (int) value.TotalSeconds;
-    }
+    public TimeSpan ClientWriteTimeout { get; set; } = TimeSpan.FromSeconds ( 30 );
 
     internal HttpHostTimeoutManager () { }
 }
