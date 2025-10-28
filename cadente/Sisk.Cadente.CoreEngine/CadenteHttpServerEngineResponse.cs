@@ -8,13 +8,7 @@
 // File name:   CadenteHttpServerEngineResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Engine;
 
@@ -27,7 +21,8 @@ namespace Sisk.Cadente.CoreEngine {
         private readonly HttpHostContext.HttpResponse _response;
         private readonly HttpHostContext _httpHostContext;
         private CadenteHttpServerEngineContext? _context;
-        private WebHeaderCollection _headers = new ();
+        private Lazy<Stream> _outputStream;
+        private CadenteEngineHeaderList _headers;
 
         internal void SetContext ( CadenteHttpServerEngineContext context ) {
             _context = context;
@@ -41,6 +36,8 @@ namespace Sisk.Cadente.CoreEngine {
         public CadenteHttpServerEngineResponse ( HttpHostContext.HttpResponse response, HttpHostContext httpHostContext ) {
             _response = response;
             _httpHostContext = httpHostContext;
+            _outputStream = new Lazy<Stream> ( () => _response.GetResponseStream ( SendChunked ) );
+            _headers = new CadenteEngineHeaderList ( _response );
         }
 
         /// <inheritdoc/>
@@ -50,14 +47,11 @@ namespace Sisk.Cadente.CoreEngine {
         /// <inheritdoc/>
         public override bool KeepAlive { get => _httpHostContext.KeepAlive; set => _httpHostContext.KeepAlive = value; }
         /// <inheritdoc/>
-        public override bool SendChunked { get => _response.SendChunked; set => _response.SendChunked = value; }
+        public override bool SendChunked { get; set; }
         /// <inheritdoc/>
         public override long ContentLength64 {
             get {
-                if (_response.ResponseStream is { CanSeek: true }) {
-                    return _response.ResponseStream.Length;
-                }
-                else if (_response.Headers.FirstOrDefault ( h => h.Name.Equals ( HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase ) ) is { IsEmpty: false } contentLenHeader) {
+                if (_response.Headers.FirstOrDefault ( h => h.Name.Equals ( HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase ) ) is { IsEmpty: false } contentLenHeader) {
                     return long.Parse ( contentLenHeader.Value );
                 }
                 else {
@@ -94,10 +88,10 @@ namespace Sisk.Cadente.CoreEngine {
         }
 
         /// <inheritdoc/>
-        public override Stream OutputStream => _response.GetResponseStream ();
+        public override Stream OutputStream => _outputStream.Value;
 
         /// <inheritdoc/>
-        public override IHttpEngineHeaderList Headers => new CadenteEngineHeaderList ( _response );
+        public override IHttpEngineHeaderList Headers => _headers;
 
         /// <inheritdoc/>
         public override void Abort () {
@@ -111,14 +105,16 @@ namespace Sisk.Cadente.CoreEngine {
 
         /// <inheritdoc/>
         public override void Close () {
-            _context?.CompleteProcessing ();
-            _response.ResponseStream?.Close ();
+            Dispose ();
         }
 
         /// <inheritdoc/>
         public override void Dispose () {
+            if (_outputStream.IsValueCreated) {
+                _outputStream.Value.Dispose ();
+            }
+
             _context?.CompleteProcessing ();
-            _response.ResponseStream?.Dispose ();
         }
     }
 }

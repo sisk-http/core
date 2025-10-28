@@ -9,7 +9,6 @@
 
 using System.Net;
 using Sisk.Cadente.HttpSerializer;
-using Sisk.Cadente.Streams;
 using Sisk.Core.Http;
 
 namespace Sisk.Cadente;
@@ -44,57 +43,27 @@ sealed class HttpConnection : IDisposable {
         while (_connectionStream.CanRead && !disposedValue) {
 
             HttpRequestReader requestReader = new HttpRequestReader ( _connectionStream );
-            Stream? responseStream = null;
 
-            try {
-                if (requestReader.TryReadHttpRequest ( out HttpRequestBase? nextRequest ) == false) {
-                    return HttpConnectionState.ConnectionClosed;
-                }
-
-                HttpHostContext managedSession = new HttpHostContext ( _host, nextRequest, _client, _connectionStream );
-                await _host.InvokeContextCreated ( managedSession );
-
-                if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
-                    connectionCloseRequested = true;
-                    managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
-                }
-
-                if (managedSession.Response.ResponseStream is Stream { } s) {
-                    responseStream = s;
-                }
-                else {
-                    managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
-                }
-
-                Stream outputStream = _connectionStream;
-                if (responseStream is not null) {
-
-                    if (managedSession.Response.SendChunked || !responseStream.CanSeek) {
-
-                        managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" ) );
-                        responseStream = new HttpChunkedStream ( responseStream );
-                    }
-                    else {
-                        managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, responseStream.Length.ToString () ) );
-                    }
-                }
-
-                if (managedSession.ResponseHeadersAlreadySent == false && !managedSession.WriteHttpResponseHeaders ()) {
-                    return HttpConnectionState.ResponseWriteException;
-                }
-
-                if (responseStream is not null) {
-                    await responseStream.CopyToAsync ( outputStream );
-                }
-
-                await _connectionStream.FlushAsync ();
-
-                if (connectionCloseRequested) {
-                    break;
-                }
+            if (requestReader.TryReadHttpRequest ( out HttpRequestBase? nextRequest ) == false) {
+                return HttpConnectionState.ConnectionClosed;
             }
-            finally {
-                responseStream?.Dispose ();
+
+            HttpHostContext managedSession = new HttpHostContext ( _host, nextRequest, _client, _connectionStream );
+            await _host.InvokeContextCreated ( managedSession );
+
+            if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
+                connectionCloseRequested = true;
+                managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
+            }
+
+            if (managedSession.ResponseHeadersAlreadySent == false && !managedSession.WriteHttpResponseHeaders ()) {
+                return HttpConnectionState.ResponseWriteException;
+            }
+
+            await _connectionStream.FlushAsync ();
+
+            if (connectionCloseRequested) {
+                break;
             }
         }
 

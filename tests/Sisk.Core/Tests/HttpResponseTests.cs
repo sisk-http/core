@@ -7,12 +7,8 @@
 // File name:   HttpResponseTests.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.IO;
 using System.Net; // For HttpStatusCode
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace tests.Tests;
 
@@ -140,7 +136,7 @@ public sealed class HttpResponseTests {
     public async Task HttpResponse_WithStreamContent_NonSeekable_UsesChunkedEncoding () {
         using (var client = Server.GetHttpClient ()) {
             var request = new HttpRequestMessage ( HttpMethod.Get, "tests/streamcontent/nonseekable" );
-            var response = await client.SendAsync ( request );
+            var response = await client.SendAsync ( request, HttpCompletionOption.ResponseHeadersRead );
             byte [] responseBytes = await response.Content.ReadAsByteArrayAsync ();
             string responseString = Encoding.UTF8.GetString ( responseBytes );
             Assert.IsTrue ( response.IsSuccessStatusCode );

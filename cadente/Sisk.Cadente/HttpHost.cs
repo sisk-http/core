@@ -87,7 +87,7 @@ public sealed class HttpHost : IDisposable {
         ObjectDisposedException.ThrowIf ( disposedValue, this );
 
         _listener.Server.NoDelay = true;
-        _listener.Server.LingerState = new LingerOption ( true, 0 );
+        _listener.Server.LingerState = new LingerOption ( true, 3 );
         _listener.Server.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
         _listener.Server.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
 

@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
+using Sisk.Core.Http;
 
 namespace Sisk.Cadente;
 
@@ -125,6 +126,7 @@ public sealed class HttpHostContext {
     public sealed class HttpResponse {
         private Stream _baseOutputStream;
         private HttpHostContext _session;
+        private bool headersSent = false;
 
         /// <summary>
         /// Gets or sets the HTTP status code of the response.
@@ -142,17 +144,6 @@ public sealed class HttpHostContext {
         public List<HttpHeader> Headers { get; set; }
 
         /// <summary>
-        /// Gets or sets an boolean indicating if this <see cref="HttpResponse"/> should be send in chunks or not.
-        /// </summary>
-        public bool SendChunked { get; set; }
-
-        // MUST SPECIFY ResponseStream OR ResponseBytes, NOT BOTH
-        /// <summary>
-        /// Gets or sets the stream for the response content.
-        /// </summary>
-        public Stream? ResponseStream { get; set; }
-
-        /// <summary>
         /// Asynchronously gets an event stream writer with UTF-8 encoding.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with a <see cref="HttpEventStreamWriter"/> as the result.</returns>
@@ -165,28 +156,45 @@ public sealed class HttpHostContext {
         /// <returns>A task that represents the asynchronous operation, with a <see cref="HttpEventStreamWriter"/> as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
         public HttpEventStreamWriter GetEventStream ( Encoding encoding ) {
+            if (headersSent) {
+                throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
+            }
+
             Headers.Set ( new HttpHeader ( "Content-Type", "text/event-stream" ) );
             Headers.Set ( new HttpHeader ( "Cache-Control", "no-cache" ) );
 
-            if (_session.WriteHttpResponseHeaders () == false) {
+            if (!_session.WriteHttpResponseHeaders ()) {
                 throw new InvalidOperationException ( "Unable to obtain the output stream for the response." );
             }
 
+            headersSent = true;
             return new HttpEventStreamWriter ( _baseOutputStream, encoding );
         }
 
         /// <summary>
-        /// Asynchronously gets the content stream for the response.
+        /// Gets the content stream for the response.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
-        public Stream GetResponseStream () {
-            if (_session.WriteHttpResponseHeaders () == false) {
+        public Stream GetResponseStream ( bool chunked = false ) {
+            if (headersSent) {
+                throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
+            }
+
+            if (chunked) {
+                Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" ) );
+                Headers.Remove ( HttpHeaderName.ContentLength );
+            }
+
+            if (!_session.WriteHttpResponseHeaders ()) {
                 throw new InvalidOperationException ( "Unable to obtain an output stream for the response." );
             }
 
-            ResponseStream = null;
-            return _baseOutputStream;
+            headersSent = true;
+            return chunked switch {
+                true => new HttpChunkedWriteStream ( _baseOutputStream ),
+                false => _baseOutputStream
+            };
         }
 
         internal HttpResponse ( HttpHostContext session, Stream httpSessionStream ) {

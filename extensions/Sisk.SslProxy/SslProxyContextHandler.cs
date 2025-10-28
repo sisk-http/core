@@ -27,17 +27,22 @@ class SslProxyContextHandler : HttpHostHandler {
     private static readonly byte [] CRLF = Encoding.ASCII.GetBytes ( "\r\n" );
     private static readonly HashSet<string> HopByHopRequestHeaders = new ( StringComparer.OrdinalIgnoreCase )
     {
-        "Connection", "Keep-Alive", "Proxy-Connection", "Transfer-Encoding", "TE", "Trailer", "Upgrade"
+        "Host", "Connection", "Keep-Alive", "Proxy-Connection", "Transfer-Encoding", "TE", "Trailer", "Upgrade"
     };
     private static readonly HashSet<string> HopByHopResponseHeaders = new ( StringComparer.OrdinalIgnoreCase )
     {
         "Connection", "Keep-Alive", "Proxy-Connection", "Transfer-Encoding", "TE", "Trailer", "Upgrade",
         "Proxy-Authenticate", "Proxy-Authorization"
     };
+    private static readonly HashSet<string> StripAlwaysRequestHeaders = new ( StringComparer.OrdinalIgnoreCase )
+    {
+        "Content-Type"
+    };
     private static readonly HashSet<string> StripAlwaysResponseHeaders = new ( StringComparer.OrdinalIgnoreCase )
     {
         "Server", "Date", "Host"
     };
+
 
     private sealed record UpstreamHandshake ( int StatusCode, string ReasonPhrase, List<HttpHeader> Headers, byte [] RemainingBytes );
 
@@ -88,6 +93,7 @@ class SslProxyContextHandler : HttpHostHandler {
         using var proxyRequest = new HttpRequestMessage ( requestMethod, requestUri ) {
             Version = new Version ( 1, 1 )
         };
+
         proxyRequest.Headers.Host = ProxyHost.GatewayHostname;
 
         if (context.Request.ContentLength > 0) {
@@ -98,11 +104,12 @@ class SslProxyContextHandler : HttpHostHandler {
 
         for (int i = 0; i < context.Request.Headers.Length; i++) {
             HttpHeader header = context.Request.Headers [ i ];
-            if (HopByHopRequestHeaders.Contains ( header.Name ) ||
-                header.Name.Equals ( "Host", StringComparison.OrdinalIgnoreCase )) {
+            if (HopByHopRequestHeaders.Contains ( header.Name ) || StripAlwaysRequestHeaders.Contains ( header.Name )) {
                 continue;
             }
-            proxyRequest.Headers.TryAddWithoutValidation ( header.Name, header.Value );
+            if (!proxyRequest.Headers.TryAddWithoutValidation ( header.Name, header.Value )) {
+                proxyRequest.Content?.Headers.TryAddWithoutValidation ( header.Name, header.Value );
+            }
         }
 
         if (ProxyHost.ProxyAuthorization != null) {

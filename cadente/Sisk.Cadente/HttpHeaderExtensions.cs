@@ -36,4 +36,20 @@ public static class HttpHeaderExtensions {
             headers.Add ( header );
         }
     }
+
+    /// <summary>
+    /// Removes all <see cref="HttpHeader"/> with the given name from the list. Thread-safe.
+    /// </summary>
+    /// <param name="headers">The list of <see cref="HttpHeader"/> to modify.</param>
+    /// <param name="headerName">The name of the header to remove.</param>
+    public static void Remove ( this List<HttpHeader> headers, string headerName ) {
+        lock (((ICollection) headers).SyncRoot) {
+            var span = CollectionsMarshal.AsSpan ( headers );
+            for (int i = span.Length - 1; i >= 0; i--) {
+                if (Ascii.EqualsIgnoreCase ( span [ i ].NameBytes.Span, headerName )) {
+                    headers.RemoveAt ( i );
+                }
+            }
+        }
+    }
 }

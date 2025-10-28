@@ -7,20 +7,23 @@
 // File name:   HttpChunkedStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Buffers;
 using System.Text;
 
 namespace Sisk.Cadente.Streams;
 
-internal class HttpChunkedStream : Stream {
+internal class HttpChunkedReadStream : Stream {
     private Stream _stream;
+    private byte [] _buffer;
     int written = 0;
     bool innerStreamReturnedZero = false;
 
-    const int CHUNKED_MAX_SIZE = 4096;
-    static readonly byte [] CrLf = [ 0x0D, 0x0A ];
+    private static readonly byte [] s_crlfBytes = "\r\n"u8.ToArray ();
+    private static readonly byte [] s_finalChunkBytes = "0\r\n\r\n"u8.ToArray ();
 
-    public HttpChunkedStream ( Stream stream ) {
+    public HttpChunkedReadStream ( Stream stream ) {
         _stream = stream;
+        _buffer = ArrayPool<byte>.Shared.Rent ( 128 * 1024 );
     }
 
     public override bool CanRead => _stream.CanRead;
@@ -42,34 +45,30 @@ internal class HttpChunkedStream : Stream {
         if (innerStreamReturnedZero)
             return 0;
 
-        Span<byte> destination = buffer.AsSpan ( offset, count );
-        if (destination.Length < 2)
-            throw new ArgumentException ( "The provided buffer slice must be at least 2 bytes long.", nameof ( count ) );
-
-        Span<byte> readBuffer = stackalloc byte [ Math.Min ( destination.Length - 2, CHUNKED_MAX_SIZE ) ];
-        int read = _stream.Read ( readBuffer );
-        byte [] readBytesEncoded = Encoding.ASCII.GetBytes ( $"{read:x}\r\n" );
-
-        if (destination.Length < readBytesEncoded.Length + read + 2)
-            throw new ArgumentException ( "The provided buffer slice is not large enough to hold the chunked response.", nameof ( count ) );
-
-        if (read == 0) {
+        var position = 0;
+        var bytesRead = _stream.Read ( _buffer, 0, Math.Min ( _buffer.Length, count ) );
+        if (bytesRead == 0) {
             innerStreamReturnedZero = true;
+
+            // write last chunk
+            WriteToBuffer ( s_finalChunkBytes );
+            return s_finalChunkBytes.Length;
         }
 
-        ReadOnlySpan<byte> headerSpan = readBytesEncoded.AsSpan ();
-        headerSpan.CopyTo ( destination );
+        var bytesReadHex = Encoding.ASCII.GetBytes ( bytesRead.ToString ( "X" ) );
 
-        int copyStart = headerSpan.Length;
-        readBuffer [ 0..read ].CopyTo ( destination [ copyStart.. ] );
+        WriteToBuffer ( bytesReadHex );
+        WriteToBuffer ( s_crlfBytes );
+        WriteToBuffer ( _buffer.AsSpan ( 0, bytesRead ) );
+        WriteToBuffer ( s_crlfBytes );
 
-        int bufferEnd = headerSpan.Length + read;
-        destination [ bufferEnd + 0 ] = 0x0D;
-        destination [ bufferEnd + 1 ] = 0x0A;
+        return position;
 
-        written += read;
+        void WriteToBuffer ( Span<byte> data ) {
 
-        return bufferEnd + 2;
+            data.CopyTo ( buffer.AsSpan ( offset + position ) );
+            position += data.Length;
+        }
     }
 
     public override long Seek ( long offset, SeekOrigin origin ) {
@@ -82,5 +81,20 @@ internal class HttpChunkedStream : Stream {
 
     public override void Write ( byte [] buffer, int offset, int count ) {
         throw new NotSupportedException ();
+    }
+
+    protected override void Dispose ( bool disposing ) {
+
+        if (_stream == null)
+            return;
+
+        if (disposing) {
+
+            _stream.Dispose ();
+            ArrayPool<byte>.Shared.Return ( _buffer );
+
+            _stream = null!;
+            _buffer = null!;
+        }
     }
 }

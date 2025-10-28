@@ -21,13 +21,14 @@ namespace Sisk.Core.Http.Streams;
 public sealed class HttpResponseStreamManager {
     internal HttpServerEngineContextResponse listenerResponse;
     internal bool hasSentData;
+    private Lazy<ResponseStreamWriter> innerResponseStream;
 
     // calculated on chunked encoding, but set on SetContentLength
     internal long calculatedLength;
 
     internal HttpResponseStreamManager ( HttpServerEngineContextResponse listenerResponse, HttpServerEngineContextRequest listenerRequest, HttpRequest host ) {
         this.listenerResponse = listenerResponse ?? throw new ArgumentNullException ( nameof ( listenerResponse ) );
-        ResponseStream = new ResponseStreamWriter ( listenerResponse.OutputStream, this );
+        innerResponseStream = new Lazy<ResponseStreamWriter> ( () => new ResponseStreamWriter ( listenerResponse.OutputStream, this ) );
 
         if (host.Context.MatchedRoute?.UseCors == true)
             HttpServer.SetCorsHeaders ( listenerRequest, host.Context.ListeningHost?.CrossOriginResourceSharingPolicy, listenerResponse );
@@ -77,7 +78,7 @@ public sealed class HttpResponseStreamManager {
     /// <summary>
     /// Gets the <see cref="Stream"/> that represents the HTTP response output stream.
     /// </summary>
-    public Stream ResponseStream { get; private set; }
+    public Stream ResponseStream => innerResponseStream.Value;
 
     /// <summary>
     /// Sets the Content-Length header of this response stream. If this response stream is using chunked transfer encoding, this method

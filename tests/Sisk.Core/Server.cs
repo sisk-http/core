@@ -7,14 +7,9 @@
 // File name:   Server.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System;
-using System.Threading.Tasks;
 using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
@@ -28,17 +23,19 @@ namespace tests;
 public sealed class Server {
     public static HttpServerHostContext Instance = null!;
 
-    public static HttpClient GetHttpClient () => new HttpClient () { BaseAddress = new Uri ( Instance.HttpServer.ListeningPrefixes [ 0 ] ) };
+    public static HttpClient GetHttpClient () => new HttpClient () {
+        BaseAddress = new Uri ( Instance.HttpServer.ListeningPrefixes [ 0 ] ),
+        Timeout = TimeSpan.FromMinutes ( 10 )
+    };
 
     [AssemblyInitialize]
     public static void AssemblyInit ( TestContext testContext ) {
-        var builder = HttpServer.CreateBuilder()
-            .UseCors(new CrossOriginResourceSharingHeaders(allowOrigin: "*", allowMethods: ["GET", "POST", "PUT"]));
+        var builder = HttpServer.CreateBuilder ()
+            .UseCors ( new CrossOriginResourceSharingHeaders ( allowOrigin: "*", allowMethods: [ "GET", "POST", "PUT" ] ) );
 
-        if (string.Equals(Environment.GetEnvironmentVariable("SISK_TEST_ENGINE"), "Cadente", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.WriteLine("Using Cadente test engine.");
-            builder.UseEngine(new CadenteHttpServerEngine());
+        if (string.Equals ( Environment.GetEnvironmentVariable ( "SISK_TEST_ENGINE" ), "Cadente", StringComparison.OrdinalIgnoreCase )) {
+            Console.WriteLine ( "Using Cadente test engine." );
+            builder.UseEngine ( new CadenteHttpServerEngine () );
         }
 
         Instance = builder
