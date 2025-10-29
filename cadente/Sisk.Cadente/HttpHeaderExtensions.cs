@@ -38,6 +38,47 @@ public static class HttpHeaderExtensions {
     }
 
     /// <summary>
+    /// Retrieves all values for the specified header name from the list.
+    /// This operation is thread‑safe.
+    /// </summary>
+    /// <param name="headers">The list of <see cref="HttpHeader"/> to query.</param>
+    /// <param name="name">The name of the header to retrieve values for. May be <see langword="null"/>.</param>
+    /// <returns>An array of header values that match the specified name.</returns>
+    public static string [] Get ( this List<HttpHeader> headers, string? name ) {
+
+        List<string> results = new ();
+        lock (((ICollection) headers).SyncRoot) {
+            var span = CollectionsMarshal.AsSpan ( headers );
+            for (int i = span.Length - 1; i >= 0; i--) {
+                if (Ascii.EqualsIgnoreCase ( span [ i ].NameBytes.Span, name )) {
+                    results.Add ( span [ i ].Value );
+                }
+            }
+        }
+
+        return results.ToArray ();
+    }
+
+    /// <summary>
+    /// Retrieves all values for the specified header name from the array.
+    /// </summary>
+    /// <param name="headers">The array of <see cref="HttpHeader"/> to query.</param>
+    /// <param name="name">The name of the header to retrieve values for. May be <see langword="null"/>.</param>
+    /// <returns>An array of header values that match the specified name.</returns>
+    public static string [] Get ( this HttpHeader [] headers, string? name ) {
+
+        List<string> results = new ();
+        var span = headers.AsSpan ();
+        for (int i = span.Length - 1; i >= 0; i--) {
+            if (Ascii.EqualsIgnoreCase ( span [ i ].NameBytes.Span, name )) {
+                results.Add ( span [ i ].Value );
+            }
+        }
+
+        return results.ToArray ();
+    }
+
+    /// <summary>
     /// Removes all <see cref="HttpHeader"/> with the given name from the list. Thread-safe.
     /// </summary>
     /// <param name="headers">The list of <see cref="HttpHeader"/> to modify.</param>

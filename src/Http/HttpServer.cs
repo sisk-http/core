@@ -34,10 +34,9 @@ namespace Sisk.Core.Http {
         /// </summary>
         public static Version SiskVersion { get; private set; } = null!;
 
-        private bool _isListening;
-        private bool _isDisposing;
         private bool _disposed;
         private ListeningHost? _onlyListeningHost;
+        private CancellationTokenSource? listenerCancellation;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection ();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection ();
         internal HashSet<string>? _listeningPrefixes;
@@ -171,7 +170,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets an boolean indicating if this HTTP server is running and listening.
         /// </summary>
-        public bool IsListening { get => _isListening && !_isDisposing; }
+        public bool IsListening { get => listenerCancellation is { IsCancellationRequested: false } && !_disposed; }
 
         /// <summary>
         /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
@@ -284,7 +283,7 @@ namespace Sisk.Core.Http {
         /// Starts listening to the set port and handling requests on this server.
         /// </summary>
         public void Start () {
-            if (_isListening) {
+            if (listenerCancellation is { IsCancellationRequested: false }) {
                 return;
             }
             if (ServerConfiguration.ListeningHosts is null) {
@@ -296,7 +295,7 @@ namespace Sisk.Core.Http {
                 throw new InvalidOperationException ( SR.Httpserver_NoEngine );
             }
 
-            ObjectDisposedException.ThrowIf ( _isDisposing, this );
+            ObjectDisposedException.ThrowIf ( _disposed, this );
 
             _listeningPrefixes = new HashSet<string> ();
 
@@ -315,7 +314,7 @@ namespace Sisk.Core.Http {
             foreach (string prefix in _listeningPrefixes)
                 engine.AddListeningPrefix ( prefix );
 
-            _isListening = true;
+            listenerCancellation = new CancellationTokenSource ();
             engine.IdleConnectionTimeout = ServerConfiguration.IdleConnectionTimeout;
 
             handler.ServerStarting ( this );
@@ -329,7 +328,13 @@ namespace Sisk.Core.Http {
             }
 
             engine.StartServer ();
-            engine.BeginGetContext ( ListenerCallback, engine );
+
+            if (engine.EventLoopMecanism == Engine.HttpServerEngineContextEventLoopMecanism.UnboundAsyncronousGetContext) {
+                engine.BeginGetContext ( UnboundAsyncListenerCallback, engine );
+            }
+            else if (engine.EventLoopMecanism == Engine.HttpServerEngineContextEventLoopMecanism.InlineAsyncronousGetContext) {
+                ThreadPool.QueueUserWorkItem ( BoundAsyncListenerEventLoop, engine );
+            }
 
             handler.ServerStarted ( this );
         }
@@ -338,13 +343,15 @@ namespace Sisk.Core.Http {
         /// Stops the server from listening and stops the request handler.
         /// </summary>
         public void Stop () {
-            if (!_isListening) {
+            if (listenerCancellation is null ||
+                listenerCancellation is { IsCancellationRequested: true } ||
+                _disposed) {
                 return;
             }
 
             handler.Stopping ( this );
-            _isListening = false;
             ServerConfiguration.Engine.StopServer ();
+            listenerCancellation.Cancel ();
 
             UnbindRouters ();
             handler.Stopped ( this );
@@ -362,10 +369,14 @@ namespace Sisk.Core.Http {
                 waitinSources.TrySetCanceled ();
             }
 
-            _isDisposing = true;
-            ServerConfiguration.Dispose ();
-            _disposed = true;
+            if (listenerCancellation is { }) {
+                listenerCancellation.Cancel ();
+                listenerCancellation.Dispose ();
+            }
 
+            ServerConfiguration.Dispose ();
+
+            _disposed = true;
             GC.SuppressFinalize ( this );
         }
 

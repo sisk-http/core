@@ -38,7 +38,7 @@ internal class HttpRequestStream : Stream {
     }
 
     public override int Read ( byte [] buffer, int offset, int count ) {
-        if (read >= baseRequest.ContentLength) {
+        if (baseRequest.ContentLength > 0 && read >= baseRequest.ContentLength) {
             return 0;
         }
 

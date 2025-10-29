@@ -7,7 +7,6 @@
 // File name:   BasicAuthenticateRequestHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Text;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
 
@@ -88,7 +87,7 @@ public class BasicAuthenticateRequestHandler : IRequestHandler {
             try {
                 var auth = ParseAuth ( authorization );
                 if (auth == null) {
-                    return DefaultMessagePage.CreateDefaultResponse ( HttpStatusInformation.BadRequest, "Invalid Authorization Header" );
+                    return DefaultMessagePage.Instance.CreateMessageHtml ( HttpStatusInformation.BadRequest, "Invalid Authorization Header" );
                 }
                 var res = OnValidating ( auth, context );
                 return res;

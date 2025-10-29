@@ -164,14 +164,31 @@ public partial class HttpServer {
         }
     }
 
-    private void ListenerCallback ( IAsyncResult result ) {
-        if (_isDisposing || !_isListening)
+    private async void BoundAsyncListenerEventLoop ( object? state ) {
+
+        HttpServerEngine? engine = state as HttpServerEngine;
+        Debug.Assert ( engine != null );
+        Debug.Assert ( listenerCancellation != null );
+
+        while (IsListening) {
+            try {
+                var context = await engine.GetContextAsync ( listenerCancellation!.Token ).ConfigureAwait ( false );
+                ThreadPool.UnsafeQueueUserWorkItem ( ( state ) => ProcessRequest ( (HttpServerEngineContext) state! ), context );
+            }
+            catch (OperationCanceledException) when (listenerCancellation.IsCancellationRequested) {
+                break;
+            }
+        }
+    }
+
+    private void UnboundAsyncListenerCallback ( IAsyncResult result ) {
+        if (!IsListening)
             return;
 
         HttpServerEngine? engine = result.AsyncState as HttpServerEngine;
         Debug.Assert ( engine != null );
 
-        engine.BeginGetContext ( ListenerCallback, engine );
+        engine.BeginGetContext ( UnboundAsyncListenerCallback, engine );
         HttpServerEngineContext context = engine.EndGetContext ( result );
 
         ProcessRequest ( context );

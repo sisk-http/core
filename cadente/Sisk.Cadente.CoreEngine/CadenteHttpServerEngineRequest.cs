@@ -8,15 +8,10 @@
 // File name:   CadenteHttpServerEngineRequest.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Mime;
 using System.Text;
-using System.Threading.Tasks;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Engine;
 
@@ -77,11 +72,7 @@ namespace Sisk.Cadente.CoreEngine {
         public override IPEndPoint RemoteEndPoint => _context.Client.ClientEndpoint;
 
         /// <inheritdoc/>
-#if NET9_0_OR_GREATER
-        public override Guid RequestTraceIdentifier => Guid.CreateVersion7 ();
-#else
-        public override Guid RequestTraceIdentifier => Guid.NewGuid ();
-#endif
+        public override Guid RequestTraceIdentifier { get; } = Guid.NewGuid ();
 
         /// <inheritdoc/>
         public override NameValueCollection Headers {

@@ -8,14 +8,8 @@
 // File name:   CadenteHttpServerEngine.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading.Channels;
 using Sisk.Core.Http.Engine;
 
 namespace Sisk.Cadente.CoreEngine {
@@ -32,8 +26,11 @@ namespace Sisk.Cadente.CoreEngine {
         private bool isDisposed;
 
         private Action<HttpHost>? setupHostAction;
-        private readonly ConcurrentQueue<TaskCompletionSource<HttpServerEngineContext>> _pendingContextRequests = new ();
-        private readonly ConcurrentQueue<HttpServerEngineContext> _readyContexts = new ();
+        private Channel<CadenteHttpServerEngineContext> _pendingContexts = Channel.CreateBounded<CadenteHttpServerEngineContext> ( new BoundedChannelOptions ( capacity: Environment.ProcessorCount * 512 ) {
+            AllowSynchronousContinuations = false,
+            SingleReader = true,
+            SingleWriter = false
+        } );
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CadenteHttpServerEngine"/> class.
@@ -55,6 +52,9 @@ namespace Sisk.Cadente.CoreEngine {
             get => idleConnectionTimeout;
             set => idleConnectionTimeout = value;
         }
+
+        /// <inheritdoc/>
+        public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.InlineAsyncronousGetContext;
 
         /// <inheritdoc/>
         public override void AddListeningPrefix ( string prefix ) {
@@ -88,6 +88,7 @@ namespace Sisk.Cadente.CoreEngine {
                 host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
                 host.Handler = new CadenteHttpEngineHostHandler ( this );
                 setupHostAction?.Invoke ( host );
+
                 host.Start ();
                 hosts.Add ( host );
             }
@@ -110,37 +111,25 @@ namespace Sisk.Cadente.CoreEngine {
             GC.SuppressFinalize ( this );
         }
 
-        internal void EnqueueContext ( CadenteHttpServerEngineContext context ) {
-            if (_pendingContextRequests.TryDequeue ( out var tcs )) {
-                tcs.SetResult ( context );
-            }
-            else {
-                _readyContexts.Enqueue ( context );
-            }
-        }
-
         /// <inheritdoc/>
         public override IAsyncResult BeginGetContext ( AsyncCallback? callback, object? state ) {
-            if (_readyContexts.TryDequeue ( out var context )) {
-                var tcs = new TaskCompletionSource<HttpServerEngineContext> ( state );
-                tcs.SetResult ( context );
-                callback?.Invoke ( tcs.Task );
-                return tcs.Task;
-            }
-            else {
-                var tcs = new TaskCompletionSource<HttpServerEngineContext> ( state );
-                _pendingContextRequests.Enqueue ( tcs );
-                if (callback != null) {
-                    tcs.Task.ContinueWith ( t => callback ( t ) );
-                }
-                return tcs.Task;
-            }
+            throw new NotImplementedException ();
         }
 
         /// <inheritdoc/>
         public override HttpServerEngineContext EndGetContext ( IAsyncResult asyncResult ) {
-            var task = (Task<HttpServerEngineContext>) asyncResult;
-            return task.Result;
+            throw new NotImplementedException ();
+        }
+
+        internal void EnqueueContext ( CadenteHttpServerEngineContext context ) {
+            if (!_pendingContexts.Writer.TryWrite ( context )) {
+                throw new InvalidOperationException ( "Failed to enqueue HTTP context." );
+            }
+        }
+
+        /// <inheritdoc/>
+        public override async Task<HttpServerEngineContext> GetContextAsync ( CancellationToken cancellationToken = default ) {
+            return await _pendingContexts.Reader.ReadAsync ( cancellationToken );
         }
     }
 }

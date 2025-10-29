@@ -7,14 +7,9 @@
 // File name:   HttpListenerAbstractEngine.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Net;
-using System.Net.WebSockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Http.Engine;
 
@@ -44,6 +39,9 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         get => _listener.TimeoutManager.IdleConnection;
         set => _listener.TimeoutManager.IdleConnection = value;
     }
+
+    /// <inheritdoc/>
+    public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.UnboundAsyncronousGetContext;
 
     /// <inheritdoc/>
     public override void AddListeningPrefix ( string prefix ) {
@@ -81,6 +79,11 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         _listener.Stop ();
     }
 
+    /// <inheritdoc/>
+    public override Task<HttpServerEngineContext> GetContextAsync ( CancellationToken cancellationToken = default ) {
+        throw new NotImplementedException ();
+    }
+
     sealed class HttpListenerContextAbstraction ( HttpListenerContext context ) : HttpServerEngineContext {
 
         HttpListenerContext _context = context;
@@ -93,7 +96,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
 
         public override async Task<HttpServerEngineWebSocket> AcceptWebSocketAsync ( string? subProtocol ) {
             var ws = await _context.AcceptWebSocketAsync ( subProtocol ).ConfigureAwait ( false );
-            return new HttpListenerContextWebSocketAbstraction ( ws.WebSocket );
+            return HttpServerEngineWebSocket.CreateFromWebSocket ( ws.WebSocket );
         }
     }
 
@@ -173,28 +176,6 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
             public void SetHeader ( string name, string value ) {
                 headers.Set ( name, value );
             }
-        }
-    }
-
-    sealed class HttpListenerContextWebSocketAbstraction ( WebSocket ws ) : HttpServerEngineWebSocket {
-        readonly WebSocket _ws = ws;
-
-        public override WebSocketState State => _ws.State;
-
-        public override Task CloseAsync ( WebSocketCloseStatus closeStatus, string? reason, CancellationToken cancellation ) {
-            return _ws.CloseAsync ( closeStatus, reason, cancellation );
-        }
-
-        public override Task CloseOutputAsync ( WebSocketCloseStatus closeStatus, string? reason, CancellationToken cancellation ) {
-            return _ws.CloseOutputAsync ( closeStatus, reason, cancellation );
-        }
-
-        public override async ValueTask<ValueWebSocketReceiveResult> ReceiveAsync ( Memory<byte> buffer, CancellationToken cancellationToken ) {
-            return await _ws.ReceiveAsync ( buffer, cancellationToken ).ConfigureAwait ( false );
-        }
-
-        public override async ValueTask SendAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken ) {
-            await _ws.SendAsync ( buffer, messageType, endOfMessage, cancellationToken ).ConfigureAwait ( false );
         }
     }
 }

@@ -39,6 +39,10 @@ public sealed class Server {
         }
 
         Instance = builder
+            .UseConfiguration ( config => {
+                config.ThrowExceptions = true;
+                config.ErrorsLogsStream = LogStream.ConsoleOutput;
+            } )
             .UseRouter ( router => {
                 // Original HTTP Routes
                 router.MapGet ( "/tests/plaintext", delegate ( HttpRequest request ) {
@@ -356,9 +360,8 @@ public sealed class Server {
                         var receivedMessage = msg.GetString ( request.RequestEncoding );
                         _ = Task.Run ( async () => {
                             await Task.Delay ( 500 );
-                            try { if (!client.IsClosed) await client.SendAsync ( $"Async response to: {receivedMessage}" ); }
-                            catch (WebSocketException) { }
-                            catch (ObjectDisposedException) { }
+                            if (!client.IsClosed)
+                                await client.SendAsync ( $"Async response to: {receivedMessage}" );
                         } );
                     } while (msg != null);
                     return await client.CloseAsync ();
