@@ -165,7 +165,9 @@ public sealed class HttpHostContext {
                 Headers.Remove ( HttpHeaderName.ContentLength );
             }
             else {
-                if (!Headers.Contains ( HttpHeaderName.ContentLength )) {
+                if (!Headers.Contains ( HttpHeaderName.ContentLength ) &&
+                    !Headers.Get ( HttpHeaderName.Upgrade ).Contains ( "websocket" )) {
+
                     throw new InvalidOperationException ( "Content-Length header must be set for non-chunked responses." );
                 }
             }

@@ -25,7 +25,7 @@ public sealed class Server {
 
     public static HttpClient GetHttpClient () => new HttpClient () {
         BaseAddress = new Uri ( Instance.HttpServer.ListeningPrefixes [ 0 ] ),
-        Timeout = TimeSpan.FromMinutes ( 10 )
+        Timeout = TimeSpan.FromSeconds ( 20 )
     };
 
     [AssemblyInitialize]
