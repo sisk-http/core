@@ -18,6 +18,7 @@ sealed class HttpRequestBase {
     private HttpHeader []? _headers;
 
     public bool IsExpecting100;
+    public bool IsChunked;
 
     public long ContentLength;
     public bool CanKeepAlive;

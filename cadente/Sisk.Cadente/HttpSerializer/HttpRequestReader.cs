@@ -60,6 +60,7 @@ sealed class HttpRequestReader {
         long contentLength = 0;
         bool keepAliveEnabled = true;
         bool expect100 = false;
+        bool isChunked = false;
 
         List<HttpHeader> headers = new List<HttpHeader> ( 32 );
         while (reader.TryReadToAny ( out ReadOnlySpan<byte> headerLine, RequestLineDelimiters, advancePastDelimiter: true )) {
@@ -84,6 +85,9 @@ sealed class HttpRequestReader {
             else if (Ascii.EqualsIgnoreCase ( headerLineName, "Expect"u8 )) {
                 expect100 = Ascii.Equals ( headerLineValue, "100-continue"u8 );
             }
+            else if (Ascii.EqualsIgnoreCase ( headerLineName, "Transfer-Encoding"u8 )) {
+                isChunked = Ascii.Equals ( headerLineValue, "chunked"u8 );
+            }
 
             headers.Add ( new HttpHeader ( headerLineName.ToArray (), headerLineValue.ToArray () ) );
         }
@@ -95,10 +99,14 @@ sealed class HttpRequestReader {
             MethodRef = method.ToArray (),
             PathRef = path.ToArray (),
 
-            ContentLength = contentLength,
+            ContentLength = isChunked switch {
+                true => -1,
+                false => contentLength
+            },
             CanKeepAlive = keepAliveEnabled,
 
-            IsExpecting100 = expect100
+            IsExpecting100 = expect100,
+            IsChunked = isChunked
         };
     }
 }

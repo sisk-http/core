@@ -79,6 +79,29 @@ public static class HttpHeaderExtensions {
     }
 
     /// <summary>
+    /// Determines whether the specified list of <see cref="HttpHeader"/> contains a header with the given name.
+    /// </summary>
+    /// <param name="headers">The list of <see cref="HttpHeader"/> to search.</param>
+    /// <param name="name">The name of the header to search for. May be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if the list contains a header with the specified name; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool Contains ( this List<HttpHeader> headers, string? name ) {
+
+        List<string> results = new ();
+        lock (((ICollection) headers).SyncRoot) {
+            var span = CollectionsMarshal.AsSpan ( headers );
+            for (int i = span.Length - 1; i >= 0; i--) {
+                if (Ascii.EqualsIgnoreCase ( span [ i ].NameBytes.Span, name )) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Removes all <see cref="HttpHeader"/> with the given name from the list. Thread-safe.
     /// </summary>
     /// <param name="headers">The list of <see cref="HttpHeader"/> to modify.</param>

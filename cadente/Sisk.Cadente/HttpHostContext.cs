@@ -104,6 +104,10 @@ public sealed class HttpHostContext {
         /// </summary>
         public Stream GetRequestStream () {
 
+            if (ContentLength == 0) {
+                return Stream.Null;
+            }
+
             if (_baseRequest.IsExpecting100 && !wasExpectationSent) {
                 wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( _requestStream );
 
@@ -111,7 +115,10 @@ public sealed class HttpHostContext {
                     throw new InvalidOperationException ( "Unable to obtain the input stream for the request." );
             }
 
-            return _requestStream;
+            return _baseRequest.IsChunked switch {
+                true => new HttpChunkedReadStream2 ( _requestStream ),
+                false => _requestStream
+            };
         }
 
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
@@ -126,7 +133,7 @@ public sealed class HttpHostContext {
     public sealed class HttpResponse {
         private Stream _baseOutputStream;
         private HttpHostContext _session;
-        private bool headersSent = false;
+        internal bool headersSent = false;
 
         /// <summary>
         /// Gets or sets the HTTP status code of the response.
@@ -144,34 +151,6 @@ public sealed class HttpHostContext {
         public List<HttpHeader> Headers { get; set; }
 
         /// <summary>
-        /// Asynchronously gets an event stream writer with UTF-8 encoding.
-        /// </summary>
-        /// <returns>A task that represents the asynchronous operation, with a <see cref="HttpEventStreamWriter"/> as the result.</returns>
-        public HttpEventStreamWriter GetEventStream () => GetEventStream ( Encoding.UTF8 );
-
-        /// <summary>
-        /// Asynchronously gets an event stream writer with the specified encoding.
-        /// </summary>
-        /// <param name="encoding">The encoding to use for the event stream.</param>
-        /// <returns>A task that represents the asynchronous operation, with a <see cref="HttpEventStreamWriter"/> as the result.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
-        public HttpEventStreamWriter GetEventStream ( Encoding encoding ) {
-            if (headersSent) {
-                throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
-            }
-
-            Headers.Set ( new HttpHeader ( "Content-Type", "text/event-stream" ) );
-            Headers.Set ( new HttpHeader ( "Cache-Control", "no-cache" ) );
-
-            if (!_session.WriteHttpResponseHeaders ()) {
-                throw new InvalidOperationException ( "Unable to obtain the output stream for the response." );
-            }
-
-            headersSent = true;
-            return new HttpEventStreamWriter ( _baseOutputStream, encoding );
-        }
-
-        /// <summary>
         /// Gets the content stream for the response.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
@@ -184,6 +163,11 @@ public sealed class HttpHostContext {
             if (chunked) {
                 Headers.Set ( new HttpHeader ( HttpHeaderName.TransferEncoding, "chunked" ) );
                 Headers.Remove ( HttpHeaderName.ContentLength );
+            }
+            else {
+                if (!Headers.Contains ( HttpHeaderName.ContentLength )) {
+                    throw new InvalidOperationException ( "Content-Length header must be set for non-chunked responses." );
+                }
             }
 
             if (!_session.WriteHttpResponseHeaders ()) {

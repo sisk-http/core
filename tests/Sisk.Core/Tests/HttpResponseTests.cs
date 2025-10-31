@@ -49,7 +49,7 @@ public sealed class HttpResponseTests {
             var response = await client.SendAsync ( request );
             Assert.IsTrue ( response.StatusCode == System.Net.HttpStatusCode.NotFound );
         }
-    }
+    } 
 
     [TestMethod]
     public async Task MethodNotAllowed () {

@@ -68,6 +68,7 @@ namespace Sisk.Core.Http.Streams {
 
             hostServer._eventCollection.RegisterEventSource ( this );
 
+            res.SendChunked = true;
             res.AppendHeader ( HttpKnownHeaderNames.CacheControl, "no-store, no-cache" );
             res.AppendHeader ( HttpKnownHeaderNames.ContentType, "text/event-stream; charset=utf-8" );
             if (host.baseServer.ServerConfiguration.SendSiskHeader)

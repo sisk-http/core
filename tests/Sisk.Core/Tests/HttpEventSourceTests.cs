@@ -104,7 +104,7 @@ namespace tests.Tests // Ensure this namespace matches other test files
                     CollectionAssert.AreEqual ( expectedEvents, receivedEvents, "The received SSE events do not match the expected events." );
                 }
             }
-        }
+        } 
 
         [TestMethod]
         public async Task TestAsyncSseFeatures () {

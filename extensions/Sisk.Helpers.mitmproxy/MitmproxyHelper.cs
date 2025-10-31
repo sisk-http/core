@@ -7,6 +7,7 @@
 // File name:   MitmproxyHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Security.Cryptography.X509Certificates;
 using Asmichi.ProcessManagement;
 using Sisk.Core.Http.Hosting;
 using Sisk.Helpers.Mitmproxy;
@@ -36,6 +37,7 @@ public static class MitmproxyHelper {
         ushort proxyPort = 0,
         bool silent = false,
         Action<ChildProcessStartInfo>? setupAction = null ) {
+
         var proxy = new MitmproxyProvider ( proxyPort, setupAction ) {
             Silent = silent
         };

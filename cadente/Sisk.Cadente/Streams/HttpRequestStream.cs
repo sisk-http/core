@@ -11,16 +11,15 @@ using Sisk.Cadente.HttpSerializer;
 
 namespace Sisk.Cadente.Streams;
 
-internal class HttpRequestStream : Stream {
+internal sealed class HttpRequestStream : Stream {
     private Stream s;
     private HttpRequestBase baseRequest;
     int read = 0;
-    int bufferedByteLength = 0;
+    int bufferPosition = 0;
 
     public HttpRequestStream ( Stream clientStream, HttpRequestBase baseRequest ) {
         s = clientStream;
         this.baseRequest = baseRequest;
-        bufferedByteLength = this.baseRequest.BufferedContent.Length;
     }
 
     public override bool CanRead => s.CanRead;
@@ -55,19 +54,26 @@ internal class HttpRequestStream : Stream {
     }
 
     int ReadFromBuffer ( byte [] buffer, int offset, int count ) {
-        long availableRead = Math.Min ( bufferedByteLength, baseRequest.ContentLength ) - read;
-
-        if (availableRead <= 0)
+        ReadOnlySpan<byte> internalSpan = baseRequest.BufferedContent.Span;
+        int remainingInBuffer = internalSpan.Length - bufferPosition;
+        if (remainingInBuffer <= 0) {
             return 0;
+        }
 
-        long toRead = Math.Min ( count, availableRead );
+        if (baseRequest.ContentLength > 0) {
+            long remainingByLength = baseRequest.ContentLength - read;
+            if (remainingByLength <= 0) {
+                return 0;
+            }
+            if (remainingInBuffer > remainingByLength) {
+                remainingInBuffer = (int)remainingByLength;
+            }
+        }
 
-        int bufferOffset = read;
-
-        var bufferMemory = new Memory<byte> ( buffer );
-        baseRequest.BufferedContent [ bufferOffset.. ].CopyTo ( bufferMemory [ offset..(offset + (int) toRead) ] );
-
-        return (int) toRead;
+        int toCopy = Math.Min(count, remainingInBuffer);
+        internalSpan.Slice(bufferPosition, toCopy).CopyTo(buffer.AsSpan(offset, toCopy));
+        bufferPosition += toCopy;
+        return toCopy;
     }
 
     public override long Seek ( long offset, SeekOrigin origin ) {

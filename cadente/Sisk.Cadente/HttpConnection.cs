@@ -56,8 +56,11 @@ sealed class HttpConnection : IDisposable {
                 managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
             }
 
-            if (managedSession.ResponseHeadersAlreadySent == false && !managedSession.WriteHttpResponseHeaders ()) {
-                return HttpConnectionState.ResponseWriteException;
+            if (managedSession.ResponseHeadersAlreadySent == false) {
+                managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
+
+                if (!managedSession.WriteHttpResponseHeaders ())
+                    return HttpConnectionState.ResponseWriteException;
             }
 
             await _connectionStream.FlushAsync ();

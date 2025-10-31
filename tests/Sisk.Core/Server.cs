@@ -278,6 +278,7 @@ public sealed class Server {
                     try {
                         using (System.IO.Stream requestStream = req.GetRequestStream ())
                         using (var reader = new System.IO.StreamReader ( requestStream, Encoding.UTF8 )) {
+                            
                             string content = await reader.ReadToEndAsync ();
                             if (string.IsNullOrEmpty ( content ))
                                 return new HttpResponse ( System.Net.HttpStatusCode.OK, "Stream was empty as expected." );
