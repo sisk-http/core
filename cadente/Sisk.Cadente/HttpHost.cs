@@ -23,14 +23,9 @@ public sealed class HttpHost : IDisposable {
 
     private readonly IPEndPoint _endpoint;
     private readonly TcpListener _listener;
+    private Thread? _eventLoopThread;
     private bool disposedValue;
     private bool isListening;
-
-    /// <summary>
-    /// Gets or sets the client queue size of all <see cref="HttpHost"/> instances. This value indicates how many
-    /// connections the server can maintain simultaneously before queueing other connections attempts.
-    /// </summary>
-    public static int QueueSize { get; set; } = 1024;
 
     /// <summary>
     /// Gets or sets the name of the server in the header name.
@@ -90,8 +85,8 @@ public sealed class HttpHost : IDisposable {
 
         _listener.Server.NoDelay = true;
         _listener.Server.LingerState = new LingerOption ( true, 3 );
-        _listener.Server.ReceiveBufferSize = HttpConnection.REQUEST_BUFFER_SIZE;
-        _listener.Server.SendBufferSize = HttpConnection.RESPONSE_BUFFER_SIZE;
+        _listener.Server.ReceiveBufferSize = HttpConnection.RESERVED_BUFFER_SIZE;
+        _listener.Server.SendBufferSize = HttpConnection.RESERVED_BUFFER_SIZE;
 
         _listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
         _listener.Server.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
@@ -99,10 +94,21 @@ public sealed class HttpHost : IDisposable {
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
 
-        _listener.Start ( QueueSize );
+        _listener.Start ( backlog: 8192 );
         isListening = true;
 
-        _listener.BeginAcceptTcpClient ( ReceiveClient, null );
+        _eventLoopThread = new Thread ( EventLoopThreadRunner );
+        _eventLoopThread.Priority = ThreadPriority.Highest;
+        _eventLoopThread.Start ();
+    }
+
+    async void EventLoopThreadRunner () {
+
+        while (isListening) {
+            var client = await _listener.AcceptTcpClientAsync ().ConfigureAwait ( false );
+            HttpHostThreadPoolWorkItem workItem = new HttpHostThreadPoolWorkItem ( this, client );
+            ThreadPool.UnsafeQueueUserWorkItem ( workItem, preferLocal: true );
+        }
     }
 
     /// <summary>
@@ -114,101 +120,6 @@ public sealed class HttpHost : IDisposable {
 
         isListening = false;
         _listener.Stop ();
-    }
-
-    private async void ReceiveClient ( IAsyncResult result ) {
-
-        if (!isListening)
-            return;
-
-        _listener.BeginAcceptTcpClient ( ReceiveClient, null );
-        var client = _listener.EndAcceptTcpClient ( result );
-
-        await HandleTcpClient ( client );
-    }
-
-    private byte[] GetBadRequestMessage ( string message ) {
-        string content = $"""
-            <HTML>
-                <HEAD>
-                    <TITLE>400 - Bad Request</TITLE>
-                </HEAD>
-                <BODY>
-                    <H1>400 - Bad Request</H1>
-                    <P>{message}</P>
-                    <HR>
-                    <P><EM>Cadente</EM></P>
-                </BODY>
-            </HTML>
-            """;
-
-        string html = 
-            $"HTTP/1.1 400 Bad Request\r\n" +
-            $"Content-Type: text/html\r\n" +
-            $"Content-Length: {content.Length}\r\n" +
-            $"Connection: close\r\n" +
-            $"\r\n" +
-            content;
-
-        return Encoding.ASCII.GetBytes ( html );
-    }
-
-    private async Task HandleTcpClient ( TcpClient client ) {
-
-        try {
-            int clientReadTimeoutMs = (int) TimeoutManager.ClientReadTimeout.TotalMilliseconds;
-            int clientWriteTimeoutMs = (int) TimeoutManager.ClientWriteTimeout.TotalMilliseconds;
-
-            client.ReceiveTimeout = clientReadTimeoutMs;
-            client.SendTimeout = clientWriteTimeoutMs;
-
-            if (Handler is null)
-                return;
-
-            Stream connectionStream;
-            using Stream clientStream = client.GetStream ();
-
-            if (HttpsOptions is not null) {
-                connectionStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
-            }
-            else {
-                connectionStream = clientStream;
-            }
-
-            IPEndPoint clientEndpoint = (IPEndPoint) client.Client.RemoteEndPoint!;
-            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint, CancellationToken.None );
-
-            connectionStream.ReadTimeout = clientReadTimeoutMs;
-            connectionStream.WriteTimeout = clientWriteTimeoutMs;
-
-            using (HttpConnection connection = new HttpConnection ( hostClient, connectionStream, this, clientEndpoint )) {
-
-                if (connectionStream is SslStream sslStream) {
-                    try {
-                        await sslStream.AuthenticateAsServerAsync (
-                            serverCertificate: HttpsOptions!.ServerCertificate,
-                            clientCertificateRequired: HttpsOptions.ClientCertificateRequired,
-                            checkCertificateRevocation: HttpsOptions.CheckCertificateRevocation,
-                            enabledSslProtocols: HttpsOptions.AllowedProtocols );
-
-                        hostClient.ClientCertificate = sslStream.RemoteCertificate;
-                    }
-                    catch (Exception) {
-
-                        var message = GetBadRequestMessage ( "SSL/TLS Handshake failed." );
-                        await clientStream.WriteAsync ( message, 0, message.Length );
-                        return;
-                    }
-                }
-
-                await Handler.OnClientConnectedAsync ( this, hostClient );
-                await connection.HandleConnectionEventsAsync ();
-                await Handler.OnClientDisconnectedAsync ( this, hostClient );
-            }
-        }
-        finally {
-            client.Dispose ();
-        }
     }
 
     private void Dispose ( bool disposing ) {
@@ -224,7 +135,7 @@ public sealed class HttpHost : IDisposable {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal async ValueTask InvokeContextCreated ( HttpHostContext context ) {
+    internal async Task InvokeContextCreated ( HttpHostContext context ) {
         if (disposedValue)
             return;
         if (Handler is null)

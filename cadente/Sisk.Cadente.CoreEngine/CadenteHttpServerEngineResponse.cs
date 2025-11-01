@@ -36,7 +36,7 @@ namespace Sisk.Cadente.CoreEngine {
         public CadenteHttpServerEngineResponse ( HttpHostContext.HttpResponse response, HttpHostContext httpHostContext ) {
             _response = response;
             _httpHostContext = httpHostContext;
-            _outputStream = new Lazy<Stream> ( () => _response.GetResponseStream ( SendChunked ) );
+            _outputStream = new Lazy<Stream> ( () => _response.GetResponseStreamAsync ( SendChunked ).ConfigureAwait ( false ).GetAwaiter ().GetResult () );
             _headers = new CadenteEngineHeaderList ( _response );
         }
 

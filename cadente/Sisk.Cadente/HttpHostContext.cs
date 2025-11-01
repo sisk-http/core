@@ -21,18 +21,19 @@ namespace Sisk.Cadente;
 public sealed class HttpHostContext {
 
     private HttpHost _host;
-    private Stream _connectionStream;
+    private HttpConnection _connection;
+
     internal CancellationTokenSource abortedSource = new CancellationTokenSource ();
     internal bool ResponseHeadersAlreadySent = false;
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal bool WriteHttpResponseHeaders () {
+    internal async ValueTask<bool> WriteHttpResponseHeadersAsync () {
         if (ResponseHeadersAlreadySent) {
             return true;
         }
 
         ResponseHeadersAlreadySent = true;
-        return HttpResponseSerializer.WriteHttpResponseHeaders ( _connectionStream, Response );
+        return await HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.sharedPool, _connection.networkStream, Response );
     }
 
     /// <summary>
@@ -60,14 +61,14 @@ public sealed class HttpHostContext {
     /// </summary>
     public HttpHost Host => _host;
 
-    internal HttpHostContext ( HttpHost host, HttpRequestBase baseRequest, HttpHostClient client, Stream connectionStream ) {
+    internal HttpHostContext ( HttpHost host, HttpConnection connection, HttpRequestBase baseRequest, HttpHostClient client ) {
         Client = client;
-        _connectionStream = connectionStream;
+        _connection = connection;
         _host = host;
 
-        HttpRequestStream requestStream = new HttpRequestStream ( connectionStream, baseRequest );
+        HttpRequestStream requestStream = new HttpRequestStream ( _connection.networkStream, baseRequest );
         Request = new HttpRequest ( baseRequest, requestStream );
-        Response = new HttpResponse ( this, connectionStream );
+        Response = new HttpResponse ( this, _connection.networkStream );
     }
 
     /// <summary>
@@ -151,11 +152,11 @@ public sealed class HttpHostContext {
         public List<HttpHeader> Headers { get; set; }
 
         /// <summary>
-        /// Gets the content stream for the response.
+        /// Asynchronously gets the content stream for the response.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
-        public Stream GetResponseStream ( bool chunked = false ) {
+        public async ValueTask<Stream> GetResponseStreamAsync ( bool chunked = false ) {
             if (headersSent) {
                 throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
             }
@@ -172,14 +173,14 @@ public sealed class HttpHostContext {
                 }
             }
 
-            if (!_session.WriteHttpResponseHeaders ()) {
+            if (!await _session.WriteHttpResponseHeadersAsync ()) {
                 throw new InvalidOperationException ( "Unable to obtain an output stream for the response." );
             }
 
             headersSent = true;
             return chunked switch {
                 true => new HttpChunkedWriteStream ( _baseOutputStream ),
-                false => _baseOutputStream
+                false => new UndisposableNetworkStream ( _baseOutputStream )
             };
         }
 

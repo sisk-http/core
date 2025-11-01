@@ -7,7 +7,9 @@
 // File name:   HttpConnection.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Buffers;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Core.Http;
 
@@ -16,7 +18,6 @@ namespace Sisk.Cadente;
 sealed class HttpConnection : IDisposable {
     private readonly HttpHost _host;
     private readonly IPEndPoint _endpoint;
-    private readonly Stream _connectionStream;
     private readonly HttpHostClient _client;
     private bool disposedValue;
 
@@ -27,29 +28,34 @@ sealed class HttpConnection : IDisposable {
 #endif
 
     // buffer dedicated to headers.
-    public const int REQUEST_BUFFER_SIZE = 8192;
-    public const int RESPONSE_BUFFER_SIZE = 4096;
+    public const int RESERVED_BUFFER_SIZE = 8192;
+
+    internal readonly Stream networkStream;
+    internal byte [] sharedPool;
 
     public HttpConnection ( HttpHostClient client, Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
         _client = client;
-        _connectionStream = connectionStream;
         _host = host;
         _endpoint = endpoint;
+
+        networkStream = connectionStream;
+        sharedPool = ArrayPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
     }
 
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public async Task<HttpConnectionState> HandleConnectionEventsAsync () {
         bool connectionCloseRequested = false;
 
-        while (_connectionStream.CanRead && !disposedValue) {
+        while (!disposedValue) {
 
-            HttpRequestReader requestReader = new HttpRequestReader ( _connectionStream );
+            using HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( networkStream ).ConfigureAwait ( false );
 
-            if (requestReader.TryReadHttpRequest ( out HttpRequestBase? nextRequest ) == false) {
+            if (nextRequest is null) {
                 return HttpConnectionState.ConnectionClosed;
             }
 
-            HttpHostContext managedSession = new HttpHostContext ( _host, nextRequest, _client, _connectionStream );
-            await _host.InvokeContextCreated ( managedSession );
+            HttpHostContext managedSession = new HttpHostContext ( _host, this, nextRequest, _client );
+            await _host.InvokeContextCreated ( managedSession ).ConfigureAwait ( false );
 
             if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                 connectionCloseRequested = true;
@@ -59,11 +65,11 @@ sealed class HttpConnection : IDisposable {
             if (managedSession.ResponseHeadersAlreadySent == false) {
                 managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
 
-                if (!managedSession.WriteHttpResponseHeaders ())
+                if (!await managedSession.WriteHttpResponseHeadersAsync ())
                     return HttpConnectionState.ResponseWriteException;
             }
 
-            await _connectionStream.FlushAsync ();
+            await networkStream.FlushAsync ().ConfigureAwait ( false );
 
             if (connectionCloseRequested) {
                 break;
@@ -76,7 +82,8 @@ sealed class HttpConnection : IDisposable {
     private void Dispose ( bool disposing ) {
         if (!disposedValue) {
             if (disposing) {
-                _connectionStream.Dispose ();
+                networkStream.Dispose ();
+                ArrayPool<byte>.Shared.Return ( sharedPool );
             }
 
             disposedValue = true;

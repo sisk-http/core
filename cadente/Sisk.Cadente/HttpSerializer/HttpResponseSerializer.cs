@@ -13,7 +13,7 @@ using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
 
-internal static class HttpResponseSerializer {
+internal class HttpResponseSerializer {
 
     static Encoding _headerDataEncoding = Encoding.ASCII;
 
@@ -28,8 +28,8 @@ internal static class HttpResponseSerializer {
     const byte _COLON = (byte) ':';
     const byte _SLASH = (byte) '/';
 
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    public static int GetResponseHeadersBytes ( scoped Span<byte> buffer, HttpHostContext.HttpResponse response ) {
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+    public static int GetResponseHeadersBytes ( Span<byte> buffer, HttpHostContext.HttpResponse response ) {
 
         // HTTP/1.1
         int position = 0;
@@ -82,12 +82,10 @@ internal static class HttpResponseSerializer {
         return position;
     }
 
-    public static bool WriteHttpResponseHeaders ( Stream outgoingStream, HttpHostContext.HttpResponse response ) {
+    public static async ValueTask<bool> WriteHttpResponseHeaders ( byte [] buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
         try {
-            Span<byte> responseBuffer = stackalloc byte [ HttpConnection.RESPONSE_BUFFER_SIZE ];
-
-            int headerSize = GetResponseHeadersBytes ( responseBuffer, response );
-            outgoingStream.Write ( responseBuffer [ 0..headerSize ] );
+            int headerSize = GetResponseHeadersBytes ( buffer, response );
+            await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] );
 
             return true;
         }

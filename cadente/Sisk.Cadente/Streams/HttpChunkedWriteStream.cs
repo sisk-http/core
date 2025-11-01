@@ -68,7 +68,6 @@ internal class HttpChunkedWriteStream : Stream {
                 _stream.Write ( s_finalChunkBytes );
 
                 _stream.Flush ();
-                _stream.Dispose ();
                 _stream = null!;
             }
         }
