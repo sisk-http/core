@@ -37,7 +37,7 @@ sealed class HttpConnection : IDisposable {
         _endpoint = endpoint;
     }
 
-    public async Task<HttpConnectionState> HandleConnectionEvents () {
+    public async Task<HttpConnectionState> HandleConnectionEventsAsync () {
         bool connectionCloseRequested = false;
 
         while (_connectionStream.CanRead && !disposedValue) {

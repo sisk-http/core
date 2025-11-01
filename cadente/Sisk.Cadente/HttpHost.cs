@@ -7,10 +7,12 @@
 // File name:   HttpHost.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.ComponentModel;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Sisk.Cadente;
 
@@ -125,6 +127,32 @@ public sealed class HttpHost : IDisposable {
         await HandleTcpClient ( client );
     }
 
+    private byte[] GetBadRequestMessage ( string message ) {
+        string content = $"""
+            <HTML>
+                <HEAD>
+                    <TITLE>400 - Bad Request</TITLE>
+                </HEAD>
+                <BODY>
+                    <H1>400 - Bad Request</H1>
+                    <P>{message}</P>
+                    <HR>
+                    <P><EM>Cadente</EM></P>
+                </BODY>
+            </HTML>
+            """;
+
+        string html = 
+            $"HTTP/1.1 400 Bad Request\r\n" +
+            $"Content-Type: text/html\r\n" +
+            $"Content-Length: {content.Length}\r\n" +
+            $"Connection: close\r\n" +
+            $"\r\n" +
+            content;
+
+        return Encoding.ASCII.GetBytes ( html );
+    }
+
     private async Task HandleTcpClient ( TcpClient client ) {
 
         try {
@@ -166,12 +194,15 @@ public sealed class HttpHost : IDisposable {
                         hostClient.ClientCertificate = sslStream.RemoteCertificate;
                     }
                     catch (Exception) {
+
+                        var message = GetBadRequestMessage ( "SSL/TLS Handshake failed." );
+                        await clientStream.WriteAsync ( message, 0, message.Length );
                         return;
                     }
                 }
 
                 await Handler.OnClientConnectedAsync ( this, hostClient );
-                await connection.HandleConnectionEvents ();
+                await connection.HandleConnectionEventsAsync ();
                 await Handler.OnClientDisconnectedAsync ( this, hostClient );
             }
         }

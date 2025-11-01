@@ -50,7 +50,7 @@ The current status of the implementation is:
 | Base HTTP/1.1 Reader | ✅ OK | |
 | HTTPS/SSL | ✅ OK | |
 | Chunked-transfers responses | ✅ OK | |
-| Chunked-transfers requests | ❌ Not implemented | |
+| Chunked-transfers requests | ✅ OK | |
 | Handle Expect-100 | ✅ OK | |
 | Compressed transfer encoding (gzip, brotli, etc) | ✅ OK/External | |
 | SSE/Response content streaming | ✅ OK/External  |  |
