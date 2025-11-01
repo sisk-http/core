@@ -10,6 +10,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using Sisk.Core.Entity;
 using Sisk.Core.Http.Engine;
 using Sisk.Core.Http.Handlers;
@@ -65,6 +66,9 @@ public sealed class HttpServerHostContextBuilder {
 
         if (listeningHost.Ports.Count == 0)
             listeningHost.Ports.Add ( ListeningPort.GetRandomPort () );
+
+        if (listeningHost.SslOptions is { })
+            configuration.Engine.UseListeningHostSslOptions ( listeningHost.SslOptions );
 
         return _context;
     }
@@ -238,6 +242,50 @@ public sealed class HttpServerHostContextBuilder {
     /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
     public HttpServerHostContextBuilder UseEngine<TEngine> () where TEngine : HttpServerEngine, new() {
         configuration.Engine = new TEngine ();
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the HTTP server engine using a default constructor and applies the specified configuration action.
+    /// </summary>
+    /// <typeparam name="TEngine">The type of the HTTP server engine to use, which must inherit from <see cref="HttpServerEngine"/> and have a parameterless constructor.</typeparam>
+    /// <param name="setup">An action that configures the newly created engine instance.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseEngine<TEngine> ( Action<TEngine> setup ) where TEngine : HttpServerEngine, new() {
+        var engine = new TEngine ();
+        setup ( engine );
+        configuration.Engine = engine;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the HTTP server engine using a factory method.
+    /// </summary>
+    /// <typeparam name="TEngine">The type of the HTTP server engine to use, which must inherit from <see cref="HttpServerEngine"/>.</typeparam>
+    /// <param name="create">A factory method that creates an instance of the engine.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseEngine<TEngine> ( Func<TEngine> create ) where TEngine : HttpServerEngine {
+        configuration.Engine = create ();
+        return this;
+    }
+
+    /// <summary>
+    /// Configures SSL for the listening host using the specified options.
+    /// </summary>
+    /// <param name="sslOptions">The SSL options to apply to the listening host.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseSsl ( ListeningHostSslOptions sslOptions ) {
+        listeningHost.SslOptions = sslOptions;
+        return this;
+    }
+
+    /// <summary>
+    /// Configures SSL for the listening host using the specified certificate.
+    /// </summary>
+    /// <param name="certificate">The X509 certificate to use for SSL.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseSsl ( X509Certificate2 certificate ) {
+        listeningHost.SslOptions = new ListeningHostSslOptions ( certificate );
         return this;
     }
 

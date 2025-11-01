@@ -33,6 +33,12 @@ public abstract class HttpServerEngine : IDisposable {
     public abstract void AddListeningPrefix ( string prefix );
 
     /// <summary>
+    /// Configures SSL options for the listening host.
+    /// </summary>
+    /// <param name="sslOptions">The SSL options to apply.</param>
+    public abstract void UseListeningHostSslOptions ( ListeningHostSslOptions sslOptions );
+
+    /// <summary>
     /// Clears all listening prefixes from the server.
     /// </summary>
     public abstract void ClearPrefixes ();

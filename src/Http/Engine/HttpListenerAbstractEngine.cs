@@ -84,6 +84,11 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         throw new NotImplementedException ();
     }
 
+    /// <inheritdoc/>
+    public override void UseListeningHostSslOptions ( ListeningHostSslOptions sslOptions ) {
+        throw new NotSupportedException ( "The native .NET HttpListener does not support SSL." );
+    }
+
     sealed class HttpListenerContextAbstraction ( HttpListenerContext context ) : HttpServerEngineContext {
 
         HttpListenerContext _context = context;

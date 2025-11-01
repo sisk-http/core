@@ -7,12 +7,13 @@
 // File name:   ListeningHost.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Security.Cryptography.X509Certificates;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http {
     /// <summary>
-    /// Provides a structure to contain the fields needed by an http server host.
+    /// Provides a type to contain the fields needed by an HTTP server virtual host.
     /// </summary>
     public sealed class ListeningHost {
         internal List<ListeningPort> _ports = new List<ListeningPort> ();
@@ -56,6 +57,11 @@ namespace Sisk.Core.Http {
         /// Gets or sets a label for this Listening Host.
         /// </summary>
         public string? Label { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SSL options for this <see cref="ListeningHost"/>.
+        /// </summary>
+        public ListeningHostSslOptions? SslOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the list of <see cref="ListeningPort"/> that this host will listen on.

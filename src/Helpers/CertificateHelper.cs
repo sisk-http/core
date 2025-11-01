@@ -22,6 +22,7 @@ namespace Sisk.Core.Helpers;
 /// Provides a set of useful functions to issue self-signed development certificates.
 /// </summary>
 public static class CertificateHelper {
+    private const string PfxPassword = "sisk";
 
     // -> https://github.com/dotnet/corefx/blob/a10890f4ffe0fadf090c922578ba0e606ebdd16c/src/Common/src/System/Text/StringOrCharArray.cs#L140
     // we need to make sure each hashcode for each string is the same.
@@ -58,20 +59,60 @@ public static class CertificateHelper {
     /// <param name="dnsNames">The certificate DNS names.</param>
     public static X509Certificate2 CreateTrustedDevelopmentCertificate ( params string [] dnsNames ) {
         int dnsHash = ComputeArrayHash ( dnsNames );
-        X509Certificate2 x509Certificate2;
-        using (var store = new X509Store ( StoreName.Root, StoreLocation.CurrentUser )) {
-            store.Open ( OpenFlags.ReadWrite );
+        string basePath = Path.Combine (
+            Environment.GetFolderPath ( Environment.SpecialFolder.LocalApplicationData ),
+            ".sisk", "development-certs" );
 
-            var siskCert = store.Certificates.FirstOrDefault ( c => c.Issuer.Contains ( $"Sisk Development CA {dnsHash}" ) );
-            if (siskCert is null) {
-                x509Certificate2 = CreateDevelopmentCertificate ( dnsNames );
-                store.Add ( x509Certificate2 );
-            }
-            else {
-                x509Certificate2 = siskCert;
-            }
+        Directory.CreateDirectory ( basePath );
+
+        string fileName = $"SiskDevelopment_{dnsHash}.pfx";
+        string pfxPath = Path.Combine ( basePath, fileName );
+
+        X509Certificate2 certificate;
+
+        if (File.Exists ( pfxPath )) {
+            certificate = LoadPfxFromDisk ( pfxPath );
         }
-        return x509Certificate2;
+        else {
+            using var fresh = CreateDevelopmentCertificate ( dnsNames );
+
+            File.WriteAllBytes (
+                pfxPath,
+                fresh.Export ( X509ContentType.Pfx, PfxPassword ) );
+
+            certificate = LoadPfxFromDisk ( pfxPath );
+        }
+
+        EnsureTrusted ( certificate );
+
+        return certificate;
+    }
+
+    private static X509Certificate2 LoadPfxFromDisk ( string path ) {
+#if NET9_0_OR_GREATER
+        return X509CertificateLoader.LoadPkcs12 (
+            File.ReadAllBytes ( path ),
+            PfxPassword,
+            X509KeyStorageFlags.Exportable |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.UserKeySet );
+#else
+        return new X509Certificate2 (
+            path,
+            PfxPassword,
+            X509KeyStorageFlags.Exportable |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.UserKeySet );
+#endif
+    }
+
+    private static void EnsureTrusted ( X509Certificate2 certificate ) {
+        // deixa a confiança local (TrustedPeople) ou raiz (Root)
+        using var trusted = new X509Store ( StoreName.Root, StoreLocation.CurrentUser );
+        trusted.Open ( OpenFlags.ReadWrite );
+        if (trusted.Certificates.Cast<X509Certificate2> ().FirstOrDefault ( c => c.Thumbprint == certificate.Thumbprint ) is null) {
+            trusted.Add ( certificate );
+        }
     }
 
     /// <summary>
@@ -82,31 +123,43 @@ public static class CertificateHelper {
         if (dnsNames.Length == 0)
             throw new ArgumentException ( "At least one DNS name must be specified.", nameof ( dnsNames ) );
 
-        SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder ();
+        var sanBuilder = new SubjectAlternativeNameBuilder ();
         sanBuilder.AddIpAddress ( IPAddress.Loopback );
         sanBuilder.AddIpAddress ( IPAddress.IPv6Loopback );
 
-        foreach (string dnsName in dnsNames.Distinct ( StringComparer.OrdinalIgnoreCase )) {
+        foreach (string dnsName in dnsNames.Distinct ( StringComparer.OrdinalIgnoreCase ))
             sanBuilder.AddDnsName ( dnsName.ToLowerInvariant () );
-        }
 
-        X500DistinguishedName distinguishedName = new X500DistinguishedName ( $"CN = Sisk Development CA {ComputeArrayHash ( dnsNames )},OU = IT,O = Sao Paulo,L = Brazil,S = Sao Paulo,C = Brazil" );
+        var distinguishedName = new X500DistinguishedName (
+            $"CN = Sisk Development CA #{ComputeArrayHash ( dnsNames )},OU = IT,O = Sao Paulo,L = Brazil,S = Sao Paulo,C = Brazil" );
 
-        using (RSA rsa = RSA.Create ( 2048 )) {
-            var request = new CertificateRequest ( distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1 );
+        using RSA rsa = RSA.Create ( 2048 );
+        var request = new CertificateRequest ( distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1 );
 
-            request.CertificateExtensions.Add (
-                new X509EnhancedKeyUsageExtension ( new OidCollection { new Oid ( "1.3.6.1.5.5.7.3.1" ) }, false ) );
-            request.CertificateExtensions.Add (
-                sanBuilder.Build () );
+        request.CertificateExtensions.Add (
+            new X509EnhancedKeyUsageExtension ( new OidCollection { new Oid ( "1.3.6.1.5.5.7.3.1" ) }, false ) );
+        request.CertificateExtensions.Add ( sanBuilder.Build () );
 
-            var certificate = request.CreateSelfSigned ( new DateTimeOffset ( DateTime.UtcNow.AddDays ( -1 ) ), new DateTimeOffset ( DateTime.UtcNow.AddDays ( 3650 ) ) );
+        using var certificate = request.CreateSelfSigned (
+            DateTimeOffset.UtcNow.AddDays ( -1 ),
+            DateTimeOffset.UtcNow.AddYears ( 10 ) );
+
+        var pfxBytes = certificate.Export ( X509ContentType.Pfx, PfxPassword );
 
 #if NET9_0_OR_GREATER
-            return X509CertificateLoader.LoadPkcs12 ( certificate.Export ( X509ContentType.Pfx, "sisk" ), "sisk", X509KeyStorageFlags.DefaultKeySet );
+        return X509CertificateLoader.LoadPkcs12 (
+            pfxBytes,
+            PfxPassword,
+            X509KeyStorageFlags.Exportable |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.UserKeySet );
 #else
-            return new X509Certificate2 ( certificate.Export ( X509ContentType.Pfx, "sisk" ), "sisk", X509KeyStorageFlags.DefaultKeySet );
+        return new X509Certificate2(
+            pfxBytes,
+            PfxPassword,
+            X509KeyStorageFlags.Exportable |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.UserKeySet);
 #endif
-        }
     }
 }

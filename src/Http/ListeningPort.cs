@@ -142,6 +142,21 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
+        /// Resolves the listening IP address from the hostname.
+        /// </summary>
+        /// <returns>The resolved <see cref="IPAddress"/>.</returns>
+        /// <exception cref="SocketException">Thrown when DNS resolution fails.</exception>
+        public IPAddress ResolveListeningIPAddress () {
+            if (IPAddress.TryParse ( Hostname, out var ipaddress )) {
+                return ipaddress;
+            }
+            else {
+                IPHostEntry entry = Dns.GetHostEntry ( Hostname );
+                return entry.AddressList.First ( a => a.AddressFamily == AddressFamily.InterNetwork );
+            }
+        }
+
+        /// <summary>
         /// Determines if another object is equals to this class instance.
         /// </summary>
         /// <param name="obj">The another object which will be used to compare.</param>

@@ -8,8 +8,11 @@
 // File name:   CadenteHttpServerEngine.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System;
 using System.Net;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Channels;
+using Sisk.Core.Http;
 using Sisk.Core.Http.Engine;
 
 namespace Sisk.Cadente.CoreEngine {
@@ -22,6 +25,7 @@ namespace Sisk.Cadente.CoreEngine {
     public sealed class CadenteHttpServerEngine : HttpServerEngine, IDisposable {
         private List<HttpHost> hosts = [];
         private List<string> prefixes = [];
+        private ListeningHostSslOptions? sslOptions;
         private TimeSpan idleConnectionTimeout = TimeSpan.FromSeconds ( 90 );
         private bool isDisposed;
 
@@ -57,8 +61,13 @@ namespace Sisk.Cadente.CoreEngine {
         public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.InlineAsyncronousGetContext;
 
         /// <inheritdoc/>
-        public override void AddListeningPrefix ( string prefix ) {
+        public override void AddListeningPrefix ( string prefix ) { 
             prefixes.Add ( prefix );
+        }
+
+        /// <inheritdoc/>
+        public override void UseListeningHostSslOptions ( ListeningHostSslOptions sslOptions ) {
+            this.sslOptions = sslOptions;
         }
 
         /// <inheritdoc/>
@@ -84,8 +93,14 @@ namespace Sisk.Cadente.CoreEngine {
                     host = new HttpHost ( new IPEndPoint ( dnsHost.AddressList [ 0 ], uri.Port ) );
                 }
 
-                host.TimeoutManager.ClientReadTimeout = idleConnectionTimeout;
-                host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
+                if (sslOptions is { }) {
+                    host.HttpsOptions = new ( sslOptions.ServerCertificate ) {
+                        AllowedProtocols = sslOptions.AllowedProtocols,
+                        CheckCertificateRevocation = sslOptions.CheckCertificateRevocation,
+                        ClientCertificateRequired = sslOptions.ClientCertificateRequired
+                    };
+                }
+
                 host.Handler = new CadenteHttpEngineHostHandler ( this );
                 setupHostAction?.Invoke ( host );
 
