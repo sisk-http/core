@@ -33,7 +33,7 @@ public sealed class HttpHostContext {
         }
 
         ResponseHeadersAlreadySent = true;
-        return await HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.sharedPool, _connection.networkStream, Response );
+        return await HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.sharedPool.Memory, _connection.networkStream, Response );
     }
 
     /// <summary>

@@ -82,9 +82,9 @@ internal class HttpResponseSerializer {
         return position;
     }
 
-    public static async ValueTask<bool> WriteHttpResponseHeaders ( byte [] buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
+    public static async ValueTask<bool> WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
         try {
-            int headerSize = GetResponseHeadersBytes ( buffer, response );
+            int headerSize = GetResponseHeadersBytes ( buffer.Span, response );
             await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] );
 
             return true;
@@ -103,5 +103,31 @@ internal class HttpResponseSerializer {
         catch (Exception) {
             return false;
         }
+    }
+
+    public static byte [] GetRawMessage ( string message, int statusCode, string statusReason ) {
+        string content = $"""
+            <HTML>
+                <HEAD>
+                    <TITLE>{statusCode} - {statusReason}</TITLE>
+                </HEAD>
+                <BODY>
+                    <H1>{statusCode} - {statusReason}</H1>
+                    <P>{message}</P>
+                    <HR>
+                    <P><EM>Cadente</EM></P>
+                </BODY>
+            </HTML>
+            """;
+
+        string html =
+            $"HTTP/1.1 {statusCode} {statusReason}\r\n" +
+            $"Content-Type: text/html\r\n" +
+            $"Content-Length: {content.Length}\r\n" +
+            $"Connection: close\r\n" +
+            $"\r\n" +
+            content;
+
+        return Encoding.ASCII.GetBytes ( html );
     }
 }

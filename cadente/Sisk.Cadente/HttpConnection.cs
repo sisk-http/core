@@ -31,7 +31,7 @@ sealed class HttpConnection : IDisposable {
     public const int RESERVED_BUFFER_SIZE = 8192;
 
     internal readonly Stream networkStream;
-    internal byte [] sharedPool;
+    internal IMemoryOwner<byte> sharedPool;
 
     public HttpConnection ( HttpHostClient client, Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
         _client = client;
@@ -39,7 +39,7 @@ sealed class HttpConnection : IDisposable {
         _endpoint = endpoint;
 
         networkStream = connectionStream;
-        sharedPool = ArrayPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
+        sharedPool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
@@ -48,7 +48,7 @@ sealed class HttpConnection : IDisposable {
 
         while (!disposedValue) {
 
-            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( sharedPool, networkStream ).ConfigureAwait ( false );
+            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( sharedPool.Memory, networkStream ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
                 return HttpConnectionState.ConnectionClosed;
@@ -83,7 +83,7 @@ sealed class HttpConnection : IDisposable {
         if (!disposedValue) {
             if (disposing) {
                 networkStream.Dispose ();
-                ArrayPool<byte>.Shared.Return ( sharedPool );
+                sharedPool.Dispose ();
             }
 
             disposedValue = true;

@@ -94,7 +94,7 @@ public sealed class HttpHost : IDisposable {
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
 
-        _listener.Start ( backlog: 128 );
+        _listener.Start ( backlog: Int32.MaxValue );
         isListening = true;
 
         _eventLoopThread = new Thread ( EventLoopThreadRunner );

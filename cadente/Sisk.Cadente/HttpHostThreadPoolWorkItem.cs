@@ -15,6 +15,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Sisk.Cadente.HttpSerializer;
 
 namespace Sisk.Cadente;
 internal class HttpHostThreadPoolWorkItem : IThreadPoolWorkItem {
@@ -52,9 +53,6 @@ internal class HttpHostThreadPoolWorkItem : IThreadPoolWorkItem {
             IPEndPoint clientEndpoint = (IPEndPoint) client.Client.RemoteEndPoint!;
             HttpHostClient hostClient = new HttpHostClient ( clientEndpoint, CancellationToken.None );
 
-            connectionStream.ReadTimeout = clientReadTimeoutMs;
-            connectionStream.WriteTimeout = clientWriteTimeoutMs;
-
             using (HttpConnection connection = new HttpConnection ( hostClient, connectionStream, host, clientEndpoint )) {
 
                 if (connectionStream is SslStream sslStream) {
@@ -69,7 +67,7 @@ internal class HttpHostThreadPoolWorkItem : IThreadPoolWorkItem {
                     }
                     catch (Exception) {
 
-                        var message = GetBadRequestMessage ( "SSL/TLS Handshake failed." );
+                        var message = HttpResponseSerializer.GetRawMessage ( "SSL/TLS Handshake failed.", 400, "Bad Request" );
                         await clientStream.WriteAsync ( message, 0, message.Length );
                         return;
                     }
@@ -83,31 +81,5 @@ internal class HttpHostThreadPoolWorkItem : IThreadPoolWorkItem {
         finally {
             client.Dispose ();
         }
-    }
-
-    byte [] GetBadRequestMessage ( string message ) {
-        string content = $"""
-            <HTML>
-                <HEAD>
-                    <TITLE>400 - Bad Request</TITLE>
-                </HEAD>
-                <BODY>
-                    <H1>400 - Bad Request</H1>
-                    <P>{message}</P>
-                    <HR>
-                    <P><EM>Cadente</EM></P>
-                </BODY>
-            </HTML>
-            """;
-
-        string html =
-            $"HTTP/1.1 400 Bad Request\r\n" +
-            $"Content-Type: text/html\r\n" +
-            $"Content-Length: {content.Length}\r\n" +
-            $"Connection: close\r\n" +
-            $"\r\n" +
-            content;
-
-        return Encoding.ASCII.GetBytes ( html );
     }
 }
