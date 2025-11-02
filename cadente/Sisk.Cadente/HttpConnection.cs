@@ -48,7 +48,7 @@ sealed class HttpConnection : IDisposable {
 
         while (!disposedValue) {
 
-            using HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( networkStream ).ConfigureAwait ( false );
+            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( sharedPool, networkStream ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
                 return HttpConnectionState.ConnectionClosed;
@@ -62,7 +62,7 @@ sealed class HttpConnection : IDisposable {
                 managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
             }
 
-            if (managedSession.ResponseHeadersAlreadySent == false) {
+            if (!managedSession.ResponseHeadersAlreadySent) {
                 managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
 
                 if (!await managedSession.WriteHttpResponseHeadersAsync ())

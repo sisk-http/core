@@ -84,7 +84,7 @@ public sealed class HttpHost : IDisposable {
         ObjectDisposedException.ThrowIf ( disposedValue, this );
 
         _listener.Server.NoDelay = true;
-        _listener.Server.LingerState = new LingerOption ( true, 3 );
+        _listener.Server.LingerState = new LingerOption ( false, 0 );
         _listener.Server.ReceiveBufferSize = HttpConnection.RESERVED_BUFFER_SIZE;
         _listener.Server.SendBufferSize = HttpConnection.RESERVED_BUFFER_SIZE;
 
@@ -94,11 +94,10 @@ public sealed class HttpHost : IDisposable {
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
         _listener.Server.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
 
-        _listener.Start ( backlog: 8192 );
+        _listener.Start ( backlog: 128 );
         isListening = true;
 
         _eventLoopThread = new Thread ( EventLoopThreadRunner );
-        _eventLoopThread.Priority = ThreadPriority.Highest;
         _eventLoopThread.Start ();
     }
 

@@ -47,7 +47,7 @@ namespace Sisk.Cadente.CoreEngine {
         public override CancellationToken ContextAbortedToken => _request._context.Client.DisconnectToken;
 
         /// <inheritdoc/>
-        public override Task<HttpServerEngineWebSocket> AcceptWebSocketAsync ( string? subProtocol ) {
+        public override async Task<HttpServerEngineWebSocket> AcceptWebSocketAsync ( string? subProtocol ) {
 
             try {
                 string? wsKey = _request._context.Request.Headers.Get ( "Sec-WebSocket-Key" ).FirstOrDefault ()
@@ -83,7 +83,7 @@ namespace Sisk.Cadente.CoreEngine {
                     underlyingResponse.Headers.Set ( new HttpHeader ( "Sec-WebSocket-Protocol", subProtocol ) );
                 }
 
-                Stream underlyingStream = underlyingResponse.GetResponseStream ( chunked: false );
+                Stream underlyingStream = await underlyingResponse.GetResponseStreamAsync ( chunked: false );
 
                 var ws = WebSocket.CreateFromStream ( underlyingStream, new WebSocketCreationOptions () {
                     IsServer = true,
@@ -91,7 +91,7 @@ namespace Sisk.Cadente.CoreEngine {
                     KeepAliveInterval = TimeSpan.FromSeconds ( 20 )
                 } );
 
-                return Task.FromResult ( HttpServerEngineWebSocket.CreateFromWebSocket ( ws ) );
+                return HttpServerEngineWebSocket.CreateFromWebSocket ( ws );
             }
             catch (Exception ex) {
                 throw new Sisk.Core.Http.HttpRequestException("Failed to enter WebSocket context. See inner exception.", ex);

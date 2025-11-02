@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 namespace Sisk.Cadente;
 internal class HttpHostThreadPoolWorkItem : IThreadPoolWorkItem {
 
+    static byte [] buffer = new byte [ 1024 ];
     private HttpHost host;
     private TcpClient client;
 

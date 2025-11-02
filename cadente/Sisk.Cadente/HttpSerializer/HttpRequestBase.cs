@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
 
-sealed class HttpRequestBase : IDisposable {
+sealed class HttpRequestBase {
 
     private string? _method;
     private string? _path;
@@ -24,7 +24,6 @@ sealed class HttpRequestBase : IDisposable {
     public long ContentLength;
     public bool CanKeepAlive;
 
-    public IMemoryOwner<byte>? BufferOwner;
     public required ReadOnlyMemory<byte> RawBuffer;
     public required ReadOnlyMemory<byte> BufferedContent;
 
@@ -52,9 +51,5 @@ sealed class HttpRequestBase : IDisposable {
             _headers ??= Headers.ToArray ();
             return _headers;
         }
-    }
-
-    public void Dispose () {
-        BufferOwner?.Dispose ();
     }
 }

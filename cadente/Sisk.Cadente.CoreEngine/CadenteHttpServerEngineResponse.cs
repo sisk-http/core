@@ -59,12 +59,8 @@ namespace Sisk.Cadente.CoreEngine {
                 }
             }
             set {
-                var hIndex = _response.Headers.FindIndex ( h => h.Name.Equals ( HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase ) );
-                if (hIndex >= 0) {
-                    _response.Headers.RemoveAt ( hIndex );
-                }
-
-                _response.Headers.Add ( new HttpHeader ( HttpKnownHeaderNames.ContentLength, value.ToString ( CultureInfo.InvariantCulture ) ) );
+                ArgumentOutOfRangeException.ThrowIfNegative ( value );
+                _response.Headers.Set ( new HttpHeader ( HttpKnownHeaderNames.ContentLength, value.ToString ( CultureInfo.InvariantCulture ) ) );
             }
         }
 
@@ -75,14 +71,11 @@ namespace Sisk.Cadente.CoreEngine {
                 return header.Value;
             }
             set {
-                if (string.IsNullOrEmpty ( value )) {
-                    var hIndex = _response.Headers.FindIndex ( h => h.Name.Equals ( HttpKnownHeaderNames.ContentType, StringComparison.OrdinalIgnoreCase ) );
-                    if (hIndex >= 0) {
-                        _response.Headers.RemoveAt ( hIndex );
-                    }
+                if (value is { }) {
+                    _response.Headers.Set ( new HttpHeader ( HttpKnownHeaderNames.ContentType, value ) );
                 }
                 else {
-                    _response.Headers.Add ( new HttpHeader ( HttpKnownHeaderNames.ContentType, value ) );
+                    _response.Headers.Remove ( HttpKnownHeaderNames.ContentType );
                 }
             }
         }

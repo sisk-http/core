@@ -24,35 +24,26 @@ static class HttpRequestReader {
     private static readonly byte [] RequestLineDelimiters = [ LINE_FEED, 0 ];
     private static readonly byte [] RequestHeaderLineDelimiters = [ SPACE, 0 ];
 
-    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Stream stream ) {
-
-        IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent ( 2048 );
+    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream ) {
 
         try {
-            Memory<byte> memory = owner.Memory;
-            int read = await stream.ReadAsync ( memory ).ConfigureAwait ( false );
+            int read = await stream.ReadAsync ( sharedBuffer ).ConfigureAwait ( false );
             if (read == 0) {
-                owner.Dispose ();
                 return null;
             }
 
-            ReadOnlyMemory<byte> slice = memory.Slice ( 0, read );
-            HttpRequestBase? request = ParseHttpRequest ( slice, owner );
-
-            if (request is null) {
-                owner.Dispose ();
-            }
+            Memory<byte> slice = sharedBuffer.Slice ( 0, read );
+            HttpRequestBase? request = ParseHttpRequest ( slice );
 
             return request;
         }
         catch {
-            owner.Dispose ();
-            throw;
+            return null;
         }
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer, IMemoryOwner<byte> owner ) {
+    static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
         ReadOnlySequence<byte> sequence = new ( buffer );
         SequenceReader<byte> reader = new ( sequence );
 
@@ -120,7 +111,6 @@ static class HttpRequestReader {
             : buffer.Slice ( (int) reader.Consumed );
 
         return new HttpRequestBase {
-            BufferOwner = owner,
             RawBuffer = buffer,
             MethodRef = method,
             PathRef = path,

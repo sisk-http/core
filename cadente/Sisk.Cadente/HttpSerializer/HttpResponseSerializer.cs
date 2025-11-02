@@ -55,7 +55,7 @@ internal class HttpResponseSerializer {
         buffer [ position++ ] = _CR;
         buffer [ position++ ] = _LF;
 
-        var headersSpan = CollectionsMarshal.AsSpan ( response.Headers );
+        var headersSpan = CollectionsMarshal.AsSpan ( response.Headers._headers );
         ref HttpHeader headerPointer = ref MemoryMarshal.GetReference ( headersSpan );
         for (int i = 0; i < headersSpan.Length; i++) {
             ref HttpHeader header = ref Unsafe.Add ( ref headerPointer, i );

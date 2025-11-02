@@ -98,7 +98,7 @@ public sealed class HttpHostContext {
         /// <summary>
         /// Gets the headers associated with the request.
         /// </summary>
-        public HttpHeader [] Headers { get => _baseRequest.HeadersAR; }
+        public HttpHeaderList Headers { get; }
 
         /// <summary>
         /// Gets the stream containing the content of the request.
@@ -125,6 +125,7 @@ public sealed class HttpHostContext {
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
             _baseRequest = request;
             _requestStream = requestStream;
+            Headers = new HttpHeaderList ( _baseRequest.HeadersAR, readOnly: true );
         }
     }
 
@@ -149,7 +150,7 @@ public sealed class HttpHostContext {
         /// <summary>
         /// Gets or sets the list of headers associated with the response.
         /// </summary>
-        public List<HttpHeader> Headers { get; set; }
+        public HttpHeaderList Headers { get; set; }
 
         /// <summary>
         /// Asynchronously gets the content stream for the response.
@@ -191,7 +192,7 @@ public sealed class HttpHostContext {
             StatusCode = 200;
             StatusDescription = "Ok";
 
-            Headers = new List<HttpHeader>
+            Headers = new HttpHeaderList ()
             {
                 new HttpHeader ("Date", DateTime.UtcNow.ToString("R")),
                 new HttpHeader ("Server", HttpHost.ServerNameHeader)
