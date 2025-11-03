@@ -24,7 +24,6 @@ sealed class HttpRequestBase {
     public long ContentLength;
     public bool CanKeepAlive;
 
-    public required ReadOnlyMemory<byte> RawBuffer;
     public required ReadOnlyMemory<byte> BufferedContent;
 
     public required ReadOnlyMemory<byte> MethodRef;

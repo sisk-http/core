@@ -82,7 +82,7 @@ internal class HttpResponseSerializer {
         return position;
     }
 
-    public static async ValueTask<bool> WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
+    public static async Task<bool> WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
         try {
             int headerSize = GetResponseHeadersBytes ( buffer.Span, response );
             await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] );

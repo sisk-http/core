@@ -7,4 +7,4 @@
 // File name:   MSTestSettings.cs
 // Repository:  https://github.com/sisk-http/core
 
-[assembly: Parallelize ( Scope = ExecutionScope.MethodLevel )]
+[assembly: Parallelize ( Scope = ExecutionScope.MethodLevel, Workers = 4 )]

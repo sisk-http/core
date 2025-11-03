@@ -7,9 +7,6 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Buffers;
-using System.Buffers.Text;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -24,7 +21,7 @@ static class HttpRequestReader {
     private static readonly byte [] RequestLineDelimiters = [ LINE_FEED, 0 ];
     private static readonly byte [] RequestHeaderLineDelimiters = [ SPACE, 0 ];
 
-    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream ) {
+    public static async Task<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream ) {
 
         try {
             int read = await stream.ReadAsync ( sharedBuffer ).ConfigureAwait ( false );
@@ -33,7 +30,7 @@ static class HttpRequestReader {
             }
 
             Memory<byte> slice = sharedBuffer.Slice ( 0, read );
-            HttpRequestBase? request = ParseHttpRequest ( slice );
+            HttpRequestBase? request = ParseHttpRequest ( slice.Span );
 
             return request;
         }
@@ -43,118 +40,67 @@ static class HttpRequestReader {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
-        ReadOnlySequence<byte> sequence = new ( buffer );
-        SequenceReader<byte> reader = new ( sequence );
+    static HttpRequestBase? ParseHttpRequest ( ReadOnlySpan<byte> buffer ) {
 
-        if (!reader.TryReadToAny ( out ReadOnlySequence<byte> methodSeq, RequestHeaderLineDelimiters, advancePastDelimiter: true )) {
+        SpanReader<byte> reader = new SpanReader<byte> ( buffer );
+
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> method, RequestHeaderLineDelimiters, advancePastDelimiter: true )) {
             return null;
         }
-        ReadOnlyMemory<byte> method = SequenceSlice ( sequence, buffer, methodSeq );
-
-        if (!reader.TryReadToAny ( out ReadOnlySequence<byte> pathSeq, RequestHeaderLineDelimiters, advancePastDelimiter: true )) {
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> path, RequestHeaderLineDelimiters, advancePastDelimiter: true )) {
             return null;
         }
-        ReadOnlyMemory<byte> path = SequenceSlice ( sequence, buffer, pathSeq );
-
-        if (!reader.TryReadTo ( out ReadOnlySequence<byte> protocolSeq, LINE_FEED ))
+        if (!reader.TryReadToAny ( out ReadOnlySpan<byte> protocol, RequestLineDelimiters, advancePastDelimiter: true )) {
             return null;
+        }
 
-        ReadOnlyMemory<byte> protocol = TrimTrailingCR ( SequenceSlice ( sequence, buffer, protocolSeq ) );
-        reader.Advance ( 1 ); // '\n'
-
+        long contentLength = -1;
         bool keepAliveEnabled = true;
         bool expect100 = false;
         bool isChunked = false;
-        long contentLength = 0;
 
-        var headerWriter = new ArrayBufferWriter<HttpHeader> ( 32 );
+        List<HttpHeader> headers = new List<HttpHeader> ( 32 );
+        while (reader.TryReadToAny ( out ReadOnlySpan<byte> headerLine, RequestLineDelimiters, advancePastDelimiter: true )) {
 
-        while (reader.TryReadTo ( out ReadOnlySequence<byte> headerLineSeq, LINE_FEED )) {
-            ReadOnlyMemory<byte> headerLine = SequenceSlice ( sequence, buffer, headerLineSeq );
-
-            if (headerLine.Length == 1 && headerLine.Span [ 0 ] == CARRIAGE_RETURN)
+            int headerLineSepIndex = headerLine.IndexOf ( COLON );
+            if (headerLineSepIndex < 0) {
                 break;
-
-            ReadOnlySpan<byte> headerSpan = headerLine.Span;
-            int colonIndex = headerSpan.IndexOf ( COLON );
-            if (colonIndex <= 0)
-                continue;
-
-            ReadOnlyMemory<byte> headerName = headerLine.Slice ( 0, colonIndex );
-            ReadOnlyMemory<byte> headerValue = TrimHeaderValue ( headerLine.Slice ( colonIndex + 1 ) );
-
-            ReadOnlySpan<byte> nameSpan = headerName.Span;
-            ReadOnlySpan<byte> valueSpan = headerValue.Span;
-
-            if (Ascii.EqualsIgnoreCase ( nameSpan, "Content-Length"u8 )) {
-                if (!Utf8Parser.TryParse ( valueSpan, out contentLength, out _ ))
-                    contentLength = 0;
-            }
-            else if (Ascii.EqualsIgnoreCase ( nameSpan, "Connection"u8 )) {
-                keepAliveEnabled = !Ascii.Equals ( valueSpan, "close"u8 );
-            }
-            else if (Ascii.EqualsIgnoreCase ( nameSpan, "Expect"u8 )) {
-                expect100 = Ascii.Equals ( valueSpan, "100-continue"u8 );
-            }
-            else if (Ascii.EqualsIgnoreCase ( nameSpan, "Transfer-Encoding"u8 )) {
-                isChunked = Ascii.Equals ( valueSpan, "chunked"u8 );
             }
 
-            Span<HttpHeader> slot = headerWriter.GetSpan ( 1 );
-            slot [ 0 ] = new HttpHeader ( headerName, headerValue );
-            headerWriter.Advance ( 1 );
+            ReadOnlySpan<byte> headerLineName = headerLine [ 0..headerLineSepIndex ];
+
+            // + 2 below includes the ": " from the header line, and
+            //  ^1 removes the trailing \r
+            ReadOnlySpan<byte> headerLineValue = headerLine [ (headerLineSepIndex + 2)..^1 ];
+
+            if (Ascii.EqualsIgnoreCase ( headerLineName, "Content-Length"u8 )) {
+                contentLength = long.Parse ( Encoding.ASCII.GetString ( headerLineValue ) );
+            }
+            else if (Ascii.EqualsIgnoreCase ( headerLineName, "Connection"u8 )) {
+                keepAliveEnabled = !Ascii.Equals ( headerLineValue, "close"u8 );
+            }
+            else if (Ascii.EqualsIgnoreCase ( headerLineName, "Expect"u8 )) {
+                expect100 = Ascii.Equals ( headerLineValue, "100-continue"u8 );
+            }
+            else if (Ascii.EqualsIgnoreCase ( headerLineName, "Transfer-Encoding"u8 )) {
+                isChunked = Ascii.Equals ( headerLineValue, "chunked"u8 );
+            }
+
+            headers.Add ( new HttpHeader ( headerLineName.ToArray (), headerLineValue.ToArray () ) );
         }
 
-        ReadOnlyMemory<byte> bufferedContent = expect100
-            ? ReadOnlyMemory<byte>.Empty
-            : buffer.Slice ( (int) reader.Consumed );
+        return new HttpRequestBase () {
+            BufferedContent = expect100 ? Memory<byte>.Empty : buffer [ reader.Consumed.. ].ToArray (),
 
-        return new HttpRequestBase {
-            RawBuffer = buffer,
-            MethodRef = method,
-            PathRef = path,
-            Headers = headerWriter.WrittenMemory,
-            BufferedContent = bufferedContent,
+            Headers = headers.ToArray (),
+            MethodRef = method.ToArray (),
+            PathRef = path.ToArray (),
+
+            ContentLength = contentLength,
             CanKeepAlive = keepAliveEnabled,
-            ContentLength = isChunked ? -1 : contentLength,
+
             IsChunked = isChunked,
             IsExpecting100 = expect100
         };
-    }
-
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    static ReadOnlyMemory<byte> SequenceSlice (
-        ReadOnlySequence<byte> whole,
-        ReadOnlyMemory<byte> backing,
-        ReadOnlySequence<byte> slice ) {
-        int offset = (int) whole.Slice ( 0, slice.Start ).Length;
-        return backing.Slice ( offset, (int) slice.Length );
-    }
-
-    static ReadOnlyMemory<byte> TrimTrailingCR ( ReadOnlyMemory<byte> value ) {
-        if (!value.IsEmpty && value.Span [ ^1 ] == CARRIAGE_RETURN)
-            return value.Slice ( 0, value.Length - 1 );
-
-        return value;
-    }
-
-    static ReadOnlyMemory<byte> TrimHeaderValue ( ReadOnlyMemory<byte> value ) {
-        ReadOnlySpan<byte> span = value.Span;
-
-        int start = 0;
-        while (start < span.Length && (span [ start ] == SPACE || span [ start ] == (byte) '\t'))
-            start++;
-
-        int end = span.Length - 1;
-        while (end >= start &&
-               (span [ end ] == SPACE || span [ end ] == (byte) '\t' || span [ end ] == CARRIAGE_RETURN))
-            end--;
-
-        if (end < start)
-            return ReadOnlyMemory<byte>.Empty;
-
-        int length = end - start + 1;
-        return value.Slice ( start, length );
     }
 }

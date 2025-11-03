@@ -157,7 +157,7 @@ public sealed class HttpHostContext {
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
-        public async ValueTask<Stream> GetResponseStreamAsync ( bool chunked = false ) {
+        public async Task<Stream> GetResponseStreamAsync ( bool chunked = false ) {
             if (headersSent) {
                 throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
             }

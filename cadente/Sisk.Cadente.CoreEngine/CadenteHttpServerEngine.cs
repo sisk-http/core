@@ -101,6 +101,9 @@ namespace Sisk.Cadente.CoreEngine {
                     };
                 }
 
+                host.TimeoutManager.ClientReadTimeout = idleConnectionTimeout;
+                host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
+
                 host.Handler = new CadenteHttpEngineHostHandler ( this );
                 setupHostAction?.Invoke ( host );
 

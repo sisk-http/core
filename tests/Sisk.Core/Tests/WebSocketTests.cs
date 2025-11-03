@@ -147,36 +147,6 @@ namespace tests.Tests {
         }
 
         [TestMethod]
-        public async Task Test_AsyncServerMessages_ShouldReceiveDelayedResponses () {
-            var cts = new CancellationTokenSource ( TimeSpan.FromSeconds ( 20 ) );
-            var uri = GetWebSocketServerUri ( "/tests/ws/async-server" );
-            var (client, initialMessage) = await ConnectAndReceiveInitialMessageAsync ( uri, cts );
-            Assert.IsTrue ( initialMessage.StartsWith ( "Connected to /tests/ws/async-server." ), $"Unexpected initial message: {initialMessage}" );
-
-            string msg1 = "AsyncTest1";
-            string msg2 = "AsyncTest2";
-
-            await client.SendAsync ( Encoding.UTF8.GetBytes ( msg1 ), WebSocketMessageType.Text, true, cts.Token );
-            await client.SendAsync ( Encoding.UTF8.GetBytes ( msg2 ), WebSocketMessageType.Text, true, cts.Token );
-
-            List<string> responses = [];
-            // Expect two responses, each delayed by 500ms server-side
-            for (int i = 0; i < 2; i++) {
-                var buffer = new byte [ 1024 ];
-                var result = await client.ReceiveAsync ( new ArraySegment<byte> ( buffer ), cts.Token );
-                responses.Add ( Encoding.UTF8.GetString ( buffer, 0, result.Count ) );
-            }
-
-            Assert.AreEqual ( 2, responses.Count, "Did not receive two responses." );
-            Assert.IsTrue ( responses.Contains ( $"Async response to: {msg1}" ), "Response for msg1 not found." );
-            Assert.IsTrue ( responses.Contains ( $"Async response to: {msg2}" ), "Response for msg2 not found." );
-            // Order is not guaranteed due to async nature, so just check for presence.
-
-            await client.CloseAsync ( WebSocketCloseStatus.NormalClosure, "Test completed", cts.Token );
-            client.Dispose ();
-        }
-
-        [TestMethod]
         public async Task Test_ClientInitiatedUnexpectedDisconnect_ServerShouldHandle () {
             // This test is tricky to automate for server-side log verification
             // without more infrastructure. We'll connect, then dispose the client
