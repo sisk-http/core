@@ -7,6 +7,9 @@
 // File name:   HttpResponseSerializer.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,69 +18,138 @@ namespace Sisk.Cadente.HttpSerializer;
 
 internal class HttpResponseSerializer {
 
-    static Encoding _headerDataEncoding = Encoding.ASCII;
+    private static readonly ASCIIEncoding _strictAscii = new ();
 
-    const byte _H = (byte) 'H';
-    const byte _T = (byte) 'T';
-    const byte _P = (byte) 'P';
-    const byte _1 = (byte) '1';
-    const byte _DOT = (byte) '.';
-    const byte _SPACE = (byte) ' ';
-    const byte _CR = (byte) '\r';
-    const byte _LF = (byte) '\n';
-    const byte _COLON = (byte) ':';
-    const byte _SLASH = (byte) '/';
+    private static ReadOnlySpan<byte> Http11Prefix => "HTTP/1.1 "u8;
+    private const ushort ColonSpacePacked = 0x203A; // ": "
+    private const ushort CrLfPacked = 0x0A0D; // "\r\n"
 
-    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public static int GetResponseHeadersBytes ( Span<byte> buffer, HttpHostContext.HttpResponse response ) {
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static ReadOnlySpan<byte> GetKnownReasonPhrase ( int statusCode ) => statusCode switch {
+        100 => "Continue"u8,
+        101 => "Switching Protocols"u8,
+        102 => "Processing"u8,
+        200 => "OK"u8,
+        201 => "Created"u8,
+        202 => "Accepted"u8,
+        203 => "Non-Authoritative Information"u8,
+        204 => "No Content"u8,
+        205 => "Reset Content"u8,
+        206 => "Partial Content"u8,
+        300 => "Multiple Choices"u8,
+        301 => "Moved Permanently"u8,
+        302 => "Found"u8,
+        303 => "See Other"u8,
+        304 => "Not Modified"u8,
+        307 => "Temporary Redirect"u8,
+        308 => "Permanent Redirect"u8,
+        400 => "Bad Request"u8,
+        401 => "Unauthorized"u8,
+        402 => "Payment Required"u8,
+        403 => "Forbidden"u8,
+        404 => "Not Found"u8,
+        405 => "Method Not Allowed"u8,
+        406 => "Not Acceptable"u8,
+        407 => "Proxy Authentication Required"u8,
+        408 => "Request Timeout"u8,
+        409 => "Conflict"u8,
+        410 => "Gone"u8,
+        411 => "Length Required"u8,
+        412 => "Precondition Failed"u8,
+        413 => "Payload Too Large"u8,
+        414 => "URI Too Long"u8,
+        415 => "Unsupported Media Type"u8,
+        416 => "Range Not Satisfiable"u8,
+        417 => "Expectation Failed"u8,
+        421 => "Misdirected Request"u8,
+        422 => "Unprocessable Content"u8,
+        426 => "Upgrade Required"u8,
+        428 => "Precondition Required"u8,
+        429 => "Too Many Requests"u8,
+        431 => "Request Header Fields Too Large"u8,
+        451 => "Unavailable For Legal Reasons"u8,
+        500 => "Internal Server Error"u8,
+        501 => "Not Implemented"u8,
+        502 => "Bad Gateway"u8,
+        503 => "Service Unavailable"u8,
+        504 => "Gateway Timeout"u8,
+        505 => "HTTP Version Not Supported"u8,
+        _ => ReadOnlySpan<byte>.Empty
+    };
 
-        // HTTP/1.1
-        int position = 0;
-
-        buffer [ position++ ] = _H;
-        buffer [ position++ ] = _T;
-        buffer [ position++ ] = _T;
-        buffer [ position++ ] = _P;
-        buffer [ position++ ] = _SLASH;
-        buffer [ position++ ] = _1;
-        buffer [ position++ ] = _DOT;
-        buffer [ position++ ] = _1;
-        buffer [ position++ ] = _SPACE;
-
-        int statusCodeCount = _headerDataEncoding.GetBytes ( response.StatusCode.ToString (), buffer [ position.. ] );
-        position += statusCodeCount;
-
-        buffer [ position++ ] = _SPACE;
-
-        int statusReasonCode = _headerDataEncoding.GetBytes ( response.StatusDescription, buffer [ position.. ] );
-        position += statusReasonCode;
-
-        buffer [ position++ ] = _CR;
-        buffer [ position++ ] = _LF;
-
-        var headersSpan = CollectionsMarshal.AsSpan ( response.Headers._headers );
-        ref HttpHeader headerPointer = ref MemoryMarshal.GetReference ( headersSpan );
-        for (int i = 0; i < headersSpan.Length; i++) {
-            ref HttpHeader header = ref Unsafe.Add ( ref headerPointer, i );
-
-            if (header.IsEmpty)
-                continue;
-
-            header.NameBytes.Span.CopyTo ( buffer [ position.. ] );
-            position += header.NameBytes.Length;
-
-            buffer [ position++ ] = _COLON;
-            buffer [ position++ ] = _SPACE;
-
-            header.ValueBytes.Span.CopyTo ( buffer [ position.. ] );
-            position += header.ValueBytes.Length;
-
-            buffer [ position++ ] = _CR;
-            buffer [ position++ ] = _LF;
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static void WriteTwoBytes ( ref byte destination, int index, ushort packedValue ) {
+        if (!BitConverter.IsLittleEndian) {
+            packedValue = BinaryPrimitives.ReverseEndianness ( packedValue );
         }
 
-        buffer [ position++ ] = _CR;
-        buffer [ position++ ] = _LF;
+        Unsafe.WriteUnaligned ( ref Unsafe.Add ( ref destination, index ), packedValue );
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static int WriteReasonPhrase ( HttpHostContext.HttpResponse response, Span<byte> destination ) {
+
+        ReadOnlySpan<byte> knownPhrase = GetKnownReasonPhrase ( response.StatusCode );
+        if (!knownPhrase.IsEmpty) {
+            knownPhrase.CopyTo ( destination );
+            return knownPhrase.Length;
+        }
+        else if (!string.IsNullOrEmpty ( response.StatusDescription )) {
+            return _strictAscii.GetBytes ( response.StatusDescription.AsSpan (), destination );
+        }
+        else {
+            return 0;
+        }
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining )]
+    public static int GetResponseHeadersBytes ( Span<byte> buffer, HttpHostContext.HttpResponse response ) {
+
+        ref byte destination = ref MemoryMarshal.GetReference ( buffer );
+        int position = 0;
+
+        Http11Prefix.CopyTo ( buffer );
+        position += Http11Prefix.Length;
+
+        if (!Utf8Formatter.TryFormat ( response.StatusCode, buffer [ position.. ], out int statusWritten )) {
+            throw new OutOfMemoryException ();
+        }
+
+        position += statusWritten;
+
+        buffer [ position++ ] = (byte) ' ';
+
+        int reasonWritten = WriteReasonPhrase ( response, buffer [ position.. ] );
+        position += reasonWritten;
+
+        WriteTwoBytes ( ref destination, position, CrLfPacked );
+        position += 2;
+
+        var headersSpan = CollectionsMarshal.AsSpan ( response.Headers._headers );
+        if (!headersSpan.IsEmpty) {
+            ref HttpHeader headerPtr = ref MemoryMarshal.GetReference ( headersSpan );
+
+            for (int i = 0; i < headersSpan.Length; i++) {
+                ref HttpHeader header = ref Unsafe.Add ( ref headerPtr, i );
+                if (header.IsEmpty)
+                    continue;
+
+                header.NameBytes.Span.CopyTo ( buffer [ position.. ] );
+                position += header.NameBytes.Length;
+
+                WriteTwoBytes ( ref destination, position, ColonSpacePacked );
+                position += 2;
+
+                header.ValueBytes.Span.CopyTo ( buffer [ position.. ] );
+                position += header.ValueBytes.Length;
+
+                WriteTwoBytes ( ref destination, position, CrLfPacked );
+                position += 2;
+            }
+        }
+
+        WriteTwoBytes ( ref destination, position, CrLfPacked );
+        position += 2;
 
         return position;
     }

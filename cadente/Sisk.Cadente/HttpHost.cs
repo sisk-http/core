@@ -91,8 +91,8 @@ public sealed class HttpHost : IDisposable {
         _listener.SendBufferSize = 2048;
         _listener.DualMode = true;
 
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 120 );
+        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 3 );
+        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, (int) TimeSpan.FromMinutes ( 5 ).TotalSeconds );
         _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
         _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
         _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
@@ -154,6 +154,8 @@ public sealed class HttpHost : IDisposable {
 
             Stream connectionStream;
             using Stream clientStream = new NetworkStream ( client, ownsSocket: false );
+            clientStream.WriteTimeout = clientWriteTimeoutMs;
+            clientStream.ReadTimeout = clientReadTimeoutMs;
 
             if (HttpsOptions is not null) {
                 connectionStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
@@ -194,7 +196,6 @@ public sealed class HttpHost : IDisposable {
             client.Dispose ();
         }
     }
-
 
     /// <summary>
     /// Stops the HTTP host from listening for incoming HTTP requests.
