@@ -45,23 +45,6 @@ public sealed class ListeningHostRepository : IList<ListeningHost> {
     public bool IsReadOnly => false;
 
     /// <summary>
-    /// Returns the first <see cref="ListeningHost"/> in the repository, or creates and adds a new one if the repository is empty.
-    /// </summary>
-    /// <returns>
-    /// The first <see cref="ListeningHost"/> in the repository, or a new instance if none exist.
-    /// </returns>
-    public ListeningHost FirstOrNew () {
-        if (_hosts.Count == 0) {
-            ListeningHost host = new ListeningHost ();
-            _hosts.Add ( host );
-            return host;
-        }
-        else {
-            return _hosts [ 0 ];
-        }
-    }
-
-    /// <summary>
     /// Adds a listeninghost to this repository. If this listeninghost already exists in this class, an exception will be thrown.
     /// </summary>
     /// <param name="item">The <see cref="ListeningHost"/> to add to this collection.</param>

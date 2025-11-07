@@ -39,7 +39,6 @@ namespace Sisk.Core.Http {
         private CancellationTokenSource? listenerCancellation;
         internal HttpEventSourceCollection _eventCollection = new HttpEventSourceCollection ();
         internal HttpWebSocketConnectionCollection _wsCollection = new HttpWebSocketConnectionCollection ();
-        internal HashSet<string>? _listeningPrefixes;
         internal HttpServerHandlerRepository handler;
 
         internal ConcurrentStack<TaskCompletionSource<HttpServerExecutionResult>> syncCompletionSources = new ();
@@ -175,7 +174,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets an string array containing all URL prefixes which this HTTP server is listening to.
         /// </summary>
-        public string [] ListeningPrefixes => _listeningPrefixes?.ToArray () ?? Array.Empty<string> ();
+        public string [] ListeningPrefixes => ServerConfiguration.Engine.ListeningPrefixes;
 
         /// <summary>
         /// Gets an <see cref="HttpEventSourceCollection"/> with active event source connections in this HTTP server.
@@ -297,25 +296,11 @@ namespace Sisk.Core.Http {
 
             ObjectDisposedException.ThrowIf ( _disposed, this );
 
-            _listeningPrefixes = new HashSet<string> ();
-
-            for (int i = 0; i < ServerConfiguration.ListeningHosts.Count; i++) {
-                ListeningHost listeningHost = ServerConfiguration.ListeningHosts [ i ];
-                listeningHost.EnsureReady ();
-
-                for (int j = 0; j < listeningHost.Ports.Count; j++) {
-                    var port = listeningHost.Ports [ j ];
-
-                    _listeningPrefixes.Add ( port.ToString ( true ) );
-                }
-            }
-
-            engine.ClearPrefixes ();
-            foreach (string prefix in _listeningPrefixes)
-                engine.AddListeningPrefix ( prefix );
+            engine.SetListeningHosts ( ServerConfiguration.ListeningHosts );
 
             listenerCancellation = new CancellationTokenSource ();
             engine.IdleConnectionTimeout = ServerConfiguration.IdleConnectionTimeout;
+            engine.OnConfiguring ( this, ServerConfiguration );
 
             handler.ServerStarting ( this );
             BindRouters ();

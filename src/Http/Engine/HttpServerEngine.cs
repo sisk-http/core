@@ -22,26 +22,36 @@ public abstract class HttpServerEngine : IDisposable {
     public abstract TimeSpan IdleConnectionTimeout { get; set; }
 
     /// <summary>
+    /// Gets or sets the listening prefixes for the server.
+    /// </summary>
+    /// <value>
+    /// An array of strings that specify the prefixes the server should listen on.
+    /// </value>
+    public virtual string [] ListeningPrefixes { get; } = Array.Empty<string> ();
+
+    /// <summary>
     /// Gets the event loop mechanism used by the server.
     /// </summary>
     public abstract HttpServerEngineContextEventLoopMecanism EventLoopMecanism { get; }
 
     /// <summary>
-    /// Adds a listening prefix to the server.
+    /// Sets the listening hosts for the server.
     /// </summary>
-    /// <param name="prefix">The prefix to add.</param>
-    public abstract void AddListeningPrefix ( string prefix );
+    /// <param name="hosts">The collection of <see cref="ListeningHost"/> instances that the server should listen on.</param>
+    public abstract void SetListeningHosts ( IEnumerable<ListeningHost> hosts );
 
     /// <summary>
-    /// Configures SSL options for the listening host.
+    /// Called when the server is being configured.
     /// </summary>
-    /// <param name="sslOptions">The SSL options to apply.</param>
-    public abstract void UseListeningHostSslOptions ( ListeningHostSslOptions sslOptions );
-
-    /// <summary>
-    /// Clears all listening prefixes from the server.
-    /// </summary>
-    public abstract void ClearPrefixes ();
+    /// <param name="server">The <see cref="HttpServer"/> instance that is being configured.</param>
+    /// <param name="configuration">The <see cref="HttpServerConfiguration"/> that will be applied to the server.</param>
+    /// <remarks>
+    /// Override this method to customize the configuration of the server before it starts.
+    /// The default implementation performs no action.
+    /// </remarks>
+    public virtual void OnConfiguring ( HttpServer server, HttpServerConfiguration configuration ) {
+        ;
+    }
 
     /// <summary>
     /// Starts the HTTP server.

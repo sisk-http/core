@@ -23,7 +23,7 @@ namespace Sisk.Core.Http {
         public const string DefaultAccessLogFormat = "%ri - [%dd/%dmm/%dy %tH:%ti:%ts %tz] \"%rm %rz%rq\" %sc %lou";
 
         /// <summary>
-        /// Gets or sets the access logging format for incoming HTTP requests.
+        /// Gets or sets the access logging format for incoming HTTP requests. 
         /// </summary>
         public string AccessLogsFormat { get; set; } = DefaultAccessLogFormat;
 

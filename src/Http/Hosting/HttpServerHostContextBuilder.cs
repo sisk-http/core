@@ -67,9 +67,6 @@ public sealed class HttpServerHostContextBuilder {
         if (listeningHost.Ports.Count == 0)
             listeningHost.Ports.Add ( ListeningPort.GetRandomPort () );
 
-        if (listeningHost.SslOptions is { })
-            configuration.Engine.UseListeningHostSslOptions ( listeningHost.SslOptions );
-
         return _context;
     }
 
@@ -222,6 +219,31 @@ public sealed class HttpServerHostContextBuilder {
     /// <param name="handler">An action where the first argument is the main <see cref="HttpServer"/> object.</param>
     public HttpServerHostContextBuilder UseHttpServer ( Action<HttpServer> handler ) {
         handler ( _context.HttpServer );
+        return this;
+    }
+
+    /// <summary>
+    /// Configures the HTTP server with a minimal set of default settings.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This configuration is intended for development or testing environments only.
+    /// It is not suitable for production deployments.
+    /// </para>
+    /// </remarks>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseMinimalConfiguration() {
+        configuration.AccessLogsStream = null;
+        configuration.ErrorsLogsStream = null;
+        configuration.KeepAlive = true;
+        configuration.DisposeDisposableContextValues = false;
+        configuration.ConvertIAsyncEnumerableIntoEnumerable = false;
+        configuration.ForceTrailingSlash = false;
+        configuration.IncludeRequestIdHeader = false;
+        configuration.NormalizeHeadersEncodings = false;
+        configuration.SendSiskHeader = false;
+        configuration.EnableAutomaticResponseCompression = false;
+
         return this;
     }
 

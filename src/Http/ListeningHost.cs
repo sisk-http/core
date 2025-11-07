@@ -15,7 +15,7 @@ namespace Sisk.Core.Http {
     /// <summary>
     /// Provides a type to contain the fields needed by an HTTP server virtual host.
     /// </summary>
-    public sealed class ListeningHost {
+    public sealed class ListeningHost : IEquatable<ListeningHost> {
         internal List<ListeningPort> _ports = new List<ListeningPort> ();
 
         /// <summary>
@@ -24,11 +24,16 @@ namespace Sisk.Core.Http {
         /// <param name="obj">The another object which will be used to compare.</param>
         public override bool Equals ( object? obj ) {
             if (obj is ListeningHost other) {
-                return other.GetHashCode () == GetHashCode ();
+                return Equals ( other );
             }
             else {
                 return false;
             }
+        }
+
+        /// <inheritdoc/>
+        public bool Equals ( ListeningHost? other ) {
+            return other != null && GetHashCode () == other.GetHashCode ();
         }
 
         /// <summary>
@@ -122,5 +127,5 @@ namespace Sisk.Core.Http {
                 }
             }
         }
-    }
+   }
 }

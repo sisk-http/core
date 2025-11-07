@@ -24,8 +24,7 @@ namespace Sisk.Cadente.CoreEngine {
     /// </summary>
     public sealed class CadenteHttpServerEngine : HttpServerEngine, IDisposable {
         private List<HttpHost> hosts = [];
-        private List<string> prefixes = [];
-        private ListeningHostSslOptions? sslOptions;
+        private List<ListeningHost> prefixes = [];
         private TimeSpan idleConnectionTimeout = TimeSpan.FromSeconds ( 90 );
         private bool isDisposed;
 
@@ -58,57 +57,60 @@ namespace Sisk.Cadente.CoreEngine {
         }
 
         /// <inheritdoc/>
+        public override string [] ListeningPrefixes => prefixes.SelectMany ( s => s.Ports ).Select ( s => s.ToString ( includePath: true ) ).ToArray ();
+
+        /// <inheritdoc/>
         public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.InlineAsyncronousGetContext;
 
         /// <inheritdoc/>
-        public override void AddListeningPrefix ( string prefix ) { 
-            prefixes.Add ( prefix );
+        public override void SetListeningHosts ( IEnumerable<ListeningHost> hosts ) {
+            prefixes = [ .. hosts ];
         }
 
         /// <inheritdoc/>
-        public override void UseListeningHostSslOptions ( ListeningHostSslOptions sslOptions ) {
-            this.sslOptions = sslOptions;
-        }
+        public override void OnConfiguring ( HttpServer server, HttpServerConfiguration configuration ) {
+            foreach (ListeningHost prefix in prefixes) {
 
-        /// <inheritdoc/>
-        public override void ClearPrefixes () {
-            prefixes.Clear ();
+                foreach (ListeningPort port in prefix.Ports) {
+                    HttpHost host;
+
+                    var rawUri = port.ToString ( includePath: false );
+                    var uri = new Uri ( rawUri );
+
+                    if (IPAddress.TryParse ( uri.Host, out var ipaddress )) {
+                        host = new HttpHost ( new IPEndPoint ( ipaddress, uri.Port ) );
+                    }
+                    else {
+                        var dnsHost = Dns.GetHostEntry ( uri.Host );
+                        if (dnsHost.AddressList.Length < 1)
+                            throw new ArgumentException ( $"Failed to resolve DNS for host {uri.Host}." );
+
+                        host = new HttpHost ( new IPEndPoint ( dnsHost.AddressList [ 0 ], uri.Port ) );
+                    }
+
+                    if (prefix.SslOptions is { } sslOptions) {
+                        host.HttpsOptions = new ( sslOptions.ServerCertificate ) {
+                            AllowedProtocols = sslOptions.AllowedProtocols,
+                            CheckCertificateRevocation = sslOptions.CheckCertificateRevocation,
+                            ClientCertificateRequired = sslOptions.ClientCertificateRequired
+                        };
+                    }
+
+                    host.TimeoutManager.ClientReadTimeout = idleConnectionTimeout;
+                    host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
+
+                    host.Handler = new CadenteHttpEngineHostHandler ( this );
+                    setupHostAction?.Invoke ( host );
+
+                    hosts.Add ( host );
+                }
+            }
         }
 
         /// <inheritdoc/>
         public override void StartServer () {
-            StopServer (); // clear host list
-            foreach (string prefix in prefixes) {
-                HttpHost host;
-                var uri = new Uri ( prefix );
-
-                if (IPAddress.TryParse ( uri.Host, out var ipaddress )) {
-                    host = new HttpHost ( new IPEndPoint ( ipaddress, uri.Port ) );
-                }
-                else {
-                    var dnsHost = Dns.GetHostEntry ( uri.Host );
-                    if (dnsHost.AddressList.Length < 1)
-                        throw new ArgumentException ( $"Failed to resolve DNS for host {uri.Host}." );
-
-                    host = new HttpHost ( new IPEndPoint ( dnsHost.AddressList [ 0 ], uri.Port ) );
-                }
-
-                if (sslOptions is { }) {
-                    host.HttpsOptions = new ( sslOptions.ServerCertificate ) {
-                        AllowedProtocols = sslOptions.AllowedProtocols,
-                        CheckCertificateRevocation = sslOptions.CheckCertificateRevocation,
-                        ClientCertificateRequired = sslOptions.ClientCertificateRequired
-                    };
-                }
-
-                host.TimeoutManager.ClientReadTimeout = idleConnectionTimeout;
-                host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
-
-                host.Handler = new CadenteHttpEngineHostHandler ( this );
-                setupHostAction?.Invoke ( host );
-
+            foreach (var host in hosts) {
                 host.Start ();
-                hosts.Add ( host );
             }
         }
 

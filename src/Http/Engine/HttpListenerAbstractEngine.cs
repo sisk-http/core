@@ -17,7 +17,10 @@ namespace Sisk.Core.Http.Engine;
 /// Provides an implementation of <see cref="HttpServerEngine"/> using <see cref="HttpListener"/>.
 /// </summary>
 public sealed class HttpListenerAbstractEngine : HttpServerEngine {
+
     private HttpListener _listener;
+    private List<ListeningHost> _listeningHosts;
+    private string [] _resolvedListeningPaths;
     private static Lazy<HttpListenerAbstractEngine> shared = new Lazy<HttpListenerAbstractEngine> ( () => new HttpListenerAbstractEngine () );
 
     /// <summary>
@@ -32,6 +35,8 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         _listener = new HttpListener {
             IgnoreWriteExceptions = true
         };
+        _listeningHosts = new ();
+        _resolvedListeningPaths = Array.Empty<string> ();
     }
 
     /// <inheritdoc/>
@@ -41,11 +46,17 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
     }
 
     /// <inheritdoc/>
+    public override string [] ListeningPrefixes { get => _resolvedListeningPaths; }
+
+    /// <inheritdoc/>
     public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.UnboundAsyncronousGetContext;
 
     /// <inheritdoc/>
-    public override void AddListeningPrefix ( string prefix ) {
-        _listener.Prefixes.Add ( prefix );
+    public override void SetListeningHosts ( IEnumerable<ListeningHost> hosts ) {
+        if (hosts.Any(h => h.SslOptions != null))
+            throw new NotSupportedException ( "The native .NET HttpListener does not support SSL." );
+
+        this._listeningHosts = new List<ListeningHost> ( hosts );
     }
 
     /// <inheritdoc/>
@@ -60,8 +71,25 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
     }
 
     /// <inheritdoc/>
-    public override void ClearPrefixes () {
+    public override void OnConfiguring ( HttpServer server, HttpServerConfiguration configuration ) {
+        var _listeningPrefixes = new HashSet<string> ();
+
+        for (int i = 0; i < _listeningHosts.Count; i++) {
+            ListeningHost listeningHost = _listeningHosts [ i ];
+            listeningHost.EnsureReady ();
+
+            for (int j = 0; j < listeningHost.Ports.Count; j++) {
+                var port = listeningHost.Ports [ j ];
+
+                _listeningPrefixes.Add ( port.ToString ( true ) );
+            }
+        }
+
         _listener.Prefixes.Clear ();
+        foreach (var prefix in _listeningPrefixes)
+            _listener.Prefixes.Add ( prefix );
+
+        _resolvedListeningPaths= _listeningPrefixes.ToArray ();
     }
 
     /// <inheritdoc/>
@@ -82,11 +110,6 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
     /// <inheritdoc/>
     public override Task<HttpServerEngineContext> GetContextAsync ( CancellationToken cancellationToken = default ) {
         throw new NotImplementedException ();
-    }
-
-    /// <inheritdoc/>
-    public override void UseListeningHostSslOptions ( ListeningHostSslOptions sslOptions ) {
-        throw new NotSupportedException ( "The native .NET HttpListener does not support SSL." );
     }
 
     sealed class HttpListenerContextAbstraction ( HttpListenerContext context ) : HttpServerEngineContext {
