@@ -17,6 +17,8 @@ namespace Sisk.Core.Http.Streams {
     public sealed class HttpWebSocketConnectionCollection : IReadOnlyCollection<HttpWebSocket> {
         internal List<HttpWebSocket> _ws = new List<HttpWebSocket> ();
 
+        IEnumerable<HttpWebSocket> ActiveConnectionsEnumerable => _ws.Where ( ws => !ws.IsClosed );
+
         /// <summary>
         /// Represents an event that is fired when an <see cref="HttpWebSocket"/> is registered in this collection.
         /// </summary>
@@ -57,7 +59,7 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="identifier">The Web Socket identifier.</param>
         public HttpWebSocket? GetByIdentifier ( string identifier ) {
             lock (_ws) {
-                HttpWebSocket? src = _ws.Where ( es => !es._isClosed && es.Identifier == identifier ).FirstOrDefault ();
+                HttpWebSocket? src = ActiveConnectionsEnumerable.Where ( es => es.Identifier == identifier ).FirstOrDefault ();
                 return src;
             }
         }
@@ -68,7 +70,7 @@ namespace Sisk.Core.Http.Streams {
         /// <param name="predicate">The expression on the an non-empty Web Socket identifier.</param>
         public HttpWebSocket [] Find ( Func<string, bool> predicate ) {
             lock (_ws) {
-                return _ws.Where ( e => e.Identifier != null && predicate ( e.Identifier ) ).ToArray ();
+                return ActiveConnectionsEnumerable.Where ( e => e.Identifier != null && predicate ( e.Identifier ) ).ToArray ();
             }
         }
 
@@ -77,17 +79,17 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public HttpWebSocket [] All () {
             lock (_ws) {
-                return _ws.ToArray ();
+                return ActiveConnectionsEnumerable.ToArray ();
             }
         }
 
         /// <summary>
         /// Gets an number indicating the amount of active web socket connections.
         /// </summary>
-        public int ActiveConnections { get => _ws.Count; }
+        public int ActiveConnections { get => ActiveConnectionsEnumerable.Count (); }
 
         /// <inheritdoc/>
-        public int Count => ((IReadOnlyCollection<HttpWebSocket>) _ws).Count;
+        public int Count => _ws.Count;
 
         /// <summary>
         /// Closes all registered and active <see cref="HttpWebSocket"/> in this collections.

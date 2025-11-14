@@ -20,7 +20,7 @@ namespace Sisk.Core.Http.Streams {
     /// Provides an persistent bi-directional socket between the client and the HTTP server.
     /// </summary>
     public sealed class HttpWebSocket : IDisposable {
-        bool isDisposed;
+        volatile bool isDisposed;
         long length;
         readonly HttpStreamPingPolicy pingPolicy;
 
@@ -29,7 +29,6 @@ namespace Sisk.Core.Http.Streams {
         internal SemaphoreSlim receiveSemaphore = new SemaphoreSlim ( 1 );
         internal HttpServerEngineWebSocket ctx;
         internal HttpRequest request;
-        internal bool _isClosed;
         internal bool wasServerClosed;
         internal string? _identifier;
 
@@ -51,7 +50,7 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets an boolean indicating if this Web Socket connection is closed.
         /// </summary>
-        public bool IsClosed => _isClosed;
+        public bool IsClosed => isDisposed || ctx.State != WebSocketState.Open;
 
         /// <summary>
         /// Gets an unique identifier label to this Web Socket connection, useful for finding this connection's reference later.
@@ -99,7 +98,7 @@ namespace Sisk.Core.Http.Streams {
         /// <returns>A <see cref="Task{T}"/> that represents the asynchronous close operation, 
         /// which returns an <see cref="HttpResponse"/> indicating the result of the close operation.</returns>
         public async Task<HttpResponse> CloseAsync ( CancellationToken cancellation = default ) {
-            if (!_isClosed) {
+            if (!isDisposed) {
                 if (ctx.State != WebSocketState.Closed && ctx.State != WebSocketState.Aborted) {
                     try {
                         await ctx.CloseOutputAsync ( WebSocketCloseStatus.NormalClosure, null, cancellation );
@@ -112,7 +111,7 @@ namespace Sisk.Core.Http.Streams {
                     }
                 }
                 request.baseServer._wsCollection.UnregisterWebSocket ( this );
-                _isClosed = true;
+                isDisposed = true;
             }
             return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
                 CalculedLength = length
@@ -170,7 +169,7 @@ waitNextMessage:
         }
 
         private async ValueTask<bool> SendInternalAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType, CancellationToken cancellation ) {
-            if (_isClosed)
+            if (isDisposed)
                 return false;
             if (ctx.State != WebSocketState.Open && ctx.State != WebSocketState.CloseSent)
                 return false;
@@ -186,7 +185,8 @@ waitNextMessage:
                 return false;
             }
             finally {
-                sendSemaphore.Release ();
+                if (!isDisposed)
+                    sendSemaphore.Release ();
             }
         }
 
@@ -225,12 +225,10 @@ waitNextMessage:
 
             GC.SuppressFinalize ( this );
 
+            isDisposed = true;
             pingPolicy.Dispose ();
             receiveSemaphore.Dispose ();
             sendSemaphore.Dispose ();
-
-            isDisposed = true;
-            _isClosed = true;
         }
 
         /// <exclude/>
