@@ -1,10 +1,15 @@
-﻿using System.Buffers.Text;
-using System.Collections.Generic;
-using System.IO;
+﻿// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   HttpRequestReader.cs
+// Repository:  https://github.com/sisk-http/core
+
+using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Sisk.Cadente;
 using Sisk.Cadente.HttpSerializer;
 
@@ -14,7 +19,7 @@ static class HttpRequestReader {
     private const byte LineFeed = (byte) '\n';
     private const byte CarriageReturn = (byte) '\r';
 
-    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync (
+    public static async Task<HttpRequestBase?> TryReadHttpRequestAsync (
         Memory<byte> sharedBuffer,
         Stream stream,
         CancellationToken cancellationToken = default ) {
@@ -24,7 +29,7 @@ static class HttpRequestReader {
                 return null;
             }
 
-            return ParseHttpRequest ( sharedBuffer.Span [ ..read ] );
+            return ParseHttpRequest ( sharedBuffer [ ..read ] );
         }
         catch {
             return null;
@@ -32,27 +37,27 @@ static class HttpRequestReader {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private static HttpRequestBase? ParseHttpRequest ( ReadOnlySpan<byte> buffer ) {
+    private static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
         // Request line: METHOD SP PATH SP PROTOCOL CRLF
 
-        int methodEnd = buffer.IndexOf ( Space );
+        int methodEnd = buffer.Span.IndexOf ( Space );
         if (methodEnd <= 0) {
             return null;
         }
 
-        ReadOnlySpan<byte> method = buffer [ ..methodEnd ];
+        ReadOnlyMemory<byte> method = buffer [ ..methodEnd ];
 
         int pathStart = methodEnd + 1;
-        int pathEndRel = buffer [ pathStart.. ].IndexOf ( Space );
+        int pathEndRel = buffer.Span [ pathStart.. ].IndexOf ( Space );
         if (pathEndRel < 0) {
             return null;
         }
 
         int pathEnd = pathStart + pathEndRel;
-        ReadOnlySpan<byte> path = buffer [ pathStart..pathEnd ];
+        ReadOnlyMemory<byte> path = buffer [ pathStart..pathEnd ];
 
         int protocolStart = pathEnd + 1;
-        int protocolLineEndRel = buffer [ protocolStart.. ].IndexOf ( LineFeed );
+        int protocolLineEndRel = buffer.Span [ protocolStart.. ].IndexOf ( LineFeed );
         if (protocolLineEndRel < 0) {
             return null;
         }
@@ -60,16 +65,16 @@ static class HttpRequestReader {
         int protocolLineEnd = protocolStart + protocolLineEndRel;
         int protocolEndExclusive = protocolLineEnd;
 
-        if (protocolEndExclusive > protocolStart && buffer [ protocolEndExclusive - 1 ] == CarriageReturn) {
+        if (protocolEndExclusive > protocolStart && buffer.Span [ protocolEndExclusive - 1 ] == CarriageReturn) {
             protocolEndExclusive--;
         }
 
-        ReadOnlySpan<byte> protocol = buffer [ protocolStart..protocolEndExclusive ];
+        ReadOnlyMemory<byte> protocol = buffer [ protocolStart..protocolEndExclusive ];
 
         int cursor = protocolLineEnd + 1; // avança além do '\n'
 
         long contentLength = -1;
-        bool keepAliveEnabled = !Ascii.EqualsIgnoreCase ( protocol, "HTTP/1.0"u8 );
+        bool keepAliveEnabled = !Ascii.EqualsIgnoreCase ( protocol.Span, "HTTP/1.0"u8 );
         bool expect100 = false;
         bool isChunked = false;
 
@@ -77,7 +82,7 @@ static class HttpRequestReader {
         bool headersTerminated = false;
 
         while (cursor < buffer.Length) {
-            int lfRel = buffer [ cursor.. ].IndexOf ( LineFeed );
+            int lfRel = buffer.Span [ cursor.. ].IndexOf ( LineFeed );
             if (lfRel < 0) {
                 return null; // header incompleto, precisa de mais dados
             }
@@ -90,7 +95,7 @@ static class HttpRequestReader {
 
             int lineEnd = cursor + lfRel;
             int headerEndExclusive = lineEnd;
-            if (buffer [ headerEndExclusive - 1 ] == CarriageReturn) {
+            if (buffer.Span [ headerEndExclusive - 1 ] == CarriageReturn) {
                 headerEndExclusive--;
                 if (headerEndExclusive == cursor) {
                     cursor = lineEnd + 1; // "\r\n" puro
@@ -99,36 +104,39 @@ static class HttpRequestReader {
                 }
             }
 
-            ReadOnlySpan<byte> headerLine = buffer [ cursor..headerEndExclusive ];
+            ReadOnlyMemory<byte> headerLine = buffer [ cursor..headerEndExclusive ];
             cursor = lineEnd + 1; // pula '\n'
 
-            int colonIndex = headerLine.IndexOf ( Colon );
+            int colonIndex = headerLine.Span.IndexOf ( Colon );
             if (colonIndex <= 0) {
                 continue; // cabeçalho malformado, ignora
             }
 
-            ReadOnlySpan<byte> name = headerLine [ ..colonIndex ];
-            ReadOnlySpan<byte> value = TrimAsciiWhitespace ( headerLine [ (colonIndex + 1).. ] );
+            ReadOnlyMemory<byte> name = headerLine [ ..colonIndex ];
+            ReadOnlyMemory<byte> value = headerLine [ (colonIndex + 1).. ];
 
-            if (Ascii.EqualsIgnoreCase ( name, "Content-Length"u8 )) {
-                if (Utf8Parser.TryParse ( value, out long parsed, out int consumed ) && consumed == value.Length) {
+            var trimmedRange = Ascii.Trim ( value.Span );
+            value = value [ trimmedRange ];
+
+            if (Ascii.EqualsIgnoreCase ( name.Span, "Content-Length"u8 )) {
+                if (Utf8Parser.TryParse ( value.Span, out long parsed, out int consumed ) && consumed == value.Length) {
                     contentLength = parsed;
                 }
             }
-            else if (Ascii.EqualsIgnoreCase ( name, "Connection"u8 )) {
-                keepAliveEnabled = !TokenListContains ( value, "close"u8 );
+            else if (Ascii.EqualsIgnoreCase ( name.Span, "Connection"u8 )) {
+                keepAliveEnabled = !Ascii.EqualsIgnoreCase ( value.Span, "close"u8 );
             }
-            else if (Ascii.EqualsIgnoreCase ( name, "Expect"u8 )) {
-                expect100 = TokenListContains ( value, "100-continue"u8 );
+            else if (Ascii.EqualsIgnoreCase ( name.Span, "Expect"u8 )) {
+                expect100 = Ascii.EqualsIgnoreCase ( value.Span, "100-continue"u8 );
             }
-            else if (Ascii.EqualsIgnoreCase ( name, "Transfer-Encoding"u8 )) {
-                isChunked = TokenListContains ( value, "chunked"u8 );
+            else if (Ascii.EqualsIgnoreCase ( name.Span, "Transfer-Encoding"u8 )) {
+                isChunked = Ascii.EqualsIgnoreCase ( value.Span, "chunked"u8 );
                 if (isChunked) {
                     contentLength = -1;
                 }
             }
 
-            headers.Add ( new HttpHeader ( name.ToArray (), value.ToArray () ) );
+            headers.Add ( new HttpHeader ( name, value ) );
         }
 
         if (!headersTerminated) {
@@ -137,11 +145,11 @@ static class HttpRequestReader {
 
         ReadOnlyMemory<byte> bufferedContent = expect100
             ? ReadOnlyMemory<byte>.Empty
-            : buffer [ cursor.. ].ToArray ();
+            : buffer [ cursor.. ];
 
         return new HttpRequestBase {
-            MethodRef = method.ToArray (),
-            PathRef = path.ToArray (),
+            MethodRef = method,
+            PathRef = path,
             Headers = headers.ToArray (),
             ContentLength = contentLength,
             CanKeepAlive = keepAliveEnabled,
@@ -149,50 +157,5 @@ static class HttpRequestReader {
             IsExpecting100 = expect100,
             BufferedContent = bufferedContent
         };
-    }
-
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private static ReadOnlySpan<byte> TrimAsciiWhitespace ( ReadOnlySpan<byte> span ) {
-        int start = 0;
-        int end = span.Length;
-
-        while (start < end && IsAsciiWhitespace ( span [ start ] )) {
-            start++;
-        }
-
-        while (end > start && IsAsciiWhitespace ( span [ end - 1 ] )) {
-            end--;
-        }
-
-        return span [ start..end ];
-    }
-
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private static bool IsAsciiWhitespace ( byte value )
-        => value is (byte) ' ' or (byte) '\t' or CarriageReturn or LineFeed;
-
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private static bool TokenListContains ( ReadOnlySpan<byte> source, ReadOnlySpan<byte> token ) {
-        while (!source.IsEmpty) {
-            int commaIndex = source.IndexOf ( (byte) ',' );
-            ReadOnlySpan<byte> part;
-
-            if (commaIndex >= 0) {
-                part = source [ ..commaIndex ];
-                source = source [ (commaIndex + 1).. ];
-            }
-            else {
-                part = source;
-                source = ReadOnlySpan<byte>.Empty;
-            }
-
-            part = TrimAsciiWhitespace ( part );
-
-            if (!part.IsEmpty && Ascii.EqualsIgnoreCase ( part, token )) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

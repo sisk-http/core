@@ -7,7 +7,6 @@
 // File name:   HttpRequestBase.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Buffers;
 using System.Text;
 
 namespace Sisk.Cadente.HttpSerializer;
@@ -16,7 +15,6 @@ sealed class HttpRequestBase {
 
     private string? _method;
     private string? _path;
-    private HttpHeader []? _headers;
 
     public bool IsExpecting100;
     public bool IsChunked;
@@ -25,10 +23,8 @@ sealed class HttpRequestBase {
     public bool CanKeepAlive;
 
     public required ReadOnlyMemory<byte> BufferedContent;
-
     public required ReadOnlyMemory<byte> MethodRef;
     public required ReadOnlyMemory<byte> PathRef;
-
     public required ReadOnlyMemory<HttpHeader> Headers;
 
     public string Method {
@@ -42,13 +38,6 @@ sealed class HttpRequestBase {
         get {
             _path ??= Encoding.ASCII.GetString ( PathRef.Span );
             return _path;
-        }
-    }
-
-    public HttpHeader [] HeadersAR {
-        get {
-            _headers ??= Headers.ToArray ();
-            return _headers;
         }
     }
 }

@@ -7,16 +7,10 @@
 // File name:   WebSocketTests.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic; // For Dictionary
-using System.Linq;
 using System.Net.WebSockets;
 using System.Security.Cryptography; // For SHA256
 using System.Text;
 using System.Text.Json;          // For JsonSerializer
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace tests.Tests {
     [TestClass]

@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Runtime.CompilerServices;
-using System.Text;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
 using Sisk.Core.Http;
@@ -27,13 +26,13 @@ public sealed class HttpHostContext {
     internal bool ResponseHeadersAlreadySent = false;
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal async ValueTask<bool> WriteHttpResponseHeadersAsync () {
+    internal Task WriteHttpResponseHeadersAsync () {
         if (ResponseHeadersAlreadySent) {
-            return true;
+            return Task.FromResult ( true );
         }
 
         ResponseHeadersAlreadySent = true;
-        return await HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.sharedPool.Memory, _connection.networkStream, Response );
+        return HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.responsePool.Memory, _connection.networkStream, Response );
     }
 
     /// <summary>
@@ -125,7 +124,7 @@ public sealed class HttpHostContext {
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
             _baseRequest = request;
             _requestStream = requestStream;
-            Headers = new HttpHeaderList ( _baseRequest.HeadersAR, readOnly: true );
+            Headers = new HttpHeaderList ( _baseRequest.Headers.ToArray (), readOnly: true );
         }
     }
 
@@ -174,9 +173,7 @@ public sealed class HttpHostContext {
                 }
             }
 
-            if (!await _session.WriteHttpResponseHeadersAsync ()) {
-                throw new InvalidOperationException ( "Unable to obtain an output stream for the response." );
-            }
+            await _session.WriteHttpResponseHeadersAsync ();
 
             headersSent = true;
             return chunked switch {

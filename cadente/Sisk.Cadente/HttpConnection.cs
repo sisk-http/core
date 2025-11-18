@@ -28,10 +28,10 @@ sealed class HttpConnection : IDisposable {
 #endif
 
     // buffer dedicated to headers.
-    public const int RESERVED_BUFFER_SIZE = 8192;
+    public const int RESERVED_BUFFER_SIZE = 8 * 1024;
 
     internal readonly Stream networkStream;
-    internal IMemoryOwner<byte> sharedPool;
+    internal IMemoryOwner<byte> requestPool, responsePool;
 
     public HttpConnection ( HttpHostClient client, Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
         _client = client;
@@ -39,7 +39,9 @@ sealed class HttpConnection : IDisposable {
         _endpoint = endpoint;
 
         networkStream = connectionStream;
-        sharedPool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
+
+        requestPool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
+        responsePool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
@@ -48,7 +50,7 @@ sealed class HttpConnection : IDisposable {
 
         while (!disposedValue) {
 
-            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( sharedPool.Memory, networkStream ).ConfigureAwait ( false );
+            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
                 return HttpConnectionState.ConnectionClosed;
@@ -65,8 +67,7 @@ sealed class HttpConnection : IDisposable {
             if (!managedSession.ResponseHeadersAlreadySent) {
                 managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
 
-                if (!await managedSession.WriteHttpResponseHeadersAsync ())
-                    return HttpConnectionState.ResponseWriteException;
+                await managedSession.WriteHttpResponseHeadersAsync ();
             }
 
             await networkStream.FlushAsync ().ConfigureAwait ( false );
@@ -83,7 +84,8 @@ sealed class HttpConnection : IDisposable {
         if (!disposedValue) {
             if (disposing) {
                 networkStream.Dispose ();
-                sharedPool.Dispose ();
+                requestPool.Dispose ();
+                responsePool.Dispose ();
             }
 
             disposedValue = true;

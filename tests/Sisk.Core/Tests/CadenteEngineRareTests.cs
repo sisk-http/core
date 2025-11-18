@@ -7,15 +7,8 @@
 // File name:   CadenteEngineRareTests.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Sisk.Cadente.CoreEngine;
 
 namespace tests.Tests;

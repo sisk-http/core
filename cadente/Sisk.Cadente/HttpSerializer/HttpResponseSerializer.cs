@@ -7,7 +7,6 @@
 // File name:   HttpResponseSerializer.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
@@ -112,7 +111,7 @@ internal class HttpResponseSerializer {
         position += Http11Prefix.Length;
 
         if (!Utf8Formatter.TryFormat ( response.StatusCode, buffer [ position.. ], out int statusWritten )) {
-            throw new OutOfMemoryException ();
+            throw new InvalidOperationException ();
         }
 
         position += statusWritten;
@@ -154,16 +153,9 @@ internal class HttpResponseSerializer {
         return position;
     }
 
-    public static async Task<bool> WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
-        try {
-            int headerSize = GetResponseHeadersBytes ( buffer.Span, response );
-            await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] );
-
-            return true;
-        }
-        catch (Exception) {
-            return false;
-        }
+    public static async Task WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
+        int headerSize = GetResponseHeadersBytes ( buffer.Span, response );
+        await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] );
     }
 
     public static bool WriteExpectationContinue ( Stream outgoingStream ) {

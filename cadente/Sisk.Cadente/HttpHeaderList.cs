@@ -7,15 +7,10 @@
 // File name:   HttpHeaderList.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Sisk.Cadente;
 
@@ -24,7 +19,8 @@ namespace Sisk.Cadente;
 /// </summary>
 public sealed class HttpHeaderList : IList<HttpHeader> {
 
-    private static HttpHeaderListNameComparer _nameComparer = new ();
+    private static readonly HttpHeaderListNameComparer _nameComparer = new ();
+
     internal List<HttpHeader> _headers;
     internal bool isReadOnly = false;
 
@@ -82,7 +78,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     /// </summary>
     public void Set ( HttpHeader header ) {
         Remove ( header );
-        Add ( header );
+        ((ICollection<HttpHeader>) _headers).Add ( header );
     }
 
     /// <summary>
@@ -93,7 +89,14 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     /// An array of header values that match the specified name. If no headers match, an empty array is returned.
     /// </returns>
     public string [] Get ( string name ) {
-        return _headers.Where ( h => h.Name.Equals ( name, StringComparison.OrdinalIgnoreCase ) ).Select ( h => h.Value ).ToArray ();
+        var result = new List<string> ();
+        var span = CollectionsMarshal.AsSpan ( _headers );
+        for (int i = 0; i < span.Length; i++) {
+            ref readonly var header = ref span [ i ];
+            if (Ascii.EqualsIgnoreCase ( name, header.NameBytes.Span ))
+                result.Add ( header.Value );
+        }
+        return result.ToArray ();
     }
 
     /// <inheritdoc/>
@@ -105,7 +108,13 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
 
     /// <inheritdoc/>
     public bool Contains ( HttpHeader item ) {
-        return ((ICollection<HttpHeader>) _headers).Contains ( item, _nameComparer );
+        ReadOnlySpan<HttpHeader> span = CollectionsMarshal.AsSpan ( _headers );
+        for (int i = 0; i < span.Length; i++) {
+            ref readonly var header = ref span [ i ];
+            if (_nameComparer.Equals ( header, item ))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -116,7 +125,13 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     /// <see langword="true"/> if a header with the specified name is found; otherwise, <see langword="false"/>.
     /// </returns>
     public bool Contains ( string name ) {
-        return Contains ( new HttpHeader ( name, string.Empty ) );
+        ReadOnlySpan<HttpHeader> span = CollectionsMarshal.AsSpan ( _headers );
+        for (int i = 0; i < span.Length; i++) {
+            ref readonly var header = ref span [ i ];
+            if (Ascii.EqualsIgnoreCase ( name, header.NameBytes.Span ))
+                return true;
+        }
+        return false;
     }
 
     /// <inheritdoc/>
@@ -157,6 +172,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
 
             if (_nameComparer.Equals ( h, item )) {
                 _headers.RemoveAt ( i );
+                removed++;
             }
         }
 
