@@ -8,9 +8,7 @@
 // File name:   CadenteHttpServerEngine.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
 using System.Net;
-using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Channels;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Engine;

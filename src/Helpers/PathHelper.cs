@@ -16,6 +16,27 @@ namespace Sisk.Core.Helpers;
 /// </summary>
 public sealed class PathHelper {
     /// <summary>
+    /// Splits the specified path into its individual segments, removing empty entries and trimming whitespace.
+    /// </summary>
+    /// <param name="path">The path to split.</param>
+    /// <returns>An array of path segments.</returns>
+    public static string [] Split ( string path ) {
+        return path.Split ( [ '/', '\\' ], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
+    }
+
+    /// <summary>
+    /// Removes the last segment from the specified path.
+    /// </summary>
+    /// <param name="path">The path to process.</param>
+    /// <returns>The path without its final segment, or <see cref="string.Empty"/> if no segments remain.</returns>
+    public static string Pop ( string path ) {
+        var segments = Split ( path );
+        if (segments.Length == 0)
+            return string.Empty;
+        return string.Join ( '/', segments, 0, segments.Length - 1 );
+    }
+
+    /// <summary>
     /// Combines the specified URL paths into one.
     /// </summary>
     /// <param name="paths">The string array which contains parts that will be combined.</param>
@@ -59,11 +80,17 @@ public sealed class PathHelper {
     /// </summary>
     /// <param name="path">The path to normalize.</param>
     /// <param name="directorySeparator">The directory separator.</param>
-    public static string NormalizePath ( string path, char directorySeparator = '/' ) {
+    /// <param name="surroundWithDelimiters">
+    /// <see langword="true"/> to ensure the result starts and ends with <paramref name="directorySeparator"/>;
+    /// otherwise, <see langword="false"/>. Defaults to <see langword="false"/>.
+    /// </param>
+    public static string NormalizePath ( string path, char directorySeparator = '/', bool surroundWithDelimiters = false ) {
         string [] parts = path.Split ( pathNormalizationChars, StringSplitOptions.RemoveEmptyEntries );
         string result = string.Join ( directorySeparator, parts );
         if (path.StartsWith ( '/' ) || path.StartsWith ( '\\' ))
             result = directorySeparator + result;
+        if (surroundWithDelimiters)
+            result = directorySeparator + result.Trim ( '/', '\\' ) + directorySeparator;
         return result;
     }
 }

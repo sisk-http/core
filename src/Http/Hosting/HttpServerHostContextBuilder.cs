@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
 using Sisk.Core.Http.Engine;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
@@ -308,6 +309,15 @@ public sealed class HttpServerHostContextBuilder {
     /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
     public HttpServerHostContextBuilder UseSsl ( X509Certificate2 certificate ) {
         listeningHost.SslOptions = new ListeningHostSslOptions ( certificate );
+        return this;
+    }
+
+    /// <summary>
+    /// Configures SSL for the listening host using a trusted development certificate for localhost and 127.0.0.1.
+    /// </summary>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseSsl () {
+        listeningHost.SslOptions = new ListeningHostSslOptions ( CertificateHelper.CreateTrustedDevelopmentCertificate ( "localhost", "127.0.0.1" ) );
         return this;
     }
 
