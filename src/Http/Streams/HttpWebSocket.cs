@@ -7,12 +7,9 @@
 // File name:   HttpWebSocket.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using Sisk.Core.Http.Engine;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Http.Streams {
 
@@ -111,7 +108,7 @@ namespace Sisk.Core.Http.Streams {
                     }
                 }
                 request.baseServer._wsCollection.UnregisterWebSocket ( this );
-                isDisposed = true;
+                Dispose ();
             }
             return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
                 CalculedLength = length
@@ -124,46 +121,56 @@ namespace Sisk.Core.Http.Streams {
 
             if (ctx.State != WebSocketState.Open)
                 return null;
+            if (cancellation.IsCancellationRequested)
+                return null;
 
             using (var ms = new MemoryStream ()) {
 
                 await receiveSemaphore.WaitAsync ( cancellation );
-
-waitNextMessage:
                 if (cancellation.IsCancellationRequested)
                     return null;
 
                 try {
-                    do {
-                        result = await ctx.ReceiveAsync ( buffer, cancellation );
-                        ms.Write ( buffer.Array!, buffer.Offset, result.Count );
-                    } while (!result.EndOfMessage);
+                    while (true) {
+                        ms.SetLength ( 0 );
+                        ms.Seek ( 0, SeekOrigin.Begin );
 
-                    ms.Seek ( 0, SeekOrigin.Begin );
+                        do {
+                            result = await ctx.ReceiveAsync ( buffer, cancellation );
+                            ms.Write ( buffer.Array!, buffer.Offset, result.Count );
+                        } while (!result.EndOfMessage);
 
-                    if (result.MessageType == WebSocketMessageType.Close) {
-                        await ctx.CloseAsync ( WebSocketCloseStatus.NormalClosure, string.Empty, cancellation );
-                        await CloseAsync ( cancellation );
+                        ms.Seek ( 0, SeekOrigin.Begin );
 
-                        if (result.Count == 0) {
-                            return null;
+                        if (result.MessageType == WebSocketMessageType.Close) {
+                            await ctx.CloseAsync ( WebSocketCloseStatus.NormalClosure, string.Empty, cancellation );
+                            await CloseAsync ( cancellation );
+
+                            if (result.Count == 0) {
+                                return null;
+                            }
                         }
+
+                        var wsmessage = new WebSocketMessage ( this, ms.ToArray () );
+
+                        if (Ascii.Equals ( wsmessage.__msgBytes, pingPolicy.DataMessage )) {
+                            // ignore this message
+                            continue;
+                        }
+
+                        return wsmessage;
                     }
-
-                    var wsmessage = new WebSocketMessage ( this, ms.ToArray () );
-
-                    if (wsmessage.GetString () == pingPolicy.DataMessage) {
-                        // ignore this message
-                        goto waitNextMessage;
-                    }
-
-                    return wsmessage;
                 }
                 catch {
                     return null;
                 }
                 finally {
-                    receiveSemaphore.Release ();
+                    try {
+                        receiveSemaphore.Release ();
+                    }
+                    catch {
+                        ; // semaphore can throw if disposed
+                    }
                 }
             }
         }
@@ -185,8 +192,12 @@ waitNextMessage:
                 return false;
             }
             finally {
-                if (!isDisposed)
+                try {
                     sendSemaphore.Release ();
+                }
+                catch {
+                    ; // semaphore can throw if disposed
+                }
             }
         }
 
@@ -206,9 +217,9 @@ waitNextMessage:
         /// <param name="timeout">The time to wait for a message before timing out.</param>
         /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous receive operation, 
         /// which returns a <see cref="WebSocketMessage"/> if a message is received; otherwise, <c>null</c>.</returns>
-        public ValueTask<WebSocketMessage?> ReceiveMessageAsync ( TimeSpan timeout ) {
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource ( timeout );
-            return ReceiveInternalAsync ( cancellationTokenSource.Token );
+        public async ValueTask<WebSocketMessage?> ReceiveMessageAsync ( TimeSpan timeout ) {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource ( timeout );
+            return await ReceiveInternalAsync ( cancellationTokenSource.Token );
         }
 
         /// <summary>

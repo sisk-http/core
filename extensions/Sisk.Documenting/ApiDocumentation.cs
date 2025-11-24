@@ -37,6 +37,14 @@ public sealed class ApiDocumentation {
     /// </summary>
     public ApiEndpoint [] Endpoints { get; internal set; } = null!;
 
+    /// <summary>
+    /// Generates an <see cref="ApiDocumentation"/> instance based on the provided
+    /// <see cref="Router"/> and <see cref="ApiGenerationContext"/>.
+    /// </summary>
+    /// <param name="router">The router containing the API routes.</param>
+    /// <param name="context">The context used during API generation.</param>
+    /// <returns>An <see cref="ApiDocumentation"/> instance populated with the
+    /// application details and endpoints.</returns>
     public static ApiDocumentation Generate ( Router router, ApiGenerationContext context ) {
         return ApiDocumentationReader.ReadDocumentation ( context, router );
     }
@@ -96,6 +104,11 @@ public sealed class ApiEndpoint {
     public ApiEndpointPathParameter [] PathParameters { get; internal set; } = null!;
 
     /// <summary>
+    /// Gets the collection of query parameters supported by the API endpoint.
+    /// </summary>
+    public ApiEndpointQueryParameter [] QueryParameters { get; internal set; } = null!;
+
+    /// <summary>
     /// Gets the path of the API endpoint.
     /// </summary>
     public string Path { get; internal set; } = null!;
@@ -125,6 +138,35 @@ public sealed class ApiEndpointRequestExample {
     public string? Example { get; internal set; }
 
     internal ApiEndpointRequestExample () {
+    }
+}
+
+/// <summary>
+/// Represents a query parameter for an API endpoint, including its name, type, and description.
+/// </summary>
+public sealed class ApiEndpointQueryParameter {
+
+    /// <summary>
+    /// Gets the name of the query parameter.
+    /// </summary>
+    public string Name { get; internal set; } = null!;
+
+    /// <summary>
+    /// Gets the type of the query parameter.
+    /// </summary>
+    public string? Type { get; internal set; }
+
+    /// <summary>
+    /// Gets the description of the query parameter.
+    /// </summary>
+    public string? Description { get; internal set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the item is required.
+    /// </summary>
+    public bool IsRequired { get; internal set; }
+
+    internal ApiEndpointQueryParameter () {
     }
 }
 

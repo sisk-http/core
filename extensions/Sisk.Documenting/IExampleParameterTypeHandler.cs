@@ -9,6 +9,16 @@
 
 namespace Sisk.Documenting;
 
+/// <summary>
+/// Defines a contract for generating example parameters for a given <see cref="Type"/>.
+/// </summary>
 public interface IExampleParameterTypeHandler {
-    public ParameterExampleResult [] GetParameterExamplesForType ( Type type );
+    /// <summary>
+    /// Gets example parameters for the specified <paramref name="type"/>.
+    /// </summary>
+    /// <param name="type">The type for which to generate example parameters. Cannot be <see langword="null"/>.</param>
+    /// <returns>
+    /// An array of <see cref="ParameterExampleResult"/> containing example values for the type.
+    /// </returns>
+    ParameterExampleResult [] GetParameterExamplesForType ( Type type );
 }

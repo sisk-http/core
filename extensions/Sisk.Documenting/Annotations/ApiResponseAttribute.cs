@@ -36,7 +36,9 @@ public sealed class ApiResponseAttribute : Attribute {
     /// </summary>
     public string? ExampleLanguage { get; set; }
 
-
+    /// <summary>
+    /// Gets or sets the type used to generate the response example.
+    /// </summary>
     public Type? ExampleType { get; set; }
 
     /// <summary>

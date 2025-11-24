@@ -27,7 +27,7 @@ enum HttpServerHandlerActionEvent {
 
 internal sealed class HttpServerHandlerRepository {
     private readonly HttpServer parent;
-    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler> ();
+    private readonly SortedSet<HttpServerHandler> handlers = new SortedSet<HttpServerHandler> ( HttpServerHandlerSortingComparer.Instance );
     internal readonly DefaultHttpServerHandler _default = new DefaultHttpServerHandler ();
 
     public HttpServerHandlerRepository ( HttpServer parent ) {
@@ -45,10 +45,8 @@ internal sealed class HttpServerHandlerRepository {
         || eventName == HttpServerHandlerActionEvent.SetupRouter;
 
     private void CallEvery ( HandlerActionBase action, HttpServerHandlerActionEvent eventName ) {
-        int c = handlers.Count;
-        for (int i = 0; i < c; i++) {
-            var handler = handlers [ i ];
 
+        foreach (var handler in handlers) {
             try {
                 action ( handler );
             }

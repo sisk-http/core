@@ -29,6 +29,9 @@ public sealed class ApiRequestAttribute : Attribute {
     /// </summary>
     public string? Example { get; set; }
 
+    /// <summary>
+    /// Gets or sets the type used to generate the request example.
+    /// </summary>
     public Type? ExampleType { get; set; }
 
     /// <summary>

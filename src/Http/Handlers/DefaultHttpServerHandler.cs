@@ -15,6 +15,8 @@ namespace Sisk.Core.Http.Handlers;
 
 internal sealed class DefaultHttpServerHandler : HttpServerHandler {
 
+    public override int Priority => -1;
+
     internal HttpServerHostContext? hostContext;
     internal Action<Router>? _routerSetup;
     internal List<(Action, string)> _serverBootstrapingFunctions = new ();

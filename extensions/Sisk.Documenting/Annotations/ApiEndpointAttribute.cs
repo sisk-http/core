@@ -35,6 +35,9 @@ public sealed class ApiEndpointAttribute : Attribute {
     /// </summary>
     public bool InheritDescriptionFromXmlDocumentation { get; set; } = true;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ApiEndpointAttribute"/> class.
+    /// </summary>
     public ApiEndpointAttribute () {
         Name = string.Empty;
     }

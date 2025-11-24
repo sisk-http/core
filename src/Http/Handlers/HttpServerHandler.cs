@@ -17,6 +17,13 @@ namespace Sisk.Core.Http.Handlers;
 /// Represents an event handler for the <see cref="HttpServer"/>, router, and related events.
 /// </summary>
 public abstract class HttpServerHandler {
+
+    /// <summary>
+    /// Gets the priority value that determines the order in which handlers are executed.
+    /// Lower values are executed first.
+    /// </summary>
+    public virtual int Priority { get; }
+
     /// <summary>
     /// Event that is called immediately before starting the <see cref="HttpServer"/>.
     /// </summary>

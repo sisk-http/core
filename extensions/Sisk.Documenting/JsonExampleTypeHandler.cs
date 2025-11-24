@@ -18,19 +18,38 @@ using Namotion.Reflection;
 
 namespace Sisk.Documenting;
 
+/// <summary>
+/// Provides JSON example generation for types used in documentation.
+/// </summary>
 public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameterTypeHandler {
 
+    /// <summary>
+    /// Gets or sets the number of items to include when generating examples for enumerable types.
+    /// </summary>
     public int EnumerationExampleCount { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to include XML documentation comments in the generated examples.
+    /// </summary>
     public bool IncludeDescriptionAnnotations { get; set; } = true;
 
     private IJsonTypeInfoResolver _typeResolver;
     private JsonSerializerOptions _serializerOptions;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonExampleTypeHandler"/> class with the specified type resolver and serializer options.
+    /// </summary>
+    /// <param name="typeResolver">The JSON type info resolver.</param>
+    /// <param name="serializerOptions">The JSON serializer options.</param>
     public JsonExampleTypeHandler ( IJsonTypeInfoResolver typeResolver, JsonSerializerOptions serializerOptions ) {
         _typeResolver = typeResolver;
         _serializerOptions = serializerOptions;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonExampleTypeHandler"/> class with the specified serializer options and a default type resolver.
+    /// </summary>
+    /// <param name="serializerOptions">The JSON serializer options.</param>
     [RequiresDynamicCode ( "This method calls the JsonSerializerOptions.Default, which requires dynamic code." )]
     [RequiresUnreferencedCode ( "This method calls the JsonSerializerOptions.Default, which requires unreferenced code." )]
     public JsonExampleTypeHandler ( JsonSerializerOptions serializerOptions ) {
@@ -38,6 +57,9 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         _serializerOptions = serializerOptions;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonExampleTypeHandler"/> class with default serializer options and type resolver.
+    /// </summary>
     [RequiresDynamicCode ( "This method calls the JsonSerializerOptions.Default, which requires dynamic code." )]
     [RequiresUnreferencedCode ( "This method calls the JsonSerializerOptions.Default, which requires unreferenced code." )]
     public JsonExampleTypeHandler () {
@@ -47,6 +69,11 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
 
     string ConvertCase ( string name ) => _serializerOptions.PropertyNamingPolicy?.ConvertName ( name ) ?? name;
 
+    /// <summary>
+    /// Generates a JSON body example for the specified type.
+    /// </summary>
+    /// <param name="type">The type to generate an example for.</param>
+    /// <returns>A <see cref="BodyExampleResult"/> containing the JSON example, or <see langword="null"/> if the type cannot be handled.</returns>
     [SuppressMessage ( "Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "<Pending>" )]
     public virtual BodyExampleResult? GetBodyExampleForType ( Type type ) {
         StringBuilder sb = new StringBuilder ();
@@ -213,6 +240,11 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         return new BodyExampleResult ( result, "json" );
     }
 
+    /// <summary>
+    /// Generates parameter examples for the specified type.
+    /// </summary>
+    /// <param name="type">The type to generate parameter examples for.</param>
+    /// <returns>An array of <see cref="ParameterExampleResult"/> representing the parameters.</returns>
     [SuppressMessage ( "Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "<Pending>" )]
     public ParameterExampleResult [] GetParameterExamplesForType ( Type type ) {
 

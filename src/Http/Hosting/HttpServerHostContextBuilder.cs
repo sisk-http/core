@@ -232,7 +232,7 @@ public sealed class HttpServerHostContextBuilder {
     /// </para>
     /// </remarks>
     /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance.</returns>
-    public HttpServerHostContextBuilder UseMinimalConfiguration() {
+    public HttpServerHostContextBuilder UseMinimalConfiguration () {
         configuration.AccessLogsStream = null;
         configuration.ErrorsLogsStream = null;
         configuration.KeepAlive = true;
@@ -336,7 +336,7 @@ public sealed class HttpServerHostContextBuilder {
     /// </summary>
     /// <param name="handler">An action where the first argument is the main <see cref="Router"/> object.</param>
     public HttpServerHostContextBuilder UseRouter ( Action<Router> handler ) {
-        _context.HttpServer.handler._default._routerSetup = handler;
+        _context.HttpServer.handler._default._routerSetup += handler;
         return this;
     }
 

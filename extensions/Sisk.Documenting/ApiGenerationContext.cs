@@ -9,7 +9,17 @@
 
 namespace Sisk.Documenting;
 
+/// <summary>
+/// Provides context information used during API generation, such as application metadata
+/// and handlers for generating example bodies and parameters.
+/// </summary>
 public sealed class ApiGenerationContext {
+
+    /// <summary>
+    /// Initializes a new <see cref="ApiGenerationContext"/> class instance.
+    /// </summary>
+    public ApiGenerationContext () {
+    }
 
     /// <summary>
     /// Gets or sets the name of the application.
@@ -26,7 +36,13 @@ public sealed class ApiGenerationContext {
     /// </summary>
     public string? ApplicationDescription { get; set; }
 
+    /// <summary>
+    /// Gets or sets the handler used to generate example bodies for request and response types.
+    /// </summary>
     public IExampleBodyTypeHandler? BodyExampleTypeHandler { get; set; }
 
+    /// <summary>
+    /// Gets or sets the handler used to generate example parameters for query, route, and header parameters.
+    /// </summary>
     public IExampleParameterTypeHandler? ParameterExampleTypeHandler { get; set; }
 }

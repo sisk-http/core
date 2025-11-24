@@ -34,6 +34,7 @@ internal class ApiDocumentationReader {
             List<ApiEndpointHeader> headers = new List<ApiEndpointHeader> ();
             List<ApiEndpointPathParameter> pathParameters = new List<ApiEndpointPathParameter> ();
             List<ApiEndpointRequestExample> requests = new List<ApiEndpointRequestExample> ();
+            List<ApiEndpointQueryParameter> queryParameters = new List<ApiEndpointQueryParameter> ();
 
             foreach (var requestHandler in route.RequestHandlers) {
                 MethodInfo? rhMethod = ExtractRhExecute ( requestHandler );
@@ -53,6 +54,8 @@ internal class ApiDocumentationReader {
                     pathParameters.Add ( apiPathParam.GetApiEndpointObject () );
                 foreach (var apiReq in rhAttrs.Item6)
                     requests.Add ( apiReq.GetApiEndpointObject ( context ) );
+                foreach (var apiReq in rhAttrs.Item7)
+                    queryParameters.Add ( apiReq.GetApiEndpointObject () );
             }
 
             var attrs = ExtractAttributesFromMethod ( routeMethod );
@@ -68,6 +71,8 @@ internal class ApiDocumentationReader {
                 pathParameters.Add ( apiPathParam.GetApiEndpointObject () );
             foreach (var apiReqParam in attrs.Item6)
                 requests.Add ( apiReqParam.GetApiEndpointObject ( context ) );
+            foreach (var apiReqParam in attrs.Item7)
+                queryParameters.Add ( apiReqParam.GetApiEndpointObject () );
 
             string endpointName = apiEndpointAttr.Name;
             if (string.IsNullOrEmpty ( endpointName ))
@@ -84,7 +89,8 @@ internal class ApiDocumentationReader {
                 Parameters = parameters.ToArray (),
                 Responses = responses.ToArray (),
                 PathParameters = pathParameters.ToArray (),
-                RequestExamples = requests.ToArray ()
+                RequestExamples = requests.ToArray (),
+                QueryParameters = queryParameters.ToArray (),
             };
 
             endpoints.Add ( endpoint );
@@ -98,14 +104,15 @@ internal class ApiDocumentationReader {
         };
     }
 
-    static (ApiResponseAttribute [], ApiParameterAttribute [], ApiParametersFromAttribute [], ApiHeaderAttribute [], ApiPathParameterAttribute [], ApiRequestAttribute []) ExtractAttributesFromMethod ( MethodInfo method ) {
+    static (ApiResponseAttribute [], ApiParameterAttribute [], ApiParametersFromAttribute [], ApiHeaderAttribute [], ApiPathParameterAttribute [], ApiRequestAttribute [], ApiQueryParameterAttribute []) ExtractAttributesFromMethod ( MethodInfo method ) {
         var apiResponsesAttrs = method.GetCustomAttributes<ApiResponseAttribute> ().ToArray ();
         var apiParametersAttrs = method.GetCustomAttributes<ApiParameterAttribute> ().ToArray ();
         var apiParametersFromAttrs = method.GetCustomAttributes<ApiParametersFromAttribute> ().ToArray ();
         var apiHeadersAttrs = method.GetCustomAttributes<ApiHeaderAttribute> ().ToArray ();
         var apiPathParamsAttrs = method.GetCustomAttributes<ApiPathParameterAttribute> ().ToArray ();
         var apiRequestsAttrs = method.GetCustomAttributes<ApiRequestAttribute> ().ToArray ();
-        return (apiResponsesAttrs, apiParametersAttrs, apiParametersFromAttrs, apiHeadersAttrs, apiPathParamsAttrs, apiRequestsAttrs);
+        var apiQueryParamsAttrs = method.GetCustomAttributes<ApiQueryParameterAttribute> ().ToArray ();
+        return (apiResponsesAttrs, apiParametersAttrs, apiParametersFromAttrs, apiHeadersAttrs, apiPathParamsAttrs, apiRequestsAttrs, apiQueryParamsAttrs);
     }
 
     static MethodInfo? ExtractRhExecute ( IRequestHandler rh ) {
