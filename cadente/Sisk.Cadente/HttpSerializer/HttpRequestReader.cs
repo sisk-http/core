@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -19,30 +19,32 @@ static class HttpRequestReader {
     private const byte LineFeed = (byte) '\n';
     private const byte CarriageReturn = (byte) '\r';
 
-    public static async Task<HttpRequestBase?> TryReadHttpRequestAsync (
+    public static async Task<bool> TryReadHttpRequestAsync (
+        HttpRequestBase requestObj,
+        HttpHeader[] headerBuffer,
         Memory<byte> sharedBuffer,
         Stream stream,
         CancellationToken cancellationToken = default ) {
         try {
             int read = await stream.ReadAsync ( sharedBuffer, cancellationToken ).ConfigureAwait ( false );
             if (read <= 0) {
-                return null;
+                return false;
             }
 
-            return ParseHttpRequest ( sharedBuffer [ ..read ] );
+            return ParseHttpRequest ( requestObj, headerBuffer, sharedBuffer [ ..read ] );
         }
         catch {
-            return null;
+            return false;
         }
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
+    private static bool ParseHttpRequest ( HttpRequestBase request, HttpHeader[] headerBuffer, ReadOnlyMemory<byte> buffer ) {
         // Request line: METHOD SP PATH SP PROTOCOL CRLF
 
         int methodEnd = buffer.Span.IndexOf ( Space );
         if (methodEnd <= 0) {
-            return null;
+            return false;
         }
 
         ReadOnlyMemory<byte> method = buffer [ ..methodEnd ];
@@ -50,7 +52,7 @@ static class HttpRequestReader {
         int pathStart = methodEnd + 1;
         int pathEndRel = buffer.Span [ pathStart.. ].IndexOf ( Space );
         if (pathEndRel < 0) {
-            return null;
+            return false;
         }
 
         int pathEnd = pathStart + pathEndRel;
@@ -59,7 +61,7 @@ static class HttpRequestReader {
         int protocolStart = pathEnd + 1;
         int protocolLineEndRel = buffer.Span [ protocolStart.. ].IndexOf ( LineFeed );
         if (protocolLineEndRel < 0) {
-            return null;
+            return false;
         }
 
         int protocolLineEnd = protocolStart + protocolLineEndRel;
@@ -78,13 +80,13 @@ static class HttpRequestReader {
         bool expect100 = false;
         bool isChunked = false;
 
-        var headers = new List<HttpHeader> ( 32 );
+        int headersCount = 0;
         bool headersTerminated = false;
 
         while (cursor < buffer.Length) {
             int lfRel = buffer.Span [ cursor.. ].IndexOf ( LineFeed );
             if (lfRel < 0) {
-                return null; // header incompleto, precisa de mais dados
+                return false; // header incompleto, precisa de mais dados
             }
 
             if (lfRel == 0) {
@@ -136,26 +138,32 @@ static class HttpRequestReader {
                 }
             }
 
-            headers.Add ( new HttpHeader ( name, value ) );
+            if (headersCount < headerBuffer.Length) {
+                headerBuffer[headersCount++] = new HttpHeader ( name, value );
+            }
+            else {
+                return false; // Header limit exceeded
+            }
         }
 
         if (!headersTerminated) {
-            return null; // cabeçalhos não terminados corretamente
+            return false; // cabeçalhos não terminados corretamente
         }
 
         ReadOnlyMemory<byte> bufferedContent = expect100
             ? ReadOnlyMemory<byte>.Empty
             : buffer [ cursor.. ];
 
-        return new HttpRequestBase {
-            MethodRef = method,
-            PathRef = path,
-            Headers = headers.ToArray (),
-            ContentLength = contentLength,
-            CanKeepAlive = keepAliveEnabled,
-            IsChunked = isChunked,
-            IsExpecting100 = expect100,
-            BufferedContent = bufferedContent
-        };
+        request.Reset();
+        request.MethodRef = method;
+        request.PathRef = path;
+        request.Headers = new ReadOnlyMemory<HttpHeader>(headerBuffer, 0, headersCount);
+        request.ContentLength = contentLength;
+        request.CanKeepAlive = keepAliveEnabled;
+        request.IsChunked = isChunked;
+        request.IsExpecting100 = expect100;
+        request.BufferedContent = bufferedContent;
+
+        return true;
     }
 }

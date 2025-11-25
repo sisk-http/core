@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -32,6 +32,23 @@ public sealed class HttpHost : IDisposable {
     /// Gets or sets the name of the server in the header name.
     /// </summary>
     public static string ServerNameHeader { get; set; } = "Sisk";
+
+    // Cached Date Header
+    private static HttpHeader _cachedDateHeader;
+    private static Timer _dateHeaderTimer;
+
+    static HttpHost()
+    {
+        UpdateDateHeader(null);
+        _dateHeaderTimer = new Timer(UpdateDateHeader, null, 1000, 1000);
+    }
+
+    private static void UpdateDateHeader(object? state)
+    {
+        _cachedDateHeader = new HttpHeader("Date", DateTime.UtcNow.ToString("R"));
+    }
+
+    internal static HttpHeader CachedDateHeader => _cachedDateHeader;
 
     /// <summary>
     /// Gets the endpoint of the <see cref="HttpHost"/>.
@@ -161,7 +178,7 @@ public sealed class HttpHost : IDisposable {
                 connectionStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
             }
             else {
-                connectionStream = clientStream;
+                connectionStream = new BufferedStream(clientStream, 8192);
             }
 
             IPEndPoint clientEndpoint = (IPEndPoint) client.RemoteEndPoint!;

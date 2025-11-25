@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -124,7 +124,31 @@ internal class HttpResponseSerializer {
         WriteTwoBytes ( ref destination, position, CrLfPacked );
         position += 2;
 
-        var headersSpan = CollectionsMarshal.AsSpan ( response.Headers._headers );
+        ReadOnlySpan<HttpHeader> headersSpan = response.Headers.AsSpan();
+
+        if (headersSpan.IsEmpty && response.Headers.Count > 0)
+        {
+             // Fallback for IEnumerable or other IList if AsSpan returns empty but list is not empty
+             foreach(var header in response.Headers._headers)
+             {
+                if (header.IsEmpty)
+                    continue;
+
+                header.NameBytes.Span.CopyTo ( buffer [ position.. ] );
+                position += header.NameBytes.Length;
+
+                WriteTwoBytes ( ref destination, position, ColonSpacePacked );
+                position += 2;
+
+                header.ValueBytes.Span.CopyTo ( buffer [ position.. ] );
+                position += header.ValueBytes.Length;
+
+                WriteTwoBytes ( ref destination, position, CrLfPacked );
+                position += 2;
+             }
+             goto Finish;
+        }
+
         if (!headersSpan.IsEmpty) {
             ref HttpHeader headerPtr = ref MemoryMarshal.GetReference ( headersSpan );
 
@@ -147,6 +171,7 @@ internal class HttpResponseSerializer {
             }
         }
 
+        Finish:
         WriteTwoBytes ( ref destination, position, CrLfPacked );
         position += 2;
 

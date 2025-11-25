@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -22,10 +22,10 @@ sealed class HttpRequestBase {
     public long ContentLength;
     public bool CanKeepAlive;
 
-    public required ReadOnlyMemory<byte> BufferedContent;
-    public required ReadOnlyMemory<byte> MethodRef;
-    public required ReadOnlyMemory<byte> PathRef;
-    public required ReadOnlyMemory<HttpHeader> Headers;
+    public ReadOnlyMemory<byte> BufferedContent;
+    public ReadOnlyMemory<byte> MethodRef;
+    public ReadOnlyMemory<byte> PathRef;
+    public ReadOnlyMemory<HttpHeader> Headers;
 
     public string Method {
         get {
@@ -39,5 +39,18 @@ sealed class HttpRequestBase {
             _path ??= Encoding.ASCII.GetString ( PathRef.Span );
             return _path;
         }
+    }
+
+    public void Reset() {
+        _method = null;
+        _path = null;
+        IsExpecting100 = false;
+        IsChunked = false;
+        ContentLength = 0;
+        CanKeepAlive = false;
+        BufferedContent = default;
+        MethodRef = default;
+        PathRef = default;
+        Headers = default;
     }
 }

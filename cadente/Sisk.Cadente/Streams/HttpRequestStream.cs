@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -20,6 +20,12 @@ internal sealed class HttpRequestStream : Stream {
     public HttpRequestStream ( Stream clientStream, HttpRequestBase baseRequest ) {
         s = clientStream;
         this.baseRequest = baseRequest;
+    }
+
+    public void Reset() {
+        read = 0;
+        bufferPosition = 0;
+        // s and baseRequest are persistent for the connection
     }
 
     public override bool CanRead => s.CanRead;

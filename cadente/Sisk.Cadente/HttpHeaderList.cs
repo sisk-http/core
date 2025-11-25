@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -21,7 +21,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
 
     private static readonly HttpHeaderListNameComparer _nameComparer = new ();
 
-    internal List<HttpHeader> _headers;
+    internal IList<HttpHeader> _headers;
     internal bool isReadOnly = false;
 
     /// <summary>
@@ -51,17 +51,54 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
         isReadOnly = readOnly;
     }
 
+    internal HttpHeaderList(IList<HttpHeader> headers, bool readOnly)
+    {
+        _headers = headers;
+        isReadOnly = readOnly;
+    }
+
+    // New constructor to wrap ReadOnlyMemory without copying to a List
+    internal HttpHeaderList(ReadOnlyMemory<HttpHeader> headers)
+    {
+        _headers = new MemoryWrapper(headers);
+        isReadOnly = true;
+    }
+
+    internal void SetBuffer(ReadOnlyMemory<HttpHeader> headers)
+    {
+        if (_headers is MemoryWrapper wrapper)
+        {
+            wrapper.SetBuffer(headers);
+        }
+        else
+        {
+            _headers = new MemoryWrapper(headers);
+            isReadOnly = true;
+        }
+    }
+
+    internal ReadOnlySpan<HttpHeader> AsSpan()
+    {
+        if (_headers is List<HttpHeader> list)
+            return CollectionsMarshal.AsSpan(list);
+        if (_headers is HttpHeader[] array)
+            return array.AsSpan();
+        if (_headers is MemoryWrapper wrapper)
+            return wrapper.Span;
+        return ReadOnlySpan<HttpHeader>.Empty;
+    }
+
     /// <inheritdoc/>
     public HttpHeader this [ int index ] {
-        get => ((IList<HttpHeader>) _headers) [ index ];
+        get => _headers [ index ];
         set {
             ThrowIfReadOnly ();
-            ((IList<HttpHeader>) _headers) [ index ] = value;
+            _headers [ index ] = value;
         }
     }
 
     /// <inheritdoc/>
-    public int Count => ((ICollection<HttpHeader>) _headers).Count;
+    public int Count => _headers.Count;
 
     /// <inheritdoc/>
     public bool IsReadOnly => isReadOnly;
@@ -70,7 +107,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     public void Add ( HttpHeader item ) {
         ThrowIfReadOnly ();
 
-        ((ICollection<HttpHeader>) _headers).Add ( item );
+        _headers.Add ( item );
     }
 
     /// <summary>
@@ -78,7 +115,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     /// </summary>
     public void Set ( HttpHeader header ) {
         Remove ( header );
-        ((ICollection<HttpHeader>) _headers).Add ( header );
+        _headers.Add ( header );
     }
 
     /// <summary>
@@ -90,7 +127,30 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     /// </returns>
     public string [] Get ( string name ) {
         var result = new List<string> ();
-        var span = CollectionsMarshal.AsSpan ( _headers );
+        ReadOnlySpan<HttpHeader> span;
+
+        if (_headers is List<HttpHeader> list)
+        {
+             span = CollectionsMarshal.AsSpan(list);
+        }
+        else if (_headers is HttpHeader[] array)
+        {
+             span = array.AsSpan();
+        }
+        else if (_headers is MemoryWrapper wrapper)
+        {
+             span = wrapper.Span;
+        }
+        else
+        {
+             foreach(var header in _headers)
+             {
+                 if (Ascii.EqualsIgnoreCase ( name, header.NameBytes.Span ))
+                    result.Add ( header.Value );
+             }
+             return result.ToArray();
+        }
+
         for (int i = 0; i < span.Length; i++) {
             ref readonly var header = ref span [ i ];
             if (Ascii.EqualsIgnoreCase ( name, header.NameBytes.Span ))
@@ -103,12 +163,29 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     public void Clear () {
         ThrowIfReadOnly ();
 
-        ((ICollection<HttpHeader>) _headers).Clear ();
+        _headers.Clear ();
     }
 
     /// <inheritdoc/>
     public bool Contains ( HttpHeader item ) {
-        ReadOnlySpan<HttpHeader> span = CollectionsMarshal.AsSpan ( _headers );
+         ReadOnlySpan<HttpHeader> span;
+        if (_headers is List<HttpHeader> list)
+        {
+             span = CollectionsMarshal.AsSpan(list);
+        }
+        else if (_headers is HttpHeader[] array)
+        {
+             span = array.AsSpan();
+        }
+        else if (_headers is MemoryWrapper wrapper)
+        {
+             span = wrapper.Span;
+        }
+        else
+        {
+            return _headers.Contains(item);
+        }
+
         for (int i = 0; i < span.Length; i++) {
             ref readonly var header = ref span [ i ];
             if (_nameComparer.Equals ( header, item ))
@@ -125,7 +202,29 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     /// <see langword="true"/> if a header with the specified name is found; otherwise, <see langword="false"/>.
     /// </returns>
     public bool Contains ( string name ) {
-        ReadOnlySpan<HttpHeader> span = CollectionsMarshal.AsSpan ( _headers );
+        ReadOnlySpan<HttpHeader> span;
+        if (_headers is List<HttpHeader> list)
+        {
+             span = CollectionsMarshal.AsSpan(list);
+        }
+        else if (_headers is HttpHeader[] array)
+        {
+             span = array.AsSpan();
+        }
+        else if (_headers is MemoryWrapper wrapper)
+        {
+             span = wrapper.Span;
+        }
+        else
+        {
+             foreach(var header in _headers)
+             {
+                 if (Ascii.EqualsIgnoreCase ( name, header.NameBytes.Span ))
+                    return true;
+             }
+             return false;
+        }
+
         for (int i = 0; i < span.Length; i++) {
             ref readonly var header = ref span [ i ];
             if (Ascii.EqualsIgnoreCase ( name, header.NameBytes.Span ))
@@ -136,24 +235,24 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
 
     /// <inheritdoc/>
     public void CopyTo ( HttpHeader [] array, int arrayIndex ) {
-        ((ICollection<HttpHeader>) _headers).CopyTo ( array, arrayIndex );
+        _headers.CopyTo ( array, arrayIndex );
     }
 
     /// <inheritdoc/>
     public IEnumerator<HttpHeader> GetEnumerator () {
-        return ((IEnumerable<HttpHeader>) _headers).GetEnumerator ();
+        return _headers.GetEnumerator ();
     }
 
     /// <inheritdoc/>
     public int IndexOf ( HttpHeader item ) {
-        return ((IList<HttpHeader>) _headers).IndexOf ( item );
+        return _headers.IndexOf ( item );
     }
 
     /// <inheritdoc/>
     public void Insert ( int index, HttpHeader item ) {
         ThrowIfReadOnly ();
 
-        ((IList<HttpHeader>) _headers).Insert ( index, item );
+        _headers.Insert ( index, item );
     }
 
     /// <summary>
@@ -194,7 +293,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     public void RemoveAt ( int index ) {
         ThrowIfReadOnly ();
 
-        ((IList<HttpHeader>) _headers).RemoveAt ( index );
+        _headers.RemoveAt ( index );
     }
 
     /// <inheritdoc/>
@@ -223,5 +322,71 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
             }
             return hc;
         }
+    }
+
+    private class MemoryWrapper : IList<HttpHeader>
+    {
+        private ReadOnlyMemory<HttpHeader> _memory;
+
+        public ReadOnlySpan<HttpHeader> Span => _memory.Span;
+
+        public MemoryWrapper(ReadOnlyMemory<HttpHeader> memory)
+        {
+            _memory = memory;
+        }
+
+        public void SetBuffer(ReadOnlyMemory<HttpHeader> memory)
+        {
+            _memory = memory;
+        }
+
+        public HttpHeader this[int index] { get => _memory.Span[index]; set => throw new NotSupportedException(); }
+
+        public int Count => _memory.Length;
+
+        public bool IsReadOnly => true;
+
+        public void Add(HttpHeader item) => throw new NotSupportedException();
+        public void Clear() => throw new NotSupportedException();
+        public bool Contains(HttpHeader item)
+        {
+             var span = _memory.Span;
+             for(int i=0; i<span.Length; i++)
+             {
+                 if (_nameComparer.Equals(span[i], item)) return true;
+             }
+             return false;
+        }
+        public void CopyTo(HttpHeader[] array, int arrayIndex)
+        {
+             _memory.Span.CopyTo(array.AsSpan(arrayIndex));
+        }
+
+        public IEnumerator<HttpHeader> GetEnumerator()
+        {
+             // This allocates an enumerator, but it's unavoidable if we return IEnumerator<T>
+             // But we can optimize by implementing a struct enumerator if needed, but the interface requires boxing.
+             // We can just iterate the memory.
+             for(int i=0; i<_memory.Length; i++)
+             {
+                 yield return _memory.Span[i];
+             }
+        }
+
+        public int IndexOf(HttpHeader item)
+        {
+             var span = _memory.Span;
+             for(int i=0; i<span.Length; i++)
+             {
+                 if (_nameComparer.Equals(span[i], item)) return i;
+             }
+             return -1;
+        }
+
+        public void Insert(int index, HttpHeader item) => throw new NotSupportedException();
+        public bool Remove(HttpHeader item) => throw new NotSupportedException();
+        public void RemoveAt(int index) => throw new NotSupportedException();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
