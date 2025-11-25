@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
 using Sisk.Core.Http;
@@ -70,6 +71,17 @@ public sealed class HttpHostContext {
         Response = new HttpResponse ( this, _connection.networkStream );
     }
 
+    internal void Reset()
+    {
+        ResponseHeadersAlreadySent = false;
+        KeepAlive = true;
+        // Client doesn't change for the connection
+        // Host doesn't change
+
+        Request.Reset();
+        Response.Reset();
+    }
+
     /// <summary>
     /// Represents an HTTP request.
     /// </summary>
@@ -124,7 +136,15 @@ public sealed class HttpHostContext {
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
             _baseRequest = request;
             _requestStream = requestStream;
-            Headers = new HttpHeaderList ( _baseRequest.Headers.ToArray (), readOnly: true );
+
+            Headers = new HttpHeaderList ( request.Headers );
+        }
+
+        internal void Reset()
+        {
+            wasExpectationSent = false;
+            _requestStream.Reset();
+            Headers.SetBuffer(_baseRequest.Headers);
         }
     }
 
@@ -191,9 +211,19 @@ public sealed class HttpHostContext {
 
             Headers = new HttpHeaderList ()
             {
-                new HttpHeader ("Date", DateTime.UtcNow.ToString("R")),
+                HttpHost.CachedDateHeader,
                 new HttpHeader ("Server", HttpHost.ServerNameHeader)
             };
+        }
+
+        internal void Reset()
+        {
+            headersSent = false;
+            StatusCode = 200;
+            StatusDescription = "Ok";
+            Headers.Clear();
+            Headers.Add(HttpHost.CachedDateHeader);
+            Headers.Add(new HttpHeader("Server", HttpHost.ServerNameHeader));
         }
     }
 }

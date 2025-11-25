@@ -1,4 +1,4 @@
-﻿// The Sisk Framework source code
+// The Sisk Framework source code
 // Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
 //
 // The code below is licensed under the MIT license as
@@ -29,6 +29,8 @@ sealed class HttpConnection : IDisposable {
 
     // buffer dedicated to headers.
     public const int RESERVED_BUFFER_SIZE = 8 * 1024;
+    private readonly HttpRequestBase _requestContext = new HttpRequestBase();
+    private readonly HttpHeader[] _headerBuffer = new HttpHeader[64];
 
     internal readonly Stream networkStream;
     internal IMemoryOwner<byte> requestPool, responsePool;
@@ -48,18 +50,22 @@ sealed class HttpConnection : IDisposable {
     public async Task<HttpConnectionState> HandleConnectionEventsAsync () {
         bool connectionCloseRequested = false;
 
+        // Create the context once and reuse it
+        HttpHostContext managedSession = new HttpHostContext ( _host, this, _requestContext, _client );
+
         while (!disposedValue) {
 
-            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream ).ConfigureAwait ( false );
+            bool success = await HttpRequestReader.TryReadHttpRequestAsync ( _requestContext, _headerBuffer, requestPool.Memory, networkStream ).ConfigureAwait ( false );
 
-            if (nextRequest is null) {
+            if (!success) {
                 return HttpConnectionState.ConnectionClosed;
             }
 
-            HttpHostContext managedSession = new HttpHostContext ( _host, this, nextRequest, _client );
+            managedSession.Reset();
+
             await _host.InvokeContextCreated ( managedSession ).ConfigureAwait ( false );
 
-            if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
+            if (!managedSession.KeepAlive || !_requestContext.CanKeepAlive) {
                 connectionCloseRequested = true;
                 managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
             }
@@ -70,6 +76,9 @@ sealed class HttpConnection : IDisposable {
                 await managedSession.WriteHttpResponseHeadersAsync ();
             }
 
+            // Flush is not necessary if we are using BufferedStream and the buffer is full or if we are closing.
+            // But we want to ensure the response is sent.
+            // However, with BufferedStream, we should Flush only when we are done with the response.
             await networkStream.FlushAsync ().ConfigureAwait ( false );
 
             if (connectionCloseRequested) {

@@ -21,7 +21,7 @@ public sealed class PathHelper {
     /// <param name="path">The path to split.</param>
     /// <returns>An array of path segments.</returns>
     public static string [] Split ( string path ) {
-        return path.Split ( [ '/', '\\' ], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
+        return path.Split ( new char[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
     }
 
     /// <summary>

@@ -2,7 +2,7 @@
 
 	<!-- supported frameworks -->
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>net8.0</TargetFrameworks>
 		<RootNamespace>Sisk.Core</RootNamespace>
 		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
