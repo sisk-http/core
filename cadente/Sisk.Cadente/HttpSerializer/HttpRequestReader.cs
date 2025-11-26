@@ -7,8 +7,10 @@
 // File name:   HttpRequestReader.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sisk.Cadente;
 using Sisk.Cadente.HttpSerializer;
@@ -21,7 +23,12 @@ static class HttpRequestReader {
 
     private const int DefaultHeaderReadTimeoutMs = 30_000;
     private static ReadOnlySpan<byte> HeaderTerminator => "\r\n\r\n"u8;
+    private static ReadOnlySpan<byte> Http10 => "HTTP/1.0"u8;
+    private static ReadOnlySpan<byte> CloseValue => "close"u8;
+    private static ReadOnlySpan<byte> ContinueValue => "100-continue"u8;
+    private static ReadOnlySpan<byte> ChunkedValue => "chunked"u8;
 
+    [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs ) {
 
@@ -29,26 +36,42 @@ static class HttpRequestReader {
         int totalRead = 0;
         long deadlineTicks = Environment.TickCount64 + headerReadTimeoutMs;
 
+        int searchStart = 0;
+
         try {
             while (totalRead < bufferLength) {
-                int remainingMs = (int) (deadlineTicks - Environment.TickCount64);
-                if (remainingMs <= 0) {
+                long currentTicks = Environment.TickCount64;
+                if (currentTicks >= deadlineTicks) {
                     Logger.LogInformation ( $"failed to read buffer: header read timeout" );
                     return null;
                 }
 
+                int remainingMs = (int) (deadlineTicks - currentTicks);
                 cancellationToken.ThrowIfCancellationRequested ();
-                int bytesRead = await ReadWithTimeoutAsync ( stream, sharedBuffer [ totalRead.. ], remainingMs, cancellationToken ).ConfigureAwait ( false );
-                totalRead += bytesRead;
+
+                int bytesRead = await ReadWithTimeoutAsync (
+                    stream,
+                    sharedBuffer.Slice ( totalRead ),
+                    remainingMs,
+                    cancellationToken
+                ).ConfigureAwait ( false );
 
                 if (bytesRead == 0) {
                     Logger.LogInformation ( $"failed to read buffer: connection closed" );
                     return null;
                 }
 
-                if (sharedBuffer.Span.IndexOf ( HeaderTerminator ) >= 0) {
-                    return ParseHttpRequest ( sharedBuffer [ ..totalRead ] );
+                totalRead += bytesRead;
+
+                int effectiveSearchStart = Math.Max ( 0, searchStart - 3 );
+                ReadOnlySpan<byte> searchRegion = sharedBuffer.Span.Slice ( effectiveSearchStart, totalRead - effectiveSearchStart );
+
+                int terminatorIndex = searchRegion.IndexOf ( HeaderTerminator );
+                if (terminatorIndex >= 0) {
+                    return ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) );
                 }
+
+                searchStart = totalRead;
             }
 
             Logger.LogInformation ( $"failed to read buffer: headers too large" );
@@ -68,6 +91,7 @@ static class HttpRequestReader {
         }
     }
 
+
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private static ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken ) {
 
@@ -75,134 +99,194 @@ static class HttpRequestReader {
         return stream.ReadAsync ( buffer, cancellationToken );
     }
 
-
+    [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     private static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
+        ReadOnlySpan<byte> span = buffer.Span;
+        int bufferLength = span.Length;
+
         // Request line: METHOD SP PATH SP PROTOCOL CRLF
-
-        int methodEnd = buffer.Span.IndexOf ( Space );
-        if (methodEnd <= 0) {
-            Logger.LogInformation ( $"failed to read buffer: methodend {methodEnd}" );
+        int methodEnd = span.IndexOf ( Space );
+        if (methodEnd <= 0)
             return null;
-        }
 
-        ReadOnlyMemory<byte> method = buffer [ ..methodEnd ];
+        ReadOnlyMemory<byte> method = buffer.Slice ( 0, methodEnd );
 
         int pathStart = methodEnd + 1;
-        int pathEndRel = buffer.Span [ pathStart.. ].IndexOf ( Space );
-        if (pathEndRel < 0) {
-            Logger.LogInformation ( $"failed to read buffer: pathEndRel {pathEndRel}" );
+        int pathEndRel = span.Slice ( pathStart ).IndexOf ( Space );
+        if (pathEndRel < 0)
             return null;
-        }
 
         int pathEnd = pathStart + pathEndRel;
-        ReadOnlyMemory<byte> path = buffer [ pathStart..pathEnd ];
+        ReadOnlyMemory<byte> path = buffer.Slice ( pathStart, pathEndRel );
 
         int protocolStart = pathEnd + 1;
-        int protocolLineEndRel = buffer.Span [ protocolStart.. ].IndexOf ( LineFeed );
-        if (protocolLineEndRel < 0) {
-            Logger.LogInformation ( $"failed to read buffer: protocolLineEndRel {protocolLineEndRel}" );
+        int protocolLineEndRel = span.Slice ( protocolStart ).IndexOf ( LineFeed );
+        if (protocolLineEndRel < 0)
             return null;
-        }
 
         int protocolLineEnd = protocolStart + protocolLineEndRel;
         int protocolEndExclusive = protocolLineEnd;
 
-        if (protocolEndExclusive > protocolStart && buffer.Span [ protocolEndExclusive - 1 ] == CarriageReturn) {
+        ref byte spanRef = ref MemoryMarshal.GetReference ( span );
+        if (protocolEndExclusive > protocolStart &&
+            Unsafe.Add ( ref spanRef, protocolEndExclusive - 1 ) == CarriageReturn) {
             protocolEndExclusive--;
         }
 
-        ReadOnlyMemory<byte> protocol = buffer [ protocolStart..protocolEndExclusive ];
+        ReadOnlyMemory<byte> protocol = buffer.Slice ( protocolStart, protocolEndExclusive - protocolStart );
 
-        int cursor = protocolLineEnd + 1; // avança além do '\n'
+        int cursor = protocolLineEnd + 1;
 
         long contentLength = -1;
-        bool keepAliveEnabled = !Ascii.EqualsIgnoreCase ( protocol.Span, "HTTP/1.0"u8 );
+        bool keepAliveEnabled = !protocol.Span.SequenceEqual ( Http10 );
         bool expect100 = false;
         bool isChunked = false;
 
-        var headers = new List<HttpHeader> ( 32 );
-        bool headersTerminated = false;
+        HttpHeader [] headers = ArrayPool<HttpHeader>.Shared.Rent ( 64 );
+        int headerCount = 0;
 
-        while (cursor < buffer.Length) {
-            int lfRel = buffer.Span [ cursor.. ].IndexOf ( LineFeed );
-            if (lfRel < 0) {
-                Logger.LogInformation ( $"failed to read buffer: incomplete header at {cursor}" );
-                File.WriteAllBytes ( "dump.bin", buffer.ToArray () );
-                return null; // header incompleto, precisa de mais dados
-            }
+        try {
+            while (cursor < bufferLength) {
+                byte currentByte = Unsafe.Add ( ref spanRef, cursor );
 
-            if (lfRel == 0) {
-                cursor += 1; // linha vazia com apenas '\n'
-                headersTerminated = true;
-                break;
-            }
-
-            int lineEnd = cursor + lfRel;
-            int headerEndExclusive = lineEnd;
-            if (buffer.Span [ headerEndExclusive - 1 ] == CarriageReturn) {
-                headerEndExclusive--;
-                if (headerEndExclusive == cursor) {
-                    cursor = lineEnd + 1; // "\r\n" puro
-                    headersTerminated = true;
-                    break;
+                if (currentByte == LineFeed) {
+                    cursor++;
+                    goto HeadersComplete;
                 }
-            }
 
-            ReadOnlyMemory<byte> headerLine = buffer [ cursor..headerEndExclusive ];
-            cursor = lineEnd + 1; // pula '\n'
-
-            int colonIndex = headerLine.Span.IndexOf ( Colon );
-            if (colonIndex <= 0) {
-                Logger.LogInformation ( $"failed to read buffer: missing colon at {cursor}" );
-                continue; // cabeçalho malformado, ignora
-            }
-
-            ReadOnlyMemory<byte> name = headerLine [ ..colonIndex ];
-            ReadOnlyMemory<byte> value = headerLine [ (colonIndex + 1).. ];
-
-            var trimmedRange = Ascii.Trim ( value.Span );
-            value = value [ trimmedRange ];
-
-            if (Ascii.EqualsIgnoreCase ( name.Span, "Content-Length"u8 )) {
-                if (Utf8Parser.TryParse ( value.Span, out long parsed, out int consumed ) && consumed == value.Length) {
-                    contentLength = parsed;
+                if (currentByte == CarriageReturn) {
+                    if (cursor + 1 < bufferLength && Unsafe.Add ( ref spanRef, cursor + 1 ) == LineFeed) {
+                        cursor += 2;
+                        goto HeadersComplete;
+                    }
                 }
-            }
-            else if (Ascii.EqualsIgnoreCase ( name.Span, "Connection"u8 )) {
-                keepAliveEnabled = !Ascii.EqualsIgnoreCase ( value.Span, "close"u8 );
-            }
-            else if (Ascii.EqualsIgnoreCase ( name.Span, "Expect"u8 )) {
-                expect100 = Ascii.EqualsIgnoreCase ( value.Span, "100-continue"u8 );
-            }
-            else if (Ascii.EqualsIgnoreCase ( name.Span, "Transfer-Encoding"u8 )) {
-                isChunked = Ascii.EqualsIgnoreCase ( value.Span, "chunked"u8 );
-                if (isChunked) {
-                    contentLength = -1;
+
+                ReadOnlySpan<byte> remaining = span.Slice ( cursor );
+                int lfRel = remaining.IndexOf ( LineFeed );
+                if (lfRel < 0) {
+                    goto ParseFailed;
                 }
+
+                int lineStart = cursor;
+                int lineEnd = cursor + lfRel;
+                int headerLineEnd = lineEnd;
+
+                if (Unsafe.Add ( ref spanRef, headerLineEnd - 1 ) == CarriageReturn) {
+                    headerLineEnd--;
+                }
+
+                int headerLineLength = headerLineEnd - lineStart;
+                if (headerLineLength == 0) {
+                    cursor = lineEnd + 1;
+                    goto HeadersComplete;
+                }
+
+                ReadOnlySpan<byte> headerLine = span.Slice ( lineStart, headerLineLength );
+                cursor = lineEnd + 1;
+
+                int colonIndex = headerLine.IndexOf ( Colon );
+                if (colonIndex <= 0)
+                    continue;
+
+                ReadOnlySpan<byte> nameSpan = headerLine.Slice ( 0, colonIndex );
+                ReadOnlySpan<byte> rawValue = headerLine.Slice ( colonIndex + 1 );
+
+                int trimLeft = 0;
+                int trimRight = rawValue.Length;
+
+                while (trimLeft < rawValue.Length && rawValue [ trimLeft ] <= 32)
+                    trimLeft++;
+
+                while (trimRight > trimLeft && rawValue [ trimRight - 1 ] <= 32)
+                    trimRight--;
+
+                int valueLength = trimRight - trimLeft;
+                ReadOnlySpan<byte> valueSpan = rawValue.Slice ( trimLeft, valueLength );
+
+                int knownHeader = GetKnownHeaderIndex ( nameSpan );
+                switch (knownHeader) {
+                    case 0: // Content-Length
+                        if (Utf8Parser.TryParse ( valueSpan, out long parsed, out int consumed ) && consumed == valueSpan.Length) {
+                            contentLength = parsed;
+                        }
+                        break;
+                    case 1: // Connection
+                        keepAliveEnabled = !Ascii.EqualsIgnoreCase ( valueSpan, CloseValue );
+                        break;
+                    case 2: // Expect
+                        expect100 = Ascii.EqualsIgnoreCase ( valueSpan, ContinueValue );
+                        break;
+                    case 3: // Transfer-Encoding
+                        isChunked = Ascii.EqualsIgnoreCase ( valueSpan, ChunkedValue );
+                        if (isChunked)
+                            contentLength = -1;
+                        break;
+                }
+
+                if (Unlikely ( headerCount >= headers.Length )) {
+                    HttpHeader [] newHeaders = ArrayPool<HttpHeader>.Shared.Rent ( headers.Length * 2 );
+                    headers.AsSpan ( 0, headerCount ).CopyTo ( newHeaders );
+                    ArrayPool<HttpHeader>.Shared.Return ( headers );
+                    headers = newHeaders;
+                }
+
+                headers [ headerCount++ ] = new HttpHeader (
+                    buffer.Slice ( lineStart, colonIndex ),
+                    buffer.Slice ( lineStart + colonIndex + 1 + trimLeft, valueLength )
+                );
             }
 
-            headers.Add ( new HttpHeader ( name, value ) );
+            goto ParseFailed;
+
+HeadersComplete:
+            HttpHeader [] finalHeaders = new HttpHeader [ headerCount ];
+            headers.AsSpan ( 0, headerCount ).CopyTo ( finalHeaders );
+            ArrayPool<HttpHeader>.Shared.Return ( headers );
+
+            ReadOnlyMemory<byte> bufferedContent = expect100
+                ? ReadOnlyMemory<byte>.Empty
+                : buffer.Slice ( cursor );
+
+            return new HttpRequestBase {
+                MethodRef = method,
+                PathRef = path,
+                Headers = finalHeaders,
+                ContentLength = contentLength,
+                CanKeepAlive = keepAliveEnabled,
+                IsChunked = isChunked,
+                IsExpecting100 = expect100,
+                BufferedContent = bufferedContent
+            };
+
+ParseFailed:
+            ArrayPool<HttpHeader>.Shared.Return ( headers );
+            return null;
         }
-
-        if (!headersTerminated) {
-            Logger.LogInformation ( $"failed to read buffer: overflow" );
-            return null; // cabeçalhos não terminados corretamente
+        catch {
+            ArrayPool<HttpHeader>.Shared.Return ( headers );
+            throw;
         }
+    }
 
-        ReadOnlyMemory<byte> bufferedContent = expect100
-            ? ReadOnlyMemory<byte>.Empty
-            : buffer [ cursor.. ];
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static int GetKnownHeaderIndex ( ReadOnlySpan<byte> name ) {
+        if (name.IsEmpty)
+            return -1;
 
-        return new HttpRequestBase {
-            MethodRef = method,
-            PathRef = path,
-            Headers = headers.ToArray (),
-            ContentLength = contentLength,
-            CanKeepAlive = keepAliveEnabled,
-            IsChunked = isChunked,
-            IsExpecting100 = expect100,
-            BufferedContent = bufferedContent
+        return (name [ 0 ], name.Length) switch {
+            ((byte) 'C', 14 ) => 0,  // Content-Length
+            ((byte) 'c', 14 ) => 0,
+            ((byte) 'C', 10 ) => 1,  // Connection
+            ((byte) 'c', 10 ) => 1,
+            ((byte) 'E', 6 ) => 2,  // Expect
+            ((byte) 'e', 6 ) => 2,
+            ((byte) 'T', 17 ) => 3,  // Transfer-Encoding
+            ((byte) 't', 17 ) => 3,
+            _ => -1
         };
     }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static bool Unlikely ( bool condition ) => condition;
 }
