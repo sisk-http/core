@@ -19,22 +19,62 @@ static class HttpRequestReader {
     private const byte LineFeed = (byte) '\n';
     private const byte CarriageReturn = (byte) '\r';
 
-    public static async Task<HttpRequestBase?> TryReadHttpRequestAsync (
-        Memory<byte> sharedBuffer,
-        Stream stream,
-        CancellationToken cancellationToken = default ) {
+    private const int DefaultHeaderReadTimeoutMs = 30_000;
+    private static ReadOnlySpan<byte> HeaderTerminator => "\r\n\r\n"u8;
+
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs ) {
+
+        int bufferLength = sharedBuffer.Length;
+        int totalRead = 0;
+        long deadlineTicks = Environment.TickCount64 + headerReadTimeoutMs;
+
         try {
-            int read = await stream.ReadAsync ( sharedBuffer, cancellationToken ).ConfigureAwait ( false );
-            if (read <= 0) {
-                return null;
+            while (totalRead < bufferLength) {
+                int remainingMs = (int) (deadlineTicks - Environment.TickCount64);
+                if (remainingMs <= 0) {
+                    Logger.LogInformation ( $"failed to read buffer: header read timeout" );
+                    return null;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested ();
+                int bytesRead = await ReadWithTimeoutAsync ( stream, sharedBuffer [ totalRead.. ], remainingMs, cancellationToken ).ConfigureAwait ( false );
+                totalRead += bytesRead;
+
+                if (bytesRead == 0) {
+                    Logger.LogInformation ( $"failed to read buffer: connection closed" );
+                    return null;
+                }
+
+                if (sharedBuffer.Span.IndexOf ( HeaderTerminator ) >= 0) {
+                    return ParseHttpRequest ( sharedBuffer [ ..totalRead ] );
+                }
             }
 
-            return ParseHttpRequest ( sharedBuffer [ ..read ] );
+            Logger.LogInformation ( $"failed to read buffer: headers too large" );
+            return null;
         }
-        catch {
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
+            Logger.LogInformation ( $"failed to read buffer: header read timeout" );
+            return null;
+        }
+        catch (OperationCanceledException) {
+            Logger.LogInformation ( $"failed to read buffer: operation cancelled" );
+            return null;
+        }
+        catch (Exception ex) {
+            Logger.LogInformation ( $"failed to read buffer (exception): {ex.Message}" );
             return null;
         }
     }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken ) {
+
+        stream.ReadTimeout = timeoutMs;
+        return stream.ReadAsync ( buffer, cancellationToken );
+    }
+
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     private static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
@@ -42,6 +82,7 @@ static class HttpRequestReader {
 
         int methodEnd = buffer.Span.IndexOf ( Space );
         if (methodEnd <= 0) {
+            Logger.LogInformation ( $"failed to read buffer: methodend {methodEnd}" );
             return null;
         }
 
@@ -50,6 +91,7 @@ static class HttpRequestReader {
         int pathStart = methodEnd + 1;
         int pathEndRel = buffer.Span [ pathStart.. ].IndexOf ( Space );
         if (pathEndRel < 0) {
+            Logger.LogInformation ( $"failed to read buffer: pathEndRel {pathEndRel}" );
             return null;
         }
 
@@ -59,6 +101,7 @@ static class HttpRequestReader {
         int protocolStart = pathEnd + 1;
         int protocolLineEndRel = buffer.Span [ protocolStart.. ].IndexOf ( LineFeed );
         if (protocolLineEndRel < 0) {
+            Logger.LogInformation ( $"failed to read buffer: protocolLineEndRel {protocolLineEndRel}" );
             return null;
         }
 
@@ -84,6 +127,8 @@ static class HttpRequestReader {
         while (cursor < buffer.Length) {
             int lfRel = buffer.Span [ cursor.. ].IndexOf ( LineFeed );
             if (lfRel < 0) {
+                Logger.LogInformation ( $"failed to read buffer: incomplete header at {cursor}" );
+                File.WriteAllBytes ( "dump.bin", buffer.ToArray () );
                 return null; // header incompleto, precisa de mais dados
             }
 
@@ -109,6 +154,7 @@ static class HttpRequestReader {
 
             int colonIndex = headerLine.Span.IndexOf ( Colon );
             if (colonIndex <= 0) {
+                Logger.LogInformation ( $"failed to read buffer: missing colon at {cursor}" );
                 continue; // cabeçalho malformado, ignora
             }
 
@@ -140,6 +186,7 @@ static class HttpRequestReader {
         }
 
         if (!headersTerminated) {
+            Logger.LogInformation ( $"failed to read buffer: overflow" );
             return null; // cabeçalhos não terminados corretamente
         }
 

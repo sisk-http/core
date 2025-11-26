@@ -27,7 +27,7 @@ sealed class HttpConnection : IDisposable {
     public readonly int Id = 0;
 #endif
 
-    // buffer dedicated to headers.
+    // buffer dedicated to headers
     public const int RESERVED_BUFFER_SIZE = 8 * 1024;
 
     internal readonly Stream networkStream;

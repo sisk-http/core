@@ -9,7 +9,7 @@
 
 namespace Sisk.Core.Http.FileSystem.Converters;
 
-internal class HttpFileAudioConverter : HttpFileRangedContentStream {
+sealed class HttpFileAudioConverter : HttpFileRangedContentStream {
 
     static string [] AllowedExtensions = [ ".mp3", ".ogg", ".wav", ".flac", ".ogv" ];
 

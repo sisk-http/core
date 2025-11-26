@@ -9,7 +9,7 @@
 
 namespace Sisk.Core.Http.FileSystem.Converters;
 
-internal class HttpFileVideoConverter : HttpFileRangedContentStream {
+sealed class HttpFileVideoConverter : HttpFileRangedContentStream {
 
     static string [] AllowedExtensions = [ ".webm", ".avi", ".mkv", ".mpg", ".mpeg", ".wmv", ".mov", ".mp4" ];
 

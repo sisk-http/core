@@ -7,16 +7,16 @@
 // File name:   Logger.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Sisk.Cadente;
 
 static class Logger {
 
+    [Conditional ( "DEBUG" )]
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    public static void LogInformation ( string? message ) {
-#if VERBOSE && DEBUG
-        Debug.WriteLine ( $"Sisk.ManagedHttpListener [{DateTime.Now:R}] {message}" );
-#endif
+    public static void LogInformation ( ref DefaultInterpolatedStringHandler message ) {
+        Console.WriteLine ( $"Sisk.ManagedHttpListener [{DateTime.Now:R}] {message.ToString ()}" );
     }
 }

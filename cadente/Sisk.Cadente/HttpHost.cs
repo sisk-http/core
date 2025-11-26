@@ -7,12 +7,10 @@
 // File name:   HttpHost.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.ComponentModel;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Sisk.Cadente.HttpSerializer;
 
 namespace Sisk.Cadente;

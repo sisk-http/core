@@ -22,7 +22,6 @@ public sealed class HttpHostContext {
     private HttpHost _host;
     private HttpConnection _connection;
 
-    internal CancellationTokenSource abortedSource = new CancellationTokenSource ();
     internal bool ResponseHeadersAlreadySent = false;
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
@@ -59,6 +58,13 @@ public sealed class HttpHostContext {
     /// Gets the associated <see cref="HttpHost"/> which created this HTTP context.
     /// </summary>
     public HttpHost Host => _host;
+
+    /// <summary>
+    /// Aborts the underlying network stream, forcibly closing the connection.
+    /// </summary>
+    public void Abort () {
+        _connection.networkStream.Close ();
+    }
 
     internal HttpHostContext ( HttpHost host, HttpConnection connection, HttpRequestBase baseRequest, HttpHostClient client ) {
         Client = client;

@@ -88,7 +88,7 @@ namespace Sisk.Cadente.CoreEngine {
 
         /// <inheritdoc/>
         public override void Abort () {
-            throw new NotSupportedException ();
+            _httpHostContext.Abort ();
         }
 
         /// <inheritdoc/>
