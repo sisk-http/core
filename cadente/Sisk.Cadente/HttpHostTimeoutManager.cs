@@ -24,5 +24,17 @@ public sealed class HttpHostTimeoutManager {
     /// </summary>
     public TimeSpan ClientWriteTimeout { get; set; } = TimeSpan.FromSeconds ( 30 );
 
+    /// <summary>
+    /// Gets or sets the timeout for SSL/TLS handshake operations.
+    /// </summary>
+    /// <value>The default value is 5 seconds.</value>
+    public TimeSpan SslHandshakeTimeout { get; set; } = TimeSpan.FromSeconds ( 5 );
+
+    /// <summary>
+    /// Gets or sets the timeout for HTTP header parsing operations.
+    /// </summary>
+    /// <value>The default value is 30 seconds.</value>
+    public TimeSpan HeaderParsingTimeout { get; set; } = TimeSpan.FromSeconds ( 30 );
+
     internal HttpHostTimeoutManager () { }
 }

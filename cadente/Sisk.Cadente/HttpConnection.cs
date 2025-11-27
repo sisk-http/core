@@ -15,11 +15,12 @@ using Sisk.Core.Http;
 
 namespace Sisk.Cadente;
 
-sealed class HttpConnection : IDisposable {
+sealed class HttpConnection : IDisposable, IAsyncDisposable {
     private readonly HttpHost _host;
     private readonly IPEndPoint _endpoint;
     private readonly HttpHostClient _client;
     private bool disposedValue;
+    private int headerParsingTimeout;
 
 #if DEBUG
     public readonly int Id = Random.Shared.Next ( 0, ushort.MaxValue );
@@ -33,10 +34,14 @@ sealed class HttpConnection : IDisposable {
     internal readonly Stream networkStream;
     internal IMemoryOwner<byte> requestPool, responsePool;
 
+    static readonly HttpHeader ConnCloseHeader = new HttpHeader ( HttpHeaderName.Connection, "close" );
+    static readonly HttpHeader ContLengzHeader = new HttpHeader ( HttpHeaderName.ContentLength, "0" );
+
     public HttpConnection ( HttpHostClient client, Stream connectionStream, HttpHost host, IPEndPoint endpoint ) {
         _client = client;
         _host = host;
         _endpoint = endpoint;
+        headerParsingTimeout = (int) host.TimeoutManager.HeaderParsingTimeout.TotalMilliseconds;
 
         networkStream = connectionStream;
 
@@ -45,12 +50,12 @@ sealed class HttpConnection : IDisposable {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public async Task<HttpConnectionState> HandleConnectionEventsAsync () {
+    public async Task<HttpConnectionState> HandleConnectionEventsAsync ( CancellationToken shutdownToken ) {
         bool connectionCloseRequested = false;
 
         while (!disposedValue) {
 
-            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream ).ConfigureAwait ( false );
+            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream, shutdownToken, headerParsingTimeout ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
                 return HttpConnectionState.ConnectionClosed;
@@ -61,11 +66,11 @@ sealed class HttpConnection : IDisposable {
 
             if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                 connectionCloseRequested = true;
-                managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.Connection, "close" ) );
+                managedSession.Response.Headers.Set ( ConnCloseHeader );
             }
 
             if (!managedSession.ResponseHeadersAlreadySent) {
-                managedSession.Response.Headers.Set ( new HttpHeader ( HttpHeaderName.ContentLength, "0" ) );
+                managedSession.Response.Headers.Set ( ContLengzHeader );
 
                 await managedSession.WriteHttpResponseHeadersAsync ();
             }
@@ -95,5 +100,12 @@ sealed class HttpConnection : IDisposable {
     public void Dispose () {
         Dispose ( disposing: true );
         GC.SuppressFinalize ( this );
+    }
+
+    public async ValueTask DisposeAsync () {
+        await networkStream.DisposeAsync ().ConfigureAwait ( false );
+        requestPool.Dispose ();
+        responsePool.Dispose ();
+        disposedValue = true;
     }
 }

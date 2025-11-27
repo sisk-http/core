@@ -23,8 +23,13 @@ public sealed class HttpHost : IDisposable {
     private readonly IPEndPoint _endpoint;
     private readonly Socket _listener;
 
-    private bool disposedValue;
-    private bool isListening;
+    // cache line padding to reduce false sharing
+    private volatile bool _disposedValue;
+    private volatile bool _isListening;
+
+    private readonly SocketAsyncEventArgs [] _acceptArgsPool;
+    private readonly int [] _acceptArgsAvailable;
+    private const int AcceptPoolSize = 8;
 
     /// <summary>
     /// Gets or sets the name of the server in the header name.
@@ -44,7 +49,7 @@ public sealed class HttpHost : IDisposable {
     /// <summary>
     /// Gets a value indicating whether this <see cref="HttpHost"/> has been disposed.
     /// </summary>
-    public bool IsDisposed => disposedValue;
+    public bool IsDisposed => _disposedValue;
 
     /// <summary>
     /// Gets or sets the HTTPS options for secure connections. Setting an <see cref="Sisk.Cadente.HttpsOptions"/> object in this
@@ -64,179 +69,257 @@ public sealed class HttpHost : IDisposable {
     public HttpHost ( IPEndPoint endpoint ) {
         _endpoint = endpoint;
         _listener = new Socket ( SocketType.Stream, ProtocolType.Tcp );
+
+        _acceptArgsPool = new SocketAsyncEventArgs [ AcceptPoolSize ];
+        _acceptArgsAvailable = new int [ AcceptPoolSize ];
+
+        for (int i = 0; i < AcceptPoolSize; i++) {
+            var args = new SocketAsyncEventArgs ();
+            args.Completed += OnAcceptCompleted;
+            args.UserToken = i;
+            _acceptArgsPool [ i ] = args;
+            _acceptArgsAvailable [ i ] = 1;
+        }
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpHost"/> class using the specified port on the loopback address.
     /// </summary>
     /// <param name="port">The port number to listen on.</param>
-    public HttpHost ( int port ) : this ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
-    }
+    public HttpHost ( int port ) : this ( new IPEndPoint ( IPAddress.Loopback, port ) ) { }
 
     /// <summary>
     /// Starts the HTTP host and begins listening for incoming connections.
     /// </summary>
     public void Start () {
-
-        if (isListening)
+        if (_isListening)
             return;
+        ObjectDisposedException.ThrowIf ( _disposedValue, this );
 
-        ObjectDisposedException.ThrowIf ( disposedValue, this );
+        ConfigureListenerSocket ();
+        _listener.Bind ( _endpoint );
+        _listener.Listen ( backlog: 4096 ); // Alto para burst de conexões
+        _isListening = true;
 
+        // Iniciar múltiplos accepts
+        for (int i = 0; i < AcceptPoolSize; i++) {
+            StartAccept ( i );
+        }
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private void ConfigureListenerSocket () {
         _listener.NoDelay = true;
         _listener.LingerState = new LingerOption ( false, 0 );
-        _listener.ReceiveBufferSize = 2048;
-        _listener.SendBufferSize = 2048;
-        _listener.DualMode = true;
 
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 3 );
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, (int) TimeSpan.FromMinutes ( 5 ).TotalSeconds );
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
-        _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
+        // Buffers grandes para o listener reduzem syscalls
+        _listener.ReceiveBufferSize = 128 * 1024;
+        _listener.SendBufferSize = 128 * 1024;
+
+        if (_listener.AddressFamily == AddressFamily.InterNetworkV6) {
+            _listener.DualMode = true;
+        }
+
         _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
-
-        _listener.Bind ( _endpoint );
-        _listener.Listen ( backlog: Int32.MaxValue );
-        isListening = true;
-
-        var acceptEvent = new SocketAsyncEventArgs ();
-        acceptEvent.Completed += OnAcceptCompleted;
-        acceptEvent.DisconnectReuseSocket = true;
-
-        StartAccept ( acceptEvent );
+        _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
+        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 3 );
+        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 300 );
+        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
     }
 
-    void StartAccept ( SocketAsyncEventArgs acceptEvent ) {
-
-        if (!isListening)
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private void StartAccept ( int poolIndex ) {
+        if (!_isListening)
             return;
 
-        acceptEvent.AcceptSocket = null;
-        acceptEvent.RemoteEndPoint = null;
-
-        if (!_listener.AcceptAsync ( acceptEvent )) {
-            OnAcceptCompleted ( null, acceptEvent );
-        }
-    }
-
-    void OnAcceptCompleted ( object? sender, SocketAsyncEventArgs e ) {
-
-        if (e.SocketError == SocketError.Success) {
-            ProcessAccept ( e );
-        }
-        else {
-            StartAccept ( e );
-        }
-    }
-
-    async void ProcessAccept ( SocketAsyncEventArgs e ) {
-
-        if (e.AcceptSocket is null || e.AcceptSocket.Connected == false)
-            return;
-
-        using var client = e.AcceptSocket;
-
-        ThreadPool.UnsafeQueueUserWorkItem ( state => {
-            StartAccept ( e );
-        }, null );
+        var args = _acceptArgsPool [ poolIndex ];
+        args.AcceptSocket = null;
 
         try {
-            int clientReadTimeoutMs = (int) TimeoutManager.ClientReadTimeout.TotalMilliseconds;
-            int clientWriteTimeoutMs = (int) TimeoutManager.ClientWriteTimeout.TotalMilliseconds;
+            // Se completar sincronamente, processar inline (mais rápido)
+            if (!_listener.AcceptAsync ( args )) {
+                // IMPORTANTE: Não usar ThreadPool aqui para sync completion
+                // ProcessAccept já vai fazer o queue se necessário
+                ProcessAcceptInline ( args, poolIndex );
+            }
+            // Se async, o callback OnAcceptCompleted será chamado
+        }
+        catch (ObjectDisposedException) { }
+        catch (SocketException) {
+            // Retry
+            if (_isListening) {
+                StartAccept ( poolIndex );
+            }
+        }
+    }
 
-            client.ReceiveTimeout = clientReadTimeoutMs;
-            client.SendTimeout = clientWriteTimeoutMs;
+    private void OnAcceptCompleted ( object? sender, SocketAsyncEventArgs e ) {
+        int poolIndex = (int) e.UserToken!;
+        ProcessAcceptInline ( e, poolIndex );
+    }
 
-            if (Handler is null)
-                return;
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+    private void ProcessAcceptInline ( SocketAsyncEventArgs e, int poolIndex ) {
+        if (e.SocketError != SocketError.Success || e.AcceptSocket is null) {
+            if (_isListening)
+                StartAccept ( poolIndex );
+            return;
+        }
 
-            Stream connectionStream;
-            using Stream clientStream = new NetworkStream ( client, ownsSocket: false );
-            clientStream.WriteTimeout = clientWriteTimeoutMs;
-            clientStream.ReadTimeout = clientReadTimeoutMs;
+        Socket client = e.AcceptSocket;
+        StartAccept ( poolIndex );
 
+        var workItem = new ConnectionWorkItem { Host = this, Socket = client };
+        ThreadPool.UnsafeQueueUserWorkItem ( workItem, preferLocal: false );
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
+    internal async Task ProcessConnectionCoreAsync ( Socket client ) {
+        // Early exit se não há handler
+        if (Handler is null) {
+            client.Dispose ();
+            return;
+        }
+
+        int readTimeoutMs = (int) TimeoutManager.ClientReadTimeout.TotalMilliseconds;
+        int writeTimeoutMs = (int) TimeoutManager.ClientWriteTimeout.TotalMilliseconds;
+
+        client.ReceiveTimeout = readTimeoutMs;
+        client.SendTimeout = writeTimeoutMs;
+        client.NoDelay = true; // Importante para cada socket também
+
+        // NetworkStream com ownsSocket: true - elimina dispose manual
+        NetworkStream clientStream = new ( client, ownsSocket: true );
+        clientStream.ReadTimeout = readTimeoutMs;
+        clientStream.WriteTimeout = writeTimeoutMs;
+
+        Stream connectionStream;
+        SslStream? sslStream = null;
+
+        try {
             if (HttpsOptions is not null) {
-                connectionStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
+                sslStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
+                connectionStream = sslStream;
+
+                // SSL Handshake com timeout
+                using var handshakeCts = new CancellationTokenSource ( TimeoutManager.SslHandshakeTimeout );
+
+                try {
+                    await sslStream.AuthenticateAsServerAsync ( new SslServerAuthenticationOptions {
+                        ServerCertificate = HttpsOptions.ServerCertificate,
+                        ClientCertificateRequired = HttpsOptions.ClientCertificateRequired,
+                        EnabledSslProtocols = HttpsOptions.AllowedProtocols,
+                        CertificateRevocationCheckMode = HttpsOptions.CheckCertificateRevocation
+                            ? System.Security.Cryptography.X509Certificates.X509RevocationMode.Online
+                            : System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck
+                    }, handshakeCts.Token ).ConfigureAwait ( false );
+                }
+                catch {
+                    // Responder erro no stream não-SSL
+                    await WriteHandshakeErrorAsync ( clientStream ).ConfigureAwait ( false );
+                    return;
+                }
             }
             else {
                 connectionStream = clientStream;
             }
 
             IPEndPoint clientEndpoint = (IPEndPoint) client.RemoteEndPoint!;
-            HttpHostClient hostClient = new HttpHostClient ( clientEndpoint, CancellationToken.None );
 
-            using (HttpConnection connection = new HttpConnection ( hostClient, connectionStream, this, clientEndpoint )) {
+            // TODO: Pool de HttpHostClient se profiling mostrar que é hot spot
+            HttpHostClient hostClient = new ( clientEndpoint, CancellationToken.None );
 
-                if (connectionStream is SslStream sslStream) {
-                    try {
-                        await sslStream.AuthenticateAsServerAsync (
-                            serverCertificate: this.HttpsOptions!.ServerCertificate,
-                            clientCertificateRequired: this.HttpsOptions.ClientCertificateRequired,
-                            checkCertificateRevocation: this.HttpsOptions.CheckCertificateRevocation,
-                            enabledSslProtocols: this.HttpsOptions.AllowedProtocols ).ConfigureAwait ( false );
+            if (sslStream is not null) {
+                hostClient.ClientCertificate = sslStream.RemoteCertificate;
+            }
 
-                        hostClient.ClientCertificate = sslStream.RemoteCertificate;
-                    }
-                    catch (Exception) {
+            // await using para dispose correto
+            await using HttpConnection connection = new ( hostClient, connectionStream, this, clientEndpoint );
 
-                        var message = HttpResponseSerializer.GetRawMessage ( "SSL/TLS Handshake failed.", 400, "Bad Request" );
-                        await clientStream.WriteAsync ( message, 0, message.Length );
-                        return;
-                    }
-                }
+            await Handler.OnClientConnectedAsync ( this, hostClient ).ConfigureAwait ( false );
 
-                await this.Handler.OnClientConnectedAsync ( this, hostClient ).ConfigureAwait ( false );
-                await connection.HandleConnectionEventsAsync ().ConfigureAwait ( false );
-                await this.Handler.OnClientDisconnectedAsync ( this, hostClient ).ConfigureAwait ( false );
+            try {
+                await connection.HandleConnectionEventsAsync ( default ).ConfigureAwait ( false );
+            }
+            finally {
+                await Handler.OnClientDisconnectedAsync ( this, hostClient ).ConfigureAwait ( false );
             }
         }
+        catch (SocketException) { }
+        catch (IOException) { }
+        catch (ObjectDisposedException) { }
         finally {
-            client.Dispose ();
+            // Cleanup garantido
+            if (sslStream is not null) {
+                await sslStream.DisposeAsync ().ConfigureAwait ( false );
+            }
+            else {
+                await clientStream.DisposeAsync ().ConfigureAwait ( false );
+            }
         }
+    }
+
+    // Método separado para não poluir o hot path com byte array
+    [MethodImpl ( MethodImplOptions.NoInlining )]
+    private static async Task WriteHandshakeErrorAsync ( Stream stream ) {
+        byte [] message = HttpResponseSerializer.GetRawMessage ( "SSL/TLS Handshake failed.", 400, "Bad Request" );
+        try {
+            await stream.WriteAsync ( message ).ConfigureAwait ( false );
+        }
+        catch { }
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    internal ValueTask InvokeContextCreated ( HttpHostContext context ) {
+        if (_disposedValue || Handler is null)
+            return ValueTask.CompletedTask;
+
+        return new ValueTask ( Handler.OnContextCreatedAsync ( this, context ) );
     }
 
     /// <summary>
     /// Stops the HTTP host from listening for incoming HTTP requests.
     /// </summary>
     public void Stop () {
-        if (!isListening)
+        if (!_isListening)
             return;
+        _isListening = false;
 
-        isListening = false;
-        _listener.Close ();
+        try {
+            _listener.Close ();
+        }
+        catch { }
     }
 
     private void Dispose ( bool disposing ) {
-        if (!disposedValue) {
-            if (disposing) {
-                isListening = false;
-                _listener.Close ();
-                _listener.Dispose ();
+        if (_disposedValue)
+            return;
+        _disposedValue = true;
+
+        if (disposing) {
+            _isListening = false;
+
+            try { _listener.Close (); }
+            catch { }
+            try { _listener.Dispose (); }
+            catch { }
+
+            // Dispose pool de accept args
+            for (int i = 0; i < AcceptPoolSize; i++) {
+                try { _acceptArgsPool [ i ].Dispose (); }
+                catch { }
             }
-
-            disposedValue = true;
         }
-    }
-
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    internal async Task InvokeContextCreated ( HttpHostContext context ) {
-        if (disposedValue)
-            return;
-        if (Handler is null)
-            return;
-
-        await Handler.OnContextCreatedAsync ( this, context );
     }
 
     /// <inheritdoc/>
     public void Dispose () {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose ( disposing: true );
+        Dispose ( true );
         GC.SuppressFinalize ( this );
     }
 
     /// <inheritdoc/>
     ~HttpHost () {
-        Dispose ( disposing: false );
+        Dispose ( false );
     }
 }
