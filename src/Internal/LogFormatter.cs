@@ -16,6 +16,7 @@ using Sisk.Core.Http;
 namespace Sisk.Core.Internal;
 
 static class LogFormatter {
+
     public static string FormatExceptionEntr ( HttpServerExecutionResult executionResult ) {
         StringBuilder errLineBuilder = new StringBuilder ( 128 );
         errLineBuilder.Append ( '[' );

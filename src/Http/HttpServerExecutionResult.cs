@@ -12,6 +12,7 @@ namespace Sisk.Core.Http {
     /// Represents the results of an request execution on the HTTP server.
     /// </summary>
     public sealed class HttpServerExecutionResult {
+
         /// <summary>
         /// Gets the <see cref="HttpRequest"/> received in this diagnosis.
         /// </summary>

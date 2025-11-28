@@ -4,26 +4,19 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   CadenteEngineRareTests.cs
+// File name:   EngineRareTests.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net.Http.Json;
 using System.Text;
-using Sisk.Cadente.CoreEngine;
 
 namespace tests.Tests;
 
 [TestClass]
-public sealed class CadenteEngineRareTests {
-    private static void AssumeCadenteEngine () {
-        if (Server.Instance.HttpServer.ServerConfiguration.Engine is not CadenteHttpServerEngine) {
-            Assert.Inconclusive ( "Cadente HTTP engine is not active for this test run." );
-        }
-    }
+public sealed class EngineRareTests {
 
     [TestMethod]
     public async Task ExpectContinue_LargePayload_Succeeds () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
         client.DefaultRequestHeaders.ExpectContinue = true;
 
@@ -44,7 +37,6 @@ public sealed class CadenteEngineRareTests {
 
     [TestMethod]
     public async Task FormContent_ThousandFields_RoundTrips () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
         var formData = Enumerable.Range ( 0, 1000 ).ToDictionary ( i => $"field{i:0000}", i => $"value-{i}" );
         using var content = new FormUrlEncodedContent ( formData );
@@ -62,7 +54,6 @@ public sealed class CadenteEngineRareTests {
 
     [TestMethod]
     public async Task JsonContent_LargeStringPayload_RoundTrips () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
         var nameBuilder = new StringBuilder ( 128 * 1024 );
         for (int i = 0; i < 2048; i++) {
@@ -81,7 +72,6 @@ public sealed class CadenteEngineRareTests {
 
     [TestMethod]
     public async Task ResponseStreamChunked_ReadIncrementally () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
 
         using var response = await client.GetAsync ( "tests/responsestream/chunked", HttpCompletionOption.ResponseHeadersRead );
@@ -106,7 +96,6 @@ public sealed class CadenteEngineRareTests {
 
     [TestMethod]
     public async Task ServerSentEvents_CancelAfterFirstEvent () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
         using var cts = new CancellationTokenSource ( TimeSpan.FromSeconds ( 5 ) );
 
@@ -141,7 +130,6 @@ public sealed class CadenteEngineRareTests {
 
     [TestMethod]
     public async Task Plaintext_ManyConcurrentRequests_Succeed () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
 
         var tasks = Enumerable.Range ( 0, 12 ).Select ( async _ => {
@@ -156,7 +144,6 @@ public sealed class CadenteEngineRareTests {
 
     [TestMethod]
     public async Task Plaintext_LongQueryString_Succeeds () {
-        AssumeCadenteEngine ();
         using var client = Server.GetHttpClient ();
         var uriBuilder = new StringBuilder ( "tests/plaintext?" );
         for (int i = 0; i < 200; i++) {

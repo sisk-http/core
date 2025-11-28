@@ -299,6 +299,13 @@ public sealed class Server {
                 router.SetRoute ( RouteMethod.Get, "/tests/sse/cors", ( req ) => { var es = req.GetEventSource (); es.AppendHeader ( "X-Test-SSE", "cors" ); es.Send ( "cors message 1" ); return es.Close (); } );
                 router.SetRoute ( RouteMethod.Get, "/tests/sse/empty", ( req ) => { var es = req.GetEventSource (); es.Send ( "" ); es.Send ( null ); es.Send ( "", fieldName: "customEmpty" ); es.Send ( null, fieldName: "customNull" ); return es.Close (); } );
 
+                router.SetRoute ( RouteMethod.Get, "/tests/headers/repeated", ( req ) => {
+                    var resp = new HttpResponse ( "ok" );
+                    resp.Headers.Add ( "X-Custom-Header", "value1" );
+                    resp.Headers.Add ( "X-Custom-Header", "value2" );
+                    return resp;
+                } );
+
                 // WebSocket routes
                 router.SetRoute ( RouteMethod.Get, "/tests/ws/echo", async ( HttpRequest request ) => {
                     HttpWebSocket client = await request.GetWebSocketAsync ();
