@@ -7,16 +7,12 @@
 // File name:   HttpChunkedReadStream2.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Cadente.Streams;
 
-sealed class HttpChunkedReadStream2 : Stream {
+sealed class HttpChunkedReadStream2 : EndableStream {
     Stream _s;
     byte [] _buffer;
 
@@ -44,7 +40,7 @@ sealed class HttpChunkedReadStream2 : Stream {
 
     public override int Read ( byte [] buffer, int offset, int count ) {
 
-        if (currentBlockSize == 0) {
+        if (IsEnded || currentBlockSize == 0) {
             return 0;
         }
 
@@ -53,16 +49,19 @@ sealed class HttpChunkedReadStream2 : Stream {
             int ptr = 0;
             while (true) {
                 int b = _s.ReadByte ();
-                if (b == -1) break;
+                if (b == -1)
+                    break;
                 _buffer [ ptr++ ] = (byte) b;
 
                 if (ptr >= 2 && _buffer [ ptr - 1 ] == '\n' && _buffer [ ptr - 2 ] == '\r') {
                     break;
                 }
-                if (ptr >= _buffer.Length) throw new InvalidOperationException ( "Chunk header too long" );
+                if (ptr >= _buffer.Length)
+                    throw new InvalidOperationException ( "Chunk header too long" );
             }
 
-            if (ptr == 0) return 0;
+            if (ptr == 0)
+                return 0;
 
             var headerLine = Encoding.ASCII.GetString ( _buffer, 0, ptr - 2 );
             var extIndex = headerLine.IndexOf ( ';' );
@@ -70,6 +69,7 @@ sealed class HttpChunkedReadStream2 : Stream {
 
             if (numberString == "0") {
                 currentBlockSize = 0;
+                FinishReading ();
                 return 0;
             }
 
@@ -87,7 +87,8 @@ sealed class HttpChunkedReadStream2 : Stream {
             int r = 0;
             while (r < 2) {
                 int x = _s.Read ( _buffer, 0, 2 - r );
-                if (x == 0) break;
+                if (x == 0)
+                    break;
                 r += x;
             }
             currentBlockSize = -1;

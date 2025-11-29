@@ -11,7 +11,7 @@ using Sisk.Cadente.HttpSerializer;
 
 namespace Sisk.Cadente.Streams;
 
-internal sealed class HttpRequestStream : Stream {
+internal sealed class HttpRequestStream : EndableStream {
     private Stream s;
     private HttpRequestBase baseRequest;
     int read = 0;
@@ -37,7 +37,12 @@ internal sealed class HttpRequestStream : Stream {
     }
 
     public override int Read ( byte [] buffer, int offset, int count ) {
+        if (IsEnded) {
+            return 0;
+        }
+
         if (baseRequest.ContentLength > 0 && read >= baseRequest.ContentLength) {
+            FinishReading ();
             return 0;
         }
 
@@ -66,12 +71,12 @@ internal sealed class HttpRequestStream : Stream {
                 return 0;
             }
             if (remainingInBuffer > remainingByLength) {
-                remainingInBuffer = (int)remainingByLength;
+                remainingInBuffer = (int) remainingByLength;
             }
         }
 
-        int toCopy = Math.Min(count, remainingInBuffer);
-        internalSpan.Slice(bufferPosition, toCopy).CopyTo(buffer.AsSpan(offset, toCopy));
+        int toCopy = Math.Min ( count, remainingInBuffer );
+        internalSpan.Slice ( bufferPosition, toCopy ).CopyTo ( buffer.AsSpan ( offset, toCopy ) );
         bufferPosition += toCopy;
         return toCopy;
     }

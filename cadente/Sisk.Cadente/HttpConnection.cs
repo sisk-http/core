@@ -11,6 +11,7 @@ using System.Buffers;
 using System.Net;
 using System.Runtime.CompilerServices;
 using Sisk.Cadente.HttpSerializer;
+using Sisk.Cadente.Streams;
 using Sisk.Core.Http;
 
 namespace Sisk.Cadente;
@@ -23,9 +24,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
     private int headerParsingTimeout;
 
 #if DEBUG
-    public readonly int Id = Random.Shared.Next ( 0, ushort.MaxValue );
-#else
-    public readonly int Id = 0;
+    public static readonly AsyncLocal<int> Id = new AsyncLocal<int> ();
 #endif
 
     // buffer dedicated to headers
@@ -53,6 +52,10 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
     public async Task<HttpConnectionState> HandleConnectionEventsAsync ( CancellationToken shutdownToken ) {
         bool connectionCloseRequested = false;
 
+#if DEBUG
+        Id.Value = Random.Shared.Next ( 100_000, 999_999 );
+#endif
+
         while (!disposedValue) {
 
             HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream, shutdownToken, headerParsingTimeout ).ConfigureAwait ( false );
@@ -63,6 +66,8 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
             HttpHostContext managedSession = new HttpHostContext ( _host, this, nextRequest, _client );
             await _host.InvokeContextCreated ( managedSession ).ConfigureAwait ( false );
+
+            Logger.LogInformation ( $"HTTP {managedSession.Request.Method} {managedSession.Request.Path} Headers={managedSession.Request.Headers.Count} ConLength={managedSession.Request.ContentLength}" );
 
             if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                 connectionCloseRequested = true;
@@ -76,6 +81,31 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
             }
 
             await networkStream.FlushAsync ().ConfigureAwait ( false );
+
+            if (nextRequest.IsChunked || nextRequest.ContentLength > 0) {
+                EndableStream? requestStream = managedSession.Request._readingStream;
+
+                if (requestStream is null) {
+                    // content was not read, we need to drain it
+                    requestStream = managedSession.Request.GetRequestStreamCore ( sendExpectation: false ) as EndableStream;
+                }
+                if (requestStream is null) {
+                    // couldn't get request stream, already drained. This should not occur; treat as error.
+                    Logger.LogInformation ( $"Unexpected: request body already drained and stream is null." );
+                    return HttpConnectionState.ConnectionClosed;
+                }
+                else if (!requestStream.IsEnded) {
+                    using var ct = new CancellationTokenSource ( _host.TimeoutManager.BodyDrainTimeout );
+
+                    if (!await requestStream.DrainAsync ( ct.Token )) {
+                        // drain timed out, close connection
+                        Logger.LogInformation ( $"body drained: closed on ct" );
+                        return HttpConnectionState.ConnectionClosed;
+                    }
+
+                    Logger.LogInformation ( $"body drained: ended" );
+                }
+            }
 
             if (connectionCloseRequested) {
                 break;

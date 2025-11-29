@@ -84,6 +84,7 @@ public sealed class HttpHostContext {
         bool wasExpectationSent = false;
         private HttpRequestStream _requestStream;
         private HttpRequestBase _baseRequest;
+        internal EndableStream? _readingStream;
 
         /// <summary>
         /// Gets the HTTP method (e.g., GET, POST) of the request.
@@ -101,6 +102,16 @@ public sealed class HttpHostContext {
         public long ContentLength { get => _baseRequest.ContentLength; }
 
         /// <summary>
+        /// Gets a value indicating whether the request <b>may</b> have a message body.
+        /// </summary>
+        /// <remarks>
+        /// This property returns <c>true</c> if the content length is greater than zero or if the request uses chunked transfer encoding,
+        /// indicating that a body <b>may</b> be present. However, for chunked encoding, the actual content could still be empty even when this property returns true.
+        /// Use this property to determine whether it is necessary to attempt reading or processing the request body, but do not assume that a body is always present.
+        /// </remarks>
+        public bool HasBody { get => ContentLength > 0 || _baseRequest.IsChunked; }
+
+        /// <summary>
         /// Gets the headers associated with the request.
         /// </summary>
         public HttpHeaderList Headers { get; }
@@ -109,22 +120,37 @@ public sealed class HttpHostContext {
         /// Gets the stream containing the content of the request.
         /// </summary>
         public Stream GetRequestStream () {
+            return GetRequestStreamCore ( true );
+        }
 
+        internal Stream GetRequestStreamCore ( bool sendExpectation ) {
             if (ContentLength == 0) {
                 return Stream.Null;
             }
 
-            if (_baseRequest.IsExpecting100 && !wasExpectationSent) {
+            if (_readingStream is { }) {
+
+                if (_readingStream.IsEnded) {
+                    return Stream.Null;
+                }
+                else {
+                    return _readingStream;
+                }
+            }
+
+            if (_baseRequest.IsExpecting100 && !wasExpectationSent && sendExpectation) {
                 wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( _requestStream );
 
                 if (!wasExpectationSent)
                     throw new InvalidOperationException ( "Unable to obtain the input stream for the request." );
             }
 
-            return _baseRequest.IsChunked switch {
+            _readingStream = _baseRequest.IsChunked switch {
                 true => new HttpChunkedReadStream2 ( _requestStream ),
                 false => _requestStream
             };
+
+            return _readingStream;
         }
 
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {

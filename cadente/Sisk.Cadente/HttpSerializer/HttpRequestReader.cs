@@ -42,7 +42,7 @@ static class HttpRequestReader {
             while (totalRead < bufferLength) {
                 long currentTicks = Environment.TickCount64;
                 if (currentTicks >= deadlineTicks) {
-                    Logger.LogInformation ( $"failed to read buffer: header read timeout" );
+                    Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
                     return null;
                 }
 
@@ -56,8 +56,13 @@ static class HttpRequestReader {
                     cancellationToken
                 ).ConfigureAwait ( false );
 
+                if (bytesRead == 0)
+                {
+                    Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
+                    return null;
+                }
                 if (bytesRead == 0) {
-                    Logger.LogInformation ( $"failed to read buffer: connection closed" );
+                    // Connection closed by client before sending complete headers
                     return null;
                 }
 
@@ -74,19 +79,19 @@ static class HttpRequestReader {
                 searchStart = totalRead;
             }
 
-            Logger.LogInformation ( $"failed to read buffer: headers too large" );
+            Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
             return null;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
-            Logger.LogInformation ( $"failed to read buffer: header read timeout" );
+            Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
             return null;
         }
         catch (OperationCanceledException) {
-            Logger.LogInformation ( $"failed to read buffer: operation cancelled" );
+            Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
             return null;
         }
         catch (Exception ex) {
-            Logger.LogInformation ( $"failed to read buffer (exception): {ex.Message}" );
+            Logger.LogInformation ( $"failed to parse HTTP request (exception): {ex.Message}" );
             return null;
         }
     }

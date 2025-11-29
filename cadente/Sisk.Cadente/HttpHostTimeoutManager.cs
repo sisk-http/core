@@ -36,5 +36,12 @@ public sealed class HttpHostTimeoutManager {
     /// <value>The default value is 30 seconds.</value>
     public TimeSpan HeaderParsingTimeout { get; set; } = TimeSpan.FromSeconds ( 30 );
 
+    /// <summary>
+    /// Gets or sets the maximum duration to wait for draining the request or response body before timing out.
+    /// </summary>
+    /// <remarks>If the body is not fully drained within the specified timeout, the operation may be aborted.
+    /// Adjust this value based on expected network conditions and payload sizes to avoid premature timeouts.</remarks>
+    public TimeSpan BodyDrainTimeout { get; set; } = TimeSpan.FromSeconds ( 30 );
+
     internal HttpHostTimeoutManager () { }
 }
