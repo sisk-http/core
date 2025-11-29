@@ -56,8 +56,7 @@ static class HttpRequestReader {
                     cancellationToken
                 ).ConfigureAwait ( false );
 
-                if (bytesRead == 0)
-                {
+                if (bytesRead == 0) {
                     Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
                     return null;
                 }
