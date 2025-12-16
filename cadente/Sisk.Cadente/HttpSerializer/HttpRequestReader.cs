@@ -60,10 +60,6 @@ static class HttpRequestReader {
                     Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
                     return null;
                 }
-                if (bytesRead == 0) {
-                    // Connection closed by client before sending complete headers
-                    return null;
-                }
 
                 totalRead += bytesRead;
 

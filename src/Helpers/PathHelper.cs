@@ -15,6 +15,30 @@ namespace Sisk.Core.Helpers;
 /// Provides useful path-dedicated helper members.
 /// </summary>
 public sealed class PathHelper {
+
+    static readonly char [] forbiddenPathChars = Path.GetInvalidPathChars ();
+    static readonly char [] forbiddenFileChars = Path.GetInvalidFileNameChars ();
+
+    /// <summary>
+    /// Determines whether the specified path contains only valid path and file-name characters.
+    /// </summary>
+    /// <param name="path">The path to validate.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="path"/> contains no invalid path or file-name characters;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool IsPathAllowed ( string path ) {
+        string filePart = Path.GetFileName ( path );
+
+        if (filePart.IndexOfAny ( forbiddenFileChars ) >= 0)
+            return false;
+
+        if (path.IndexOfAny ( forbiddenPathChars ) >= 0)
+            return false;
+
+        return true;
+    }
+
     /// <summary>
     /// Splits the specified path into its individual segments, removing empty entries and trimming whitespace.
     /// </summary>

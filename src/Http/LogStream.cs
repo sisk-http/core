@@ -7,9 +7,11 @@
 // File name:   LogStream.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Globalization;
 using System.Text;
 using System.Threading.Channels;
 using Sisk.Core.Entity;
+using Sisk.Core.Helpers;
 
 namespace Sisk.Core.Http {
     /// <summary>
@@ -36,6 +38,22 @@ namespace Sisk.Core.Http {
 
         private static readonly Lazy<LogStream> _consoleOutputLazy = new Lazy<LogStream> ( () => new LogStream ( Console.Out ) );
         private static readonly Lazy<LogStream> _emptyLazy = new Lazy<LogStream> ( () => new LogStream () );
+
+        /// <summary>
+        /// Converts the specified <see cref="DateTime"/> to a file-name-safe string representation
+        /// formatted as "yyyy-MM-dd_HH-mm-ss".
+        /// </summary>
+        /// <param name="dt">The date and time to convert.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information. Can be <see langword="null"/>.</param>
+        /// <returns>A string that is safe for use in file names.</returns>
+        public static string EscapeSafeDateTime ( DateTime dt, IFormatProvider? provider = null ) {
+            return dt.ToString ( "yyyy-MM-dd_HH-mm-ss", provider );
+        }
+
+        /// <summary>
+        /// Gets the current local date and time as a file-name-safe string formatted as "yyyy-MM-dd_HH-mm-ss".
+        /// </summary>
+        public static string SafeTimestamp => EscapeSafeDateTime ( DateTime.Now, CultureInfo.InvariantCulture );
 
         /// <summary>
         /// Gets a shared <see cref="LogStream"/> that writes its output to the <see cref="Console.Out"/> stream.
@@ -85,6 +103,10 @@ namespace Sisk.Core.Http {
             set {
                 if (value is not null) {
                     _filePath = Path.GetFullPath ( value );
+
+                    if (!PathHelper.IsPathAllowed ( _filePath )) {
+                        throw new ArgumentException ( SR.Format ( SR.LogStream_InvalidFilePath, value ), nameof ( value ) );
+                    }
 
                     string? dirPath = Path.GetDirectoryName ( _filePath );
                     if (dirPath is not null)
