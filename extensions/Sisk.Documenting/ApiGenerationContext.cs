@@ -45,4 +45,11 @@ public sealed class ApiGenerationContext {
     /// Gets or sets the handler used to generate example parameters for query, route, and header parameters.
     /// </summary>
     public IExampleParameterTypeHandler? ParameterExampleTypeHandler { get; set; }
+
+    /// <summary>
+    /// Gets or sets the handler used to process content schema types.
+    /// </summary>
+    /// <remarks>Assign an implementation of <see cref="IContentSchemaTypeHandler"/> to customize how content
+    /// schema types are interpreted or validated. If <see langword="null"/>, default handling will be used.</remarks>
+    public IContentSchemaTypeHandler? ContentSchemaTypeHandler { get; set; }
 }

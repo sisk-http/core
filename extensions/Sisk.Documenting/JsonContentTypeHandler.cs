@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   JsonExampleTypeHandler.cs
+// File name:   JsonContentTypeHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
 
@@ -14,6 +14,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using LightJson;
+using LightJson.Schema;
 using Namotion.Reflection;
 
 namespace Sisk.Documenting;
@@ -21,7 +23,21 @@ namespace Sisk.Documenting;
 /// <summary>
 /// Provides JSON example generation for types used in documentation.
 /// </summary>
-public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameterTypeHandler {
+public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameterTypeHandler, IContentSchemaTypeHandler {
+
+#pragma warning disable IL3050, IL2026
+    static Lazy<JsonContentTypeHandler> shared = new Lazy<JsonContentTypeHandler> ( () => new JsonContentTypeHandler () );
+#pragma warning restore IL3050, IL2026
+
+    /// <summary>
+    /// Gets the shared singleton instance of <see cref="JsonContentTypeHandler"/>.
+    /// </summary>
+    public static JsonContentTypeHandler Shared {
+        [RequiresUnreferencedCode ( "This property uses the default JsonOptions and JsonTypeInfo, which requires dynamic code to run." )]
+        get {
+            return shared.Value;
+        }
+    }
 
     /// <summary>
     /// Gets or sets the number of items to include when generating examples for enumerable types.
@@ -35,39 +51,47 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
 
     private IJsonTypeInfoResolver _typeResolver;
     private JsonSerializerOptions _serializerOptions;
+    private JsonOptions _jsoptions;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="JsonExampleTypeHandler"/> class with the specified type resolver and serializer options.
+    /// Initializes a new instance of the <see cref="JsonContentTypeHandler"/> class with the specified type resolver and serializer options.
     /// </summary>
     /// <param name="typeResolver">The JSON type info resolver.</param>
     /// <param name="serializerOptions">The JSON serializer options.</param>
-    public JsonExampleTypeHandler ( IJsonTypeInfoResolver typeResolver, JsonSerializerOptions serializerOptions ) {
+    public JsonContentTypeHandler ( IJsonTypeInfoResolver typeResolver, JsonSerializerOptions serializerOptions ) {
         _typeResolver = typeResolver;
         _serializerOptions = serializerOptions;
+        _jsoptions = new JsonOptions () {
+            SerializerContext = serializerOptions
+        };
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="JsonExampleTypeHandler"/> class with the specified serializer options and a default type resolver.
+    /// Initializes a new instance of the <see cref="JsonContentTypeHandler"/> class with the specified serializer options and a default type resolver.
     /// </summary>
     /// <param name="serializerOptions">The JSON serializer options.</param>
     [RequiresDynamicCode ( "This method calls the JsonSerializerOptions.Default, which requires dynamic code." )]
     [RequiresUnreferencedCode ( "This method calls the JsonSerializerOptions.Default, which requires unreferenced code." )]
-    public JsonExampleTypeHandler ( JsonSerializerOptions serializerOptions ) {
+    public JsonContentTypeHandler ( JsonSerializerOptions serializerOptions ) {
         _typeResolver = new DefaultJsonTypeInfoResolver ();
         _serializerOptions = serializerOptions;
+        _jsoptions = new JsonOptions () {
+            SerializerContext = serializerOptions
+        };
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="JsonExampleTypeHandler"/> class with default serializer options and type resolver.
+    /// Initializes a new instance of the <see cref="JsonContentTypeHandler"/> class with default serializer options and type resolver.
     /// </summary>
     [RequiresDynamicCode ( "This method calls the JsonSerializerOptions.Default, which requires dynamic code." )]
     [RequiresUnreferencedCode ( "This method calls the JsonSerializerOptions.Default, which requires unreferenced code." )]
-    public JsonExampleTypeHandler () {
+    public JsonContentTypeHandler () {
         _typeResolver = new DefaultJsonTypeInfoResolver ();
         _serializerOptions = JsonSerializerOptions.Default;
+        _jsoptions = JsonOptions.Default;
     }
 
-    string ConvertCase ( string name ) => _serializerOptions.PropertyNamingPolicy?.ConvertName ( name ) ?? name;
+    string ConvertCase ( string name ) => (_jsoptions.NamingPolicy ?? _serializerOptions.PropertyNamingPolicy)?.ConvertName ( name ) ?? name;
 
     /// <summary>
     /// Generates a JSON body example for the specified type.
@@ -83,8 +107,14 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         void AppendComment ( string? text ) {
             if (text is null)
                 return;
-            foreach (var line in text.Split ( '\n' )) {
+
+            var lines = text.Split ( '\n' );
+            for (int i = 0; i < lines.Length; i++) {
+                var line = lines [ i ];
                 AppendLine ( $"// {line.Trim ()}" );
+                if (i != lines.Length - 1) {
+                    AppendIndent ();
+                }
             }
         }
 
@@ -117,21 +147,18 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
 
             AppendIndent ();
             if (elementType is null) {
-                for (int i = 0; i < EnumerationExampleCount; i++) {
-                    AppendLine ( "object," );
-                    AppendIndent ();
-                }
-
-                AppendLine ();
                 AppendLine ( "..." );
             }
             else {
                 for (int i = 0; i < EnumerationExampleCount; i++) {
                     AppendType ( elementType );
                     AppendLine ( "," );
-                    AppendIndent ();
+                    if (i != EnumerationExampleCount - 1) {
+                        AppendIndent ();
+                    }
                 }
 
+                AppendIndent ();
                 AppendLine ( "..." );
             }
 
@@ -149,6 +176,8 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
                 string propName =
                     prop.GetCustomAttribute<JsonPropertyNameAttribute> ()?.Name ??
                     prop.Name;
+
+                propName = ConvertCase ( propName );
 
                 paramsDocs.Add ( propName, prop.GetXmlDocsSummary () );
 
@@ -310,6 +339,12 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
 
         AppendType ( type, [ "$" ] );
         return parameters.ToArray ();
+    }
+
+    /// <inheritdoc/>
+    public JsonSchema GetJsonSchemaForType ( Type type ) {
+
+        return JsonSchema.CreateFromType ( type, _jsoptions );
     }
 
     class JsonPropertyNameComparer : IEqualityComparer<string> {

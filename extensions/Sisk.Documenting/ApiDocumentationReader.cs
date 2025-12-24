@@ -91,6 +91,7 @@ internal class ApiDocumentationReader {
                 PathParameters = pathParameters.ToArray (),
                 RequestExamples = requests.ToArray (),
                 QueryParameters = queryParameters.ToArray (),
+                Order = apiEndpointAttr.Order
             };
 
             endpoints.Add ( endpoint );
@@ -100,7 +101,10 @@ internal class ApiDocumentationReader {
             ApiVersion = context.ApplicationVersion,
             ApplicationDescription = context.ApplicationDescription,
             ApplicationName = context.ApplicationName,
-            Endpoints = endpoints.ToArray (),
+            Endpoints = endpoints
+                .OrderBy ( e => e.Order )
+                .ThenByDescending ( e => e.Path )
+                .ToArray (),
         };
     }
 

@@ -36,6 +36,11 @@ public sealed class ApiEndpointAttribute : Attribute {
     public bool InheritDescriptionFromXmlDocumentation { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the position of the item in an ordered sequence.
+    /// </summary>
+    public int Order { get; set; } = 0;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ApiEndpointAttribute"/> class.
     /// </summary>
     public ApiEndpointAttribute () {

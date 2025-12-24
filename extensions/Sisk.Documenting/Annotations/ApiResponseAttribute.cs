@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
+using LightJson.Serialization;
 
 namespace Sisk.Documenting.Annotations;
 
@@ -39,7 +40,12 @@ public sealed class ApiResponseAttribute : Attribute {
     /// <summary>
     /// Gets or sets the type used to generate the response example.
     /// </summary>
-    public Type? ExampleType { get; set; }
+    public Type? PayloadType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the JSON schema definition associated with this instance.
+    /// </summary>
+    public string? JsonSchema { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ApiResponseAttribute"/> class with the specified status code.
@@ -54,9 +60,12 @@ public sealed class ApiResponseAttribute : Attribute {
         string? example = Example;
         string? exampleLanguage = ExampleLanguage;
 
-        if (ExampleType != null && context.BodyExampleTypeHandler?.GetBodyExampleForType ( ExampleType ) is { } exampleResult) {
+        if (PayloadType != null && context.BodyExampleTypeHandler?.GetBodyExampleForType ( PayloadType ) is { } exampleResult) {
             example = exampleResult.ExampleContents;
             exampleLanguage = exampleResult.ExampleLanguage;
+        }
+        if (PayloadType != null && JsonSchema == null && context.ContentSchemaTypeHandler?.GetJsonSchemaForType ( PayloadType ) is { } schemaResult) {
+            JsonSchema = JsonWriter.Serialize ( schemaResult, prettyOutput: true );
         }
 
         return new ApiEndpointResponse {
@@ -64,6 +73,7 @@ public sealed class ApiResponseAttribute : Attribute {
             Description = Description,
             Example = example,
             ExampleLanguage = exampleLanguage,
+            JsonSchema = JsonSchema
         };
     }
 }

@@ -109,6 +109,11 @@ public sealed class ApiEndpoint {
     public ApiEndpointQueryParameter [] QueryParameters { get; internal set; } = null!;
 
     /// <summary>
+    /// Gets the relative ordering index for this instance within its containing collection or context.
+    /// </summary>
+    public int Order { get; internal set; } = 0;
+
+    /// <summary>
     /// Gets the path of the API endpoint.
     /// </summary>
     public string Path { get; internal set; } = null!;
@@ -136,6 +141,11 @@ public sealed class ApiEndpointRequestExample {
     /// Gets the actual example request content.
     /// </summary>
     public string? Example { get; internal set; }
+
+    /// <summary>
+    /// Gets the JSON schema definition associated with this instance.
+    /// </summary>
+    public string? JsonSchema { get; internal set; }
 
     internal ApiEndpointRequestExample () {
     }
@@ -247,6 +257,11 @@ public sealed class ApiEndpointResponse {
     /// Gets the programming language used in the example, if applicable.
     /// </summary>
     public string? ExampleLanguage { get; internal set; }
+
+    /// <summary>
+    /// Gets the JSON schema definition associated with this instance.
+    /// </summary>
+    public string? JsonSchema { get; internal set; }
 
     internal ApiEndpointResponse () {
     }

@@ -7,6 +7,8 @@
 // File name:   ApiRequestAttribute.cs
 // Repository:  https://github.com/sisk-http/core
 
+using LightJson.Serialization;
+
 namespace Sisk.Documenting.Annotations;
 
 /// <summary>
@@ -30,9 +32,14 @@ public sealed class ApiRequestAttribute : Attribute {
     public string? Example { get; set; }
 
     /// <summary>
-    /// Gets or sets the type used to generate the request example.
+    /// Gets or sets the type used to generate the request example and schema.
     /// </summary>
-    public Type? ExampleType { get; set; }
+    public Type? PayloadType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the JSON schema that describes the expected request payload.
+    /// </summary>
+    public string? JsonSchema { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ApiRequestAttribute"/> class with the specified description.
@@ -47,15 +54,19 @@ public sealed class ApiRequestAttribute : Attribute {
         string? example = Example;
         string? exampleLanguage = ExampleLanguage;
 
-        if (ExampleType != null && context.BodyExampleTypeHandler?.GetBodyExampleForType ( ExampleType ) is { } exampleResult) {
+        if (PayloadType != null && context.BodyExampleTypeHandler?.GetBodyExampleForType ( PayloadType ) is { } exampleResult) {
             example = exampleResult.ExampleContents;
             exampleLanguage = exampleResult.ExampleLanguage;
+        }
+        if (PayloadType != null && JsonSchema == null && context.ContentSchemaTypeHandler?.GetJsonSchemaForType ( PayloadType ) is { } schemaResult) {
+            JsonSchema = JsonWriter.Serialize ( schemaResult, prettyOutput: true );
         }
 
         return new ApiEndpointRequestExample {
             Description = Description,
             ExampleLanguage = exampleLanguage,
             Example = example,
+            JsonSchema = JsonSchema
         };
     }
 }
