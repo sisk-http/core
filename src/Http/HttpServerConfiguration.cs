@@ -47,7 +47,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Gets or sets the HTTP server processing engine.
         /// </summary>
-        public HttpServerEngine Engine { get; set; } = HttpListenerAbstractEngine.Shared;
+        public HttpServerEngine Engine { get; set; } = new HttpListenerAbstractEngine ();
 
         /// <summary>
         /// Gets or sets the server's action when it receives an HTTP request outside the local host.

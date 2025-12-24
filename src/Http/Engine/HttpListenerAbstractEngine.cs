@@ -21,12 +21,6 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
     private HttpListener _listener;
     private List<ListeningHost> _listeningHosts;
     private string [] _resolvedListeningPaths;
-    private static Lazy<HttpListenerAbstractEngine> shared = new Lazy<HttpListenerAbstractEngine> ( () => new HttpListenerAbstractEngine () );
-
-    /// <summary>
-    /// Gets the shared instance of the <see cref="HttpListenerAbstractEngine"/> class.
-    /// </summary>
-    public static HttpListenerAbstractEngine Shared => shared.Value;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpListenerAbstractEngine"/> class.
@@ -53,7 +47,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
 
     /// <inheritdoc/>
     public override void SetListeningHosts ( IEnumerable<ListeningHost> hosts ) {
-        if (hosts.Any(h => h.SslOptions != null))
+        if (hosts.Any ( h => h.SslOptions != null ))
             throw new NotSupportedException ( "The native .NET HttpListener does not support SSL." );
 
         this._listeningHosts = new List<ListeningHost> ( hosts );
@@ -89,7 +83,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
         foreach (var prefix in _listeningPrefixes)
             _listener.Prefixes.Add ( prefix );
 
-        _resolvedListeningPaths= _listeningPrefixes.ToArray ();
+        _resolvedListeningPaths = _listeningPrefixes.ToArray ();
     }
 
     /// <inheritdoc/>
