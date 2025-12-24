@@ -127,7 +127,8 @@ public sealed class McpProvider {
                 var clientVersion = requestObject [ "params" ] [ "protocolVersion" ].GetString ();
 
                 if (clientVersion != PROTOCOL_VERSION) {
-                    return new HttpResponse ( System.Net.HttpStatusCode.NotAcceptable );
+                    // Warning: protocol version mismatch, attempt to continue but this may lead to unexpected behavior
+                    //return new HttpResponse ( System.Net.HttpStatusCode.NotAcceptable );
                 }
 
                 var initializeResponse = GetInitializeResponse ( id );

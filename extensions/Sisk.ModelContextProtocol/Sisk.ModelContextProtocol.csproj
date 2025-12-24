@@ -53,7 +53,6 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\..\LightJson\Sources\LightJson\LightJson.csproj" />
 		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
@@ -62,7 +61,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="CypherPotato.LightJson" Version="0.14.1" />
+	  <PackageReference Include="CypherPotato.LightJson" Version="0.15.0" />
 	</ItemGroup>
 
 	<!-- global imports -->
