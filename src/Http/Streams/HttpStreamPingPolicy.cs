@@ -65,7 +65,7 @@ public sealed class HttpStreamPingPolicy : IDisposable {
                     _timer.Dispose ();
                     return;
                 }
-                __sse_parent.Send ( $":{DataMessage}" );
+                __sse_parent.Send ( $":{DataMessage}", fieldName: string.Empty );
             }
             else if (__ws_parent != null) {
                 if (__ws_parent.IsClosed) {
