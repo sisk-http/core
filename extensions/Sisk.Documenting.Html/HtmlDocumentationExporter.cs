@@ -95,6 +95,15 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     public object? Head { get; set; }
 
     /// <summary>
+    /// Includes the Prism.js syntax-highlighter library by appending its JavaScript and CSS to the current
+    /// <see cref="Script"/> and <see cref="Style"/> properties.
+    /// </summary>
+    public void IncludePrismJs () {
+        Script += $"(()=>{{{PrismJs.Js}}})();";
+        Style += "\n\n" + PrismJs.Css;
+    }
+
+    /// <summary>
     /// Writes the main title of the API documentation.
     /// </summary>
     /// <param name="documentation">The API documentation to write the title for.</param>

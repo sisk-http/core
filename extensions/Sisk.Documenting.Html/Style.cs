@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 namespace Sisk.Documenting.Html;
+
 internal class Style {
     public const string DefaultStyles =
 """
@@ -86,6 +87,7 @@ pre {
     font-size: 85%;
     line-height: 1.45;
     border-radius: 6px;
+    max-height: 600px;
 }
 
 .muted {

@@ -78,7 +78,6 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     public virtual BodyExampleResult? GetBodyExampleForType ( Type type ) {
         StringBuilder sb = new StringBuilder ();
         int indentLevel = 0;
-
         HashSet<MemberInfo> documentedTypes = new HashSet<MemberInfo> ();
 
         void AppendComment ( string? text ) {
@@ -143,20 +142,34 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
 
         void AppendObject ( JsonTypeInfo objectItem ) {
 
+            List<string> shouldIgnoreItems = new List<string> ();
             Dictionary<string, string?> paramsDocs = new Dictionary<string, string?> ( new JsonPropertyNameComparer () );
             foreach (var prop in objectItem.Type.GetProperties ()) {
+
                 string propName =
                     prop.GetCustomAttribute<JsonPropertyNameAttribute> ()?.Name ??
                     prop.Name;
+
                 paramsDocs.Add ( propName, prop.GetXmlDocsSummary () );
+
+                if (prop.GetCustomAttribute<JsonIgnoreAttribute> () is not null) {
+                    shouldIgnoreItems.Add ( propName );
+                }
+            }
+
+            var validProperties = objectItem.Properties.Where ( p => !shouldIgnoreItems.Contains ( p.Name ) ).ToArray ();
+
+            if (validProperties.Length == 0) {
+                AppendText ( "{}" );
+                return;
             }
 
             AppendLine ( "{" );
             indentLevel++;
 
             bool lastItemAppendedDocs = false;
-            for (int i = 0; i < objectItem.Properties.Count; i++) {
-                JsonPropertyInfo property = objectItem.Properties [ i ];
+            for (int i = 0; i < validProperties.Length; i++) {
+                JsonPropertyInfo? property = validProperties [ i ];
 
                 if (lastItemAppendedDocs) {
                     AppendLine ();
@@ -191,7 +204,7 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
                     AppendText ( "?" );
                 }
 
-                if (i != objectItem.Properties.Count - 1) {
+                if (i != validProperties.Length - 1) {
                     AppendText ( "," );
                 }
 
@@ -220,8 +233,13 @@ public class JsonExampleTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         }
 
         void AppendType ( Type type ) {
+
+            if (indentLevel > 128)
+                return;
+
             try {
                 var typeInfo = _typeResolver.GetTypeInfo ( type, _serializerOptions );
+
                 if (typeInfo is null) {
                     AppendText ( ConvertCase ( type.Name ) );
                 }
