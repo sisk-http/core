@@ -9,6 +9,7 @@
 
 using System.Buffers;
 using System.Buffers.Text;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -84,6 +85,9 @@ static class HttpRequestReader {
         catch (OperationCanceledException) {
             Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
             return null;
+        }
+        catch (SocketException) {
+            return null; // socket errors are common when client disconnects abruptly
         }
         catch (Exception ex) {
             Logger.LogInformation ( $"failed to parse HTTP request (exception): {ex.Message}" );
