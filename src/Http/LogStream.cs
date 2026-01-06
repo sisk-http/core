@@ -76,6 +76,82 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
+        /// Safely writes the specified string to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be written.</param>
+        /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        public static bool SafeWriteToFile ( string filePath, string? contents ) {
+            return SafeWriteToFile ( filePath, contents, Encoding.UTF8 );
+        }
+
+        /// <summary>
+        /// Safely writes the specified string to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be written.</param>
+        /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
+        /// <param name="encoding">The encoding to use when writing the string. Defaults to <see cref="Encoding.UTF8"/>.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        public static bool SafeWriteToFile ( string filePath, string? contents, Encoding encoding ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            try {
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                File.WriteAllText ( fullPath, contents, encoding );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Safely writes the specified string to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be written.</param>
+        /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        public static Task<bool> SafeWriteToFileAsync ( string filePath, string? contents, CancellationToken cancellation = default ) {
+            return SafeWriteToFileAsync ( filePath, contents, Encoding.UTF8, cancellation );
+        }
+
+        /// <summary>
+        /// Safely writes the specified string to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be written.</param>
+        /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
+        /// <param name="encoding">The encoding to use when writing the string. Defaults to <see cref="Encoding.UTF8"/>.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        public static async Task<bool> SafeWriteToFileAsync ( string filePath, string? contents, Encoding encoding, CancellationToken cancellation = default ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            try {
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                await File.WriteAllTextAsync ( fullPath, contents, encoding, cancellation );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets an boolean indicating if this <see cref="LogStream"/> is buffering output messages
         /// to their internal message buffer.
         /// </summary>

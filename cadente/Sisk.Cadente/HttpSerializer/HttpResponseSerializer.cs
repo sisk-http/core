@@ -133,13 +133,16 @@ internal class HttpResponseSerializer {
                 if (header.IsEmpty)
                     continue;
 
-                header.NameBytes.Span.CopyTo ( buffer [ position.. ] );
+                var nameSpan = header.NameBytes.Span;
+                var valueSpan = header.ValueBytes.Span;
+
+                nameSpan.CopyTo ( buffer [ position.. ] );
                 position += header.NameBytes.Length;
 
                 WriteTwoBytes ( ref destination, position, ColonSpacePacked );
                 position += 2;
 
-                header.ValueBytes.Span.CopyTo ( buffer [ position.. ] );
+                valueSpan.CopyTo ( buffer [ position.. ] );
                 position += header.ValueBytes.Length;
 
                 WriteTwoBytes ( ref destination, position, CrLfPacked );

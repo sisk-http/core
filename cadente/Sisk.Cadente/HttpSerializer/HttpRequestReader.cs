@@ -142,7 +142,7 @@ static class HttpRequestReader {
 
         int cursor = protocolLineEnd + 1;
 
-        long contentLength = -1;
+        long contentLength = 0;
         bool keepAliveEnabled = !protocol.Span.SequenceEqual ( Http10 );
         bool expect100 = false;
         bool isChunked = false;

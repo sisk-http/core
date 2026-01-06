@@ -9,14 +9,12 @@
 
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using LightJson;
 using LightJson.Schema;
-using Namotion.Reflection;
 
 namespace Sisk.Documenting;
 
@@ -98,14 +96,12 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     /// </summary>
     /// <param name="type">The type to generate an example for.</param>
     /// <returns>A <see cref="BodyExampleResult"/> containing the JSON example, or <see langword="null"/> if the type cannot be handled.</returns>
-    [SuppressMessage ( "Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "<Pending>" )]
     public virtual BodyExampleResult? GetBodyExampleForType ( Type type ) {
         StringBuilder sb = new StringBuilder ();
         int indentLevel = 0;
-        HashSet<MemberInfo> documentedTypes = new HashSet<MemberInfo> ();
 
         void AppendComment ( string? text ) {
-            if (text is null)
+            if (text is null || !IncludeDescriptionAnnotations)
                 return;
 
             var lines = text.Split ( '\n' );
@@ -130,114 +126,182 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
             sb.Append ( text );
         }
 
-        void AppendEnumerable ( JsonTypeInfo enumItem ) {
+        void AppendSchema ( JsonValue schemaValue, bool isRequired = false, bool isNullable = false ) {
+            if (indentLevel > 128)
+                return;
+
+            if (!schemaValue.IsJsonObject) {
+                AppendText ( "any" );
+                return;
+            }
+
+            var schema = schemaValue.GetJsonObject ();
+            var schemaType = schema [ "type" ];
+
+            string? typeStr = null;
+            bool isNullableType = false;
+
+            if (schemaType.IsString) {
+                typeStr = schemaType.GetString ();
+            }
+            else if (schemaType.IsJsonArray) {
+                var types = schemaType.GetJsonArray ();
+                var nonNullTypes = types.Where ( t => t.GetString () != "null" ).ToArray ();
+                isNullableType = types.Any ( t => t.GetString () == "null" );
+                if (nonNullTypes.Length > 0) {
+                    typeStr = nonNullTypes [ 0 ].GetString ();
+                }
+            }
+
+            if (typeStr is null) {
+                AppendText ( "any" );
+                return;
+            }
+
+            switch (typeStr) {
+                case "object":
+                    AppendObjectSchema ( schema );
+                    break;
+
+                case "array":
+                    AppendArraySchema ( schema );
+                    break;
+
+                case "string":
+                    AppendStringExample ( schema );
+                    break;
+
+                case "number":
+                case "integer":
+                    AppendText ( "number" );
+                    break;
+
+                case "boolean":
+                    AppendText ( "boolean" );
+                    break;
+
+                default:
+                    AppendText ( typeStr );
+                    break;
+            }
+
+            if (isNullableType || isNullable) {
+                AppendText ( "?" );
+            }
+        }
+
+        void AppendStringExample ( JsonObject schema ) {
+            var enumValues = schema [ "enum" ];
+            if (enumValues.IsJsonArray) {
+                var arr = enumValues.GetJsonArray ();
+                if (arr.Count > 0) {
+                    AppendText ( $"\"{arr [ 0 ].GetString ()}\"" );
+                    return;
+                }
+            }
+
+            var format = schema [ "format" ];
+            if (format.IsString) {
+                AppendText ( $"\"{format.GetString ()}\"" );
+                return;
+            }
+
+            AppendText ( "string" );
+        }
+
+        void AppendArraySchema ( JsonObject schema ) {
             AppendLine ( "[" );
             indentLevel++;
 
-            Type? elementType = null;
-            if (enumItem.Type.IsArray) {
-                elementType = enumItem.Type.GetElementType ();
-            }
-            else {
-                var genericArgs = enumItem.Type.GetGenericArguments ();
-                if (genericArgs.Length > 0) {
-                    elementType = genericArgs [ 0 ];
+            var itemsSchema = schema [ "items" ];
+            if (itemsSchema.IsJsonObject) {
+                for (int i = 0; i < EnumerationExampleCount; i++) {
+                    AppendIndent ();
+                    AppendSchema ( itemsSchema );
+                    AppendLine ( "," );
                 }
             }
 
             AppendIndent ();
-            if (elementType is null) {
-                AppendLine ( "..." );
-            }
-            else {
-                for (int i = 0; i < EnumerationExampleCount; i++) {
-                    AppendType ( elementType );
-                    AppendLine ( "," );
-                    if (i != EnumerationExampleCount - 1) {
-                        AppendIndent ();
-                    }
-                }
-
-                AppendIndent ();
-                AppendLine ( "..." );
-            }
-
+            AppendLine ( "..." );
             indentLevel--;
             AppendIndent ();
             AppendText ( "]" );
         }
 
-        void AppendObject ( JsonTypeInfo objectItem ) {
-
-            List<string> shouldIgnoreItems = new List<string> ();
-            Dictionary<string, string?> paramsDocs = new Dictionary<string, string?> ( new JsonPropertyNameComparer () );
-            foreach (var prop in objectItem.Type.GetProperties ()) {
-
-                string propName =
-                    prop.GetCustomAttribute<JsonPropertyNameAttribute> ()?.Name ??
-                    prop.Name;
-
-                propName = ConvertCase ( propName );
-
-                paramsDocs.Add ( propName, prop.GetXmlDocsSummary () );
-
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute> () is not null) {
-                    shouldIgnoreItems.Add ( propName );
-                }
-            }
-
-            var validProperties = objectItem.Properties.Where ( p => !shouldIgnoreItems.Contains ( p.Name ) ).ToArray ();
-
-            if (validProperties.Length == 0) {
+        void AppendObjectSchema ( JsonObject schema ) {
+            var properties = schema [ "properties" ];
+            if (!properties.IsJsonObject) {
                 AppendText ( "{}" );
                 return;
+            }
+
+            var propsObj = properties.GetJsonObject ();
+            if (propsObj.Count == 0) {
+                AppendText ( "{}" );
+                return;
+            }
+
+            var requiredProps = new HashSet<string> ();
+            var requiredArray = schema [ "required" ];
+            if (requiredArray.IsJsonArray) {
+                foreach (var req in requiredArray.GetJsonArray ()) {
+                    if (req.IsString) {
+                        requiredProps.Add ( req.GetString () );
+                    }
+                }
             }
 
             AppendLine ( "{" );
             indentLevel++;
 
             bool lastItemAppendedDocs = false;
-            for (int i = 0; i < validProperties.Length; i++) {
-                JsonPropertyInfo? property = validProperties [ i ];
+            int propIndex = 0;
+            int propCount = propsObj.Count;
 
+            foreach (var prop in propsObj) {
                 if (lastItemAppendedDocs) {
                     AppendLine ();
                     lastItemAppendedDocs = false;
                 }
 
-                if (paramsDocs.TryGetValue ( property.Name, out string? propertyDocs )) {
+                var propSchema = prop.Value.GetJsonObject ();
+                var description = propSchema [ "description" ];
+                bool isRequired = requiredProps.Contains ( prop.Key );
+
+                var propType = propSchema [ "type" ];
+                bool isNullable = propType.IsJsonArray && propType.GetJsonArray ().Any ( t => t.GetString () == "null" );
+
+                if (description.IsString && IncludeDescriptionAnnotations) {
                     AppendIndent ();
 
                     List<string> docParts = new List<string> ();
-                    if (property.IsRequired) {
+                    if (isRequired) {
                         docParts.Add ( "Required" );
                     }
-                    if (property.AssociatedParameter?.IsNullable == true) {
+                    if (isNullable) {
                         docParts.Add ( "Nullable" );
                     }
 
                     if (docParts.Count > 0) {
-                        AppendComment ( $"{string.Join ( ". ", docParts )}. {propertyDocs}" );
+                        AppendComment ( $"{string.Join ( ". ", docParts )}. {description.GetString ()}" );
                     }
                     else {
-                        AppendComment ( propertyDocs );
+                        AppendComment ( description.GetString () );
                     }
                     lastItemAppendedDocs = true;
                 }
 
                 AppendIndent ();
-                AppendText ( $"\"{ConvertCase ( property.Name )}\": " );
-                AppendType ( property.PropertyType );
+                AppendText ( $"\"{prop.Key}\": " );
+                AppendSchema ( prop.Value, isRequired, isNullable );
 
-                if (property.AssociatedParameter?.IsNullable == true) {
-                    AppendText ( "?" );
-                }
-
-                if (i != validProperties.Length - 1) {
+                if (propIndex < propCount - 1) {
                     AppendText ( "," );
                 }
 
                 AppendLine ();
+                propIndex++;
             }
 
             indentLevel--;
@@ -245,43 +309,8 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
             AppendText ( "}" );
         }
 
-        void AppendJsonType ( JsonTypeInfo item ) {
-            switch (item.Kind) {
-                case JsonTypeInfoKind.Object:
-                    AppendObject ( item );
-                    break;
-
-                case JsonTypeInfoKind.Enumerable:
-                    AppendEnumerable ( item );
-                    break;
-
-                default:
-                    AppendText ( ConvertCase ( item.Type.Name ) );
-                    break;
-            }
-        }
-
-        void AppendType ( Type type ) {
-
-            if (indentLevel > 128)
-                return;
-
-            try {
-                var typeInfo = _typeResolver.GetTypeInfo ( type, _serializerOptions );
-
-                if (typeInfo is null) {
-                    AppendText ( ConvertCase ( type.Name ) );
-                }
-                else {
-                    AppendJsonType ( typeInfo );
-                }
-            }
-            catch {
-                AppendText ( ConvertCase ( type.Name ) );
-            }
-        }
-
-        AppendType ( type );
+        var jsonSchema = JsonSchema.CreateFromType ( type, _jsoptions );
+        AppendSchema ( jsonSchema.AsJsonValue () );
 
         string result = sb.ToString ();
         return new BodyExampleResult ( result, "json" );
@@ -292,52 +321,101 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     /// </summary>
     /// <param name="type">The type to generate parameter examples for.</param>
     /// <returns>An array of <see cref="ParameterExampleResult"/> representing the parameters.</returns>
-    [SuppressMessage ( "Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "<Pending>" )]
     public ParameterExampleResult [] GetParameterExamplesForType ( Type type ) {
 
         List<ParameterExampleResult> parameters = new List<ParameterExampleResult> ();
 
-        void AppendType ( Type type, string [] pathParts ) {
-            var description = type.GetXmlDocsSummary ();
-            JsonTypeInfo? typeInfo = _typeResolver.GetTypeInfo ( type, _serializerOptions );
-            if (typeInfo is null) {
-                parameters.Add ( new ParameterExampleResult ( $"{string.Join ( '.', pathParts )}.{ConvertCase ( type.Name )}", type.Name, false, description ) );
+        void AppendSchema ( JsonValue schemaValue, string [] pathParts ) {
+            if (!schemaValue.IsJsonObject)
+                return;
+
+            var schema = schemaValue.GetJsonObject ();
+            var schemaType = schema [ "type" ];
+
+            string? typeStr = null;
+            bool isNullable = false;
+
+            if (schemaType.IsString) {
+                typeStr = schemaType.GetString ();
             }
-            else {
-                if (typeInfo.Kind == JsonTypeInfoKind.Object) {
+            else if (schemaType.IsJsonArray) {
+                var types = schemaType.GetJsonArray ();
+                var nonNullTypes = types.Where ( t => t.GetString () != "null" ).ToArray ();
+                isNullable = types.Any ( t => t.GetString () == "null" );
+                if (nonNullTypes.Length > 0) {
+                    typeStr = nonNullTypes [ 0 ].GetString ();
+                }
+            }
 
-                    Dictionary<string, string?> paramsDocs = new Dictionary<string, string?> ( new JsonPropertyNameComparer () );
-                    foreach (var prop in typeInfo.Type.GetProperties ()) {
-                        string propName =
-                            prop.GetCustomAttribute<JsonPropertyNameAttribute> ()?.Name ??
-                            prop.Name;
-                        paramsDocs.Add ( propName, prop.GetXmlDocsSummary () );
-                    }
+            if (typeStr is null)
+                return;
 
-                    foreach (var prop in typeInfo.Properties) {
+            if (typeStr == "object") {
+                var properties = schema [ "properties" ];
+                if (!properties.IsJsonObject)
+                    return;
 
-                        paramsDocs.TryGetValue ( prop.Name, out string? propertyDocs );
-
-                        string? typeName = ConvertCase ( prop.PropertyType.Name );
-                        if (prop.AssociatedParameter?.IsNullable == true)
-                            typeName += '?';
-
-                        parameters.Add ( new ParameterExampleResult ( $"{string.Join ( '.', pathParts )}.{prop.Name}", typeName, prop.IsRequired, propertyDocs ) );
-                        AppendType ( prop.PropertyType, [ .. pathParts, prop.Name ] );
+                var propsObj = properties.GetJsonObject ();
+                var requiredProps = new HashSet<string> ();
+                var requiredArray = schema [ "required" ];
+                if (requiredArray.IsJsonArray) {
+                    foreach (var req in requiredArray.GetJsonArray ()) {
+                        if (req.IsString) {
+                            requiredProps.Add ( req.GetString () );
+                        }
                     }
                 }
-                else if (typeInfo.Kind == JsonTypeInfoKind.Enumerable) {
-                    if (typeInfo.ElementType is { } elementType) {
-                        AppendType ( typeInfo.ElementType, [ .. pathParts, "[*]" ] );
+
+                foreach (var prop in propsObj) {
+                    var propSchema = prop.Value.GetJsonObject ();
+                    var description = propSchema [ "description" ];
+                    bool isRequired = requiredProps.Contains ( prop.Key );
+
+                    var propType = propSchema [ "type" ];
+                    bool propIsNullable = propType.IsJsonArray && propType.GetJsonArray ().Any ( t => t.GetString () == "null" );
+
+                    string typeName = GetTypeNameFromSchema ( propSchema );
+                    if (propIsNullable) {
+                        typeName += "?";
                     }
-                    else {
-                        parameters.Add ( new ParameterExampleResult ( $"{string.Join ( '.', pathParts )}.[*]", type.Name, true, description ) );
-                    }
+
+                    parameters.Add ( new ParameterExampleResult (
+                        $"{string.Join ( '.', pathParts )}.{prop.Key}",
+                        typeName,
+                        isRequired,
+                        description.IsString ? description.GetString () : null
+                    ) );
+
+                    AppendSchema ( prop.Value, [ .. pathParts, prop.Key ] );
+                }
+            }
+            else if (typeStr == "array") {
+                var itemsSchema = schema [ "items" ];
+                if (itemsSchema.IsJsonObject) {
+                    AppendSchema ( itemsSchema, [ .. pathParts, "[*]" ] );
                 }
             }
         }
 
-        AppendType ( type, [ "$" ] );
+        string GetTypeNameFromSchema ( JsonObject schema ) {
+            var schemaType = schema [ "type" ];
+
+            if (schemaType.IsString) {
+                return schemaType.GetString () ?? "any";
+            }
+            else if (schemaType.IsJsonArray) {
+                var types = schemaType.GetJsonArray ();
+                var nonNullTypes = types.Where ( t => t.GetString () != "null" ).ToArray ();
+                if (nonNullTypes.Length > 0) {
+                    return nonNullTypes [ 0 ].GetString () ?? "any";
+                }
+            }
+
+            return "any";
+        }
+
+        var jsonSchema = JsonSchema.CreateFromType ( type, _jsoptions );
+        AppendSchema ( jsonSchema.AsJsonValue (), [ "$" ] );
         return parameters.ToArray ();
     }
 
