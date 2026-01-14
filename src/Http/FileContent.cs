@@ -29,6 +29,9 @@ public sealed class FileContent : HttpContent {
     /// </summary>
     /// <param name="file">The file to be used as content.</param>
     public FileContent ( FileInfo file ) {
+        if (!file.Exists)
+            throw new FileNotFoundException ( SR.Format ( SR.FileContent_FileNotFound, file.FullName ) );
+
         File = file;
 
         var mimeType = MimeHelper.GetMimeType ( File.Extension, DefaultMimeType );

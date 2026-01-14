@@ -14,6 +14,7 @@ using System.Security.Cryptography.X509Certificates;
 using Sisk.Core.Entity;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http.Engine;
+using Sisk.Core.Http.FileSystem;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
 
@@ -105,6 +106,7 @@ public sealed class HttpServerHostContextBuilder {
         }, name) );
         return this;
     }
+
     /// <summary>
     /// Enables the portable configuration for this application, which imports settings, parameters,
     /// and other information from a JSON settings file.
@@ -137,6 +139,43 @@ public sealed class HttpServerHostContextBuilder {
             }
             Environment.Exit ( 2 );
         }
+        return this;
+    }
+
+    /// <summary>
+    /// Configures a file server to serve static files from the specified root directory for the given router path.
+    /// </summary>
+    /// <param name="routerPath">The URL path prefix for which the file server will respond.</param>
+    /// <param name="fileServingRootDirectory">The local directory whose contents will be served.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance for method chaining.</returns>
+    public HttpServerHostContextBuilder UseFileServer ( string routerPath, string fileServingRootDirectory ) {
+        _context.Router += HttpFileServer.CreateServingRoute ( routerPath, fileServingRootDirectory );
+        return this;
+    }
+
+    /// <summary>
+    /// Configures a file server to serve static files from the specified root directory for the given router path,
+    /// optionally applying custom request handlers.
+    /// </summary>
+    /// <param name="routerPath">The URL path prefix for which the file server will respond.</param>
+    /// <param name="fileServingRootDirectory">The local directory whose contents will be served.</param>
+    /// <param name="requestHandlers">Optional array of request handlers to process incoming requests.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance for method chaining.</returns>
+    public HttpServerHostContextBuilder UseFileServer ( string routerPath, string fileServingRootDirectory, IRequestHandler []? requestHandlers = null ) {
+        _context.Router += HttpFileServer.CreateServingRoute ( routerPath, new HttpFileServerHandler ( fileServingRootDirectory ), requestHandlers );
+        return this;
+    }
+
+    /// <summary>
+    /// Configures a file server to serve static files using the specified <see cref="HttpFileServerHandler"/>
+    /// for the given router path, optionally applying custom request handlers.
+    /// </summary>
+    /// <param name="routerPath">The URL path prefix for which the file server will respond.</param>
+    /// <param name="ioHandler">The handler responsible for file I/O operations.</param>
+    /// <param name="requestHandlers">Optional array of request handlers to process incoming requests.</param>
+    /// <returns>The current <see cref="HttpServerHostContextBuilder"/> instance for method chaining.</returns>
+    public HttpServerHostContextBuilder UseFileServer ( string routerPath, HttpFileServerHandler ioHandler, IRequestHandler []? requestHandlers = null ) {
+        _context.Router += HttpFileServer.CreateServingRoute ( routerPath, ioHandler, requestHandlers );
         return this;
     }
 

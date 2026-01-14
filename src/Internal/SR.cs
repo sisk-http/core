@@ -87,6 +87,8 @@ static partial class SR {
     public const string Router_NameExpected = "Route path parameters name expected.";
     public const string Router_EmptyRouterPathPart = "Empty path patameter parts are not allowed.";
 
+    public const string FileContent_FileNotFound = "The specified file was not found: {0}";
+
     public const string RequestHandler_ActivationException = "Couldn't activate an instance of the IRequestHandler {0} with the {1} arguments.";
 
     public const string Route_Action_ValueTypeSet = "Defining actions which their return type is an value type is not supported. Encapsulate it with ValueResult<T>.";

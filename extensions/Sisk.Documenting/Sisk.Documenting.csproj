@@ -24,9 +24,9 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<AssemblyVersion>1.4.0</AssemblyVersion>
-		<FileVersion>1.4.0</FileVersion>
-		<Version>1.4.0-beta1</Version>
+		<AssemblyVersion>1.6.0</AssemblyVersion>
+		<FileVersion>1.6.0</FileVersion>
+		<Version>1.6.0-beta2</Version>
 
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -56,12 +56,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="CypherPotato.LightJson" Version="0.15.2" />
 	  <PackageReference Include="Namotion.Reflection" Version="3.3.0" />
-	  <PackageReference Include="System.Text.Json" Version="9.0.3" />
+	  <PackageReference Include="System.Text.Json" Version="9.0.12" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\..\LightJson\Sources\LightJson\LightJson.csproj" />
 		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
