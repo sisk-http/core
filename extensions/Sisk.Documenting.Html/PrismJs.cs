@@ -223,7 +223,7 @@ internal class PrismJs {
             padding: 1em;
             margin: .5em 0;
             overflow: auto;
-            background: #161b22;
+            background: #181818;
           }
 
           :not(pre) > code[class*="language-"] {
@@ -298,7 +298,7 @@ internal class PrismJs {
           .language-css .token.string,
           .style .token.string {
             color: #a5d6ff;
-            background: #161b22;
+            background: #181818;
           }
 
           .token.atrule,

@@ -65,42 +65,52 @@ namespace Sisk.Cadente.CoreEngine {
             prefixes = [ .. hosts ];
         }
 
+        HttpHost CreateHost ( ListeningHost lhhost, IPEndPoint endpoint ) {
+
+            var host = new HttpHost ( endpoint );
+
+            if (lhhost.SslOptions is { } sslOptions) {
+                host.HttpsOptions = new ( sslOptions.ServerCertificate ) {
+                    AllowedProtocols = sslOptions.AllowedProtocols,
+                    CheckCertificateRevocation = sslOptions.CheckCertificateRevocation,
+                    ClientCertificateRequired = sslOptions.ClientCertificateRequired
+                };
+            }
+
+            host.TimeoutManager.ClientReadTimeout = idleConnectionTimeout;
+            host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
+
+            host.Handler = new CadenteHttpEngineHostHandler ( this );
+            setupHostAction?.Invoke ( host );
+
+            return host;
+        }
+
         /// <inheritdoc/>
         public override void OnConfiguring ( HttpServer server, HttpServerConfiguration configuration ) {
             foreach (ListeningHost prefix in prefixes) {
 
                 foreach (ListeningPort port in prefix.Ports) {
-                    HttpHost host;
 
                     var rawUri = port.ToString ( includePath: false );
                     var uri = new Uri ( rawUri );
 
                     if (IPAddress.TryParse ( uri.Host, out var ipaddress )) {
-                        host = new HttpHost ( new IPEndPoint ( ipaddress, uri.Port ) );
+
+                        var host = CreateHost ( prefix, new IPEndPoint ( ipaddress, uri.Port ) );
+                        hosts.Add ( host );
                     }
                     else {
                         var dnsHost = Dns.GetHostEntry ( uri.Host );
                         if (dnsHost.AddressList.Length < 1)
                             throw new ArgumentException ( $"Failed to resolve DNS for host {uri.Host}." );
 
-                        host = new HttpHost ( new IPEndPoint ( dnsHost.AddressList [ 0 ], uri.Port ) );
+                        foreach (var address in dnsHost.AddressList) {
+
+                            var host = CreateHost ( prefix, new IPEndPoint ( address, uri.Port ) );
+                            hosts.Add ( host );
+                        }
                     }
-
-                    if (prefix.SslOptions is { } sslOptions) {
-                        host.HttpsOptions = new ( sslOptions.ServerCertificate ) {
-                            AllowedProtocols = sslOptions.AllowedProtocols,
-                            CheckCertificateRevocation = sslOptions.CheckCertificateRevocation,
-                            ClientCertificateRequired = sslOptions.ClientCertificateRequired
-                        };
-                    }
-
-                    host.TimeoutManager.ClientReadTimeout = idleConnectionTimeout;
-                    host.TimeoutManager.ClientWriteTimeout = idleConnectionTimeout;
-
-                    host.Handler = new CadenteHttpEngineHostHandler ( this );
-                    setupHostAction?.Invoke ( host );
-
-                    hosts.Add ( host );
                 }
             }
         }

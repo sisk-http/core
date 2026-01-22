@@ -64,12 +64,17 @@ internal class HttpChunkedWriteStream : Stream {
 
         if (disposing) {
 
-            if (_stream != null && _stream.CanWrite) {
-                _stream.Write ( s_finalChunkBytes );
-
-                _stream.Flush ();
-                _stream = null!;
+            try {
+                if (_stream != null && _stream.CanWrite) {
+                    _stream.Write ( s_finalChunkBytes );
+                    _stream.Flush ();
+                }
             }
+            catch {
+                ; // already disposed or closed
+            }
+
+            _stream = null!;
         }
 
         base.Dispose ( disposing );

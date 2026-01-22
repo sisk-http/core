@@ -9,6 +9,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.Encodings.Web;
+using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
 using TinyComponents;
@@ -19,6 +21,26 @@ namespace Sisk.Documenting.Html;
 /// Represents a class for exporting API documentation to HTML format.
 /// </summary>
 public class HtmlDocumentationExporter : IApiDocumentationExporter {
+
+    // search-line from Remix Icon
+    const string InputSearchIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+            """;
+
+    // arrow-right-s-line from Remix Icon
+    const string MenuArrowIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z"></path></svg>
+            """;
+
+    // file-copy-line from Remix Icon
+    const string CopyIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6Z"></path></svg>
+            """;
+
+    // external-link-line from Remix Icon
+    const string ExternalLinkIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"></path></svg>
+            """;
 
     /// <summary>
     /// Creates an new instance of the <see cref="HtmlDocumentationExporter"/> class.
@@ -164,6 +186,14 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 header += new HtmlElement ( "h1", documentation.ApplicationName ?? "API" );
                 header += new HtmlElement ( "span", $"v{documentation.ApiVersion ?? "1.0"}" )
                     .WithClass ( "version" );
+
+                header += new HtmlElement ( "button", searchBtn => {
+                    searchBtn.ClassList.Add ( "search-trigger" );
+                    searchBtn.Attributes [ "type" ] = "button";
+                    searchBtn += RenderableText.Raw ( InputSearchIcon );
+                    searchBtn += new HtmlElement ( "span", "Search..." );
+                    searchBtn += new HtmlElement ( "kbd", "Ctrl+K" );
+                } );
             } );
 
             nav += new HtmlElement ( "div", section => {
@@ -172,7 +202,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 section += new HtmlElement ( "div", FormatNavApiReference )
                     .WithClass ( "nav-section-title" );
 
-                var groups = documentation.Endpoints.GroupBy ( e => e.Group );
+                var groups = documentation.Endpoints.DistinctBy ( e => $"{e.RouteMethod} {e.Name}" ).GroupBy ( e => e.Group );
                 foreach (var group in groups) {
                     section += new HtmlElement ( "div", navGroup => {
                         navGroup.ClassList.Add ( "nav-group" );
@@ -181,7 +211,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                         navGroup += new HtmlElement ( "div", groupHeader => {
                             groupHeader.ClassList.Add ( "nav-group-header" );
 
-                            groupHeader += new HtmlElement ( "span", "▶" ).WithClass ( "arrow" );
+                            groupHeader += new HtmlElement ( "span", RenderableText.Raw ( MenuArrowIcon ) ).WithClass ( "arrow" );
                             groupHeader += new HtmlElement ( "span", group.Key ?? "Requests" );
                         } );
 
@@ -228,7 +258,63 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             details += new HtmlElement ( "div", content => {
                 content.ClassList.Add ( "endpoint-content" );
 
-                content += new HtmlElement ( "h3", endpoint.Name );
+                content += new HtmlElement ( "div", header => {
+                    header.ClassList.Add ( "endpoint-content-header" );
+
+                    header += new HtmlElement ( "h3", endpoint.Name );
+
+                    header += new HtmlElement ( "div", copyWrapper => {
+                        copyWrapper.ClassList.Add ( "copy-button-wrapper" );
+
+                        var context = HttpContext.GetCurrentContext ();
+                        if (context?.Request.Query [ "embed" ] == "iframe") {
+                            copyWrapper += new HtmlElement ( "a", btn => {
+                                btn.ClassList.Add ( "open-ext-button" );
+                                btn.Attributes [ "href" ] = $"{context.Request.Path}#{TransformId ( endpoint.Name )}";
+                                btn.Attributes [ "target" ] = "_blank";
+                                btn.Attributes [ "aria-label" ] = "Open in new tab";
+                                btn += RenderableText.Raw ( ExternalLinkIcon );
+                            } );
+                        }
+
+                        copyWrapper += new HtmlElement ( "button", btn => {
+                            btn.ClassList.Add ( "copy-button" );
+                            btn.Attributes [ "type" ] = "button";
+                            btn.Attributes [ "aria-label" ] = "Copy options";
+                            btn += RenderableText.Raw ( CopyIcon );
+                        } );
+
+                        copyWrapper += new HtmlElement ( "div", dropdown => {
+                            dropdown.ClassList.Add ( "dropdown-menu" );
+
+                            dropdown += new HtmlElement ( "button", item => {
+                                item.ClassList.Add ( "dropdown-item" );
+                                item.Attributes [ "data-action" ] = "copy-link";
+                                item.Attributes [ "data-target-id" ] = TransformId ( endpoint.Name );
+                                item.Attributes [ "type" ] = "button";
+                                item += "Copy link";
+                            } );
+
+                            dropdown += new HtmlElement ( "button", item => {
+                                item.ClassList.Add ( "dropdown-item" );
+                                item.Attributes [ "data-action" ] = "copy-markdown";
+                                item.Attributes [ "data-name" ] = endpoint.Name;
+                                item.Attributes [ "data-target-id" ] = TransformId ( endpoint.Name );
+                                item.Attributes [ "type" ] = "button";
+                                item += "Copy markdown";
+                            } );
+
+                            dropdown += new HtmlElement ( "button", item => {
+                                item.ClassList.Add ( "dropdown-item" );
+                                item.Attributes [ "data-action" ] = "copy-embed";
+                                item.Attributes [ "data-endpoint-name" ] = endpoint.Name;
+                                item.Attributes [ "type" ] = "button";
+                                item += "Copy embed";
+                            } );
+                        } );
+                    } );
+                } );
+
                 content += CreateParagraphs ( endpoint.Description );
 
                 content += CreateCodeBlock ( $"{endpoint.RouteMethod.ToString ().ToUpper ()} {endpoint.Path}", null );
@@ -590,6 +676,9 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <param name="d">The API documentation to export.</param>
     /// <returns>The exported HTML string.</returns>
     public string ExportHtml ( ApiDocumentation d ) {
+
+        var request = HttpContext.GetCurrentContext ()?.Request;
+
         HtmlElement html = new HtmlElement ( "html" );
         html.Attributes [ "lang" ] = "en";
 
@@ -611,12 +700,70 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
         } );
 
         html += new HtmlElement ( "body", body => {
+
+            if (request?.Query [ "embed" ] == "iframe" &&
+                request.Query [ "embed-endpoint" ].Value is { Length: > 0 } requestingEndpoint) {
+
+                var endpoint = d.Endpoints.FirstOrDefault ( e =>
+                    string.Equals ( e.Name, requestingEndpoint, StringComparison.OrdinalIgnoreCase ) );
+
+                if (endpoint != null) {
+                    body.ClassList.Add ( "iframe-mode" );
+                    html.ClassList.Add ( "iframe-mode" );
+
+                    body += new HtmlElement ( "style", RenderableText.Raw ( Html.Style.EmbedStyles ) );
+
+                    body += new HtmlElement ( "div", container => {
+                        container.ClassList.Add ( "iframe-container" );
+
+                        container += new HtmlElement ( "section", section => {
+                            section.ClassList.Add ( "endpoint" );
+
+                            var endpointElement = WriteEndpointDescription ( endpoint );
+                            if (endpointElement != null) {
+                                endpointElement.Attributes [ "open" ] = "open";
+                                section += endpointElement;
+                            }
+                        } );
+                    } );
+
+                    if (!string.IsNullOrEmpty ( Script )) {
+                        body += new HtmlElement ( "script", RenderableText.Raw ( Script ) );
+                    }
+                    body += new HtmlElement ( "script", RenderableText.Raw ( Scripts.DefaultScript ) );
+                    return;
+                }
+            }
+
             body += new HtmlElement ( "div", wrapper => {
                 wrapper.ClassList.Add ( "page-wrapper" );
 
                 if (IncludeSidebar) {
                     body += new HtmlElement ( "div", overlay => {
                         overlay.ClassList.Add ( "sidebar-overlay" );
+                    } );
+
+                    body += new HtmlElement ( "div", searchOverlay => {
+                        searchOverlay.ClassList.Add ( "search-overlay" );
+
+                        searchOverlay += new HtmlElement ( "div", dialog => {
+                            dialog.ClassList.Add ( "search-dialog" );
+
+                            dialog += new HtmlElement ( "div", inputWrapper => {
+                                inputWrapper.ClassList.Add ( "search-input-wrapper" );
+                                inputWrapper += RenderableText.Raw ( MenuArrowIcon );
+                                inputWrapper += new HtmlElement ( "input", input => {
+                                    input.ClassList.Add ( "search-input" );
+                                    input.Attributes [ "type" ] = "text";
+                                    input.Attributes [ "placeholder" ] = "Search endpoints...";
+                                    input.Attributes [ "autocomplete" ] = "off";
+                                } ).SelfClosed ();
+                            } );
+
+                            dialog += new HtmlElement ( "div", results => {
+                                results.ClassList.Add ( "search-results" );
+                            } );
+                        } );
                     } );
 
                     wrapper += WriteSidebarNavigation ( d );
@@ -634,7 +781,10 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
                     main += Header;
 
-                    var groups = d.Endpoints.GroupBy ( e => e.Group );
+                    var groups = d.Endpoints
+                        .DistinctBy ( e => $"{e.RouteMethod} {e.Name}" )
+                        .GroupBy ( e => e.Group );
+
                     foreach (var item in groups) {
 
                         main += new HtmlElement ( "div", groupSection => {
@@ -661,103 +811,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 body += new HtmlElement ( "script", RenderableText.Raw ( Script ) );
             }
 
-            body += new HtmlElement ( "script", RenderableText.Raw ( @"
-document.querySelectorAll('.nav-group-header').forEach(header => {
-    header.addEventListener('click', () => {
-        header.parentElement.classList.toggle('open');
-    });
-});
-
-function openDetailsForHash(hash) {
-    if (!hash) return;
-    
-    document.querySelectorAll('.endpoint-description').forEach(d => {
-        d.open = false;
-    });
-    
-    const target = document.querySelector(hash);
-    if (target) {
-        const details = target.closest('details');
-        if (details) {
-            details.open = true;
-        }
-        setTimeout(() => {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 50);
-    }
-}
-
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        
-        const href = item.getAttribute('href');
-        if (href) {
-            history.pushState(null, '', href);
-            openDetailsForHash(href);
-            closeMobileMenu();
-        }
-    });
-});
-
-openDetailsForHash(window.location.hash);
-
-window.addEventListener('hashchange', () => {
-    openDetailsForHash(window.location.hash);
-});
-
-document.querySelectorAll('.tab-control').forEach(tabControl => {
-    const buttons = tabControl.querySelectorAll('.tab-button');
-    const contents = tabControl.querySelectorAll('.tab-content');
-    
-    buttons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabName = button.getAttribute('data-tab');
-            
-            buttons.forEach(b => b.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
-            
-            button.classList.add('active');
-            const targetContent = tabControl.querySelector(`[data-tab-content='${tabName}']`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-            }
-        });
-    });
-});
-
-const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-const sidebar = document.querySelector('.sidebar');
-const sidebarOverlay = document.querySelector('.sidebar-overlay');
-
-function openMobileMenu() {
-    if (sidebar) sidebar.classList.add('open');
-    if (sidebarOverlay) sidebarOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeMobileMenu() {
-    if (sidebar) sidebar.classList.remove('open');
-    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-if (mobileMenuBtn) {
-    mobileMenuBtn.addEventListener('click', () => {
-        if (sidebar && sidebar.classList.contains('open')) {
-            closeMobileMenu();
-        } else {
-            openMobileMenu();
-        }
-    });
-}
-
-if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', closeMobileMenu);
-}
-" ) );
+            body += new HtmlElement ( "script", RenderableText.Raw ( Scripts.DefaultScript ) );
         } );
 
         return "<!DOCTYPE html>\n" + html.ToString ();
@@ -769,6 +823,21 @@ if (sidebarOverlay) {
     /// <param name="documentation">The API documentation to export.</param>
     /// <returns>The exported API documentation as HTTP content.</returns>
     public HttpContent ExportDocumentationContent ( ApiDocumentation documentation ) {
+
+        var request = HttpContext.GetCurrentContext ()?.Request;
+        if (request?.Query [ "embed-target" ].Value is { Length: > 0 } requestingIframe) {
+
+            var uri = new UrlBuilder ( request.Query [ "r" ].GetString () )
+                .ClearQuery ()
+                .AddQuery ( "embed", "iframe" )
+                .AddQuery ( "embed-endpoint", requestingIframe );
+
+            return new StringContent ( $"""
+                document.write(`<style>{JavaScriptEncoder.Default.Encode ( Html.Style.EmbedTargetStyles )}</style>`);
+                document.write(`<iframe class="sisk-embed-target" src="{uri.Uri.ToString ()}"></iframe>`);
+                """, Encoding.UTF8, "text/javascript" );
+        }
+
         return new HtmlContent ( ExportHtml ( documentation ), Encoding.UTF8 );
     }
 }

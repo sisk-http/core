@@ -86,7 +86,7 @@ namespace Sisk.Cadente.CoreEngine {
         }
 
         /// <inheritdoc/>
-        public override Stream InputStream => _request.GetRequestStream ();
+        public override Stream InputStream => new WrappedCompatibleNetworkStream ( _request.GetRequestStream () );
 
         /// <inheritdoc/>
         public override long ContentLength64 => _request.ContentLength;

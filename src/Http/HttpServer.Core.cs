@@ -426,10 +426,12 @@ finishSending:
             executionResult.ServerException = objException;
             errorLogStream = null;
         }
-        catch (HttpListenerException) {
+        catch (HttpListenerException readException) {
             // often raised when the client connection is closed during content streaming or aborted
             // it's not a real error and the server should deal with this as an client disconnect
             executionResult.Status = HttpServerExecutionStatus.ConnectionClosed;
+            executionResult.ServerException = readException;
+            errorLogStream = null;
         }
         catch (HttpRequestException requestException) {
             baseResponse.StatusCode = 400/*BadRequest*/;
