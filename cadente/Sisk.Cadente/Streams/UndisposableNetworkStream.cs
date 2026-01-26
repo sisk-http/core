@@ -40,4 +40,8 @@ sealed class UndisposableNetworkStream ( Stream baseStream ) : Stream {
     public override void Write ( byte [] buffer, int offset, int count ) {
         baseStream.Write ( buffer, offset, count );
     }
+
+    protected override void Dispose ( bool disposing ) {
+        ;
+    }
 }

@@ -48,6 +48,9 @@ static partial class SR {
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";
     public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters.";
 
+    public const string ManualHttpContent_ClosedException = "This ManualHttpContent instance is closed.";
+    public const string ManualHttpContent_WriteFailed = "Failed to write to the underlying ManualHttpContent instance.";
+
     public const string ListeningHostRepository_Duplicate = "This ListeningHost has already been defined in this collection with identical definitions.";
     public const string ListeningHost_NotReady_EmptyPorts = "No ListeningPort prefix have been defined on this ListeningHost.";
     public const string ListeningHost_NotReady_DifferentPath = "All ListeningPorts defined on this ListeningHost must share the same path.";

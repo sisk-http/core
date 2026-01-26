@@ -73,7 +73,6 @@ sealed class WrappedCompatibleNetworkStream ( Stream inner ) : Stream {
 
     protected override void Dispose ( bool disposing ) {
         _s.Dispose ();
-        base.Dispose ();
     }
 
     static Exception GetWrappedException ( Exception ex, int state ) {
