@@ -15,6 +15,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\cadente\Sisk.Cadente.CoreEngine\Sisk.Cadente.CoreEngine.csproj" />
+		<ProjectReference Include="..\..\cadente\Sisk.Cadente\Sisk.Cadente.csproj" />
 		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
