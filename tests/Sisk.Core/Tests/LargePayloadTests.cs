@@ -79,6 +79,7 @@ public class LargePayloadTests
         int seed = 12345;
         using var payloadStream = new RandomStream(size, seed);
         using var content = new StreamContent(payloadStream);
+        content.Headers.ContentLength = size;
 
         // Calculate expected hash
         using var calculationStream = new RandomStream(size, seed);
