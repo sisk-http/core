@@ -1,18 +1,17 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Net.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sisk.Cadente;
 using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Routing;
 
-namespace tests;
+namespace tests.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public class LargePayloadTests
 {
     private HttpServerHostContext? _server;
@@ -20,14 +19,12 @@ public class LargePayloadTests
 
     private static int GetRandomPort()
     {
-        using var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
-        listener.Start();
-        return ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        return ListeningPort.GetRandomPort().Port;
     }
 
     private async Task<string> CalculateHashAsync(Stream stream)
     {
-        byte[] hashBytes = await SHA1.HashDataAsync(stream);
+        byte[] hashBytes = await SHA256.HashDataAsync(stream);
         return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
     }
 
@@ -92,18 +89,21 @@ public class LargePayloadTests
     }
 
     [TestMethod]
+    [Timeout(300000)] // 5 minutes
     public async Task TestPayload_10MB()
     {
         await RunPayloadTest(10 * 1024 * 1024);
     }
 
     [TestMethod]
+    [Timeout(300000)] // 5 minutes
     public async Task TestPayload_100MB()
     {
         await RunPayloadTest(100 * 1024 * 1024);
     }
 
     [TestMethod]
+    [Timeout(600000)] // 10 minutes
     public async Task TestPayload_500MB()
     {
         await RunPayloadTest(500 * 1024 * 1024);

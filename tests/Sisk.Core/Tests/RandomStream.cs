@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 
-namespace tests;
+namespace tests.Tests;
 
-public class RandomStream : Stream
+internal sealed class RandomStream : Stream
 {
     private readonly long _length;
     private long _position;
