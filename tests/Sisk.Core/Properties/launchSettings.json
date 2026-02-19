@@ -3,7 +3,8 @@
     "tests": {
       "commandName": "Project",
       "environmentVariables": {
-        "SISK_TEST_ENGINE": "Cadente"
+        "SISK_TEST_ENGINE": "Cadente",
+        "SISK_RUN_HUGE_PAYLOAD_TESTS": "1"
       }
     }
   }

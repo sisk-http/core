@@ -375,6 +375,14 @@ public partial class HttpServer {
                 }
             }
 
+            // when deferred actions are executed, they can take a considerable amount of time to complete. Even after
+            // sending the response to the client, the message pool on this connection remains intermittent until all actions
+            // are completed, until the pool becomes responsive again. Closing the connection forces the client to enter a new
+            // message pool and prevents it from being stuck until the next message is read.
+            if (!srContext._deferredActions.IsEmpty) {
+                baseResponse.KeepAlive = false;
+            }
+
             if (!MethodAllowResponseContent ( baseRequest.HttpMethod ) || request.streamingEntity is { }) {
                 // do not send content on unallowed HTTP methods neither when the requests was streaming content
                 ;
@@ -416,6 +424,14 @@ finishSending:
 #region Step 5 - Close streams and send response
             baseResponse.Close ();
             closeStream = false;
+
+            // run deferred actions
+            while (srContext._deferredActions.TryDequeue ( out var dequeuedAction )) {
+                var task = dequeuedAction ();
+                if (!task.IsCompleted) {
+                    task.GetAwaiter ().GetResult ();
+                }
+            }
 
             if (executionResult.Status == HttpServerExecutionStatus.NoResponse && response?.internalStatus != HttpResponse.HTTPRESPONSE_EMPTY)
                 executionResult.Status = HttpServerExecutionStatus.Executed;

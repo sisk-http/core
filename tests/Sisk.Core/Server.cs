@@ -16,6 +16,7 @@ using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
+using tests.TestUtils;
 
 namespace tests;
 
@@ -274,6 +275,26 @@ public sealed class Server {
                     catch (Exception ex) { return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}" ); }
                 } );
 
+                router.SetRoute ( RouteMethod.Post, "/tests/payload/sha256", async ( HttpRequest req ) => {
+                    try {
+                        using System.IO.Stream requestStream = req.GetRequestStream ();
+                        using var hasher = IncrementalHash.CreateHash ( HashAlgorithmName.SHA256 );
+
+                        byte [] buffer = new byte [ 1024 * 1024 ];
+                        int read;
+                        while ((read = await requestStream.ReadAsync ( buffer, 0, buffer.Length )) > 0) {
+                            hasher.AppendData ( buffer, 0, read );
+                        }
+
+                        byte [] hash = hasher.GetHashAndReset ();
+                        string hex = Convert.ToHexString ( hash ).ToLowerInvariant ();
+                        return new HttpResponse ( new StringContent ( hex, Encoding.ASCII, "text/plain" ) );
+                    }
+                    catch (Exception ex) {
+                        return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Server error: {ex.Message}" );
+                    }
+                } );
+
                 router.SetRoute ( RouteMethod.Post, "/tests/httprequest/getRequestStream/empty", async ( HttpRequest req ) => {
                     try {
                         using (System.IO.Stream requestStream = req.GetRequestStream ())
@@ -292,6 +313,136 @@ public sealed class Server {
                 router.SetRoute ( RouteMethod.Post, "/tests/httprequest/getRequestStream/afterRawBody", ( req ) => { try { _ = req.RawBody; req.GetRequestStream (); return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, "GetRequestStream did not throw after RawBody access." ); } catch (InvalidOperationException) { return new HttpResponse ( System.Net.HttpStatusCode.OK, "Caught InvalidOperationException as expected." ); } catch (Exception ex) { return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}" ); } } );
                 router.SetRoute ( RouteMethod.Post, "/tests/httprequest/getRequestStream/afterGetJsonContent", ( req ) => { try { _ = req.GetJsonContent<tests.Tests.TestPoco> (); using (System.IO.Stream requestStream = req.GetRequestStream ()) { byte [] buffer = new byte [ 10 ]; int bytesRead = requestStream.Read ( buffer, 0, buffer.Length ); if (bytesRead == 0) { var contentBytesField = typeof ( Sisk.Core.Http.HttpRequest ).GetField ( "contentBytes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance ); object? contentBytesValue = contentBytesField?.GetValue ( req ); if (contentBytesValue == null) return new HttpResponse ( System.Net.HttpStatusCode.OK, "Stream returned and was consumed (0 bytes read), contentBytes is null." ); else return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, "Stream returned and was consumed, but contentBytes was not null." ); } return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Stream returned but was not fully consumed (read {bytesRead} bytes)." ); } } catch (InvalidOperationException ex) { return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Unexpected InvalidOperationException: {ex.Message}" ); } catch (System.Text.Json.JsonException jEx) { return new HttpResponse ( System.Net.HttpStatusCode.BadRequest, $"Json body error: {jEx.Message}" ); } catch (Exception ex) { return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Unexpected server error: {ex.Message}" ); } } );
                 router.SetRoute ( RouteMethod.Post, "/tests/multipart/echo", async ( HttpRequest req ) => { try { Sisk.Core.Entity.MultipartFormCollection multipartCollection = await req.GetMultipartFormContentAsync (); var result = new List<SimpleMultipartObjectInfo> (); if (multipartCollection == null) return new HttpResponse ( System.Net.HttpStatusCode.BadRequest, "No multipart content found or error during parsing." ); foreach (var mpo in multipartCollection.Values) { var info = new SimpleMultipartObjectInfo { Name = mpo.Name, FileName = mpo.Filename, ContentType = mpo.ContentType, Length = mpo.ContentBytes?.Length ?? 0, PartHeaders = [] }; if (mpo.Headers != null) foreach (var headerKey in mpo.Headers.Keys) if (headerKey != null && mpo.Headers [ headerKey ] != null) info.PartHeaders [ headerKey ] = string.Join ( ", ", mpo.Headers.GetValues ( headerKey ) ?? [] ); Encoding partEncoding = Encoding.UTF8; string? charset = null; if (!string.IsNullOrEmpty ( mpo.ContentType )) try { var mediaType = new System.Net.Mime.ContentType ( mpo.ContentType ); if (!string.IsNullOrEmpty ( mediaType.CharSet )) { charset = mediaType.CharSet; partEncoding = Encoding.GetEncoding ( charset ); } } catch { } if (mpo.IsFile) { info.Value = null; if (mpo.ContentBytes != null) { bool isTextContent = charset != null || (mpo.ContentType != null && (mpo.ContentType.ToLowerInvariant ().StartsWith ( "text/" ) || mpo.ContentType.ToLowerInvariant ().Contains ( "json" ) || mpo.ContentType.ToLowerInvariant ().Contains ( "xml" ) || mpo.ContentType.ToLowerInvariant ().Contains ( "html" ) || mpo.ContentType.ToLowerInvariant ().Contains ( "javascript" ))); info.ContentPreview = isTextContent ? partEncoding.GetString ( mpo.ContentBytes ) : Convert.ToBase64String ( mpo.ContentBytes ); } } else { info.Value = mpo.ReadContentAsString ( partEncoding ); info.ContentPreview = info.Value; } result.Add ( info ); } string jsonString = System.Text.Json.JsonSerializer.Serialize ( result ); return new HttpResponse ( new StringContent ( jsonString, Encoding.UTF8, "application/json" ) ); } catch (Sisk.Core.Http.HttpRequestException httpReqEx) { return new HttpResponse ( System.Net.HttpStatusCode.BadRequest, $"HttpRequestException: {httpReqEx.Message}" ); } catch (Exception ex) { return new HttpResponse ( System.Net.HttpStatusCode.InternalServerError, $"Server error processing multipart request: {ex.Message}" ); } } );
+
+                // Deferred action routes
+                router.SetRoute ( RouteMethod.Get, "/tests/deferred/plain", ( HttpRequest req ) => {
+                    string id = req.Query [ "id" ].Value ?? string.Empty;
+                    var state = DeferredActionsTestState.GetOrCreate ( id );
+
+                    state.Log.Enqueue ( "handler-start" );
+                    req.Context.EnqueueDeferredAction ( () => {
+                        state.Log.Enqueue ( "deferred" );
+                        state.DeferredExecuted.TrySetResult ( true );
+                    } );
+                    state.Log.Enqueue ( "handler-before-return" );
+
+                    return new HttpResponse ( "ok" );
+                } );
+
+                router.SetRoute ( RouteMethod.Get, "/tests/deferred/order", ( HttpRequest req ) => {
+                    string id = req.Query [ "id" ].Value ?? string.Empty;
+                    var state = DeferredActionsTestState.GetOrCreate ( id );
+
+                    req.Context.EnqueueDeferredAction ( () => state.Log.Enqueue ( "1" ) );
+                    req.Context.EnqueueDeferredAction ( async () => {
+                        await Task.Delay ( 25 );
+                        state.Log.Enqueue ( "2" );
+                    } );
+                    req.Context.EnqueueDeferredAction ( () => state.Log.Enqueue ( "3" ) );
+                    req.Context.EnqueueDeferredAction ( async () => {
+                        await Task.Delay ( 5 );
+                        state.Log.Enqueue ( "4" );
+                    } );
+                    req.Context.EnqueueDeferredAction ( () => state.DeferredExecuted.TrySetResult ( true ) );
+
+                    return new HttpResponse ( "ok" );
+                } );
+
+                router.SetRoute ( RouteMethod.Get, "/tests/deferred/cancel", ( HttpRequest req ) => {
+                    string id = req.Query [ "id" ].Value ?? string.Empty;
+                    var state = DeferredActionsTestState.GetOrCreate ( id );
+
+                    using var cts = new CancellationTokenSource ();
+
+                    req.Context.EnqueueDeferredAction ( async ( CancellationToken cancellation ) => {
+                        state.Log.Enqueue ( "cancelled-action-ran" );
+                        await Task.Delay ( 1, cancellation );
+                    }, cts.Token );
+
+                    cts.Cancel ();
+
+                    req.Context.EnqueueDeferredAction ( () => {
+                        state.Log.Enqueue ( "noncancelled" );
+                        state.DeferredExecuted.TrySetResult ( true );
+                    } );
+
+                    return new HttpResponse ( "ok" );
+                } );
+
+                router.SetRoute ( RouteMethod.Get, "/tests/deferred/responsestream/wait", async ( HttpRequest req ) => {
+                    string id = req.Query [ "id" ].Value ?? string.Empty;
+                    var state = DeferredActionsTestState.GetOrCreate ( id );
+
+                    state.Log.Enqueue ( "handler-start" );
+                    req.Context.EnqueueDeferredAction ( () => {
+                        state.Log.Enqueue ( "deferred" );
+                        state.DeferredExecuted.TrySetResult ( true );
+                    } );
+
+                    var responseStreamManager = req.GetResponseStream ();
+                    responseStreamManager.SetStatus ( System.Net.HttpStatusCode.OK );
+
+                    using var writer = responseStreamManager.GetStreamWriter ( "text/plain", Encoding.UTF8, "\n" );
+                    writer.WriteLine ( "part1" );
+                    state.Log.Enqueue ( "wrote-part1" );
+
+                    using var timeout = new CancellationTokenSource ( TimeSpan.FromSeconds ( 10 ) );
+                    try {
+                        await Task.WhenAny ( state.AllowFinish.Task, Task.Delay ( Timeout.InfiniteTimeSpan, timeout.Token ) );
+                    }
+                    catch (TaskCanceledException) {
+                    }
+
+                    writer.WriteLine ( "part2" );
+                    state.Log.Enqueue ( "wrote-part2" );
+
+                    return responseStreamManager.Close ();
+                } );
+
+                router.SetRoute ( RouteMethod.Get, "/tests/deferred/sse/wait", async ( HttpRequest req ) => {
+                    string id = req.Query [ "id" ].Value ?? string.Empty;
+                    var state = DeferredActionsTestState.GetOrCreate ( id );
+
+                    req.Context.EnqueueDeferredAction ( () => {
+                        state.Log.Enqueue ( "deferred" );
+                        state.DeferredExecuted.TrySetResult ( true );
+                    } );
+
+                    var es = await req.GetEventSourceAsync ( identifier: id );
+                    await es.SendAsync ( "part1" );
+                    state.Log.Enqueue ( "sent-part1" );
+
+                    using var timeout = new CancellationTokenSource ( TimeSpan.FromSeconds ( 10 ) );
+                    try {
+                        await Task.WhenAny ( state.AllowFinish.Task, Task.Delay ( Timeout.InfiniteTimeSpan, timeout.Token ) );
+                    }
+                    catch (TaskCanceledException) {
+                    }
+
+                    await es.SendAsync ( "part2" );
+                    state.Log.Enqueue ( "sent-part2" );
+                    return await es.CloseAsync ();
+                } );
+
+                router.SetRoute ( RouteMethod.Get, "/tests/deferred/ws/wait", async ( HttpRequest request ) => {
+                    string id = request.Query [ "id" ].Value ?? string.Empty;
+                    var state = DeferredActionsTestState.GetOrCreate ( id );
+
+                    HttpWebSocket client = await request.GetWebSocketAsync ();
+                    await client.SendAsync ( "ready" );
+
+                    request.Context.EnqueueDeferredAction ( () => {
+                        state.Log.Enqueue ( "deferred" );
+                        state.DeferredExecuted.TrySetResult ( true );
+                    } );
+
+                    WebSocketMessage? msg;
+                    do {
+                        msg = await client.ReceiveMessageAsync ();
+                    } while (msg != null);
+
+                    return await client.CloseAsync ();
+                } );
 
                 // SSE Routes
                 router.SetRoute ( RouteMethod.Get, "/tests/sse/sync", ( req ) => { var es = req.GetEventSource (); es.AppendHeader ( "X-Test-SSE", "sync" ); es.Send ( "message 1 part 1" ); es.Send ( "message 1 part 2" ); es.Send ( "message 2 part 1", fieldName: "customSync" ); es.Send ( "message 2 part 2", fieldName: "customSync" ); return es.Close (); } );

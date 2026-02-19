@@ -47,7 +47,7 @@ namespace Sisk.Core.Http.Streams {
         /// <summary>
         /// Gets an boolean indicating if this Web Socket connection is closed.
         /// </summary>
-        public bool IsClosed => isDisposed || ctx.State != WebSocketState.Open;
+        public bool IsClosed => isDisposed || wasServerClosed || ctx.State != WebSocketState.Open;
 
         /// <summary>
         /// Gets an unique identifier label to this Web Socket connection, useful for finding this connection's reference later.
@@ -119,7 +119,7 @@ namespace Sisk.Core.Http.Streams {
             ArraySegment<byte> buffer = new ArraySegment<byte> ( receiveBuffer );
             ValueWebSocketReceiveResult result;
 
-            if (ctx.State != WebSocketState.Open)
+            if (IsClosed)
                 return null;
             if (cancellation.IsCancellationRequested)
                 return null;
@@ -176,7 +176,9 @@ namespace Sisk.Core.Http.Streams {
         }
 
         private async ValueTask<bool> SendInternalAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType msgType, CancellationToken cancellation ) {
-            if (isDisposed)
+            if (IsClosed)
+                return false;
+            if (cancellation.IsCancellationRequested)
                 return false;
             if (ctx.State != WebSocketState.Open && ctx.State != WebSocketState.CloseSent)
                 return false;

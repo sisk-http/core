@@ -7,6 +7,7 @@
 // File name:   HttpContext.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections.Concurrent;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
@@ -18,6 +19,7 @@ namespace Sisk.Core.Http {
     public sealed class HttpContext {
 
         internal readonly static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?> ();
+        internal readonly ConcurrentQueue<Func<Task>> _deferredActions = new ();
 
         /// <summary>
         /// Gets the current running <see cref="HttpContext"/>.
@@ -96,6 +98,42 @@ namespace Sisk.Core.Http {
         /// matched route log mode option.
         /// </summary>
         public LogOutput? LogMode { get; set; }
+
+        /// <summary>
+        /// Enqueues an action that will be executed after the response is sent to the client.
+        /// This action runs within the same context, with access to all current context properties before disposal.
+        /// </summary>
+        /// <param name="action">The synchronous action to execute.</param>
+        public void EnqueueDeferredAction ( Action action ) {
+            _deferredActions.Enqueue ( new Func<Task> ( () => {
+                action ();
+                return Task.CompletedTask;
+            } ) );
+        }
+
+        /// <summary>
+        /// Enqueues an asynchronous action that will be executed after the response is sent to the client.
+        /// This action runs within the same context, with access to all current context properties before disposal.
+        /// </summary>
+        /// <param name="action">The asynchronous action to execute.</param>
+        public void EnqueueDeferredAction ( Func<Task> action ) {
+            _deferredActions.Enqueue ( action );
+        }
+
+        /// <summary>
+        /// Enqueues an asynchronous action that will be executed after the response is sent to the client.
+        /// This action runs within the same context, with access to all current context properties before disposal.
+        /// </summary>
+        /// <param name="action">The asynchronous action to execute.</param>
+        /// <param name="cancellation">The cancellation token to observe.</param>
+        public void EnqueueDeferredAction ( Func<CancellationToken, Task> action, CancellationToken cancellation = default ) {
+            _deferredActions.Enqueue ( new Func<Task> ( async () => {
+                if (cancellation.IsCancellationRequested) {
+                    return;
+                }
+                await action ( cancellation );
+            } ) );
+        }
 
         internal HttpContext ( HttpServer httpServer ) {
             HttpServer = httpServer;
