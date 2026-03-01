@@ -58,6 +58,8 @@ static partial class SR {
 
     public const string ListeningPort_Parser_InvalidInput = "Invalid ListeningPort syntax.";
 
+    public const string LogEntry_InvalidLevel = "The specified LogEntryLevel is invalid.";
+
     public const string LogStream_NotBuffering = "This LogStream is not buffering. To peek lines, call StartBuffering() first.";
     public const string LogStream_NoOutput = "No output writter was set up for this LogStream.";
     public const string LogStream_FailedWrite = "Failed to write to the LogStream writer channel.";

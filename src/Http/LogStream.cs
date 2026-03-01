@@ -266,6 +266,15 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown when this LogStream is not buffering.</exception>
         public string Peek () {
+            return string.Join ( Environment.NewLine, PeekEntries () );
+        }
+
+        /// <summary>
+        /// Retrieves all buffered log entries as an array of strings.
+        /// </summary>
+        /// <returns>An array of log entries, with the most recent entry first.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when this LogStream is not buffering.</exception>
+        public string [] PeekEntries () {
             if (_bufferingContent is null) {
                 throw new InvalidOperationException ( SR.LogStream_NotBuffering );
             }
@@ -273,7 +282,7 @@ namespace Sisk.Core.Http {
             lock (_bufferingContent) {
                 string [] lines = _bufferingContent.ToArray ();
                 Array.Reverse ( lines );
-                return string.Join ( Environment.NewLine, lines );
+                return lines;
             }
         }
 
@@ -317,7 +326,44 @@ namespace Sisk.Core.Http {
             return this;
         }
 
+        /// <summary>
+        /// Defines the time interval, size threshold, and compression strategy for starting the task, and then starts the task.
+        /// </summary>
+        /// <remarks>
+        /// The first run is performed immediately after calling this method.
+        /// </remarks>
+        /// <param name="maximumSize">The non-negative size threshold of the log file size in byte count.</param>
+        /// <param name="dueTime">The time interval between checks.</param>
+        /// <param name="compressor">The compression strategy to apply when rotating logs.</param>
+        /// <returns>The current <see cref="LogStream"/> instance for method chaining.</returns>
+        public LogStream ConfigureRotatingPolicy ( long maximumSize, TimeSpan dueTime, RotatingLogPolicyCompressor compressor ) {
+            var policy = RotatingPolicy;
+            policy.Configure ( maximumSize, dueTime, compressor );
+            return this;
+        }
+
         #region Sync write methods
+        /// <summary>
+        /// Writes a message to the log stream.
+        /// </summary>
+        /// <param name="message">The message to write.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public void Write ( string message ) => WriteLine ( message );
+
+        /// <summary>
+        /// Writes an exception to the log stream.
+        /// </summary>
+        /// <param name="exception">The exception to write.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public void Write ( Exception exception ) => WriteException ( exception );
+
+        /// <summary>
+        /// Writes a log entry to the log stream.
+        /// </summary>
+        /// <param name="entry">The log entry to write.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public void Write ( LogStreamEntry entry ) => WriteLineInternal ( entry );
+
         /// <summary>
         /// Writes an exception description in the log.
         /// </summary>
@@ -329,7 +375,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
         /// <param name="extraContext">Extra context message to append to the exception message.</param>
-        public void WriteException ( Exception exp, string? extraContext = null ) {
+        public virtual void WriteException ( Exception exp, string? extraContext = null ) {
             StringBuilder excpStr = new StringBuilder ();
             WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
             WriteLineInternal ( excpStr.ToString () );
@@ -347,7 +393,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
         public void WriteLine ( object? message ) {
-            WriteLineInternal ( message?.ToString () ?? string.Empty );
+            if (message is LogStreamEntry entry) {
+                WriteLineInternal ( entry );
+            }
+            else {
+                WriteLineInternal ( message?.ToString () ?? string.Empty );
+            }
         }
 
         /// <summary>
@@ -400,6 +451,27 @@ namespace Sisk.Core.Http {
 
         #region Async write methods
         /// <summary>
+        /// Asynchronously writes a message to the log stream.
+        /// </summary>
+        /// <param name="message">The message to write.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public Task WriteAsync ( string message ) => WriteLineAsync ( message );
+
+        /// <summary>
+        /// Asynchronously writes an exception to the log stream.
+        /// </summary>
+        /// <param name="exception">The exception to write.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public Task WriteAsync ( Exception exception ) => WriteExceptionAsync ( exception );
+
+        /// <summary>
+        /// Asynchronously writes a log entry to the log stream.
+        /// </summary>
+        /// <param name="entry">The log entry to write.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public Task WriteAsync ( LogStreamEntry entry ) => WriteLineInternalAsync ( entry ).AsTask ();
+
+        /// <summary>
         /// Writes an exception description in the log.
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
@@ -410,7 +482,7 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="exp">The exception which will be written.</param>
         /// <param name="extraContext">Extra context message to append to the exception message.</param>
-        public async Task WriteExceptionAsync ( Exception exp, string? extraContext = null ) {
+        public virtual async Task WriteExceptionAsync ( Exception exp, string? extraContext = null ) {
             StringBuilder excpStr = new StringBuilder ();
             WriteExceptionInternal ( excpStr, exp, extraContext, 0 );
             await WriteLineInternalAsync ( excpStr.ToString () ).ConfigureAwait ( false );
@@ -428,7 +500,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="message">The text that will be written in the output.</param>
         public async Task WriteLineAsync ( object? message ) {
-            await WriteLineInternalAsync ( message?.ToString () ?? string.Empty ).ConfigureAwait ( false );
+            if (message is LogStreamEntry entry) {
+                await WriteLineInternalAsync ( entry ).ConfigureAwait ( false );
+            }
+            else {
+                await WriteLineInternalAsync ( message?.ToString () ?? string.Empty ).ConfigureAwait ( false );
+            }
         }
 
         /// <summary>
@@ -468,13 +545,11 @@ namespace Sisk.Core.Http {
         public async Task WriteLineAsync ( IFormatProvider? formatProvider, string format, params object? [] args ) {
             await WriteLineInternalAsync ( string.Format ( formatProvider, format, args ) ).ConfigureAwait ( false );
         }
-
-
         #endregion
 
         #region Virtual methods
         /// <summary>
-        /// Represents the method that intercepts the line that will be written to an output log before being queued for writing.
+        /// Intercepts the line that will be written to an output log before being queued for writing.
         /// This method will block if the log queue is full.
         /// </summary>
         /// <param name="line">The line which will be written to the log stream.</param>
@@ -491,7 +566,24 @@ namespace Sisk.Core.Http {
         }
 
         /// <summary>
-        /// Represents the asynchronous method that intercepts the line that will be written to an output log before being queued for writing.
+        /// Intercepts the specified log entry and writes it synchronously to the log stream.
+        /// </summary>
+        /// <param name="entry">The log entry to write.</param>
+        protected virtual void WriteLineInternal ( LogStreamEntry entry ) {
+            WriteLineInternal ( entry.ToString () );
+        }
+
+        /// <summary>
+        /// Intercepts the specified log entry and writes it asynchronously to the log stream.
+        /// </summary>
+        /// <param name="entry">The log entry to write.</param>
+        /// <returns>A <see cref="ValueTask"/> that represents the asynchronous write operation.</returns>
+        protected virtual ValueTask WriteLineInternalAsync ( LogStreamEntry entry ) {
+            return WriteLineInternalAsync ( entry.ToString () );
+        }
+
+        /// <summary>
+        /// Intercepts the line that will be written to an output log before being queued for writing.
         /// </summary>
         /// <param name="line">The line which will be written to the log stream.</param>
         /// <returns>A <see cref="ValueTask"/> that represents the asynchronous operation.</returns>

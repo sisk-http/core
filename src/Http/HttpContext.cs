@@ -135,6 +135,27 @@ namespace Sisk.Core.Http {
             } ) );
         }
 
+        /// <summary>
+        /// Enqueues an asynchronous action that will be executed after the response is sent to the client,
+        /// with a timeout after which the action will be cancelled.
+        /// This action runs within the same context, with access to all current context properties before disposal.
+        /// </summary>
+        /// <param name="action">The asynchronous action to execute.</param>
+        /// <param name="timeout">The timeout after which the action will be cancelled.</param>
+        public void EnqueueDeferredAction ( Func<CancellationToken, Task> action, TimeSpan timeout = default ) {
+            var cts = new CancellationTokenSource ( timeout );
+            _deferredActions.Enqueue ( new Func<Task> ( async () => {
+                if (cts.IsCancellationRequested) {
+                    return;
+                }
+                await action ( cts.Token );
+            } ) );
+            _deferredActions.Enqueue ( () => {
+                cts.Dispose ();
+                return Task.CompletedTask;
+            } );
+        }
+
         internal HttpContext ( HttpServer httpServer ) {
             HttpServer = httpServer;
             Request = null!; // associated later

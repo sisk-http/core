@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+
+		<EnableTrimAnalyzer>True</EnableTrimAnalyzer>
+		<IsAotCompatible>true</IsAotCompatible>
+
+		<Title>Sisk.Monitoring</Title>
+		<PackageId>Sisk.Monitoring</PackageId>
+
+		<Authors>CypherPotato</Authors>
+		<Company>Project Principium</Company>
+		<Product>Sisk.Monitoring</Product>
+		<Description>This package provides a way to export documentation from your Sisk API.</Description>
+		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/sisk-http/core</RepositoryUrl>
+		<PackageTags>http-server,http,web framework</PackageTags>
+		<RepositoryType>git</RepositoryType>
+
+		<AssemblyVersion>1.6.0</AssemblyVersion>
+		<FileVersion>1.6.0</FileVersion>
+		<Version>1.6.0-beta2</Version>
+
+		<NeutralLanguage>en</NeutralLanguage>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<xTreatWarningsAsErrors>true</xTreatWarningsAsErrors>
+
+		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
+		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\.github\Icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\.nuget\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CypherPotato.MemoryCacheStorage" Version="2.9.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\typed-components\src\TinyComponents.csproj" />
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+	</ItemGroup>
+
+</Project>
