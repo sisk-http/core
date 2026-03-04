@@ -48,8 +48,25 @@ In this repository, you have the source code of:
   
 - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
 - [Sisk.IniConfiguration](extensions/Sisk.IniConfiguration): an INI-document configuration provider for Sisk.
-- [Sisk.BasicAuth](extensions/Sisk.BasicAuth): the basic authentication package which provides helper request handlers for handling authentication.
-- [Sisk.Cadente](extensions/Sisk.Cadente): an experimental "ultrafast" implementation of the HTTP/1.1 protocol in pure C#.
+- [Sisk.BasicAuth](extensions/Sisk.BasicAuth): lightweight HTTP Basic Authentication helpers, including request handlers and credential primitives for protected endpoints.
+- [Sisk.Documenting](extensions/Sisk.Documenting): API documentation generation tools for Sisk applications, with OpenAPI export and extensibility points for examples and content schemas.
+- [Sisk.ModelContextProtocol](extensions/Sisk.ModelContextProtocol): integration components to expose Sisk services through the Model Context Protocol (MCP), helping AI clients discover and use tools/resources from your app.
+- [Sisk.Monitoring](extensions/Sisk.Monitoring): runtime monitoring utilities for inspecting server behavior, observing request flow, and improving diagnostics in production-like environments.
+- [Sisk.Cadente](cadente/Sisk.Cadente): an experimental "ultrafast" implementation of the HTTP/1.1 protocol in pure C#.
+
+### Legacy projects
+
+The following packages are currently kept for compatibility and migration scenarios:
+
+- [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider) (**legacy**): superseded by the core package (`Sisk.HttpServer` / `Sisk.Core`) features.
+- [Sisk.SslProxy](extensions/Sisk.SslProxy) (**legacy**): superseded by [Sisk.Cadente](cadente/Sisk.Cadente).
+
+### Screenshots
+
+| Project | Screenshot |
+| --- | --- |
+| [Sisk.Documenting](extensions/Sisk.Documenting) | ![Sisk.Documenting screenshot](./.github/screenshots/apidocs.png) |
+| [Sisk.Monitoring](extensions/Sisk.Monitoring) | ![Sisk.Monitoring screenshot](./.github/screenshots/monitoring.png) |
 
 ## Getting started
 
@@ -96,13 +113,6 @@ Sisk can do web development the way you want. Create MVC, MVVC, SOLID applicatio
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/sisk-http/core.svg?variant=light)](https://starchart.cc/sisk-http/core)
-
-## Contributors
-
-Special thanks to all the contributors who have helped Sisk to grow and improve.
-
-- [Khalid Abuhakmeh](https://github.com/khalidabuhakmeh)
-- [Sascha-L](https://github.com/Sascha-L)
 
 ## License
 
