@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
@@ -60,21 +61,51 @@ public class ApplicationMonitor {
 
     List<MonitoringDefinition<LogStream>> capturingLogStreams = new ();
     List<MonitoringDefinition<Counter>> counters = new ();
+    List<MonitoringDefinition<Meter>> meters = new ();
 
+    /// <summary>
+    /// Gets or sets the title displayed in the dashboard header and browser tab.
+    /// </summary>
     public string PageTitle { get; set; } = "Monitoring";
 
+    /// <summary>
+    /// Gets or sets a function that validates user credentials for accessing the monitoring dashboard.
+    /// </summary>
     public Func<NetworkCredential, ValueTask<bool>>? CredentialValidator { get; set; } = null;
 
+    /// <summary>
+    /// Registers a counter for monitoring within the dashboard.
+    /// </summary>
+    /// <param name="counter">The counter definition to capture.</param>
     public void CaptureCounter ( MonitoringDefinition<Counter> counter ) {
         counters.Add ( counter );
     }
 
+    /// <summary>
+    /// Registers a meter for monitoring within the dashboard.
+    /// </summary>
+    /// <param name="meter">The meter definition to capture.</param>
+    public void CaptureMeter ( MonitoringDefinition<Meter> meter ) {
+        meters.Add ( meter );
+    }
+
+    /// <summary>
+    /// Registers a log stream for monitoring and starts buffering its output.
+    /// </summary>
+    /// <param name="logStream">The log stream definition to capture.</param>
+    /// <param name="bufferLineCount">The maximum number of lines to buffer; defaults to 500.</param>
     public void CaptureLogStream ( MonitoringDefinition<LogStream> logStream, int bufferLineCount = 500 ) {
         capturingLogStreams.Add ( logStream );
         if (!logStream.Instance.IsBuffering)
             logStream.Instance.StartBuffering ( bufferLineCount );
     }
 
+    /// <summary>
+    /// Authenticates a user account against the configured credential validator.
+    /// </summary>
+    /// <param name="userEmail">The user's email address.</param>
+    /// <param name="userPassword">The user's password.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> that yields <see langword="true"/> when authentication succeeds; otherwise, <see langword="false"/>.</returns>
     protected virtual ValueTask<bool> AuthenticateAccountAsync ( string userEmail, string userPassword ) {
         if (CredentialValidator is not null) {
             return CredentialValidator ( new NetworkCredential ( userEmail, userPassword ) );
@@ -146,10 +177,14 @@ public class ApplicationMonitor {
             nav += new HtmlElement ( "div", section => {
                 section.ClassList.Add ( "nav-section" );
 
-                section += new HtmlElement ( "div", "Dashboard" ).WithClass ( "nav-section-title" );
+                section += new HtmlElement ( "div", "Pages" ).WithClass ( "nav-section-title" );
 
                 section += WriteNavItem ( PrefixPath ( "/" ), "Dashboard", DashboardIcon, activeNavItem == "dashboard" );
                 section += WriteNavItem ( PrefixPath ( "/health" ), "Server Health", HealthIcon, activeNavItem == "health" );
+                if (counters.Count > 0)
+                    section += WriteNavItem ( PrefixPath ( "/counters" ), "Counters", CounterIcon, activeNavItem == "counters" );
+                if (meters.Count > 0)
+                    section += WriteNavItem ( PrefixPath ( "/meters" ), "Meters", CounterIcon, activeNavItem == "meters" );
 
                 //if (counters.Count > 0) {
                 //    section += new HtmlElement ( "div", "Counters" ).WithClass ( "nav-section-title" );
@@ -160,10 +195,14 @@ public class ApplicationMonitor {
 
                 if (capturingLogStreams.Count > 0) {
                     section += new HtmlElement ( "div", "Log Streams" ).WithClass ( "nav-section-title" );
-                    foreach (var logStream in capturingLogStreams) {
-                        string href = PrefixPath ( $"/logstream/{logStream.SanitizedLabel}" );
-                        bool isActive = activeNavItem == logStream.SanitizedLabel;
-                        section += WriteNavItem ( href, logStream.Label, LogStreamIcon, isActive );
+                    foreach (var streamGroup in GroupDefinitionsByGroup ( capturingLogStreams )) {
+                        section += new HtmlElement ( "div", streamGroup.Key ).WithClass ( "nav-group-title" );
+
+                        foreach (var logStream in streamGroup) {
+                            string href = PrefixPath ( $"/logstream/{logStream.SanitizedLabel}" );
+                            bool isActive = activeNavItem == logStream.SanitizedLabel;
+                            section += WriteNavItem ( href, logStream.Label, LogStreamIcon, isActive );
+                        }
                     }
                 }
             } );
@@ -213,62 +252,86 @@ public class ApplicationMonitor {
 
             fragment += WriteAutoRefreshToolbar ();
 
-            if (counters.Count > 0) {
+            var pinnedCounters = counters.Where ( c => c.DashboardPinned ).ToArray ();
+            if (pinnedCounters.Length > 0) {
                 fragment += new HtmlElement ( "div", section => {
                     section.ClassList.Add ( "section" );
                     section += new HtmlElement ( "h2", "Counters" );
 
-                    section += new HtmlElement ( "div", grid => {
-                        grid.ClassList.Add ( "cards-grid" );
+                    foreach (var counterGroup in GroupDefinitionsByGroup ( pinnedCounters )) {
+                        section += new HtmlElement ( "div", groupBlock => {
+                            groupBlock.ClassList.Add ( "group-block" );
+                            groupBlock += new HtmlElement ( "h3", counterGroup.Key ).WithClass ( "group-title" );
 
-                        foreach (var counter in counters) {
-                            string currentText;
-                            double current = counter.Instance.Current;
+                            groupBlock += new HtmlElement ( "div", grid => {
+                                grid.ClassList.Add ( "cards-grid" );
 
-                            if (current == 0) {
-                                currentText = "-";
-                            }
-                            else if (current > 0 && current < 0.01) {
-                                currentText = "~ 0.01";
-                            }
-                            else {
-                                currentText = Math.Round ( current, 2 ).ToString ( "N2", CultureInfo.InvariantCulture );
-                            }
-
-                            grid += new HtmlElement ( "div", card => {
-                                card.ClassList.Add ( "card" );
-                                card += new HtmlElement ( "div", counter.Label ).WithClass ( "card-label" );
-                                card += new HtmlElement ( "div", currentText ).WithClass ( "card-value" );
+                                foreach (var counter in counterGroup) {
+                                    grid += WriteCounterCard ( counter );
+                                }
                             } );
-                        }
-                    } );
+                        } );
+                    }
                 } );
             }
 
-            if (capturingLogStreams.Count > 0) {
+            var dashboardMeters = meters.Where ( m => m.DashboardPinned ).ToArray ();
+            if (dashboardMeters.Length > 0) {
+                fragment += new HtmlElement ( "div", section => {
+                    section.ClassList.Add ( "section" );
+                    section += new HtmlElement ( "h2", "Meters" );
+
+                    foreach (var meterGroup in GroupDefinitionsByGroup ( dashboardMeters )) {
+                        section += new HtmlElement ( "div", groupBlock => {
+                            groupBlock.ClassList.Add ( "group-block" );
+                            groupBlock += new HtmlElement ( "h3", meterGroup.Key ).WithClass ( "group-title" );
+
+                            groupBlock += new HtmlElement ( "div", grid => {
+                                grid.ClassList.Add ( "cards-grid" );
+                                grid.ClassList.Add ( "meters-grid" );
+                                grid.Attributes [ "data-meters-endpoint" ] = PrefixPath ( "/meters/data" );
+
+                                foreach (var meter in meterGroup) {
+                                    grid += WriteMeterCard ( meter );
+                                }
+                            } );
+                        } );
+                    }
+                } );
+            }
+
+            var pinnedLogStreams = capturingLogStreams.Where ( s => s.DashboardPinned ).ToArray ();
+            if (pinnedLogStreams.Length > 0) {
                 fragment += new HtmlElement ( "div", section => {
                     section.ClassList.Add ( "section" );
                     section += new HtmlElement ( "h2", "Log Streams" );
 
-                    section += new HtmlElement ( "div", list => {
-                        list.ClassList.Add ( "stream-list" );
+                    foreach (var streamGroup in GroupDefinitionsByGroup ( pinnedLogStreams )) {
+                        section += new HtmlElement ( "div", groupBlock => {
+                            groupBlock.ClassList.Add ( "group-block" );
+                            groupBlock += new HtmlElement ( "h3", streamGroup.Key ).WithClass ( "group-title" );
 
-                        foreach (var logStream in capturingLogStreams) {
-                            list += new HtmlElement ( "a", item => {
-                                item.ClassList.Add ( "stream-item" );
-                                item.Attributes [ "href" ] = PrefixPath ( $"/logstream/{logStream.SanitizedLabel}" );
+                            groupBlock += new HtmlElement ( "div", list => {
+                                list.ClassList.Add ( "stream-list" );
 
-                                item += new HtmlElement ( "div", left => {
-                                    left += new HtmlElement ( "span", logStream.Label ).WithClass ( "stream-item-label" );
-                                } );
-                                item += new HtmlElement ( "span", RenderableText.Raw ( ArrowRightIcon ) ).WithClass ( "stream-arrow" );
+                                foreach (var logStream in streamGroup) {
+                                    list += new HtmlElement ( "a", item => {
+                                        item.ClassList.Add ( "stream-item" );
+                                        item.Attributes [ "href" ] = PrefixPath ( $"/logstream/{logStream.SanitizedLabel}" );
+
+                                        item += new HtmlElement ( "div", left => {
+                                            left += new HtmlElement ( "span", logStream.Label ).WithClass ( "stream-item-label" );
+                                        } );
+                                        item += new HtmlElement ( "span", RenderableText.Raw ( ArrowRightIcon ) ).WithClass ( "stream-arrow" );
+                                    } );
+                                }
                             } );
-                        }
-                    } );
+                        } );
+                    }
                 } );
             }
 
-            if (counters.Count == 0 && capturingLogStreams.Count == 0) {
+            if (!pinnedCounters.Any () && !pinnedLogStreams.Any () && !dashboardMeters.Any ()) {
                 fragment += new HtmlElement ( "div", empty => {
                     empty.ClassList.Add ( "empty-state" );
                     empty += new HtmlElement ( "p", "No monitored resources configured." );
@@ -281,6 +344,126 @@ public class ApplicationMonitor {
             new HttpResponse ( 200 ) {
                 Content = new HtmlContent ( html )
             }
+        );
+    }
+
+    /// <summary>
+    /// Generates the HTML for the dedicated counters page.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with counters HTML.</returns>
+    protected virtual ValueTask<HttpResponse> GetCountersPageHtmlAsync ( HttpRequest request ) {
+        var content = new HtmlElement ( "", fragment => {
+
+            fragment += new HtmlElement ( "div", header => {
+                header.ClassList.Add ( "content-header" );
+                header += new HtmlElement ( "h1", "Counters" );
+                header += new HtmlElement ( "p", "Current values for captured counters." ).WithClass ( "description" );
+            } );
+
+            fragment += WriteAutoRefreshToolbar ();
+
+            if (counters.Count == 0) {
+                fragment += new HtmlElement ( "div", empty => {
+                    empty.ClassList.Add ( "empty-state" );
+                    empty += new HtmlElement ( "p", "No counters configured." );
+                } );
+                return;
+            }
+
+            foreach (var counterGroup in GroupDefinitionsByGroup ( counters )) {
+                fragment += new HtmlElement ( "div", section => {
+                    section.ClassList.Add ( "section" );
+                    section += new HtmlElement ( "h2", counterGroup.Key );
+
+                    section += new HtmlElement ( "div", grid => {
+                        grid.ClassList.Add ( "cards-grid" );
+
+                        foreach (var counter in counterGroup) {
+                            grid += WriteCounterCard ( counter );
+                        }
+                    } );
+                } );
+            }
+        } );
+
+        string html = BuildPageHtml ( content, "counters" );
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( 200 ) {
+                Content = new HtmlContent ( html )
+            }
+        );
+    }
+
+    /// <summary>
+    /// Generates the HTML for the dedicated meters page.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with meters HTML.</returns>
+    protected virtual ValueTask<HttpResponse> GetMetersPageHtmlAsync ( HttpRequest request ) {
+        var content = new HtmlElement ( "", fragment => {
+
+            fragment += new HtmlElement ( "div", header => {
+                header.ClassList.Add ( "content-header" );
+                header += new HtmlElement ( "h1", "Meters" );
+                header += new HtmlElement ( "p", "Timeline of aggregated meter readings." ).WithClass ( "description" );
+            } );
+
+            fragment += WriteAutoRefreshToolbar ();
+
+            if (meters.Count == 0) {
+                fragment += new HtmlElement ( "div", empty => {
+                    empty.ClassList.Add ( "empty-state" );
+                    empty += new HtmlElement ( "p", "No meters configured." );
+                } );
+                return;
+            }
+
+            foreach (var meterGroup in GroupDefinitionsByGroup ( meters )) {
+                fragment += new HtmlElement ( "div", section => {
+                    section.ClassList.Add ( "section" );
+                    section += new HtmlElement ( "h2", meterGroup.Key );
+
+                    section += new HtmlElement ( "div", grid => {
+                        grid.ClassList.Add ( "cards-grid" );
+                        grid.ClassList.Add ( "meters-grid" );
+                        grid.Attributes [ "data-meters-endpoint" ] = PrefixPath ( "/meters/data" );
+
+                        foreach (var meter in meterGroup) {
+                            grid += WriteMeterCard ( meter );
+                        }
+                    } );
+                } );
+            }
+        } );
+
+        string html = BuildPageHtml ( content, "meters" );
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( 200 ) {
+                Content = new HtmlContent ( html )
+            }
+        );
+    }
+
+    /// <summary>
+    /// Generates the JSON payload containing all meter points and computed statistics.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with meter data in JSON format.</returns>
+    protected virtual ValueTask<HttpResponse> GetMetersDataAsync ( HttpRequest request ) {
+        string? requestedName = request.Query [ "name" ].Value;
+
+        var selectedMeters = meters.AsEnumerable ();
+        if (!string.IsNullOrWhiteSpace ( requestedName )) {
+            selectedMeters = selectedMeters.Where ( m =>
+                m.Label.Equals ( requestedName, StringComparison.OrdinalIgnoreCase )
+                || m.SanitizedLabel.Equals ( requestedName, StringComparison.OrdinalIgnoreCase ) );
+        }
+
+        string json = SerializeMetersPayload ( selectedMeters );
+
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
         );
     }
 
@@ -321,6 +504,7 @@ public class ApplicationMonitor {
 
                     actions += new HtmlElement ( "button", btn => {
                         btn.ClassList.Add ( "toolbar-btn" );
+                        btn.ClassList.Add ( "active" );
                         btn.Id = "btn-tail";
                         btn.Attributes [ "type" ] = "button";
                         btn += "Tail";
@@ -341,17 +525,12 @@ public class ApplicationMonitor {
                         btn += "Stop refresh";
                     } );
 
-                    actions += new HtmlElement ( "button", btn => {
-                        btn.ClassList.Add ( "toolbar-btn" );
-                        btn.Id = "btn-expand";
-                        btn.Attributes [ "type" ] = "button";
-                        btn += "Expand";
-                    } );
                 } );
             } );
 
             fragment += new HtmlElement ( "div", logContainer => {
                 logContainer.ClassList.Add ( "log-content" );
+                logContainer.ClassList.Add ( "log-expanded" );
                 logContainer.Id = "log-content";
 
                 if (!logContent.Any ()) {
@@ -594,6 +773,72 @@ public class ApplicationMonitor {
         } );
     }
 
+    HtmlElement WriteCounterCard ( MonitoringDefinition<Counter> counter ) {
+        double current = counter.Instance.Current;
+        string currentText = FormatMeasuredValue ( current );
+
+        return new HtmlElement ( "div", card => {
+            card.ClassList.Add ( "card" );
+            card += new HtmlElement ( "div", counter.Label ).WithClass ( "card-label" );
+            card += new HtmlElement ( "div", currentText ).WithClass ( "card-value" );
+        } );
+    }
+
+    HtmlElement WriteMeterCard ( MonitoringDefinition<Meter> meter ) {
+        var readings = meter.Instance.Read ().ToArray ();
+        var values = readings.Select ( r => r.Value ).ToArray ();
+
+        double total = values.Sum ();
+        string currentText = FormatMeasuredValue ( total );
+        string readingsJson = SerializeReadingsPayload ( readings );
+
+        return new HtmlElement ( "div", card => {
+            card.ClassList.Add ( "card" );
+            card.ClassList.Add ( "meter-card" );
+            card.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
+            card.Attributes [ "data-meter-label" ] = meter.Label;
+            card.Attributes [ "data-meter-group" ] = meter.Group ?? string.Empty;
+
+            card += new HtmlElement ( "div", header => {
+                header.ClassList.Add ( "meter-card-header" );
+                header += new HtmlElement ( "div", meter.Label ).WithClass ( "card-label" );
+
+                header += new HtmlElement ( "button", btn => {
+                    btn.ClassList.Add ( "toolbar-btn" );
+                    btn.ClassList.Add ( "meter-expand-btn" );
+                    btn.Attributes [ "type" ] = "button";
+                    btn.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
+                    btn += "Expand";
+                } );
+            } );
+
+            card += new HtmlElement ( "div", currentText ).WithClass ( "card-value meter-current-value" );
+
+            card += new HtmlElement ( "div", chart => {
+                chart.ClassList.Add ( "meter-chart-container" );
+                chart.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
+                chart.Attributes [ "data-readings" ] = readingsJson;
+            } );
+        } );
+    }
+
+    static string FormatMeasuredValue ( double value ) {
+        if (value == 0)
+            return "-";
+        if (value > 0 && value < 0.01)
+            return "~ 0.01";
+
+        return Math.Round ( value, 2 ).ToString ( "N2", CultureInfo.InvariantCulture );
+    }
+
+    static IEnumerable<IGrouping<string, MonitoringDefinition<T>>> GroupDefinitionsByGroup<T> ( IEnumerable<MonitoringDefinition<T>> definitions ) where T : notnull {
+        return definitions
+            .OrderBy ( d => string.IsNullOrWhiteSpace ( d.Group ) ? 1 : 0 )
+            .ThenBy ( d => d.Group ?? string.Empty, StringComparer.OrdinalIgnoreCase )
+            .ThenBy ( d => d.Label, StringComparer.OrdinalIgnoreCase )
+            .GroupBy ( d => string.IsNullOrWhiteSpace ( d.Group ) ? "Ungrouped" : d.Group! );
+    }
+
     HtmlElement WriteProgressBar ( double percent ) {
         double clamped = Math.Clamp ( percent, 0, 100 );
         string color = clamped switch {
@@ -612,6 +857,147 @@ public class ApplicationMonitor {
         } );
     }
 
+    static string SerializeMetersPayload ( IEnumerable<MonitoringDefinition<Meter>> definitions ) {
+        var builder = new StringBuilder ();
+        builder.Append ( '[' );
+
+        bool isFirstMeter = true;
+        foreach (var definition in definitions) {
+            if (!isFirstMeter)
+                builder.Append ( ',' );
+            isFirstMeter = false;
+
+            var readings = definition.Instance.Read ().ToArray ();
+            var values = readings.Select ( r => r.Value ).ToArray ();
+            double current = values.LastOrDefault ();
+            double min = values.Length > 0 ? values.Min () : 0;
+            double max = values.Length > 0 ? values.Max () : 0;
+            double avg = values.Length > 0 ? values.Average () : 0;
+            double total = values.Sum ();
+
+            builder.Append ( '{' );
+
+            builder.Append ( "\"id\":\"" );
+            builder.Append ( EscapeJsonString ( definition.SanitizedLabel ) );
+            builder.Append ( "\"," );
+
+            builder.Append ( "\"label\":\"" );
+            builder.Append ( EscapeJsonString ( definition.Label ) );
+            builder.Append ( "\"," );
+
+            builder.Append ( "\"group\":" );
+            if (definition.Group is null) {
+                builder.Append ( "null" );
+            }
+            else {
+                builder.Append ( '"' );
+                builder.Append ( EscapeJsonString ( definition.Group ) );
+                builder.Append ( '"' );
+            }
+            builder.Append ( ',' );
+
+            builder.Append ( "\"dashboardPinned\":" );
+            builder.Append ( definition.DashboardPinned ? "true" : "false" );
+            builder.Append ( ',' );
+
+            builder.Append ( "\"current\":" );
+            builder.Append ( JsonNumber ( current ) );
+            builder.Append ( ',' );
+
+            builder.Append ( "\"min\":" );
+            builder.Append ( JsonNumber ( min ) );
+            builder.Append ( ',' );
+
+            builder.Append ( "\"max\":" );
+            builder.Append ( JsonNumber ( max ) );
+            builder.Append ( ',' );
+
+            builder.Append ( "\"avg\":" );
+            builder.Append ( JsonNumber ( avg ) );
+            builder.Append ( ',' );
+
+            builder.Append ( "\"total\":" );
+            builder.Append ( JsonNumber ( total ) );
+            builder.Append ( ',' );
+
+            builder.Append ( "\"readings\":" );
+            builder.Append ( SerializeReadingsPayload ( readings ) );
+
+            builder.Append ( '}' );
+        }
+
+        builder.Append ( ']' );
+        return builder.ToString ();
+    }
+
+    static string SerializeReadingsPayload ( MeterReading [] readings ) {
+        var builder = new StringBuilder ();
+        builder.Append ( '[' );
+
+        for (int index = 0; index < readings.Length; index++) {
+            if (index > 0)
+                builder.Append ( ',' );
+
+            MeterReading reading = readings [ index ];
+            builder.Append ( "{\"timestamp\":\"" );
+            builder.Append ( reading.Timestamp.ToString ( "O", CultureInfo.InvariantCulture ) );
+            builder.Append ( "\",\"value\":" );
+            builder.Append ( JsonNumber ( reading.Value ) );
+            builder.Append ( '}' );
+        }
+
+        builder.Append ( ']' );
+        return builder.ToString ();
+    }
+
+    static string EscapeJsonString ( string value ) {
+        var builder = new StringBuilder ( value.Length + 8 );
+
+        foreach (char character in value) {
+            switch (character) {
+                case '\\':
+                    builder.Append ( "\\\\" );
+                    break;
+                case '"':
+                    builder.Append ( "\\\"" );
+                    break;
+                case '\b':
+                    builder.Append ( "\\b" );
+                    break;
+                case '\f':
+                    builder.Append ( "\\f" );
+                    break;
+                case '\n':
+                    builder.Append ( "\\n" );
+                    break;
+                case '\r':
+                    builder.Append ( "\\r" );
+                    break;
+                case '\t':
+                    builder.Append ( "\\t" );
+                    break;
+                default:
+                    if (character < 0x20) {
+                        builder.Append ( "\\u" );
+                        builder.Append ( ((int) character).ToString ( "x4", CultureInfo.InvariantCulture ) );
+                    }
+                    else {
+                        builder.Append ( character );
+                    }
+                    break;
+            }
+        }
+
+        return builder.ToString ();
+    }
+
+    static string JsonNumber ( double value ) {
+        if (!double.IsFinite ( value ))
+            return "0";
+
+        return value.ToString ( "0.################", CultureInfo.InvariantCulture );
+    }
+
     internal IEnumerable<Route> GetRoutes ( string prefix = "/" ) {
 
         if (currentRoutePrefix is not null)
@@ -623,6 +1009,18 @@ public class ApplicationMonitor {
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
             return await GetDashboardPageHtmlAsync ( request );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/counters" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            return await GetCountersPageHtmlAsync ( request );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/meters" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            return await GetMetersPageHtmlAsync ( request );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/meters/data" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            return await GetMetersDataAsync ( request );
         }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/logstream/<name>" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;

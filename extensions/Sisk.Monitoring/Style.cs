@@ -11,8 +11,8 @@ internal class Style
             --text-secondary: #5f5f5f;
             --text-muted: #9a9a9a;
             --border-color: #d6d6d6;
-            --accent: #4f4f4f;
-            --accent-light: #4f4f4f20;
+            --accent: #2563eb;
+            --accent-light: #2563eb1f;
             --success: #707070;
             --warning: #8a8a8a;
             --danger: #5a5a5a;
@@ -31,8 +31,8 @@ internal class Style
                 --text-secondary: #b5b5b5;
                 --text-muted: #8b8b8b;
                 --border-color: #3a3a3a;
-                --accent: #c4c4c4;
-                --accent-light: #c4c4c420;
+                --accent: #60a5fa;
+                --accent-light: #60a5fa29;
                 --success: #9a9a9a;
                 --warning: #a8a8a8;
                 --danger: #8a8a8a;
@@ -104,6 +104,15 @@ internal class Style
             padding: 0.5rem 0.5rem 0.25rem;
         }
 
+        .nav-group-title {
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            padding: 0.55rem 0.75rem 0.2rem;
+        }
+
         .nav-item {
             display: flex;
             align-items: center;
@@ -113,6 +122,7 @@ internal class Style
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.85rem;
+            margin-bottom: 3px;
             transition: background 0.15s;
         }
 
@@ -164,7 +174,7 @@ internal class Style
         /* Cards grid */
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
@@ -203,7 +213,27 @@ internal class Style
             font-weight: 600;
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-color));
+        }
+
+        .group-block {
+            margin-bottom: 1rem;
+        }
+
+        .group-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .group-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: color-mix(in srgb, var(--accent) 58%, var(--text-secondary));
+            margin-bottom: 0.6rem;
+        }
+
+        .group-block .cards-grid,
+        .group-block .stream-list {
+            margin-bottom: 0;
         }
 
         /* Log stream list */
@@ -442,6 +472,194 @@ internal class Style
             mix-blend-mode: difference;
         }
 
+        .meters-grid {
+            margin-bottom: 0;
+        }
+
+        .meter-card {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .meter-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+        }
+
+        .meter-card-header .card-label {
+            margin-bottom: 0;
+        }
+
+        .meter-current-value {
+            font-size: 1.3rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .meter-expand-btn {
+            flex-shrink: 0;
+        }
+
+        .meter-chart-container {
+            position: relative;
+            height: 124px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            overflow: hidden;
+        }
+
+        .meter-chart-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .meter-chart-axis {
+            stroke: var(--border-color);
+            stroke-width: 1;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .meter-chart-area {
+            fill: color-mix(in srgb, var(--accent) 20%, transparent);
+        }
+
+        .meter-chart-line {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 2;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .meter-chart-crosshair {
+            stroke: var(--accent);
+            stroke-width: 1;
+            stroke-dasharray: 3 3;
+            opacity: 0;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .meter-chart-point {
+            fill: var(--accent);
+            stroke: var(--bg-primary);
+            stroke-width: 2;
+            opacity: 0;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .meter-chart-label {
+            fill: var(--text-muted);
+            font-size: 10px;
+            font-family: var(--font-sans);
+        }
+
+        .meter-chart-tooltip {
+            position: absolute;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            line-height: 1.3;
+            white-space: nowrap;
+            padding: 0.25rem 0.45rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+            z-index: 2;
+        }
+
+        .meter-chart-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .meter-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .meter-modal {
+            width: min(920px, 100%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .meter-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .meter-modal-header h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .meter-modal-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.65rem;
+        }
+
+        .meter-stat {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            padding: 0.6rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .meter-stat-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .meter-stat-value {
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .meter-modal-chart {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .meter-modal-chart .meter-chart-container {
+            border: none;
+            border-radius: 0;
+            height: 320px;
+        }
+
         /* Mobile */
         .mobile-menu-btn {
             display: none;
@@ -494,7 +712,20 @@ internal class Style
             }
 
             .cards-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+
+            .meter-modal-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .meter-modal {
+                max-height: calc(100vh - 2rem);
+                overflow-y: auto;
+            }
+
+            .meter-modal-chart .meter-chart-container {
+                height: 250px;
             }
         }
         """;
@@ -514,11 +745,400 @@ internal class Style
             const btnTail = document.getElementById('btn-tail');
             const btnRefresh = document.getElementById('btn-refresh');
             const btnToggleRefresh = document.getElementById('btn-toggle-refresh');
-            const btnExpand = document.getElementById('btn-expand');
+            const isMetersPage = /\/meters\/?$/.test(location.pathname);
+            const isHealthPage = /\/health\/?$/.test(location.pathname);
+            const autoRefreshIntervalMs = isHealthPage ? 2000 : 10000;
+            const metersGrid = document.querySelector('[data-meters-endpoint]');
+            const metersEndpoint = metersGrid?.getAttribute('data-meters-endpoint') ?? null;
+            const numberFormatter = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            const dateFormatter = new Intl.DateTimeFormat(undefined, {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
 
-            let tailEnabled = false;
+            let tailEnabled = true;
             let autoRefreshInterval = null;
             let refreshEnabled = true;
+
+            function formatNumber(value) {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric) || numeric === 0) return '-';
+                if (numeric > 0 && numeric < 0.01) return '~ 0.01';
+                return numberFormatter.format(numeric);
+            }
+
+            function formatDate(value) {
+                const date = value instanceof Date ? value : new Date(value);
+                if (Number.isNaN(date.getTime())) return '-';
+                return dateFormatter.format(date);
+            }
+
+            function parseReadings(raw) {
+                let parsed = raw;
+                if (typeof raw === 'string') {
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch {
+                        parsed = [];
+                    }
+                }
+                if (!Array.isArray(parsed)) {
+                    return [];
+                }
+                return parsed
+                    .map(item => {
+                        const timestamp = new Date(item?.timestamp);
+                        const value = Number(item?.value ?? 0);
+                        if (Number.isNaN(timestamp.getTime())) {
+                            return null;
+                        }
+                        return { timestamp, value: Number.isFinite(value) ? value : 0 };
+                    })
+                    .filter(item => item !== null);
+            }
+
+            function calculateStats(readings) {
+                const values = readings.map(r => r.value);
+                const total = values.reduce((sum, value) => sum + value, 0);
+                return {
+                    min: values.length ? Math.min(...values) : 0,
+                    max: values.length ? Math.max(...values) : 0,
+                    avg: values.length ? total / values.length : 0,
+                    total
+                };
+            }
+
+            function createSvgElement(tag) {
+                return document.createElementNS('http://www.w3.org/2000/svg', tag);
+            }
+
+            function getMeterFromCard(card) {
+                const chartContainer = card.querySelector('.meter-chart-container');
+                return {
+                    id: card.getAttribute('data-meter-id') ?? chartContainer?.getAttribute('data-meter-id') ?? '',
+                    label: card.getAttribute('data-meter-label') ?? 'Meter',
+                    readings: parseReadings(chartContainer?.getAttribute('data-readings') ?? '[]')
+                };
+            }
+
+            function renderMeterChart(container, readings, options = {}) {
+                const chartHeight = Number(options.height ?? 112);
+                const showAxes = options.showAxes === true;
+                const interactive = options.interactive !== false;
+                const width = Math.max(220, container.clientWidth || 220);
+                const padding = {
+                    top: 10,
+                    right: 10,
+                    bottom: showAxes ? 28 : 10,
+                    left: showAxes ? 34 : 10
+                };
+                const plotWidth = Math.max(1, width - padding.left - padding.right);
+                const plotHeight = Math.max(1, chartHeight - padding.top - padding.bottom);
+                const valueTarget = container.closest('.meter-card')?.querySelector('.meter-current-value');
+
+                container.innerHTML = '';
+
+                if (!readings.length) {
+                    container.classList.add('meter-chart-empty');
+                    container.textContent = 'No data';
+                    if (valueTarget) {
+                        valueTarget.dataset.defaultValue = '-';
+                        valueTarget.textContent = '-';
+                    }
+                    return;
+                }
+
+                container.classList.remove('meter-chart-empty');
+
+                const values = readings.map(reading => reading.value);
+                const minValue = Math.min(0, ...values);
+                let maxValue = Math.max(...values);
+                if (maxValue <= minValue) {
+                    maxValue = minValue + 1;
+                }
+
+                const points = readings.map((reading, index) => {
+                    const x = padding.left + ((readings.length <= 1 ? 0 : index / (readings.length - 1)) * plotWidth);
+                    const yFactor = (reading.value - minValue) / (maxValue - minValue);
+                    const y = padding.top + ((1 - yFactor) * plotHeight);
+                    return { x, y, reading };
+                });
+
+                const totalValue = values.reduce((sum, value) => sum + value, 0);
+                const defaultValue = formatNumber(totalValue);
+                if (valueTarget) {
+                    valueTarget.dataset.defaultValue = defaultValue;
+                    valueTarget.textContent = defaultValue;
+                }
+
+                const svg = createSvgElement('svg');
+                svg.setAttribute('class', 'meter-chart-svg');
+                svg.setAttribute('viewBox', `0 0 ${width} ${chartHeight}`);
+                svg.setAttribute('preserveAspectRatio', 'none');
+
+                if (showAxes) {
+                    const horizontalAxis = createSvgElement('line');
+                    horizontalAxis.setAttribute('class', 'meter-chart-axis');
+                    horizontalAxis.setAttribute('x1', String(padding.left));
+                    horizontalAxis.setAttribute('x2', String(width - padding.right));
+                    horizontalAxis.setAttribute('y1', String(chartHeight - padding.bottom));
+                    horizontalAxis.setAttribute('y2', String(chartHeight - padding.bottom));
+                    svg.appendChild(horizontalAxis);
+
+                    const leftLabel = createSvgElement('text');
+                    leftLabel.setAttribute('class', 'meter-chart-label');
+                    leftLabel.setAttribute('x', String(padding.left));
+                    leftLabel.setAttribute('y', String(chartHeight - 8));
+                    leftLabel.textContent = formatDate(readings[0].timestamp);
+                    svg.appendChild(leftLabel);
+
+                    const rightLabel = createSvgElement('text');
+                    rightLabel.setAttribute('class', 'meter-chart-label');
+                    rightLabel.setAttribute('x', String(width - padding.right));
+                    rightLabel.setAttribute('y', String(chartHeight - 8));
+                    rightLabel.setAttribute('text-anchor', 'end');
+                    rightLabel.textContent = formatDate(readings[readings.length - 1].timestamp);
+                    svg.appendChild(rightLabel);
+                }
+
+                const area = createSvgElement('polygon');
+                const areaPoints = [
+                    `${padding.left},${padding.top + plotHeight}`,
+                    ...points.map(point => `${point.x},${point.y}`),
+                    `${padding.left + plotWidth},${padding.top + plotHeight}`
+                ];
+                area.setAttribute('class', 'meter-chart-area');
+                area.setAttribute('points', areaPoints.join(' '));
+                svg.appendChild(area);
+
+                const line = createSvgElement('polyline');
+                line.setAttribute('class', 'meter-chart-line');
+                line.setAttribute('points', points.map(point => `${point.x},${point.y}`).join(' '));
+                svg.appendChild(line);
+
+                const crosshair = createSvgElement('line');
+                crosshair.setAttribute('class', 'meter-chart-crosshair');
+                svg.appendChild(crosshair);
+
+                const marker = createSvgElement('circle');
+                marker.setAttribute('class', 'meter-chart-point');
+                marker.setAttribute('r', '4');
+                svg.appendChild(marker);
+
+                const tooltip = document.createElement('div');
+                tooltip.className = 'meter-chart-tooltip';
+                container.appendChild(svg);
+                container.appendChild(tooltip);
+
+                if (!interactive) {
+                    return;
+                }
+
+                function hideHover() {
+                    crosshair.style.opacity = '0';
+                    marker.style.opacity = '0';
+                    tooltip.style.opacity = '0';
+                    if (valueTarget) {
+                        valueTarget.textContent = valueTarget.dataset.defaultValue ?? '-';
+                    }
+                }
+
+                svg.addEventListener('mousemove', event => {
+                    const bounds = svg.getBoundingClientRect();
+                    const relativeX = ((event.clientX - bounds.left) / bounds.width) * width;
+                    const normalized = (relativeX - padding.left) / plotWidth;
+                    const index = Math.max(0, Math.min(points.length - 1, Math.round(normalized * (points.length - 1))));
+                    const point = points[index];
+
+                    crosshair.setAttribute('x1', String(point.x));
+                    crosshair.setAttribute('x2', String(point.x));
+                    crosshair.setAttribute('y1', String(padding.top));
+                    crosshair.setAttribute('y2', String(padding.top + plotHeight));
+                    crosshair.style.opacity = '1';
+
+                    marker.setAttribute('cx', String(point.x));
+                    marker.setAttribute('cy', String(point.y));
+                    marker.style.opacity = '1';
+
+                    tooltip.textContent = `${formatDate(point.reading.timestamp)} · ${formatNumber(point.reading.value)}`;
+                    tooltip.style.opacity = '1';
+
+                    const tooltipMargin = 8;
+                    const tooltipWidth = tooltip.offsetWidth;
+                    const tooltipHeight = tooltip.offsetHeight;
+
+                    let tooltipLeft = point.x - (tooltipWidth / 2);
+                    tooltipLeft = Math.max(tooltipMargin, Math.min(width - tooltipWidth - tooltipMargin, tooltipLeft));
+
+                    let tooltipTop = point.y - tooltipHeight - 10;
+                    if (tooltipTop < tooltipMargin)
+                    {
+                        tooltipTop = point.y + 10;
+                    }
+                    tooltipTop = Math.max(tooltipMargin, Math.min(chartHeight - tooltipHeight - tooltipMargin, tooltipTop));
+
+                    tooltip.style.left = `${tooltipLeft}px`;
+                    tooltip.style.top = `${tooltipTop}px`;
+
+                    if (valueTarget) {
+                        valueTarget.textContent = formatNumber(point.reading.value);
+                    }
+                });
+
+                svg.addEventListener('mouseleave', hideHover);
+            }
+
+            function setModalStats(modal, readings) {
+                const stats = calculateStats(readings);
+                modal.querySelector('[data-stat="min"]').textContent = formatNumber(stats.min);
+                modal.querySelector('[data-stat="max"]').textContent = formatNumber(stats.max);
+                modal.querySelector('[data-stat="avg"]').textContent = formatNumber(stats.avg);
+                modal.querySelector('[data-stat="total"]').textContent = formatNumber(stats.total);
+            }
+
+            function closeMeterModal() {
+                document.querySelector('.meter-modal-overlay')?.remove();
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            function openMeterModal(meter) {
+                closeMeterModal();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'meter-modal-overlay';
+                overlay.setAttribute('data-meter-id', meter.id);
+                overlay.innerHTML = `
+                    <div class="meter-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(meter.label)}">
+                        <div class="meter-modal-header">
+                            <h2>${escapeHtml(meter.label)}</h2>
+                            <button type="button" class="toolbar-btn meter-modal-close-btn">Close</button>
+                        </div>
+                        <div class="meter-modal-stats">
+                            <div class="meter-stat"><span class="meter-stat-label">Min</span><strong class="meter-stat-value" data-stat="min"></strong></div>
+                            <div class="meter-stat"><span class="meter-stat-label">Max</span><strong class="meter-stat-value" data-stat="max"></strong></div>
+                            <div class="meter-stat"><span class="meter-stat-label">Avg</span><strong class="meter-stat-value" data-stat="avg"></strong></div>
+                            <div class="meter-stat"><span class="meter-stat-label">Total</span><strong class="meter-stat-value" data-stat="total"></strong></div>
+                        </div>
+                        <div class="meter-modal-chart">
+                            <div class="meter-chart-container" data-meter-id="${escapeHtml(meter.id)}"></div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(overlay);
+
+                const modal = overlay.querySelector('.meter-modal');
+                const modalChart = overlay.querySelector('.meter-modal-chart .meter-chart-container');
+
+                setModalStats(overlay, meter.readings);
+                renderMeterChart(modalChart, meter.readings, {
+                    height: 320,
+                    showAxes: true,
+                    interactive: true
+                });
+
+                overlay.addEventListener('click', () => closeMeterModal());
+                modal.addEventListener('click', event => event.stopPropagation());
+                overlay.querySelector('.meter-modal-close-btn')?.addEventListener('click', () => closeMeterModal());
+            }
+
+            function renderMeterCards() {
+                document.querySelectorAll('.meter-card').forEach(card => {
+                    const meter = getMeterFromCard(card);
+                    const chartContainer = card.querySelector('.meter-chart-container');
+                    if (!chartContainer) {
+                        return;
+                    }
+                    renderMeterChart(chartContainer, meter.readings, {
+                        height: 112,
+                        showAxes: false,
+                        interactive: true
+                    });
+                });
+            }
+
+            function getOpenModalId() {
+                return document.querySelector('.meter-modal-overlay')?.getAttribute('data-meter-id') ?? null;
+            }
+
+            function refreshOpenModal(payloadById) {
+                const openModalId = getOpenModalId();
+                if (!openModalId || !payloadById.has(openModalId)) {
+                    return;
+                }
+
+                const meterPayload = payloadById.get(openModalId);
+                const readings = parseReadings(meterPayload.readings ?? []);
+                const overlay = document.querySelector('.meter-modal-overlay');
+                const modalChart = overlay?.querySelector('.meter-modal-chart .meter-chart-container');
+
+                if (!overlay || !modalChart) {
+                    return;
+                }
+
+                setModalStats(overlay, readings);
+                renderMeterChart(modalChart, readings, {
+                    height: 320,
+                    showAxes: true,
+                    interactive: true
+                });
+            }
+
+            function refreshMeters() {
+                if (!metersEndpoint) {
+                    location.reload();
+                    return;
+                }
+
+                fetch(metersEndpoint, { cache: 'no-store' })
+                    .then(response => response.ok ? response.json() : [])
+                    .then(payload => {
+                        if (!Array.isArray(payload)) {
+                            return;
+                        }
+
+                        const payloadById = new Map(payload
+                            .filter(item => item && typeof item.id === 'string')
+                            .map(item => [item.id, item]));
+
+                        document.querySelectorAll('.meter-card').forEach(card => {
+                            const meterId = card.getAttribute('data-meter-id');
+                            if (!meterId || !payloadById.has(meterId)) {
+                                return;
+                            }
+
+                            const meterPayload = payloadById.get(meterId);
+                            const chartContainer = card.querySelector('.meter-chart-container');
+                            const readings = parseReadings(meterPayload.readings ?? []);
+
+                            if (chartContainer) {
+                                chartContainer.setAttribute('data-readings', JSON.stringify(meterPayload.readings ?? []));
+                                renderMeterChart(chartContainer, readings, {
+                                    height: 112,
+                                    showAxes: false,
+                                    interactive: true
+                                });
+                            }
+                        });
+
+                        refreshOpenModal(payloadById);
+                    })
+                    .catch(() => {
+                    });
+            }
 
             function setRefreshButtonState() {
                 if (!btnToggleRefresh) return;
@@ -568,14 +1188,10 @@ internal class Style
                         const doc = parser.parseFromString(html, 'text/html');
                         const newContent = doc.getElementById('log-content');
                         if (newContent) {
-                            const wasExpanded = logEl.classList.contains('log-expanded');
                             logEl.innerHTML = newContent.innerHTML;
                             logEl.className = newContent.className;
-                            if (wasExpanded) {
-                                logEl.classList.add('log-expanded');
-                                btnExpand?.classList.add('active');
-                                applyExpandedSizing();
-                            }
+                            logEl.classList.add('log-expanded');
+                            applyExpandedSizing();
                             if (tailEnabled) scrollToBottom();
                         }
                     });
@@ -586,6 +1202,12 @@ internal class Style
                     refreshLog();
                     return;
                 }
+
+                if (isMetersPage && document.querySelector('.meter-card')) {
+                    refreshMeters();
+                    return;
+                }
+
                 location.reload();
             }
 
@@ -595,7 +1217,7 @@ internal class Style
                 }
                 refreshEnabled = true;
                 setRefreshButtonState();
-                autoRefreshInterval = setInterval(refreshCurrentPage, 10000);
+                autoRefreshInterval = setInterval(refreshCurrentPage, autoRefreshIntervalMs);
             }
 
             function stopAutoRefresh() {
@@ -625,16 +1247,60 @@ internal class Style
                 }
             });
 
-            btnExpand?.addEventListener('click', () => {
-                if (!logEl) return;
-                logEl.classList.toggle('log-expanded');
-                btnExpand.classList.toggle('active');
-                applyExpandedSizing();
+            document.addEventListener('click', event => {
+                if (!(event.target instanceof Element)) {
+                    return;
+                }
+
+                const expandButton = event.target.closest('.meter-expand-btn');
+                if (!expandButton) {
+                    return;
+                }
+
+                const card = expandButton.closest('.meter-card');
+                if (!card) {
+                    return;
+                }
+
+                const meter = getMeterFromCard(card);
+                openMeterModal(meter);
             });
 
             window.addEventListener('resize', () => {
                 applyExpandedSizing();
+                renderMeterCards();
+
+                const overlay = document.querySelector('.meter-modal-overlay');
+                if (overlay) {
+                    const openModalId = overlay.getAttribute('data-meter-id');
+                    if (openModalId) {
+                        const sourceCard = document.querySelector(`.meter-card[data-meter-id="${openModalId}"]`);
+                        if (sourceCard) {
+                            const meter = getMeterFromCard(sourceCard);
+                            const modalChart = overlay.querySelector('.meter-modal-chart .meter-chart-container');
+                            if (modalChart) {
+                                renderMeterChart(modalChart, meter.readings, {
+                                    height: 320,
+                                    showAxes: true,
+                                    interactive: true
+                                });
+                            }
+                            setModalStats(overlay, meter.readings);
+                        }
+                    }
+                }
             });
+
+            renderMeterCards();
+
+            if (logEl) {
+                logEl.classList.add('log-expanded');
+                applyExpandedSizing();
+                btnTail?.classList.add('active');
+                if (tailEnabled) {
+                    scrollToBottom();
+                }
+            }
 
             if (btnToggleRefresh) {
                 startAutoRefresh();

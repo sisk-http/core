@@ -19,6 +19,16 @@ public sealed class MonitoringDefinition<T> : IEquatable<T>, IEquatable<Monitori
     public string Label { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the group associated with this instance.
+    /// </summary>
+    public string? Group { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this monitoring definition should be pinned to the dashboard for easy access.
+    /// </summary>
+    public bool DashboardPinned { get; set; }
+
+    /// <summary>
     /// Gets a sanitized version of the label, suitable for use in URLs or other contexts where special characters may need to be encoded.
     /// </summary>
     public string SanitizedLabel => WebUtility.UrlEncode ( Label );
@@ -36,6 +46,23 @@ public sealed class MonitoringDefinition<T> : IEquatable<T>, IEquatable<Monitori
 
         Instance = instance;
         Label = label;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the MonitoringDefinition class with the specified label, group, and monitored
+    /// instance.
+    /// </summary>
+    /// <param name="label">The display label used to identify the monitoring definition. Cannot be null, empty, or consist only of white
+    /// space.</param>
+    /// <param name="group">An optional group name used to categorize the monitoring definition. Can be null to indicate no group.</param>
+    /// <param name="instance">The instance to be monitored. Cannot be null.</param>
+    public MonitoringDefinition ( string label, string? group, T instance ) {
+        ArgumentException.ThrowIfNullOrWhiteSpace ( label );
+        ArgumentNullException.ThrowIfNull ( instance );
+
+        Instance = instance;
+        Label = label;
+        Group = group;
     }
 
     /// <summary>
