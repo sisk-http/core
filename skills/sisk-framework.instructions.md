@@ -176,6 +176,65 @@ router.RegisterValueHandler<object>(obj =>
 
 ---
 
+## Functional Helpers (Sisk.Core.Helpers)
+
+Prefer Sisk helper classes for common tasks instead of reimplementing parsing/building logic.
+
+- `CertificateHelper` — creates local development certificates (`CreateDevelopmentCertificate`, `CreateTrustedDevelopmentCertificate`) with SAN support.
+- `CookieHelper` — builds `Set-Cookie` header values (`BuildCookieHeaderValue`) with `Expires`, `Max-Age`, `Domain`, `Path`, `Secure`, `HttpOnly`, and `SameSite`.
+- `MimeHelper` — resolves content types (`GetMimeType`) and checks text/inline behavior (`IsPlainTextMimeType`, `IsBrowserKnownInlineMimeType`).
+- `HeaderHelper` — useful when creating custom `HttpContent`; use `CopyHttpHeaders(from, to, safe)` to preserve/clone content headers.
+- `PathHelper` — validates and combines paths (`IsPathAllowed`, `CombinePaths`, `FilesystemCombinePaths`, `NormalizePath`, `Split`, `Pop`).
+- `SizeHelper` — parse and format sizes (`Parse("64 MB")`, `HumanReadableSize`) and use constants (`UnitKb`, `UnitMb`, `UnitGb`, etc.).
+- URI helper — for URI composition, prefer `UrlBuilder` (`SetScheme`, `SetAuthority`, `AddSegment`, `AddQuery`) instead of string concatenation.
+
+### Functional helper patterns on request parsing
+
+```csharp
+static async Task<HttpResponse> DoSomething ( HttpRequest request ) {
+
+    // functional helpers to reading query and route parameters
+    float? maybeNullFloat = request.Query [ "param-name" ].MaybeNullOrEmpty ()?.GetSingle ();
+    Guid requiredPathParameter = request.RouteParameters [ "user-id" ].GetGuid ();
+    DayOfWeek enumFromQuery = request.Query [ "day-of-week" ].GetEnum<DayOfWeek> ();
+    // both RouteParameters and Query return StringValueCollection with functional StringValue items
+
+    // functional helpers to reading form data
+    var form = await request.GetFormContentAsync ();
+    string? singleField = form [ "something" ];
+    string [] multipleValues = form.GetValues ( "multiple-values" );
+
+    // functional helpers to reading multipart form
+    var multipartForm = await request.GetMultipartFormContentAsync ();
+    MultipartObject? singleItem = multipartForm.GetItem ( "multipart field name" );
+    MultipartObject [] allMatches = multipartForm.GetItems ( "items-with-this-name" );
+
+    foreach (var match in allMatches) {
+        bool isFile = match.IsFile;
+        string? fileName = match.Filename;
+        string fieldName = match.Name;
+        string? fieldContentType = match.ContentType;
+        byte [] fieldBytes = match.ContentBytes;
+    }
+
+    // header parsing
+    string [] multipleHeaderValues = request.Headers.GetValues ( "Cookie" );
+    string? joinedHeaderValues = request.Headers [ "something" ]; // or request.Headers.GetValue("something")
+    string? userAgent = request.Headers.UserAgent; // common headers are also available as properties
+    string? authorization = request.Headers.Authorization;
+
+    // body parsing
+    string textualBody = request.Body; // reads body as string using request encoding
+    byte [] rawBody = request.RawBody; // reads body as byte array
+    Memory<byte> bodyAsync = await request.GetBodyContentsAsync (); // asynchronously read body as byte array
+    Account? bodyFromJson = await request.GetJsonContentAsync<Account> (); // asynchronously read body from JSON
+
+    return new HttpResponse ( HttpStatusCode.OK );
+}
+```
+
+---
+
 ## Request Handlers (Middlewares)
 
 Implement `IRequestHandler` (or inherit `RequestHandler`) to create middlewares:

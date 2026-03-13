@@ -21,7 +21,7 @@ public sealed class Meter {
     /// <param name="slidingWindowDuration">The length of the sliding window used to retain readings.</param>
     public Meter ( TimeSpan slidingWindowDuration ) {
         _slidingWindowDuration = slidingWindowDuration;
-        _readings = new () { DefaultExpiration = slidingWindowDuration };
+        _readings = CachePoolingContext.Shared.Collect ( new MemoryCacheList<MeterReading> () { DefaultExpiration = slidingWindowDuration } );
     }
 
     /// <summary>

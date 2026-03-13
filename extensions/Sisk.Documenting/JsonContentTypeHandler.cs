@@ -11,7 +11,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using LightJson;
 using LightJson.Schema;
@@ -88,8 +87,6 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         _serializerOptions = JsonSerializerOptions.Default;
         _jsoptions = JsonOptions.Default;
     }
-
-    string ConvertCase ( string name ) => (_jsoptions.NamingPolicy ?? _serializerOptions.PropertyNamingPolicy)?.ConvertName ( name ) ?? name;
 
     /// <summary>
     /// Generates a JSON body example for the specified type.
@@ -420,7 +417,7 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     }
 
     /// <inheritdoc/>
-    public JsonSchema GetJsonSchemaForType ( Type type ) {
+    public virtual JsonSchema GetJsonSchemaForType ( Type type ) {
 
         return JsonSchema.CreateFromType ( type, _jsoptions );
     }
