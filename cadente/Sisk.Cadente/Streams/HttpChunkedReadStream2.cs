@@ -57,7 +57,7 @@ sealed class HttpChunkedReadStream2 : EndableStream {
                     break;
                 }
                 if (ptr >= _buffer.Length)
-                    throw new InvalidOperationException ( "Chunk header too long" );
+                    throw new ChunkParseException ( "Chunk header too long." );
             }
 
             if (ptr == 0)
@@ -67,13 +67,27 @@ sealed class HttpChunkedReadStream2 : EndableStream {
             var extIndex = headerLine.IndexOf ( ';' );
             var numberString = extIndex > -1 ? headerLine.Substring ( 0, extIndex ) : headerLine;
 
+            if (string.IsNullOrWhiteSpace ( numberString ))
+                throw new ChunkParseException ( "Invalid chunked transfer encoding: empty chunk size." );
+
             if (numberString == "0") {
                 currentBlockSize = 0;
                 FinishReading ();
                 return 0;
             }
 
-            currentBlockSize = Convert.ToInt32 ( numberString, 16 );
+            int parsedSize;
+            try {
+                parsedSize = Convert.ToInt32 ( numberString, 16 );
+            }
+            catch (Exception ex) when (ex is FormatException || ex is OverflowException || ex is ArgumentException) {
+                throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size '{numberString}'.", ex );
+            }
+
+            if (parsedSize < 0)
+                throw new ChunkParseException ( $"Invalid chunked transfer encoding: negative chunk size {parsedSize}." );
+
+            currentBlockSize = parsedSize;
             currentBlockRead = 0;
         }
 

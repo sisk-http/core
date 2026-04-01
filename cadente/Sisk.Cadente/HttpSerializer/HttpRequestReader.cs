@@ -146,6 +146,8 @@ static class HttpRequestReader {
         bool keepAliveEnabled = !protocol.Span.SequenceEqual ( Http10 );
         bool expect100 = false;
         bool isChunked = false;
+        bool seenTransferEncoding = false;
+        bool contentLengthExplicit = false;
 
         HttpHeader [] headers = ArrayPool<HttpHeader>.Shared.Rent ( 64 );
         int headerCount = 0;
@@ -179,6 +181,10 @@ static class HttpRequestReader {
                 if (Unsafe.Add ( ref spanRef, headerLineEnd - 1 ) == CarriageReturn) {
                     headerLineEnd--;
                 }
+                else {
+                    // Bare LF without preceding CR violates RFC 9112 §2.2 and enables header injection
+                    goto ParseFailed;
+                }
 
                 int headerLineLength = headerLineEnd - lineStart;
                 if (headerLineLength == 0) {
@@ -190,8 +196,10 @@ static class HttpRequestReader {
                 cursor = lineEnd + 1;
 
                 int colonIndex = headerLine.IndexOf ( Colon );
-                if (colonIndex <= 0)
+                if (colonIndex < 0)
                     continue;
+                if (colonIndex == 0)
+                    goto ParseFailed; // empty header name (RFC 9110 §5.1)
 
                 ReadOnlySpan<byte> nameSpan = headerLine.Slice ( 0, colonIndex );
                 ReadOnlySpan<byte> rawValue = headerLine.Slice ( colonIndex + 1 );
@@ -213,6 +221,11 @@ static class HttpRequestReader {
                     case 0: // Content-Length
                         if (Utf8Parser.TryParse ( valueSpan, out long parsed, out int consumed ) && consumed == valueSpan.Length) {
                             contentLength = parsed;
+                            contentLengthExplicit = true;
+                        }
+                        else {
+                            // Invalid Content-Length value (non-numeric, negative, overflow) — RFC 9110 §8.6
+                            goto ParseFailed;
                         }
                         break;
                     case 1: // Connection
@@ -222,6 +235,9 @@ static class HttpRequestReader {
                         expect100 = Ascii.EqualsIgnoreCase ( valueSpan, ContinueValue );
                         break;
                     case 3: // Transfer-Encoding
+                        if (seenTransferEncoding)
+                            goto ParseFailed; // duplicate TE = request-smuggling vector (RFC 9112 §6.3.3)
+                        seenTransferEncoding = true;
                         isChunked = Ascii.EqualsIgnoreCase ( valueSpan, ChunkedValue );
                         if (isChunked)
                             contentLength = -1;
@@ -247,6 +263,10 @@ HeadersComplete:
             HttpHeader [] finalHeaders = new HttpHeader [ headerCount ];
             headers.AsSpan ( 0, headerCount ).CopyTo ( finalHeaders );
             ArrayPool<HttpHeader>.Shared.Return ( headers );
+
+            // RFC 9112 §6.3.3: presence of both TE and CL is a request-smuggling vector
+            if (isChunked && contentLengthExplicit)
+                return null;
 
             ReadOnlyMemory<byte> bufferedContent = expect100
                 ? ReadOnlyMemory<byte>.Empty
