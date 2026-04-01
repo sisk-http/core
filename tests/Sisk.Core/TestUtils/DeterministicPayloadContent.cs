@@ -1,6 +1,14 @@
+// The Sisk Framework source code
+// Copyright (c) 2024- PROJECT PRINCIPIUM and all Sisk contributors
+//
+// The code below is licensed under the MIT license as
+// of the date of its publication, available at
+//
+// File name:   DeterministicPayloadContent.cs
+// Repository:  https://github.com/sisk-http/core
+
 using System.Buffers;
 using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography;
 
 namespace tests.TestUtils;

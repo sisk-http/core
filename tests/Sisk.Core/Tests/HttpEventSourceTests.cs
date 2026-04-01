@@ -7,14 +7,7 @@
 // File name:   HttpEventSourceTests.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 // Add any other necessary using statements as tests are developed,
 // e.g., for JSON parsing if needed, or specific Sisk types.
 
@@ -104,7 +97,7 @@ namespace tests.Tests // Ensure this namespace matches other test files
                     CollectionAssert.AreEqual ( expectedEvents, receivedEvents, "The received SSE events do not match the expected events." );
                 }
             }
-        } 
+        }
 
         [TestMethod]
         public async Task TestAsyncSseFeatures () {

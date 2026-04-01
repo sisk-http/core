@@ -7,13 +7,6 @@
 // File name:   LogStreamTests.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sisk.Core.Http;
 
 namespace Sisk.Core.Tests {
