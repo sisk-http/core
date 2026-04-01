@@ -1,7 +1,6 @@
 namespace Sisk.Monitoring;
 
-internal class Style
-{
+internal class Style {
     public const string DefaultStyles = """
         :root {
             --bg-primary: #ffffff;

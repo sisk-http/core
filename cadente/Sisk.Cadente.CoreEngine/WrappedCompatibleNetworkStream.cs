@@ -9,6 +9,7 @@
 
 using System.Net;
 using System.Runtime.CompilerServices;
+using Sisk.Cadente.Streams;
 
 namespace Sisk.Cadente.CoreEngine;
 
@@ -38,6 +39,10 @@ sealed class WrappedCompatibleNetworkStream ( Stream inner ) : Stream {
     public override int Read ( byte [] buffer, int offset, int count ) {
         try {
             return _s.Read ( buffer, offset, count );
+        }
+        catch (ChunkParseException chunkEx) {
+            // Malformed chunk body = protocol violation → 400, not a network disconnect
+            throw new Sisk.Core.Http.HttpRequestException ( chunkEx.Message, chunkEx );
         }
         catch (IOException ioex) {
             throw GetWrappedException ( ioex, 11 );

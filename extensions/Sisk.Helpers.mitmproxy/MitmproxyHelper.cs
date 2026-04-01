@@ -7,7 +7,6 @@
 // File name:   MitmproxyHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Security.Cryptography.X509Certificates;
 using Asmichi.ProcessManagement;
 using Sisk.Core.Http.Hosting;
 using Sisk.Helpers.Mitmproxy;

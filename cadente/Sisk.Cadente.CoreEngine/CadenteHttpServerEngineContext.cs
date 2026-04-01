@@ -94,7 +94,7 @@ namespace Sisk.Cadente.CoreEngine {
                 return HttpServerEngineWebSocket.CreateFromWebSocket ( ws );
             }
             catch (Exception ex) {
-                throw new Sisk.Core.Http.HttpRequestException("Failed to enter WebSocket context. See inner exception.", ex);
+                throw new Sisk.Core.Http.HttpRequestException ( "Failed to enter WebSocket context. See inner exception.", ex );
             }
         }
     }

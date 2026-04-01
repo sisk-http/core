@@ -61,7 +61,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="CypherPotato.LightJson" Version="0.15.0" />
+	  <PackageReference Include="CypherPotato.LightJson" Version="0.15.2" />
 	</ItemGroup>
 
 	<!-- global imports -->
