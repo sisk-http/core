@@ -7,14 +7,9 @@
 // File name:   CertificateHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sisk.Core.Helpers;
 
@@ -154,12 +149,12 @@ public static class CertificateHelper {
             X509KeyStorageFlags.PersistKeySet |
             X509KeyStorageFlags.UserKeySet );
 #else
-        return new X509Certificate2(
+        return new X509Certificate2 (
             pfxBytes,
             PfxPassword,
             X509KeyStorageFlags.Exportable |
             X509KeyStorageFlags.PersistKeySet |
-            X509KeyStorageFlags.UserKeySet);
+            X509KeyStorageFlags.UserKeySet );
 #endif
     }
 }

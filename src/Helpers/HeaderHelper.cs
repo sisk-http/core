@@ -8,7 +8,6 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net.Http.Headers;
-using System.Text;
 
 namespace Sisk.Core.Helpers;
 

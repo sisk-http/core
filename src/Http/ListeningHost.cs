@@ -7,7 +7,6 @@
 // File name:   ListeningHost.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Security.Cryptography.X509Certificates;
 using Sisk.Core.Entity;
 using Sisk.Core.Routing;
 
@@ -127,5 +126,5 @@ namespace Sisk.Core.Http {
                 }
             }
         }
-   }
+    }
 }

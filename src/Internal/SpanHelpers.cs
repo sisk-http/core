@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Sisk.Core.Internal;
+
 static class SpanHelpers {
 
     public static bool Contains<T> ( in ReadOnlySpan<T> search, T value, IEqualityComparer<T> comparer ) {

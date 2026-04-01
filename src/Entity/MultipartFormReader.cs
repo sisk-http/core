@@ -10,8 +10,6 @@
 using System.Buffers;
 using System.Collections.Specialized;
 using System.Text;
-using Sisk.Core.Http;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Entity;
 
