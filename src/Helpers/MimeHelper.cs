@@ -7,6 +7,7 @@
 // File name:   MimeHelper.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Diagnostics.CodeAnalysis;
 using Sisk.Core.Internal;
 
 namespace Sisk.Core.Helpers;
@@ -42,7 +43,8 @@ public static class MimeHelper {
         else {
             extension = fileExtension;
         }
-        return MimeTypeList.ResolveMimeType ( extension.ToLowerInvariant () ) ?? fallback ?? DefaultMimeType;
+
+        return MimeTypeList.Map.FirstOrDefault ( m => m.Extension == extension ).MimeType ?? fallback ?? DefaultMimeType;
     }
 
     /// <summary>
@@ -84,5 +86,17 @@ public static class MimeHelper {
             }
         }
         return false;
+    }
+
+    /// <summary>
+    /// Gets the file extension for the specified MIME type.
+    /// </summary>
+    /// <param name="mimeType">The MIME type, optionally including parameters such as <c>; charset=utf-8</c>.</param>
+    /// <param name="fallback">Optional. The default extension when no match is found.</param>
+    /// <returns>The file extension without the leading dot (e.g. <c>html</c>), or <paramref name="fallback"/> if the MIME type is not recognized.</returns>
+    [return: NotNullIfNotNull ( nameof ( fallback ) )]
+    public static string? GetFileExtension ( string mimeType, string? fallback = null ) {
+        var mimeTypeWithoutParameters = mimeType.Split ( ';' ) [ 0 ].Trim ();
+        return MimeTypeList.Map.FirstOrDefault ( m => m.MimeType == mimeTypeWithoutParameters ).Extension ?? fallback;
     }
 }
