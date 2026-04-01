@@ -4,7 +4,7 @@
 // The code below is licensed under the MIT license as
 // of the date of its publication, available at
 //
-// File name:   LogEntry.cs
+// File name:   LogStreamEntry.cs
 // Repository:  https://github.com/sisk-http/core
 
 using System.Diagnostics.CodeAnalysis;
