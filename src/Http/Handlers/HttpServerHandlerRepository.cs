@@ -26,8 +26,9 @@ enum HttpServerHandlerActionEvent {
 }
 
 internal sealed class HttpServerHandlerRepository {
+
+    private readonly List<HttpServerHandler> handlers = new List<HttpServerHandler> ();
     private readonly HttpServer parent;
-    private readonly SortedSet<HttpServerHandler> handlers = new SortedSet<HttpServerHandler> ( HttpServerHandlerSortingComparer.Instance );
     internal readonly DefaultHttpServerHandler _default = new DefaultHttpServerHandler ();
 
     public HttpServerHandlerRepository ( HttpServer parent ) {
@@ -36,7 +37,10 @@ internal sealed class HttpServerHandlerRepository {
     }
 
     public void RegisterHandler ( HttpServerHandler handler ) {
-        handlers.Add ( handler );
+        lock (handlers) {
+            handlers.Add ( handler );
+            handlers.Sort ( HttpServerHandlerSortingComparer.Instance );
+        }
     }
 
     private bool IsEventBreakable ( HttpServerHandlerActionEvent eventName )
