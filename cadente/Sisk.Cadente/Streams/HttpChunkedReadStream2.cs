@@ -8,6 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
+using System.Buffers.Text;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Sisk.Cadente.Streams;
@@ -18,6 +21,35 @@ sealed class HttpChunkedReadStream2 : EndableStream {
 
     int currentBlockSize = -1;
     int currentBlockRead = 0;
+
+    private static readonly sbyte [] _hexLookup = new sbyte [ 256 ];
+
+    static HttpChunkedReadStream2 () {
+        Array.Fill ( _hexLookup, (sbyte) -1 );
+        for (byte c = (byte) '0'; c <= (byte) '9'; c++)
+            _hexLookup [ c ] = (sbyte) (c - '0');
+        for (byte c = (byte) 'a'; c <= (byte) 'f'; c++)
+            _hexLookup [ c ] = (sbyte) (c - 'a' + 10);
+        for (byte c = (byte) 'A'; c <= (byte) 'F'; c++)
+            _hexLookup [ c ] = (sbyte) (c - 'A' + 10);
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static int ParseHexSize ( ReadOnlySpan<byte> buffer ) {
+        int result = 0;
+        for (int i = 0; i < buffer.Length; i++) {
+            byte b = buffer [ i ];
+            if (b == (byte) ';' || b == (byte) '\r' || b == (byte) '\n')
+                break;
+
+            sbyte digit = _hexLookup [ b ];
+            if (digit < 0)
+                throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size." );
+
+            result = (result << 4) | (byte) digit;
+        }
+        return result;
+    }
 
     public HttpChunkedReadStream2 ( Stream s ) {
         _s = s;
@@ -63,25 +95,26 @@ sealed class HttpChunkedReadStream2 : EndableStream {
             if (ptr == 0)
                 return 0;
 
-            var headerLine = Encoding.ASCII.GetString ( _buffer, 0, ptr - 2 );
-            var extIndex = headerLine.IndexOf ( ';' );
-            var numberString = extIndex > -1 ? headerLine.Substring ( 0, extIndex ) : headerLine;
+            ReadOnlySpan<byte> headerBytes = _buffer.AsSpan ( 0, ptr - 2 );
 
-            if (string.IsNullOrWhiteSpace ( numberString ))
+            if (headerBytes.IsEmpty)
                 throw new ChunkParseException ( "Invalid chunked transfer encoding: empty chunk size." );
-
-            if (numberString == "0") {
-                currentBlockSize = 0;
-                FinishReading ();
-                return 0;
-            }
 
             int parsedSize;
             try {
-                parsedSize = Convert.ToInt32 ( numberString, 16 );
+                parsedSize = ParseHexSize ( headerBytes );
             }
-            catch (Exception ex) when (ex is FormatException || ex is OverflowException || ex is ArgumentException) {
-                throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size '{numberString}'.", ex );
+            catch (ChunkParseException) {
+                throw;
+            }
+            catch (Exception ex) {
+                throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size.", ex );
+            }
+
+            if (parsedSize == 0) {
+                currentBlockSize = 0;
+                FinishReading ();
+                return 0;
             }
 
             if (parsedSize < 0)
