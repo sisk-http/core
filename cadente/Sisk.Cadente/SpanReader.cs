@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace Sisk.Cadente;
 
-ref struct SpanReader<T> where T : IEquatable<T> {
+ref struct SpanReader<T> where T : unmanaged, IEquatable<T> {
 
     int readLength = 0;
 
