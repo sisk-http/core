@@ -525,6 +525,14 @@ public class ApplicationMonitor {
                         btn += "Stop refresh";
                     } );
 
+                    if (logStream.Instance.FilePath is not null) {
+                        actions += new HtmlElement ( "a", btn => {
+                            btn.ClassList.Add ( "toolbar-btn" );
+                            btn.Attributes [ "href" ] = PrefixPath ( $"/logstream/{logStream.SanitizedLabel}/download" );
+                            btn += "Download";
+                        } );
+                    }
+
                 } );
             } );
 
@@ -551,6 +559,22 @@ public class ApplicationMonitor {
                 Content = new HtmlContent ( html )
             }
         );
+    }
+
+    /// <summary>
+    /// Serves the log file linked to a log stream as a downloadable attachment.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <param name="logStream">The log stream definition whose file will be downloaded.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with the file content, or 404 if no file is linked.</returns>
+    protected virtual ValueTask<HttpResponse> GetLogStreamFileDownloadAsync ( HttpRequest request, MonitoringDefinition<LogStream> logStream ) {
+        string? filePath = logStream.Instance.FilePath;
+        if (filePath is null || !File.Exists ( filePath ))
+            return new ValueTask<HttpResponse> ( new HttpResponse ( 404 ) );
+
+        return new ValueTask<HttpResponse> ( new HttpResponse ( 200 ) {
+            Content = new FileContent ( filePath )
+        } );
     }
 
     /// <summary>
@@ -1034,6 +1058,18 @@ public class ApplicationMonitor {
 
             return await GetLogStreamPageHtmlAsync ( request, matchedLogStream );
         }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/logstream/<name>/download" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+
+            string logstreamName = request.RouteParameters [ "name" ].GetString ();
+            var matchedLogStream = capturingLogStreams
+                .FirstOrDefault ( f => f.Label.Equals ( logstreamName, StringComparison.OrdinalIgnoreCase ) );
+
+            if (matchedLogStream is null)
+                return new HttpResponse ( 404 );
+
+            return await GetLogStreamFileDownloadAsync ( request, matchedLogStream );
+        }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/health" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
             return await GetServerHealthPageHtmlAsync ( request );
@@ -1054,7 +1090,6 @@ public class ApplicationMonitor {
         };
 
         public HttpResponse? Execute ( HttpRequest request, HttpContext context ) {
-
             string? authorization = request.Headers.Authorization;
             if (authorization is null || !authorization.StartsWith ( "Basic " )) {
                 return UnauthorizedResponse;
