@@ -29,6 +29,8 @@ static class HttpRequestReader {
     private static ReadOnlySpan<byte> ContinueValue => "100-continue"u8;
     private static ReadOnlySpan<byte> ChunkedValue => "chunked"u8;
 
+    private static ReadOnlySpan<byte> TrimChars => " \t\r\n"u8;
+
     [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs ) {
@@ -204,17 +206,7 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> nameSpan = headerLine.Slice ( 0, colonIndex );
                 ReadOnlySpan<byte> rawValue = headerLine.Slice ( colonIndex + 1 );
 
-                int trimLeft = 0;
-                int trimRight = rawValue.Length;
-
-                while (trimLeft < rawValue.Length && rawValue [ trimLeft ] <= 32)
-                    trimLeft++;
-
-                while (trimRight > trimLeft && rawValue [ trimRight - 1 ] <= 32)
-                    trimRight--;
-
-                int valueLength = trimRight - trimLeft;
-                ReadOnlySpan<byte> valueSpan = rawValue.Slice ( trimLeft, valueLength );
+                ReadOnlySpan<byte> valueSpan = rawValue.Trim ( TrimChars );
 
                 int knownHeader = GetKnownHeaderIndex ( nameSpan );
                 switch (knownHeader) {
@@ -253,7 +245,7 @@ static class HttpRequestReader {
 
                 headers [ headerCount++ ] = new HttpHeader (
                     buffer.Slice ( lineStart, colonIndex ),
-                    buffer.Slice ( lineStart + colonIndex + 1 + trimLeft, valueLength )
+                    buffer.Slice ( lineStart + colonIndex + 1 + (rawValue.Length - valueSpan.Length), valueSpan.Length )
                 );
             }
 
