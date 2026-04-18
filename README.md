@@ -21,7 +21,7 @@
   
   </div>
   
-  **Sisk** is a set of libraries for web development that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project.
+  **Sisk** is a production-ready set of libraries for web development that is lightweight, agnostic, easy, simple, and robust. The perfect choice for your next project. It is fast, ranking #22 on the [HttpArena](https://www.http-arena.com/leaderboard/) leaderboard and #156 on [TechEmpower](https://www.techempower.com/benchmarks/#section=data-r23&test=json).
 
 </div>
 
