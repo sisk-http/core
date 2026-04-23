@@ -40,10 +40,7 @@ public partial class Router {
 
                     Abstract classes should not be included on the router.
                  */
-                if (type == moduleType) {
-                    ;
-                }
-                else if (type.IsAbstract) {
+                if (type.IsAbstract) {
                     if (type.IsSealed) // static
                     {
                         SetObject ( type );
