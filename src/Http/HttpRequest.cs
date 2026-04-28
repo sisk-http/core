@@ -50,7 +50,7 @@ namespace Sisk.Core.Http {
 
         internal HttpServer baseServer;
         internal IDisposable? streamingEntity;
-        internal IPAddress remoteAddr = null!;
+        internal IPAddress? remoteAddr;
         private readonly HttpServerConfiguration contextServerConfiguration;
         private readonly HttpServerEngineContextResponse listenerResponse;
         private readonly HttpServerEngineContextRequest listenerRequest;
@@ -434,6 +434,9 @@ namespace Sisk.Core.Http {
         /// </summary>
         public IPAddress RemoteAddress {
             get {
+                if (remoteAddr is null) {
+                    remoteAddr = ReadRequestRemoteAddr ();
+                }
                 return remoteAddr;
             }
         }

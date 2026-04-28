@@ -18,15 +18,23 @@ namespace Sisk.Core.Internal;
 static class LogFormatter {
 
     public static string FormatExceptionEntr ( HttpServerExecutionResult executionResult ) {
+        HttpRequest? request = executionResult.Context?.Request;
         StringBuilder errLineBuilder = new StringBuilder ( 128 );
-        errLineBuilder.Append ( '[' );
-        errLineBuilder.Append ( executionResult.Request.RequestedAt.ToString ( "G", CultureInfo.CurrentCulture.DateTimeFormat ) );
-        errLineBuilder.Append ( ']' );
-        errLineBuilder.Append ( ' ' );
-        errLineBuilder.Append ( executionResult.Request.Method.Method );
-        errLineBuilder.Append ( ' ' );
-        errLineBuilder.Append ( executionResult.Request.FullPath );
-        errLineBuilder.AppendLine ();
+
+        if (request is { }) {
+            errLineBuilder.Append ( '[' );
+            errLineBuilder.Append ( request.RequestedAt.ToString ( "G", CultureInfo.CurrentCulture.DateTimeFormat ) );
+            errLineBuilder.Append ( ']' );
+            errLineBuilder.Append ( ' ' );
+            errLineBuilder.Append ( request.Method.Method );
+            errLineBuilder.Append ( ' ' );
+            errLineBuilder.Append ( request.FullPath );
+            errLineBuilder.AppendLine ();
+        }
+        else {
+            errLineBuilder.AppendLine ( "[unavailable request]" );
+        }
+
         errLineBuilder.AppendLine ( executionResult.ServerException?.ToString () );
         if (executionResult.ServerException?.InnerException is { } iex) {
             errLineBuilder.AppendLine ( "[inner exception]" );
@@ -36,8 +44,12 @@ static class LogFormatter {
         errLineBuilder.AppendLine ();
         return errLineBuilder.ToString ();
     }
-
+#pragma warning disable
     public static string FormatAccessLogEntry ( string format, HttpServerExecutionResult executionResult ) {
+        if (executionResult.Context?.Request is null) {
+            return string.Empty;
+        }
+
         ReadOnlySpan<char> formatSpan = format.AsSpan ();
         StringBuilder sb = new StringBuilder ( format.Length * 2 );
 
