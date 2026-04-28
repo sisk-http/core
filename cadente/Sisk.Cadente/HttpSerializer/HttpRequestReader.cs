@@ -24,7 +24,9 @@ static class HttpRequestReader {
 
     private const int DefaultHeaderReadTimeoutMs = 30_000;
     private static ReadOnlySpan<byte> HeaderTerminator => "\r\n\r\n"u8;
+    private static ReadOnlySpan<byte> Http09 => "HTTP/0.9"u8;
     private static ReadOnlySpan<byte> Http10 => "HTTP/1.0"u8;
+    private static ReadOnlySpan<byte> Http11 => "HTTP/1.1"u8;
     private static ReadOnlySpan<byte> CloseValue => "close"u8;
     private static ReadOnlySpan<byte> ContinueValue => "100-continue"u8;
     private static ReadOnlySpan<byte> ChunkedValue => "chunked"u8;
@@ -88,7 +90,8 @@ static class HttpRequestReader {
             Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
             return null;
         }
-        catch (SocketException) {
+        catch (SocketException sex) {
+            Logger.LogInformation ( $"failed to parse HTTP request: {sex.Message}" );
             return null; // socket errors are common when client disconnects abruptly
         }
         catch (Exception ex) {
@@ -110,26 +113,33 @@ static class HttpRequestReader {
     private static HttpRequestBase? ParseHttpRequest ( ReadOnlyMemory<byte> buffer ) {
         ReadOnlySpan<byte> span = buffer.Span;
         int bufferLength = span.Length;
+        string? failReason = null;
 
         // Request line: METHOD SP PATH SP PROTOCOL CRLF
         int methodEnd = span.IndexOf ( Space );
-        if (methodEnd <= 0)
+        if (methodEnd <= 0) {
+            Logger.LogInformation ( $"failed to parse HTTP request: missing or empty request method in request line" );
             return null;
+        }
 
         ReadOnlyMemory<byte> method = buffer.Slice ( 0, methodEnd );
 
         int pathStart = methodEnd + 1;
         int pathEndRel = span.Slice ( pathStart ).IndexOf ( Space );
-        if (pathEndRel < 0)
+        if (pathEndRel < 0) {
+            Logger.LogInformation ( $"failed to parse HTTP request: missing request path in request line" );
             return null;
+        }
 
         int pathEnd = pathStart + pathEndRel;
         ReadOnlyMemory<byte> path = buffer.Slice ( pathStart, pathEndRel );
 
         int protocolStart = pathEnd + 1;
         int protocolLineEndRel = span.Slice ( protocolStart ).IndexOf ( LineFeed );
-        if (protocolLineEndRel < 0)
+        if (protocolLineEndRel < 0) {
+            Logger.LogInformation ( $"failed to parse HTTP request: missing HTTP protocol version in request line" );
             return null;
+        }
 
         int protocolLineEnd = protocolStart + protocolLineEndRel;
         int protocolEndExclusive = protocolLineEnd;
@@ -141,6 +151,10 @@ static class HttpRequestReader {
         }
 
         ReadOnlyMemory<byte> protocol = buffer.Slice ( protocolStart, protocolEndExclusive - protocolStart );
+        if (!IsSupportedHttpProtocol ( protocol.Span )) {
+            Logger.LogInformation ( $"failed to parse HTTP request: unsupported HTTP protocol version '{Encoding.ASCII.GetString ( protocol.Span )}'" );
+            return null;
+        }
 
         int cursor = protocolLineEnd + 1;
 
@@ -173,6 +187,7 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> remaining = span.Slice ( cursor );
                 int lfRel = remaining.IndexOf ( LineFeed );
                 if (lfRel < 0) {
+                    failReason = "incomplete header line: no LF found";
                     goto ParseFailed;
                 }
 
@@ -185,6 +200,7 @@ static class HttpRequestReader {
                 }
                 else {
                     // Bare LF without preceding CR violates RFC 9112 §2.2 and enables header injection
+                    failReason = "bare LF without preceding CR in header line violates RFC 9112 §2.2";
                     goto ParseFailed;
                 }
 
@@ -200,8 +216,10 @@ static class HttpRequestReader {
                 int colonIndex = headerLine.IndexOf ( Colon );
                 if (colonIndex < 0)
                     continue;
-                if (colonIndex == 0)
+                if (colonIndex == 0) {
+                    failReason = "empty header name violates RFC 9110 §5.1";
                     goto ParseFailed; // empty header name (RFC 9110 §5.1)
+                }
 
                 ReadOnlySpan<byte> nameSpan = headerLine.Slice ( 0, colonIndex );
                 ReadOnlySpan<byte> rawValue = headerLine.Slice ( colonIndex + 1 );
@@ -217,6 +235,7 @@ static class HttpRequestReader {
                         }
                         else {
                             // Invalid Content-Length value (non-numeric, negative, overflow) — RFC 9110 §8.6
+                            failReason = $"invalid Content-Length value '{Encoding.ASCII.GetString ( valueSpan )}' (RFC 9110 §8.6)";
                             goto ParseFailed;
                         }
                         break;
@@ -227,8 +246,10 @@ static class HttpRequestReader {
                         expect100 = Ascii.EqualsIgnoreCase ( valueSpan, ContinueValue );
                         break;
                     case 3: // Transfer-Encoding
-                        if (seenTransferEncoding)
+                        if (seenTransferEncoding) {
+                            failReason = "duplicate Transfer-Encoding header is a request-smuggling vector (RFC 9112 §6.3.3)";
                             goto ParseFailed; // duplicate TE = request-smuggling vector (RFC 9112 §6.3.3)
+                        }
                         seenTransferEncoding = true;
                         isChunked = Ascii.EqualsIgnoreCase ( valueSpan, ChunkedValue );
                         if (isChunked)
@@ -257,8 +278,10 @@ HeadersComplete:
             ArrayPool<HttpHeader>.Shared.Return ( headers );
 
             // RFC 9112 §6.3.3: presence of both TE and CL is a request-smuggling vector
-            if (isChunked && contentLengthExplicit)
+            if (isChunked && contentLengthExplicit) {
+                Logger.LogInformation ( $"failed to parse HTTP request: both Transfer-Encoding and Content-Length present, request-smuggling vector (RFC 9112 §6.3.3)" );
                 return null;
+            }
 
             ReadOnlyMemory<byte> bufferedContent = expect100
                 ? ReadOnlyMemory<byte>.Empty
@@ -276,6 +299,7 @@ HeadersComplete:
             };
 
 ParseFailed:
+            Logger.LogInformation ( $"failed to parse HTTP request: {failReason ?? "malformed request"}" );
             ArrayPool<HttpHeader>.Shared.Return ( headers );
             return null;
         }
@@ -285,23 +309,35 @@ ParseFailed:
         }
     }
 
+    private static ReadOnlySpan<byte> ContentLengthName => "Content-Length"u8;
+    private static ReadOnlySpan<byte> ConnectionName => "Connection"u8;
+    private static ReadOnlySpan<byte> ExpectName => "Expect"u8;
+    private static ReadOnlySpan<byte> TransferEncodingName => "Transfer-Encoding"u8;
+
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private static int GetKnownHeaderIndex ( ReadOnlySpan<byte> name ) {
         if (name.IsEmpty)
             return -1;
 
-        return (name [ 0 ], name.Length) switch {
-            ((byte) 'C', 14 ) => 0,  // Content-Length
-            ((byte) 'c', 14 ) => 0,
-            ((byte) 'C', 10 ) => 1,  // Connection
-            ((byte) 'c', 10 ) => 1,
-            ((byte) 'E', 6 ) => 2,  // Expect
-            ((byte) 'e', 6 ) => 2,
-            ((byte) 'T', 17 ) => 3,  // Transfer-Encoding
-            ((byte) 't', 17 ) => 3,
-            _ => -1
-        };
+        switch ((name [ 0 ] | 0x20, name.Length)) {
+            case ((byte) 'c', 14 ):
+                return Ascii.EqualsIgnoreCase ( name, ContentLengthName ) ? 0 : -1;
+            case ((byte) 'c', 10 ):
+                return Ascii.EqualsIgnoreCase ( name, ConnectionName ) ? 1 : -1;
+            case ((byte) 'e', 6 ):
+                return Ascii.EqualsIgnoreCase ( name, ExpectName ) ? 2 : -1;
+            case ((byte) 't', 17 ):
+                return Ascii.EqualsIgnoreCase ( name, TransferEncodingName ) ? 3 : -1;
+            default:
+                return -1;
+        }
     }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static bool IsSupportedHttpProtocol ( ReadOnlySpan<byte> protocol )
+        => protocol.SequenceEqual ( Http11 )
+        || protocol.SequenceEqual ( Http10 )
+        || protocol.SequenceEqual ( Http09 );
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private static bool Unlikely ( bool condition ) => condition;

@@ -267,6 +267,21 @@ public sealed class HttpIntrinsicsTests {
     private static Task<(int? status, string? body)> SendRawAndReadResponseAsync ( string request, int timeoutMs = 5000 )
         => SendRawAndReadResponseAsync ( Encoding.ASCII.GetBytes ( request ), timeoutMs );
 
+    [TestMethod]
+    public async Task RequestLine_UnsupportedHttpProtocol_IsRejected () {
+        var uri = GetServerUri ();
+        string request =
+            $"GET /tests/plaintext HTTP/1.2\r\n" +
+            $"Host: {uri.Host}:{uri.Port}\r\n" +
+            "\r\n";
+
+        int? status = await SendRawAndReadStatusAsync ( request );
+        if (status == 200 && Environment.GetEnvironmentVariable ( "SISK_TEST_ENGINE" ) != "Cadente")
+            Assert.Inconclusive ( "HttpListener does not enforce unsupported protocol rejection; only enforced by Cadente." );
+        Assert.IsTrue ( status is null || status >= 400,
+            $"Unsupported HTTP protocol should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
+    }
+
     // -------------------------------------------------------------------------
     // Header injection tests
     // -------------------------------------------------------------------------
