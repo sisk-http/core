@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
+using System.Text;
 using Sisk.Core.Helpers;
 
 namespace Sisk.Core.Http;
@@ -44,7 +45,12 @@ public sealed class FileContent : HttpContent {
             Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue ( "inline" );
         }
 
-        Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue ( mimeType );
+        if (MimeHelper.IsPlainTextMimeType ( mimeType )) {
+            Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue ( mimeType, GetFileEncoding ( file ).WebName );
+        }
+        else {
+            Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue ( mimeType );
+        }
     }
 
     /// <summary>
@@ -103,5 +109,14 @@ public sealed class FileContent : HttpContent {
 
         length = File.Length;
         return true;
+    }
+
+    private static Encoding GetFileEncoding ( FileInfo finfo ) {
+        using var fs = finfo.Open ( FileMode.Open, FileAccess.Read, FileShare.ReadWrite );
+        using var reader = new StreamReader ( fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true );
+        if (reader.Peek () >= 0) {
+            return reader.CurrentEncoding;
+        }
+        return Encoding.Default;
     }
 }
