@@ -68,7 +68,7 @@ public sealed class HttpHost : IDisposable {
     /// <param name="endpoint">The <see cref="IPEndPoint"/> to listen on.</param>
     public HttpHost ( IPEndPoint endpoint ) {
         _endpoint = endpoint;
-        _listener = new Socket ( SocketType.Stream, ProtocolType.Tcp );
+        _listener = new Socket ( endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp );
 
         _acceptArgsPool = new SocketAsyncEventArgs [ AcceptPoolSize ];
         _acceptArgsAvailable = new int [ AcceptPoolSize ];
@@ -116,7 +116,7 @@ public sealed class HttpHost : IDisposable {
         _listener.ReceiveBufferSize = 128 * 1024;
         _listener.SendBufferSize = 128 * 1024;
 
-        if (_listener.AddressFamily == AddressFamily.InterNetworkV6) {
+        if (_listener.AddressFamily == AddressFamily.InterNetworkV6 && _endpoint.Address.Equals ( IPAddress.IPv6Any )) {
             _listener.DualMode = true;
         }
 
@@ -181,6 +181,8 @@ public sealed class HttpHost : IDisposable {
             return;
         }
 
+        Logger.LogInformation ( $"Connection started from {client.RemoteEndPoint} on {client.LocalEndPoint}" );
+
         int readTimeoutMs = (int) TimeoutManager.ClientReadTimeout.TotalMilliseconds;
         int writeTimeoutMs = (int) TimeoutManager.ClientWriteTimeout.TotalMilliseconds;
 
@@ -198,6 +200,7 @@ public sealed class HttpHost : IDisposable {
 
         try {
             if (HttpsOptions is not null) {
+                Logger.LogInformation ( $"Starting SSL handshake" );
                 sslStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
                 connectionStream = sslStream;
 
@@ -213,9 +216,12 @@ public sealed class HttpHost : IDisposable {
                             ? System.Security.Cryptography.X509Certificates.X509RevocationMode.Online
                             : System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck
                     }, handshakeCts.Token ).ConfigureAwait ( false );
+
+                    Logger.LogInformation ( $"SSL handshake successfull" );
                 }
-                catch {
+                catch (Exception ex) {
                     // Responder erro no stream não-SSL
+                    Logger.LogInformation ( $"Failed SSL handshake: {ex.Message}" );
                     await WriteHandshakeErrorAsync ( clientStream ).ConfigureAwait ( false );
                     return;
                 }
@@ -236,20 +242,33 @@ public sealed class HttpHost : IDisposable {
             // await using para dispose correto
             await using HttpConnection connection = new ( hostClient, connectionStream, this, clientEndpoint );
 
+            Logger.LogInformation ( $"call OnClientConnectedAsync" );
             await Handler.OnClientConnectedAsync ( this, hostClient ).ConfigureAwait ( false );
 
             try {
+                Logger.LogInformation ( $"call HandleConnectionEventsAsync" );
                 await connection.HandleConnectionEventsAsync ( default ).ConfigureAwait ( false );
             }
+            catch (Exception ex) {
+                Logger.LogInformation ( $"HandleConnectionEventsAsync/exception: {ex}" );
+            }
             finally {
+                Logger.LogInformation ( $"call OnClientDisconnectedAsync" );
                 await Handler.OnClientDisconnectedAsync ( this, hostClient ).ConfigureAwait ( false );
             }
         }
-        catch (SocketException) { }
-        catch (IOException) { }
-        catch (ObjectDisposedException) { }
+        catch (SocketException sex) {
+            Logger.LogInformation ( $"SocketException: {sex.Message}" );
+        }
+        catch (IOException iox) {
+            Logger.LogInformation ( $"IOException: {iox.Message}" );
+        }
+        catch (Exception ex) {
+            Logger.LogInformation ( $"Exception: {ex.Message}" );
+        }
         finally {
             // Cleanup garantido
+            Logger.LogInformation ( $"cleanup" );
             if (sslStream is not null) {
                 await sslStream.DisposeAsync ().ConfigureAwait ( false );
             }

@@ -61,6 +61,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
             HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream, shutdownToken, headerParsingTimeout ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
+                Logger.LogInformation ( $"TryReadHttpRequestAsync returned no request" );
                 return HttpConnectionState.ConnectionClosed;
             }
 
