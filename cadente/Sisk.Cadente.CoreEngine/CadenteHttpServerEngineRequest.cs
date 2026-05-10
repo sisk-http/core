@@ -21,8 +21,14 @@ namespace Sisk.Cadente.CoreEngine {
     /// Represents an HTTP request within the Cadente engine context.
     /// </summary>
     public sealed class CadenteHttpServerEngineRequest : HttpServerEngineContextRequest {
+        private static readonly Version Http11Version = new Version ( 1, 1 );
+
         internal readonly HttpHostContext _context;
         private readonly HttpHostContext.HttpRequest _request;
+        private Uri? _url;
+        private NameValueCollection? _queryString;
+        private NameValueCollection? _headers;
+        private Guid _requestTraceIdentifier;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CadenteHttpServerEngineRequest"/> class.
@@ -43,24 +49,33 @@ namespace Sisk.Cadente.CoreEngine {
         /// <inheritdoc/>
         public override NameValueCollection QueryString {
             get {
-                var query = new NameValueCollection ();
-                var url = new Uri ( "http://localhost" + _request.Path );
-                var queryString = System.Web.HttpUtility.ParseQueryString ( url.Query );
-                foreach (var key in queryString.AllKeys) {
-                    query.Add ( key, queryString [ key ] );
+                if (_queryString is { }) {
+                    return _queryString;
                 }
-                return query;
+
+                var query = new NameValueCollection ();
+                string rawUrl = _request.Path;
+                int queryStart = rawUrl.IndexOf ( '?', StringComparison.Ordinal );
+
+                if (queryStart >= 0) {
+                    var queryString = System.Web.HttpUtility.ParseQueryString ( rawUrl [ queryStart.. ] );
+                    foreach (var key in queryString.AllKeys) {
+                        query.Add ( key, queryString [ key ] );
+                    }
+                }
+
+                return _queryString = query;
             }
         }
 
         /// <inheritdoc/>
-        public override Version ProtocolVersion => new Version ( 1, 1 );
+        public override Version ProtocolVersion => Http11Version;
 
         /// <inheritdoc/>
         public override string UserHostName => throw new NotImplementedException ();
 
         /// <inheritdoc/>
-        public override Uri? Url => new Uri ( "http://localhost" + _request.Path );
+        public override Uri? Url => _url ??= new Uri ( "http://localhost" + _request.Path );
 
         /// <inheritdoc/>
         public override string HttpMethod => _request.Method;
@@ -72,16 +87,28 @@ namespace Sisk.Cadente.CoreEngine {
         public override IPEndPoint RemoteEndPoint => _context.Client.ClientEndpoint;
 
         /// <inheritdoc/>
-        public override Guid RequestTraceIdentifier { get; } = Guid.NewGuid ();
+        public override Guid RequestTraceIdentifier {
+            get {
+                if (_requestTraceIdentifier == Guid.Empty) {
+                    _requestTraceIdentifier = Guid.NewGuid ();
+                }
+
+                return _requestTraceIdentifier;
+            }
+        }
 
         /// <inheritdoc/>
         public override NameValueCollection Headers {
             get {
+                if (_headers is { }) {
+                    return _headers;
+                }
+
                 var headers = new NameValueCollection ();
                 foreach (var header in _request.Headers) {
                     headers.Add ( header.Name, header.Value );
                 }
-                return headers;
+                return _headers = headers;
             }
         }
 

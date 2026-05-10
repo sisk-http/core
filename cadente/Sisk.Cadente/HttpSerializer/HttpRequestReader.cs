@@ -103,8 +103,6 @@ static class HttpRequestReader {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private static ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken ) {
-
-        stream.ReadTimeout = timeoutMs;
         return stream.ReadAsync ( buffer, cancellationToken );
     }
 
@@ -164,12 +162,9 @@ static class HttpRequestReader {
         bool isChunked = false;
         bool seenTransferEncoding = false;
         bool contentLengthExplicit = false;
+        int headersStart = cursor;
 
-        HttpHeader [] headers = ArrayPool<HttpHeader>.Shared.Rent ( 64 );
-        int headerCount = 0;
-
-        try {
-            while (cursor < bufferLength) {
+        while (cursor < bufferLength) {
                 byte currentByte = Unsafe.Add ( ref spanRef, cursor );
 
                 if (currentByte == LineFeed) {
@@ -226,6 +221,15 @@ static class HttpRequestReader {
 
                 ReadOnlySpan<byte> valueSpan = rawValue.Trim ( TrimChars );
 
+                if (HttpHeader.ContainsInvalidNameBytes ( nameSpan )) {
+                    failReason = "header name contains not allowed characters";
+                    goto ParseFailed;
+                }
+                if (HttpHeader.ContainsInvalidValueBytes ( valueSpan )) {
+                    failReason = "header value contains not allowed characters";
+                    goto ParseFailed;
+                }
+
                 int knownHeader = GetKnownHeaderIndex ( nameSpan );
                 switch (knownHeader) {
                     case 0: // Content-Length
@@ -256,27 +260,11 @@ static class HttpRequestReader {
                             contentLength = -1;
                         break;
                 }
+        }
 
-                if (Unlikely ( headerCount >= headers.Length )) {
-                    HttpHeader [] newHeaders = ArrayPool<HttpHeader>.Shared.Rent ( headers.Length * 2 );
-                    headers.AsSpan ( 0, headerCount ).CopyTo ( newHeaders );
-                    ArrayPool<HttpHeader>.Shared.Return ( headers );
-                    headers = newHeaders;
-                }
-
-                headers [ headerCount++ ] = new HttpHeader (
-                    buffer.Slice ( lineStart, colonIndex ),
-                    buffer.Slice ( lineStart + colonIndex + 1 + (rawValue.Length - valueSpan.Length), valueSpan.Length )
-                );
-            }
-
-            goto ParseFailed;
+        goto ParseFailed;
 
 HeadersComplete:
-            HttpHeader [] finalHeaders = new HttpHeader [ headerCount ];
-            headers.AsSpan ( 0, headerCount ).CopyTo ( finalHeaders );
-            ArrayPool<HttpHeader>.Shared.Return ( headers );
-
             // RFC 9112 §6.3.3: presence of both TE and CL is a request-smuggling vector
             if (isChunked && contentLengthExplicit) {
                 Logger.LogInformation ( $"failed to parse HTTP request: both Transfer-Encoding and Content-Length present, request-smuggling vector (RFC 9112 §6.3.3)" );
@@ -290,7 +278,7 @@ HeadersComplete:
             return new HttpRequestBase {
                 MethodRef = method,
                 PathRef = path,
-                Headers = finalHeaders,
+                HeaderBlockRef = buffer.Slice ( headersStart, cursor - headersStart ),
                 ContentLength = contentLength,
                 CanKeepAlive = keepAliveEnabled,
                 IsChunked = isChunked,
@@ -299,20 +287,72 @@ HeadersComplete:
             };
 
 ParseFailed:
-            Logger.LogInformation ( $"failed to parse HTTP request: {failReason ?? "malformed request"}" );
-            ArrayPool<HttpHeader>.Shared.Return ( headers );
-            return null;
-        }
-        catch {
-            ArrayPool<HttpHeader>.Shared.Return ( headers );
-            throw;
-        }
+        Logger.LogInformation ( $"failed to parse HTTP request: {failReason ?? "malformed request"}" );
+        return null;
     }
 
     private static ReadOnlySpan<byte> ContentLengthName => "Content-Length"u8;
     private static ReadOnlySpan<byte> ConnectionName => "Connection"u8;
     private static ReadOnlySpan<byte> ExpectName => "Expect"u8;
     private static ReadOnlySpan<byte> TransferEncodingName => "Transfer-Encoding"u8;
+
+    internal static HttpHeader [] ParseHeaders ( ReadOnlyMemory<byte> headerBlock ) {
+        ReadOnlySpan<byte> span = headerBlock.Span;
+        HttpHeader [] headers = ArrayPool<HttpHeader>.Shared.Rent ( 16 );
+        int headerCount = 0;
+        int cursor = 0;
+
+        try {
+            while (cursor < span.Length) {
+                ReadOnlySpan<byte> remaining = span.Slice ( cursor );
+                int lfRel = remaining.IndexOf ( LineFeed );
+                if (lfRel < 0) {
+                    break;
+                }
+
+                int lineEnd = cursor + lfRel;
+                int headerLineEnd = lineEnd;
+
+                if (headerLineEnd > cursor && span [ headerLineEnd - 1 ] == CarriageReturn) {
+                    headerLineEnd--;
+                }
+
+                if (headerLineEnd == cursor) {
+                    break;
+                }
+
+                ReadOnlySpan<byte> headerLine = span.Slice ( cursor, headerLineEnd - cursor );
+                int colonIndex = headerLine.IndexOf ( Colon );
+                if (colonIndex > 0) {
+                    ReadOnlySpan<byte> rawValue = headerLine.Slice ( colonIndex + 1 );
+                    ReadOnlySpan<byte> valueSpan = rawValue.Trim ( TrimChars );
+
+                    if (headerCount >= headers.Length) {
+                        HttpHeader [] newHeaders = ArrayPool<HttpHeader>.Shared.Rent ( headers.Length * 2 );
+                        headers.AsSpan ( 0, headerCount ).CopyTo ( newHeaders );
+                        ArrayPool<HttpHeader>.Shared.Return ( headers );
+                        headers = newHeaders;
+                    }
+
+                    headers [ headerCount++ ] = new HttpHeader (
+                        headerBlock.Slice ( cursor, colonIndex ),
+                        headerBlock.Slice ( cursor + colonIndex + 1 + (rawValue.Length - valueSpan.Length), valueSpan.Length )
+                    );
+                }
+
+                cursor = lineEnd + 1;
+            }
+
+            HttpHeader [] finalHeaders = new HttpHeader [ headerCount ];
+            headers.AsSpan ( 0, headerCount ).CopyTo ( finalHeaders );
+            ArrayPool<HttpHeader>.Shared.Return ( headers );
+            return finalHeaders;
+        }
+        catch {
+            ArrayPool<HttpHeader>.Shared.Return ( headers );
+            throw;
+        }
+    }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private static int GetKnownHeaderIndex ( ReadOnlySpan<byte> name ) {
@@ -339,6 +379,4 @@ ParseFailed:
         || protocol.SequenceEqual ( Http10 )
         || protocol.SequenceEqual ( Http09 );
 
-    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private static bool Unlikely ( bool condition ) => condition;
 }

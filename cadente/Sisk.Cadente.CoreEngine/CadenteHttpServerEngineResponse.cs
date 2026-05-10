@@ -21,7 +21,7 @@ namespace Sisk.Cadente.CoreEngine {
         private readonly HttpHostContext.HttpResponse _response;
         private readonly HttpHostContext _httpHostContext;
         private CadenteHttpServerEngineContext? _context;
-        private Lazy<Stream> _outputStream;
+        private Stream? _outputStream;
         private CadenteEngineHeaderList _headers;
 
         internal void SetContext ( CadenteHttpServerEngineContext context ) {
@@ -36,7 +36,6 @@ namespace Sisk.Cadente.CoreEngine {
         public CadenteHttpServerEngineResponse ( HttpHostContext.HttpResponse response, HttpHostContext httpHostContext ) {
             _response = response;
             _httpHostContext = httpHostContext;
-            _outputStream = new Lazy<Stream> ( () => new WrappedCompatibleNetworkStream ( _response.GetResponseStreamAsync ( SendChunked ).ConfigureAwait ( false ).GetAwaiter ().GetResult () ) );
             _headers = new CadenteEngineHeaderList ( _response );
         }
 
@@ -81,7 +80,7 @@ namespace Sisk.Cadente.CoreEngine {
         }
 
         /// <inheritdoc/>
-        public override Stream OutputStream => _outputStream.Value;
+        public override Stream OutputStream => _outputStream ??= new WrappedCompatibleNetworkStream ( _response.GetResponseStream ( SendChunked ) );
 
         /// <inheritdoc/>
         public override IHttpEngineHeaderList Headers => _headers;
@@ -103,8 +102,8 @@ namespace Sisk.Cadente.CoreEngine {
 
         /// <inheritdoc/>
         public override void Dispose () {
-            if (_outputStream.IsValueCreated) {
-                _outputStream.Value.Dispose ();
+            if (_outputStream is { } outputStream) {
+                outputStream.Dispose ();
             }
 
             _context?.CompleteProcessing ();

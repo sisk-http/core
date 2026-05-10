@@ -15,14 +15,13 @@ namespace Sisk.Cadente.CoreEngine {
             _engine = engine;
         }
 
-        public override async Task OnContextCreatedAsync ( HttpHost sender, HttpHostContext context ) {
+        public override Task OnContextCreatedAsync ( HttpHost sender, HttpHostContext context ) {
             var request = new CadenteHttpServerEngineRequest ( context.Request, context );
             var response = new CadenteHttpServerEngineResponse ( context.Response, context );
             var engineContext = new CadenteHttpServerEngineContext ( request, response );
 
-            _engine.EnqueueContext ( engineContext );
-
-            await engineContext.ProcessingTask;
+            _engine.ProcessContext ( engineContext );
+            return Task.CompletedTask;
         }
     }
 }

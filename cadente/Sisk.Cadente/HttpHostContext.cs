@@ -8,6 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Runtime.CompilerServices;
+using System.Globalization;
+using System.Text;
+using System.Threading;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
 using Sisk.Core.Http;
@@ -27,11 +30,42 @@ public sealed class HttpHostContext {
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal Task WriteHttpResponseHeadersAsync () {
         if (ResponseHeadersAlreadySent) {
-            return Task.FromResult ( true );
+            return Task.CompletedTask;
         }
 
         ResponseHeadersAlreadySent = true;
-        return HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.responsePool.Memory, _connection.networkStream, Response );
+        return HttpResponseSerializer.WriteHttpResponseHeadersAsync ( _connection.responsePool.Memory, _connection.networkStream, Response );
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    internal void WriteHttpResponseHeaders () {
+        if (ResponseHeadersAlreadySent) {
+            return;
+        }
+
+        ResponseHeadersAlreadySent = true;
+        HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.responsePool.Memory, _connection.networkStream, Response );
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    internal void WriteHttpResponse ( ReadOnlySpan<byte> body ) {
+        if (ResponseHeadersAlreadySent) {
+            _connection.networkStream.Write ( body );
+            return;
+        }
+
+        ResponseHeadersAlreadySent = true;
+        int headerSize = HttpResponseSerializer.GetResponseHeadersBytes ( _connection.responsePool.Memory.Span, Response );
+        Memory<byte> responseBuffer = _connection.responsePool.Memory;
+
+        if (headerSize + body.Length <= responseBuffer.Length) {
+            body.CopyTo ( responseBuffer.Span [ headerSize.. ] );
+            _connection.networkStream.Write ( responseBuffer.Span [ ..(headerSize + body.Length) ] );
+        }
+        else {
+            _connection.networkStream.Write ( responseBuffer.Span [ ..headerSize ] );
+            _connection.networkStream.Write ( body );
+        }
     }
 
     /// <summary>
@@ -85,6 +119,7 @@ public sealed class HttpHostContext {
         private HttpRequestStream _requestStream;
         private HttpRequestBase _baseRequest;
         internal EndableStream? _readingStream;
+        private HttpHeaderList? _headers;
 
         /// <summary>
         /// Gets the HTTP method (e.g., GET, POST) of the request.
@@ -114,7 +149,7 @@ public sealed class HttpHostContext {
         /// <summary>
         /// Gets the headers associated with the request.
         /// </summary>
-        public HttpHeaderList Headers { get; }
+        public HttpHeaderList Headers => _headers ??= new HttpHeaderList ( _baseRequest.Headers.ToArray (), readOnly: true );
 
         /// <summary>
         /// Gets the stream containing the content of the request.
@@ -156,7 +191,6 @@ public sealed class HttpHostContext {
         internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
             _baseRequest = request;
             _requestStream = requestStream;
-            Headers = new HttpHeaderList ( _baseRequest.Headers.ToArray (), readOnly: true );
         }
     }
 
@@ -164,6 +198,13 @@ public sealed class HttpHostContext {
     /// Represents an HTTP response.
     /// </summary>
     public sealed class HttpResponse {
+        private static readonly ReadOnlyMemory<byte> DateHeaderName = "Date"u8.ToArray ();
+        private static readonly ReadOnlyMemory<byte> ServerHeaderName = "Server"u8.ToArray ();
+        private static long _cachedDateSecond = -1;
+        private static byte [] _cachedDateValue = Array.Empty<byte> ();
+        private static string? _cachedServerName;
+        private static byte [] _cachedServerValue = Array.Empty<byte> ();
+
         private Stream _baseOutputStream;
         private HttpHostContext _session;
         internal bool headersSent = false;
@@ -189,6 +230,30 @@ public sealed class HttpHostContext {
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
         public async Task<Stream> GetResponseStreamAsync ( bool chunked = false ) {
+            PrepareResponseStream ( chunked );
+
+            await _session.WriteHttpResponseHeadersAsync ().ConfigureAwait ( false );
+
+            headersSent = true;
+            return CreateOutputStream ( chunked );
+        }
+
+        internal Stream GetResponseStream ( bool chunked = false ) {
+            PrepareResponseStream ( chunked );
+
+            _session.WriteHttpResponseHeaders ();
+
+            headersSent = true;
+            return CreateOutputStream ( chunked );
+        }
+
+        internal void WriteInlineContent ( ReadOnlySpan<byte> content ) {
+            PrepareResponseStream ( chunked: false );
+            _session.WriteHttpResponse ( content );
+            headersSent = true;
+        }
+
+        private void PrepareResponseStream ( bool chunked ) {
             if (headersSent) {
                 throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
             }
@@ -204,14 +269,40 @@ public sealed class HttpHostContext {
                     throw new InvalidOperationException ( "Content-Length header must be set for non-chunked responses." );
                 }
             }
+        }
 
-            await _session.WriteHttpResponseHeadersAsync ();
-
-            headersSent = true;
+        private Stream CreateOutputStream ( bool chunked ) {
             return chunked switch {
                 true => new HttpChunkedWriteStream ( _baseOutputStream ),
                 false => new UndisposableNetworkStream ( _baseOutputStream )
             };
+        }
+
+        private static HttpHeader CreateDateHeader () {
+            long currentSecond = DateTimeOffset.UtcNow.ToUnixTimeSeconds ();
+            byte [] dateValue = Volatile.Read ( ref _cachedDateValue );
+
+            if (Volatile.Read ( ref _cachedDateSecond ) != currentSecond || dateValue.Length == 0) {
+                dateValue = Encoding.ASCII.GetBytes ( DateTime.UtcNow.ToString ( "R", CultureInfo.InvariantCulture ) );
+                Volatile.Write ( ref _cachedDateValue, dateValue );
+                Volatile.Write ( ref _cachedDateSecond, currentSecond );
+            }
+
+            return HttpHeader.CreateUnchecked ( DateHeaderName, dateValue );
+        }
+
+        private static HttpHeader CreateServerHeader () {
+            string serverName = HttpHost.ServerNameHeader;
+            string? cachedName = Volatile.Read ( ref _cachedServerName );
+            byte [] serverValue = Volatile.Read ( ref _cachedServerValue );
+
+            if (!string.Equals ( cachedName, serverName, StringComparison.Ordinal ) || serverValue.Length == 0) {
+                serverValue = Encoding.UTF8.GetBytes ( serverName );
+                Volatile.Write ( ref _cachedServerValue, serverValue );
+                Volatile.Write ( ref _cachedServerName, serverName );
+            }
+
+            return HttpHeader.CreateUnchecked ( ServerHeaderName, serverValue );
         }
 
         internal HttpResponse ( HttpHostContext session, Stream httpSessionStream ) {
@@ -221,10 +312,10 @@ public sealed class HttpHostContext {
             StatusCode = 200;
             StatusDescription = "Ok";
 
-            Headers = new HttpHeaderList ()
+            Headers = new HttpHeaderList ( 2 )
             {
-                new HttpHeader ("Date", DateTime.UtcNow.ToString("R")),
-                new HttpHeader ("Server", HttpHost.ServerNameHeader)
+                CreateDateHeader (),
+                CreateServerHeader ()
             };
         }
     }

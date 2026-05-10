@@ -9,6 +9,7 @@
 
 using System.Buffers;
 using System.Net;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
 using Sisk.Cadente.HttpSerializer;
 using Sisk.Cadente.Streams;
@@ -81,7 +82,9 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
                 await managedSession.WriteHttpResponseHeadersAsync ();
             }
 
-            await networkStream.FlushAsync ().ConfigureAwait ( false );
+            if (networkStream is SslStream) {
+                await networkStream.FlushAsync ().ConfigureAwait ( false );
+            }
 
             if (nextRequest.IsChunked || nextRequest.ContentLength > 0) {
                 EndableStream? requestStream = managedSession.Request._readingStream;

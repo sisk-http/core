@@ -21,14 +21,14 @@ namespace Sisk.Cadente.CoreEngine {
     public sealed class CadenteHttpServerEngineContext : HttpServerEngineContext {
         private readonly CadenteHttpServerEngineRequest _request;
         private readonly CadenteHttpServerEngineResponse _response;
-        private readonly TaskCompletionSource<object?> _processingTcs = new ();
+        private TaskCompletionSource<object?>? _processingTcs;
 
         /// <summary>
         /// Gets a task that represents the completion of the processing for this context.
         /// </summary>
-        public Task ProcessingTask => _processingTcs.Task;
+        public Task ProcessingTask => (_processingTcs ??= new TaskCompletionSource<object?> ()).Task;
 
-        internal void CompleteProcessing () => _processingTcs.TrySetResult ( null );
+        internal void CompleteProcessing () => _processingTcs?.TrySetResult ( null );
 
         /// <inheritdoc/>
         public CadenteHttpServerEngineContext ( CadenteHttpServerEngineRequest request, CadenteHttpServerEngineResponse response ) {

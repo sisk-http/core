@@ -25,6 +25,7 @@ namespace Sisk.Cadente.CoreEngine {
         private List<ListeningHost> prefixes = [];
         private TimeSpan idleConnectionTimeout = TimeSpan.FromSeconds ( 90 );
         private bool isDisposed;
+        private HttpServer? server;
 
         private Action<HttpHost>? setupHostAction;
         private Channel<CadenteHttpServerEngineContext> _pendingContexts = Channel.CreateBounded<CadenteHttpServerEngineContext> ( new BoundedChannelOptions ( capacity: Environment.ProcessorCount * 512 ) {
@@ -58,7 +59,7 @@ namespace Sisk.Cadente.CoreEngine {
         public override string [] ListeningPrefixes => prefixes.SelectMany ( s => s.Ports ).Select ( s => s.ToString ( includePath: true ) ).ToArray ();
 
         /// <inheritdoc/>
-        public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.InlineAsyncronousGetContext;
+        public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.EngineManagedContext;
 
         /// <inheritdoc/>
         public override void SetListeningHosts ( IEnumerable<ListeningHost> hosts ) {
@@ -88,6 +89,8 @@ namespace Sisk.Cadente.CoreEngine {
 
         /// <inheritdoc/>
         public override void OnConfiguring ( HttpServer server, HttpServerConfiguration configuration ) {
+            this.server = server;
+
             foreach (ListeningHost prefix in prefixes) {
 
                 foreach (ListeningPort port in prefix.Ports) {
@@ -153,6 +156,14 @@ namespace Sisk.Cadente.CoreEngine {
             if (!_pendingContexts.Writer.TryWrite ( context )) {
                 throw new InvalidOperationException ( "Failed to enqueue HTTP context." );
             }
+        }
+
+        internal void ProcessContext ( CadenteHttpServerEngineContext context ) {
+            if (server is null) {
+                throw new InvalidOperationException ( "The Cadente engine has not been configured." );
+            }
+
+            server.HandleContext ( context );
         }
 
         /// <inheritdoc/>

@@ -45,6 +45,18 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
         ValidateHeaderBytes ();
     }
 
+    private HttpHeader ( ReadOnlyMemory<byte> nameBytes, ReadOnlyMemory<byte> valueBytes, bool skipValidation ) {
+        NameBytes = nameBytes;
+        ValueBytes = valueBytes;
+
+        if (!skipValidation)
+            ValidateHeaderBytes ();
+    }
+
+    internal static HttpHeader CreateUnchecked ( ReadOnlyMemory<byte> nameBytes, ReadOnlyMemory<byte> valueBytes ) {
+        return new HttpHeader ( nameBytes, valueBytes, true );
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpHeader"/> struct with the specified name and value as strings.
     /// </summary>
@@ -61,12 +73,20 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
         if (NameBytes.IsEmpty) {
             throw new ArgumentException ( "Header name cannot be empty.", nameof ( NameBytes ) );
         }
-        if (NameBytes.Span.IndexOfAny ( _headerNameInvalidBytes ) >= 0) {
+        if (ContainsInvalidNameBytes ( NameBytes.Span )) {
             throw new ArgumentException ( "Header name contains not allowed characters.", nameof ( NameBytes ) );
         }
-        if (ValueBytes.Span.IndexOfAny ( _headerValueInvalidBytes ) >= 0) {
+        if (ContainsInvalidValueBytes ( ValueBytes.Span )) {
             throw new ArgumentException ( "Header value contains not allowed characters.", nameof ( ValueBytes ) );
         }
+    }
+
+    internal static bool ContainsInvalidNameBytes ( ReadOnlySpan<byte> name ) {
+        return name.IsEmpty || name.IndexOfAny ( _headerNameInvalidBytes ) >= 0;
+    }
+
+    internal static bool ContainsInvalidValueBytes ( ReadOnlySpan<byte> value ) {
+        return value.IndexOfAny ( _headerValueInvalidBytes ) >= 0;
     }
 
     /// <summary>

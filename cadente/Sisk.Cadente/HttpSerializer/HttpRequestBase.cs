@@ -25,7 +25,9 @@ sealed class HttpRequestBase {
     public required ReadOnlyMemory<byte> BufferedContent;
     public required ReadOnlyMemory<byte> MethodRef;
     public required ReadOnlyMemory<byte> PathRef;
-    public required ReadOnlyMemory<HttpHeader> Headers;
+    public required ReadOnlyMemory<byte> HeaderBlockRef;
+
+    private HttpHeader []? _headers;
 
     public string Method {
         get {
@@ -38,6 +40,13 @@ sealed class HttpRequestBase {
         get {
             _path ??= Encoding.ASCII.GetString ( PathRef.Span );
             return _path;
+        }
+    }
+
+    public ReadOnlyMemory<HttpHeader> Headers {
+        get {
+            _headers ??= HttpRequestReader.ParseHeaders ( HeaderBlockRef );
+            return _headers;
         }
     }
 }

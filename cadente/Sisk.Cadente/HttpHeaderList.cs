@@ -32,6 +32,14 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="HttpHeaderList"/> class with the specified initial capacity.
+    /// </summary>
+    /// <param name="capacity">The number of elements that the new list can initially store.</param>
+    public HttpHeaderList ( int capacity ) {
+        _headers = new List<HttpHeader> ( capacity );
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="HttpHeaderList"/> class that contains elements copied from the specified collection.
     /// </summary>
     /// <param name="headers">The collection whose elements are copied to the new list.</param>

@@ -22,5 +22,10 @@ public enum HttpServerEngineContextEventLoopMecanism {
     /// <summary>
     /// The event loop is inline and uses an asynchronous GetContextAsync operation.
     /// </summary>
-    InlineAsyncronousGetContext
+    InlineAsyncronousGetContext,
+
+    /// <summary>
+    /// The engine invokes the <see cref="HttpServer.HandleContext"/> directly.
+    /// </summary>
+    EngineManagedContext
 }

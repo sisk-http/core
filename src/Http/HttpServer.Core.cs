@@ -173,7 +173,7 @@ public partial class HttpServer {
         while (IsListening) {
             try {
                 var context = await engine.GetContextAsync ( listenerCancellation!.Token ).ConfigureAwait ( false );
-                ThreadPool.UnsafeQueueUserWorkItem ( ( state ) => ProcessRequest ( (HttpServerEngineContext) state! ), context );
+                ThreadPool.UnsafeQueueUserWorkItem ( ( state ) => HandleContext ( (HttpServerEngineContext) state! ), context );
             }
             catch (OperationCanceledException) when (listenerCancellation.IsCancellationRequested) {
                 break;
@@ -191,11 +191,20 @@ public partial class HttpServer {
         engine.BeginGetContext ( UnboundAsyncListenerCallback, engine );
         HttpServerEngineContext context = engine.EndGetContext ( result );
 
-        ProcessRequest ( context );
+        HandleContext ( context );
     }
 
+    /// <summary>
+    /// Handles a single <see cref="HttpServerEngineContext"/> request.
+    /// </summary>
+    /// <param name="context">The engine context containing request and response objects.</param>
+    /// <remarks>
+    /// The method processes the request, performs routing, applies CORS headers,
+    /// compresses content when appropriate, and writes the response back to the client.
+    /// It also logs the request and response details and executes any deferred actions.
+    /// </remarks>
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private void ProcessRequest ( HttpServerEngineContext context ) {
+    public void HandleContext ( HttpServerEngineContext context ) {
         HttpRequest? request = null;
         HttpResponse? response = null;
 

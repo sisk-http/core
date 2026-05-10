@@ -65,6 +65,12 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Sisk.Cadente.CoreEngine</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
 	<!-- enforce code quality on release -->
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>

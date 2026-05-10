@@ -156,9 +156,14 @@ internal class HttpResponseSerializer {
         return position;
     }
 
-    public static async Task WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
+    public static void WriteHttpResponseHeaders ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
         int headerSize = GetResponseHeadersBytes ( buffer.Span, response );
-        await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] );
+        outgoingStream.Write ( buffer.Span [ 0..headerSize ] );
+    }
+
+    public static async Task WriteHttpResponseHeadersAsync ( Memory<byte> buffer, Stream outgoingStream, HttpHostContext.HttpResponse response ) {
+        int headerSize = GetResponseHeadersBytes ( buffer.Span, response );
+        await outgoingStream.WriteAsync ( buffer [ 0..headerSize ] ).ConfigureAwait ( false );
     }
 
     public static bool WriteExpectationContinue ( Stream outgoingStream ) {
