@@ -587,6 +587,7 @@ public class ApplicationMonitor {
         var process = Process.GetCurrentProcess ();
 
         long appMemory = process.WorkingSet64;
+        TimeSpan uptime = DateTime.Now - process.StartTime;
 
         double cpuUsage;
         {
@@ -626,6 +627,17 @@ public class ApplicationMonitor {
             } );
 
             fragment += WriteAutoRefreshToolbar ();
+
+            fragment += new HtmlElement ( "div", section => {
+                section.ClassList.Add ( "section" );
+                section += new HtmlElement ( "h2", "Uptime" );
+
+                section += new HtmlElement ( "div", grid => {
+                    grid.ClassList.Add ( "cards-grid" );
+                    grid += WriteHealthCard ( "Server Uptime", FormatUptime ( uptime ) );
+                    grid += WriteHealthCard ( "Started At", process.StartTime.ToString ( "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture ) );
+                } );
+            } );
 
             fragment += new HtmlElement ( "div", section => {
                 section.ClassList.Add ( "section" );
@@ -680,6 +692,16 @@ public class ApplicationMonitor {
                 Content = new HtmlContent ( html )
             }
         );
+    }
+
+    static string FormatUptime ( TimeSpan uptime ) {
+        if (uptime.TotalDays >= 1)
+            return $"{(int) uptime.TotalDays}d {uptime.Hours:D2}h {uptime.Minutes:D2}m {uptime.Seconds:D2}s";
+        if (uptime.TotalHours >= 1)
+            return $"{uptime.Hours:D2}h {uptime.Minutes:D2}m {uptime.Seconds:D2}s";
+        if (uptime.TotalMinutes >= 1)
+            return $"{uptime.Minutes:D2}m {uptime.Seconds:D2}s";
+        return $"{uptime.Seconds}s";
     }
 
     static long ParseProcMemValue ( string memInfo, string key ) {

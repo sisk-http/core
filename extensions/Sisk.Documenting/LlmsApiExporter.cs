@@ -19,6 +19,25 @@ namespace Sisk.Documenting;
 /// </summary>
 public sealed class LlmsApiExporter : IApiDocumentationExporter {
 
+    /// <summary>
+    /// Gets or sets the hostname to be used in generated endpoint URLs. If not set, the exporter will attempt to use the Host header from the current HTTP request, or fall back to relative URLs if no Host information is available.
+    /// </summary>
+    public string? Hostname { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the LlmsApiExporter class.
+    /// </summary>
+    public LlmsApiExporter () {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the LlmsApiExporter class with the specified hostname.
+    /// </summary>
+    /// <param name="hostname">The hostname of the API endpoint to connect to. Can be null to use the default configuration.</param>
+    public LlmsApiExporter ( string? hostname ) {
+        Hostname = hostname;
+    }
+
     static string TransformId ( string unsafeId ) {
         return new string ( unsafeId.Where ( c => char.IsLetterOrDigit ( c ) || c == '_' || c == '-' ).ToArray () );
     }
@@ -188,7 +207,9 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
                     .ClearQuery ()
                     .SetQuery ( "endpoint", endpointId );
 
-                if (currentRequest?.Headers.Origin is { } _origin)
+                if (Hostname != null)
+                    endpointPath.SetAuthority ( Hostname );
+                else if (currentRequest?.Headers.Origin is { } _origin)
                     endpointPath.SetAuthority ( _origin );
                 else if (currentRequest?.Host is { } _host)
                     endpointPath.SetAuthority ( _host );
