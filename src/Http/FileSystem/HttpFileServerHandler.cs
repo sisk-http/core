@@ -37,6 +37,12 @@ public class HttpFileServerHandler {
     public bool AllowDirectoryListing { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether an <c>index.html</c> file is automatically served when a directory is requested.
+    /// </summary>
+    /// <value><see langword="true"/> to serve an index file if present; otherwise, <see langword="false"/>.</value>
+    public bool AllowIndex { get; set; } = true;
+
+    /// <summary>
     /// Gets the list of converters used to transform files before they are sent to the client.
     /// </summary>
     public List<HttpFileServerFileConverter> FileConverters { get; set; } = new ();
@@ -236,7 +242,17 @@ public class HttpFileServerHandler {
         var resolvedEntry = ResolvePath ( HttpUtility.UrlDecode ( request.Path ) );
 
         if (resolvedEntry is DirectoryInfo dirInfo) {
-            if (!AllowDirectoryListing) {
+
+            if (AllowIndex && ResolvePath ( PathHelper.CombinePaths ( HttpUtility.UrlDecode ( request.Path ), "index.html" ) ) is FileInfo { Exists: true } indexHtmlFile) {
+
+                return ServeFile ( indexHtmlFile, request );
+            }
+            else if (AllowIndex && ResolvePath ( PathHelper.CombinePaths ( HttpUtility.UrlDecode ( request.Path ), "index.htm" ) ) is FileInfo { Exists: true } indexHtmFile) {
+
+                return ServeFile ( indexHtmFile, request );
+            }
+            else if (!AllowDirectoryListing) {
+
                 return new HttpResponse ( System.Net.HttpStatusCode.Forbidden );
             }
 
