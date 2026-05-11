@@ -72,10 +72,10 @@ namespace Sisk.Cadente.CoreEngine {
         public override Version ProtocolVersion => Http11Version;
 
         /// <inheritdoc/>
-        public override string UserHostName => throw new NotImplementedException ();
+        public override string UserHostName => GetRequestAuthority ();
 
         /// <inheritdoc/>
-        public override Uri? Url => _url ??= new Uri ( "http://localhost" + _request.Path );
+        public override Uri? Url => _url ??= CreateUrl ();
 
         /// <inheritdoc/>
         public override string HttpMethod => _request.Method;
@@ -119,7 +119,7 @@ namespace Sisk.Cadente.CoreEngine {
         public override long ContentLength64 => _request.ContentLength;
 
         /// <inheritdoc/>
-        public override bool IsSecureConnection => _context.Client.ClientCertificate != null;
+        public override bool IsSecureConnection => _context.Client.IsSecureConnection;
 
         /// <inheritdoc/>
         public override Encoding ContentEncoding {
@@ -145,6 +145,47 @@ namespace Sisk.Cadente.CoreEngine {
                     return Encoding.Default;
                 }
             }
+        }
+
+        private Uri CreateUrl () {
+            string scheme = IsSecureConnection ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
+            string authority = GetRequestAuthority ();
+
+            if (!IsValidAuthority ( scheme, authority )) {
+                throw new Sisk.Core.Http.HttpRequestException ( "Invalid Host header." );
+            }
+
+            if (!_request.Path.StartsWith ( "/", StringComparison.Ordinal )) {
+                throw new Sisk.Core.Http.HttpRequestException ( "Invalid request target." );
+            }
+
+            return new Uri ( $"{scheme}://{authority}{_request.Path}" );
+        }
+
+        private string GetRequestAuthority () {
+            string? host = _request.Headers.Get ( HttpHeaderName.Host ).FirstOrDefault ();
+            if (!string.IsNullOrWhiteSpace ( host )) {
+                return host.Trim ();
+            }
+
+            var localAddress = LocalEndPoint.Address;
+            string localHost = localAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
+                ? $"[{localAddress}]"
+                : localAddress.ToString ();
+
+            return $"{localHost}:{LocalEndPoint.Port}";
+        }
+
+        private static bool IsValidAuthority ( string scheme, string authority ) {
+            if (string.IsNullOrWhiteSpace ( authority ) || authority.Contains ( '/' ) || authority.Contains ( '\\' ) || authority.Contains ( '@' )) {
+                return false;
+            }
+
+            return Uri.TryCreate ( $"{scheme}://{authority}/", UriKind.Absolute, out Uri? parsed )
+                && string.IsNullOrEmpty ( parsed.UserInfo )
+                && parsed.AbsolutePath == "/"
+                && string.IsNullOrEmpty ( parsed.Query )
+                && string.IsNullOrEmpty ( parsed.Fragment );
         }
     }
 }

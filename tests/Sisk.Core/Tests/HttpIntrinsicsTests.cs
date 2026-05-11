@@ -168,6 +168,9 @@ public sealed class HttpIntrinsicsTests {
     private static Uri GetServerUri () =>
         new Uri ( Server.Instance.HttpServer.ListeningPrefixes [ 0 ] );
 
+    private static bool IsCadenteEngine () =>
+        string.Equals ( Environment.GetEnvironmentVariable ( "SISK_TEST_ENGINE" ), "Cadente", StringComparison.OrdinalIgnoreCase );
+
     private static async Task<int?> SendRawAndReadStatusAsync ( byte [] requestBytes, int timeoutMs = 3000 ) {
         var uri = GetServerUri ();
         using var cts = new CancellationTokenSource ( TimeSpan.FromMilliseconds ( timeoutMs ) );
@@ -280,6 +283,58 @@ public sealed class HttpIntrinsicsTests {
             Assert.Inconclusive ( "HttpListener does not enforce unsupported protocol rejection; only enforced by Cadente." );
         Assert.IsTrue ( status is null || status >= 400,
             $"Unsupported HTTP protocol should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
+    }
+
+    [TestMethod]
+    public async Task CadenteRequestUrl_UsesHostHeaderAuthority () {
+        if (!IsCadenteEngine ())
+            Assert.Inconclusive ( "Cadente-specific request URL authority behavior." );
+
+        var uri = GetServerUri ();
+        string authority = $"example.test:{uri.Port}";
+        string request =
+            $"GET /tests/httprequest/authority?x=1 HTTP/1.1\r\n" +
+            $"Host: {authority}\r\n" +
+            "X-Forwarded-Host: attacker.test\r\n" +
+            "\r\n";
+
+        var (status, body) = await SendRawAndReadResponseAsync ( request );
+
+        Assert.AreEqual ( 200, status );
+        Assert.AreEqual ( $"http|example.test|{authority}|example.test|False", body );
+    }
+
+    [TestMethod]
+    public async Task CadenteRequestUrl_MissingHttp11Host_IsRejected () {
+        if (!IsCadenteEngine ())
+            Assert.Inconclusive ( "Cadente-specific Host header validation." );
+
+        string request =
+            "GET /tests/plaintext HTTP/1.1\r\n" +
+            "\r\n";
+
+        int? status = await SendRawAndReadStatusAsync ( request, timeoutMs: 1500 );
+
+        Assert.IsTrue ( status is null || status >= 400,
+            $"HTTP/1.1 request without Host should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
+    }
+
+    [TestMethod]
+    public async Task CadenteRequestUrl_DuplicateHost_IsRejected () {
+        if (!IsCadenteEngine ())
+            Assert.Inconclusive ( "Cadente-specific Host header validation." );
+
+        var uri = GetServerUri ();
+        string request =
+            $"GET /tests/plaintext HTTP/1.1\r\n" +
+            $"Host: localhost:{uri.Port}\r\n" +
+            "Host: attacker.test\r\n" +
+            "\r\n";
+
+        int? status = await SendRawAndReadStatusAsync ( request, timeoutMs: 1500 );
+
+        Assert.IsTrue ( status is null || status >= 400,
+            $"Duplicate Host headers should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
     }
 
     // -------------------------------------------------------------------------
@@ -570,6 +625,38 @@ public sealed class HttpIntrinsicsTests {
         int? status = await SendRawAndReadStatusAsync ( request, timeoutMs: 5000 );
         Assert.IsTrue ( status is null || status >= 400,
             $"Empty chunk-size line should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
+    }
+
+    [TestMethod]
+    public async Task ChunkedRequest_ExtensionWithoutSize_IsRejected () {
+        var uri = GetServerUri ();
+        string request =
+            $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\n" +
+            $"Host: {uri.Host}:{uri.Port}\r\n" +
+            "Transfer-Encoding: chunked\r\n\r\n" +
+            ";name=ignored\r\nHello\r\n" +
+            "0\r\n\r\n";
+        int? status = await SendRawAndReadStatusAsync ( request, timeoutMs: 5000 );
+        if (status == 200 && Environment.GetEnvironmentVariable ( "SISK_TEST_ENGINE" ) != "Cadente")
+            Assert.Inconclusive ( "HttpListener does not enforce extension-without-size rejection; only enforced by Cadente." );
+        Assert.IsTrue ( status is null || status >= 400,
+            $"Chunk extension without size should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
+    }
+
+    [TestMethod]
+    public async Task ChunkedRequest_OverflowingChunkSize_IsRejected () {
+        var uri = GetServerUri ();
+        string request =
+            $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\n" +
+            $"Host: {uri.Host}:{uri.Port}\r\n" +
+            "Transfer-Encoding: chunked\r\n\r\n" +
+            "100000000\r\nHello\r\n" +
+            "0\r\n\r\n";
+        int? status = await SendRawAndReadStatusAsync ( request, timeoutMs: 5000 );
+        if (status == 200 && Environment.GetEnvironmentVariable ( "SISK_TEST_ENGINE" ) != "Cadente")
+            Assert.Inconclusive ( "HttpListener does not enforce overflowing chunk-size rejection; only enforced by Cadente." );
+        Assert.IsTrue ( status is null || status >= 400,
+            $"Overflowing chunk size should be rejected. Got: {status?.ToString () ?? "connection closed"}." );
     }
 
     // -------------------------------------------------------------------------

@@ -28,6 +28,11 @@ public sealed class HttpHostClient {
     public X509Certificate? ClientCertificate { get; internal set; }
 
     /// <summary>
+    /// Gets whether the client connection was established over SSL/TLS.
+    /// </summary>
+    public bool IsSecureConnection { get; internal set; }
+
+    /// <summary>
     /// Gets or sets an optional state object associated with the client.
     /// </summary>
     public object? State { get; set; }

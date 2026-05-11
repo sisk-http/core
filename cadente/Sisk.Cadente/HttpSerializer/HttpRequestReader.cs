@@ -102,8 +102,15 @@ static class HttpRequestReader {
 
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private static ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken ) {
-        return stream.ReadAsync ( buffer, cancellationToken );
+    private static async ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken ) {
+        if (timeoutMs <= 0) {
+            throw new OperationCanceledException ();
+        }
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource ( cancellationToken );
+        timeoutCts.CancelAfter ( timeoutMs );
+
+        return await stream.ReadAsync ( buffer, timeoutCts.Token ).ConfigureAwait ( false );
     }
 
     [SkipLocalsInit]
@@ -161,6 +168,7 @@ static class HttpRequestReader {
         bool expect100 = false;
         bool isChunked = false;
         bool seenTransferEncoding = false;
+        bool seenHost = false;
         bool contentLengthExplicit = false;
         int headersStart = cursor;
 
@@ -259,6 +267,17 @@ static class HttpRequestReader {
                         if (isChunked)
                             contentLength = -1;
                         break;
+                    case 4: // Host
+                        if (seenHost) {
+                            failReason = "duplicate Host header violates RFC 9112 §3.2";
+                            goto ParseFailed;
+                        }
+                        seenHost = true;
+                        if (valueSpan.IsEmpty) {
+                            failReason = "empty Host header violates RFC 9112 §3.2";
+                            goto ParseFailed;
+                        }
+                        break;
                 }
         }
 
@@ -268,6 +287,11 @@ HeadersComplete:
             // RFC 9112 §6.3.3: presence of both TE and CL is a request-smuggling vector
             if (isChunked && contentLengthExplicit) {
                 Logger.LogInformation ( $"failed to parse HTTP request: both Transfer-Encoding and Content-Length present, request-smuggling vector (RFC 9112 §6.3.3)" );
+                return null;
+            }
+
+            if (protocol.Span.SequenceEqual ( Http11 ) && !seenHost) {
+                Logger.LogInformation ( $"failed to parse HTTP request: missing Host header violates RFC 9112 §3.2" );
                 return null;
             }
 
@@ -295,6 +319,7 @@ ParseFailed:
     private static ReadOnlySpan<byte> ConnectionName => "Connection"u8;
     private static ReadOnlySpan<byte> ExpectName => "Expect"u8;
     private static ReadOnlySpan<byte> TransferEncodingName => "Transfer-Encoding"u8;
+    private static ReadOnlySpan<byte> HostName => "Host"u8;
 
     internal static HttpHeader [] ParseHeaders ( ReadOnlyMemory<byte> headerBlock ) {
         ReadOnlySpan<byte> span = headerBlock.Span;
@@ -368,6 +393,8 @@ ParseFailed:
                 return Ascii.EqualsIgnoreCase ( name, ExpectName ) ? 2 : -1;
             case ((byte) 't', 17 ):
                 return Ascii.EqualsIgnoreCase ( name, TransferEncodingName ) ? 3 : -1;
+            case ((byte) 'h', 4 ):
+                return Ascii.EqualsIgnoreCase ( name, HostName ) ? 4 : -1;
             default:
                 return -1;
         }

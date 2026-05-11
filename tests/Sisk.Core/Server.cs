@@ -138,6 +138,10 @@ public sealed class Server {
                     return new HttpResponse ( new ByteArrayContent ( bodyBytes ) );
                 } );
 
+                router.SetRoute ( RouteMethod.Get, "/tests/httprequest/authority", ( req ) => {
+                    return new HttpResponse ( $"{req.Uri.Scheme}|{req.Uri.Host}|{req.Authority}|{req.Host}|{req.IsSecure}" );
+                } );
+
                 router.SetRoute ( RouteMethod.Post, "/tests/httprequest/getBodyContentsAsync", async ( HttpRequest req ) => {
                     Memory<byte> bodyMemory = await req.GetBodyContentsAsync ();
                     return new HttpResponse ( new ByteArrayContent ( bodyMemory.ToArray () ) );

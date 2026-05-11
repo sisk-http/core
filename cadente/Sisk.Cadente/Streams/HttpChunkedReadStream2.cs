@@ -8,10 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Buffers;
-using System.Buffers.Text;
-using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Sisk.Cadente.Streams;
 
@@ -36,7 +33,9 @@ sealed class HttpChunkedReadStream2 : EndableStream {
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private static int ParseHexSize ( ReadOnlySpan<byte> buffer ) {
-        int result = 0;
+        long result = 0;
+        bool hasDigit = false;
+
         for (int i = 0; i < buffer.Length; i++) {
             byte b = buffer [ i ];
             if (b == (byte) ';' || b == (byte) '\r' || b == (byte) '\n')
@@ -46,9 +45,16 @@ sealed class HttpChunkedReadStream2 : EndableStream {
             if (digit < 0)
                 throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size." );
 
+            hasDigit = true;
             result = (result << 4) | (byte) digit;
+            if (result > int.MaxValue)
+                throw new ChunkParseException ( $"Invalid chunked transfer encoding: chunk size is too large." );
         }
-        return result;
+
+        if (!hasDigit)
+            throw new ChunkParseException ( $"Invalid chunked transfer encoding: empty chunk size." );
+
+        return (int) result;
     }
 
     public HttpChunkedReadStream2 ( Stream s ) {
@@ -77,25 +83,12 @@ sealed class HttpChunkedReadStream2 : EndableStream {
         }
 
         if (currentBlockSize == -1) {
-            // read next chunked header
-            int ptr = 0;
-            while (true) {
-                int b = _s.ReadByte ();
-                if (b == -1)
-                    break;
-                _buffer [ ptr++ ] = (byte) b;
+            int headerLength = ReadMetadataLine ();
 
-                if (ptr >= 2 && _buffer [ ptr - 1 ] == '\n' && _buffer [ ptr - 2 ] == '\r') {
-                    break;
-                }
-                if (ptr >= _buffer.Length)
-                    throw new ChunkParseException ( "Chunk header too long." );
-            }
-
-            if (ptr == 0)
+            if (headerLength < 0)
                 return 0;
 
-            ReadOnlySpan<byte> headerBytes = _buffer.AsSpan ( 0, ptr - 2 );
+            ReadOnlySpan<byte> headerBytes = _buffer.AsSpan ( 0, headerLength );
 
             if (headerBytes.IsEmpty)
                 throw new ChunkParseException ( "Invalid chunked transfer encoding: empty chunk size." );
@@ -113,6 +106,7 @@ sealed class HttpChunkedReadStream2 : EndableStream {
 
             if (parsedSize == 0) {
                 currentBlockSize = 0;
+                ConsumeTrailerSection ();
                 FinishReading ();
                 return 0;
             }
@@ -130,19 +124,63 @@ sealed class HttpChunkedReadStream2 : EndableStream {
         currentBlockRead += read;
 
         if (currentBlockRead == currentBlockSize) {
-            // read trailing \r\n
-            int r = 0;
-            while (r < 2) {
-                int x = _s.Read ( _buffer, 0, 2 - r );
-                if (x == 0)
-                    break;
-                r += x;
-            }
+            ReadRequiredCrlf ();
             currentBlockSize = -1;
             currentBlockRead = 0;
         }
 
         return read;
+    }
+
+    private int ReadMetadataLine () {
+        int ptr = 0;
+
+        while (true) {
+            int b = _s.ReadByte ();
+            if (b == -1) {
+                if (ptr == 0)
+                    return -1;
+
+                throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete chunk metadata." );
+            }
+
+            if (ptr >= _buffer.Length)
+                throw new ChunkParseException ( "Chunk metadata line too long." );
+
+            _buffer [ ptr++ ] = (byte) b;
+
+            if (ptr >= 2 && _buffer [ ptr - 2 ] == '\r' && _buffer [ ptr - 1 ] == '\n')
+                return ptr - 2;
+
+            if (b == '\n')
+                throw new ChunkParseException ( "Invalid chunked transfer encoding: expected CRLF." );
+        }
+    }
+
+    private void ReadRequiredCrlf () {
+        int read = 0;
+
+        while (read < 2) {
+            int count = _s.Read ( _buffer, read, 2 - read );
+            if (count == 0)
+                throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete chunk terminator." );
+
+            read += count;
+        }
+
+        if (_buffer [ 0 ] != '\r' || _buffer [ 1 ] != '\n')
+            throw new ChunkParseException ( "Invalid chunked transfer encoding: expected CRLF after chunk data." );
+    }
+
+    private void ConsumeTrailerSection () {
+        while (true) {
+            int trailerLineLength = ReadMetadataLine ();
+            if (trailerLineLength < 0)
+                throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete trailer section." );
+
+            if (trailerLineLength == 0)
+                return;
+        }
     }
 
     public override long Seek ( long offset, SeekOrigin origin ) {

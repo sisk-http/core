@@ -236,6 +236,7 @@ public sealed class HttpHost : IDisposable {
             HttpHostClient hostClient = new ( clientEndpoint, CancellationToken.None );
 
             if (sslStream is not null) {
+                hostClient.IsSecureConnection = true;
                 hostClient.ClientCertificate = sslStream.RemoteCertificate;
             }
 
