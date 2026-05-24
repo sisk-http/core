@@ -31,7 +31,6 @@ public sealed class HttpHost : IDisposable {
     private readonly int [] _acceptArgsAvailable;
     private const int AcceptPoolSize = 8;
     private const int ListenerAcceptRetryDelayMilliseconds = 250;
-    private const int MaxSynchronousAcceptCompletions = 16;
 
     /// <summary>
     /// Gets or sets the name of the server in the header name.
@@ -134,7 +133,7 @@ public sealed class HttpHost : IDisposable {
         if (!_isListening)
             return;
 
-        for (int syncCompletions = 0; _isListening; syncCompletions++) {
+        while (_isListening) {
             var args = _acceptArgsPool [ poolIndex ];
             args.AcceptSocket = null;
 
@@ -153,11 +152,6 @@ public sealed class HttpHost : IDisposable {
             int rearmDelayMs = ProcessAcceptInline ( args, poolIndex );
             if (rearmDelayMs > 0) {
                 QueueStartAccept ( poolIndex, rearmDelayMs );
-                return;
-            }
-
-            if (syncCompletions >= MaxSynchronousAcceptCompletions - 1) {
-                QueueStartAccept ( poolIndex );
                 return;
             }
         }
