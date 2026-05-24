@@ -30,6 +30,7 @@ public sealed class HttpHost : IDisposable {
     private readonly SocketAsyncEventArgs [] _acceptArgsPool;
     private readonly int [] _acceptArgsAvailable;
     private const int AcceptPoolSize = 8;
+    private const int ListenerAcceptRetryDelayMilliseconds = 250;
 
     /// <summary>
     /// Gets or sets the name of the server in the header name.
@@ -132,46 +133,87 @@ public sealed class HttpHost : IDisposable {
         if (!_isListening)
             return;
 
-        var args = _acceptArgsPool [ poolIndex ];
-        args.AcceptSocket = null;
+        while (_isListening) {
+            var args = _acceptArgsPool [ poolIndex ];
+            args.AcceptSocket = null;
 
-        try {
-            // Se completar sincronamente, processar inline (mais rápido)
-            if (!_listener.AcceptAsync ( args )) {
-                // IMPORTANTE: Não usar ThreadPool aqui para sync completion
-                // ProcessAccept já vai fazer o queue se necessário
-                ProcessAcceptInline ( args, poolIndex );
+            try {
+                if (_listener.AcceptAsync ( args ))
+                    return;
             }
-            // Se async, o callback OnAcceptCompleted será chamado
-        }
-        catch (ObjectDisposedException) { }
-        catch (SocketException) {
-            // Retry
-            if (_isListening) {
-                StartAccept ( poolIndex );
+            catch (ObjectDisposedException) {
+                return;
+            }
+            catch (SocketException) {
+                QueueStartAccept ( poolIndex, ListenerAcceptRetryDelayMilliseconds );
+                return;
+            }
+
+            int rearmDelayMs = ProcessAcceptInline ( args, poolIndex );
+            if (rearmDelayMs > 0) {
+                QueueStartAccept ( poolIndex, rearmDelayMs );
+                return;
             }
         }
     }
 
     private void OnAcceptCompleted ( object? sender, SocketAsyncEventArgs e ) {
         int poolIndex = (int) e.UserToken!;
-        ProcessAcceptInline ( e, poolIndex );
+        int rearmDelayMs = ProcessAcceptInline ( e, poolIndex );
+        if (rearmDelayMs > 0)
+            QueueStartAccept ( poolIndex, rearmDelayMs );
+        else
+            StartAccept ( poolIndex );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private void ProcessAcceptInline ( SocketAsyncEventArgs e, int poolIndex ) {
+    private int ProcessAcceptInline ( SocketAsyncEventArgs e, int poolIndex ) {
         if (e.SocketError != SocketError.Success || e.AcceptSocket is null) {
-            if (_isListening)
-                StartAccept ( poolIndex );
-            return;
+            var socketError = e.SocketError;
+            e.AcceptSocket?.Dispose ();
+            e.AcceptSocket = null;
+
+            return IsConnectionAcceptNoise ( socketError )
+                ? 0
+                : ListenerAcceptRetryDelayMilliseconds;
         }
 
         Socket client = e.AcceptSocket;
-        StartAccept ( poolIndex );
+        e.AcceptSocket = null;
 
         var workItem = new ConnectionWorkItem { Host = this, Socket = client };
         ThreadPool.UnsafeQueueUserWorkItem ( workItem, preferLocal: false );
+
+        return 0;
     }
+
+    private void QueueStartAccept ( int poolIndex, int delayMs = 0 ) {
+        if (!_isListening)
+            return;
+
+        if (delayMs <= 0) {
+            ThreadPool.UnsafeQueueUserWorkItem (
+                static state => state.Host.StartAccept ( state.PoolIndex ),
+                (Host: this, PoolIndex: poolIndex),
+                preferLocal: false );
+            return;
+        }
+
+        _ = QueueStartAcceptAsync ( poolIndex, delayMs );
+    }
+
+    private async Task QueueStartAcceptAsync ( int poolIndex, int delayMs ) {
+        await Task.Delay ( delayMs ).ConfigureAwait ( false );
+
+        if (_isListening)
+            StartAccept ( poolIndex );
+    }
+
+    private static bool IsConnectionAcceptNoise ( SocketError socketError ) =>
+        socketError is SocketError.Success
+            or SocketError.ConnectionReset
+            or SocketError.ConnectionAborted
+            or SocketError.NetworkReset;
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     internal async Task ProcessConnectionCoreAsync ( Socket client ) {
