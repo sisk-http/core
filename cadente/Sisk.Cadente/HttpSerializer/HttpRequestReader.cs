@@ -252,10 +252,10 @@ static class HttpRequestReader {
                         }
                         break;
                     case 1: // Connection
-                        keepAliveEnabled = !Ascii.EqualsIgnoreCase ( valueSpan, CloseValue );
+                        keepAliveEnabled = !TokenListContains ( valueSpan, CloseValue );
                         break;
                     case 2: // Expect
-                        expect100 = Ascii.EqualsIgnoreCase ( valueSpan, ContinueValue );
+                        expect100 = TokenListContains ( valueSpan, ContinueValue );
                         break;
                     case 3: // Transfer-Encoding
                         if (seenTransferEncoding) {
@@ -263,7 +263,7 @@ static class HttpRequestReader {
                             goto ParseFailed; // duplicate TE = request-smuggling vector (RFC 9112 §6.3.3)
                         }
                         seenTransferEncoding = true;
-                        isChunked = Ascii.EqualsIgnoreCase ( valueSpan, ChunkedValue );
+                        isChunked = TokenListContains ( valueSpan, ChunkedValue );
                         if (isChunked)
                             contentLength = -1;
                         break;
@@ -406,4 +406,25 @@ ParseFailed:
         || protocol.SequenceEqual ( Http10 )
         || protocol.SequenceEqual ( Http09 );
 
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static bool TokenListContains ( ReadOnlySpan<byte> value, ReadOnlySpan<byte> expectedToken ) {
+        while (!value.IsEmpty) {
+            int commaIndex = value.IndexOf ( (byte) ',' );
+            ReadOnlySpan<byte> token = commaIndex >= 0
+                ? value.Slice ( 0, commaIndex )
+                : value;
+
+            if (Ascii.EqualsIgnoreCase ( token.Trim ( TrimChars ), expectedToken )) {
+                return true;
+            }
+
+            if (commaIndex < 0) {
+                break;
+            }
+
+            value = value.Slice ( commaIndex + 1 );
+        }
+
+        return false;
+    }
 }
