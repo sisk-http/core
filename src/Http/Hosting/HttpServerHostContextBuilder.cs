@@ -69,6 +69,12 @@ public sealed class HttpServerHostContextBuilder {
         if (listeningHost.Ports.Count == 0)
             listeningHost.Ports.Add ( ListeningPort.GetRandomPort () );
 
+        if (listeningHost.SslOptions is { } sslOptions) {
+            foreach (ListeningHost configuredHost in configuration.ListeningHosts) {
+                configuredHost.SslOptions ??= sslOptions;
+            }
+        }
+
         return _context;
     }
 
