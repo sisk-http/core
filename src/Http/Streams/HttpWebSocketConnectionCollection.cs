@@ -37,6 +37,7 @@ namespace Sisk.Core.Http.Streams {
                     // close another websockets with same identifier
                     HttpWebSocket [] wsId = Find ( s => s == src._identifier );
                     foreach (HttpWebSocket ws in wsId) {
+                        _ws.Remove ( ws );
                         ws.Dispose ();
                     }
                     _ws.Add ( src );
@@ -96,7 +97,10 @@ namespace Sisk.Core.Http.Streams {
         /// </summary>
         public void DropAll () {
             lock (_ws) {
-                foreach (HttpWebSocket es in _ws)
+                HttpWebSocket [] allWs = _ws.ToArray ();
+                _ws.Clear ();
+
+                foreach (HttpWebSocket es in allWs)
                     es.Dispose ();
             }
         }

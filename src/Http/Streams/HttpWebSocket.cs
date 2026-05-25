@@ -118,6 +118,9 @@ namespace Sisk.Core.Http.Streams {
         private async ValueTask<WebSocketMessage?> ReceiveInternalAsync ( CancellationToken cancellation ) {
             ArraySegment<byte> buffer = new ArraySegment<byte> ( receiveBuffer );
             ValueWebSocketReceiveResult result;
+            long maxMessageLength = request.baseServer.ServerConfiguration.MaximumContentLength <= 0
+                ? Int32.MaxValue
+                : request.baseServer.ServerConfiguration.MaximumContentLength;
 
             if (IsClosed)
                 return null;
@@ -137,6 +140,11 @@ namespace Sisk.Core.Http.Streams {
 
                         do {
                             result = await ctx.ReceiveAsync ( buffer, cancellation );
+                            if ((ms.Length + result.Count) > maxMessageLength) {
+                                await ctx.CloseOutputAsync ( WebSocketCloseStatus.MessageTooBig, null, cancellation );
+                                await CloseAsync ( cancellation );
+                                return null;
+                            }
                             ms.Write ( buffer.Array!, buffer.Offset, result.Count );
                         } while (!result.EndOfMessage);
 
