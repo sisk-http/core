@@ -49,12 +49,11 @@ internal class HttpChunkedWriteStream : Stream {
 
     public override void Write ( byte [] buffer, int offset, int count ) {
 
-        if (buffer.Length == 0) {
-            _stream.Write ( s_finalChunkBytes );
+        if (count == 0) {
             return;
         }
 
-        _stream.Write ( Encoding.ASCII.GetBytes ( (count - offset).ToString ( "X" ) ) );
+        _stream.Write ( Encoding.ASCII.GetBytes ( count.ToString ( "X" ) ) );
         _stream.Write ( s_crlfBytes );
         _stream.Write ( buffer.AsSpan ( offset, count ) );
         _stream.Write ( s_crlfBytes );
