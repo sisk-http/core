@@ -110,7 +110,7 @@ public class ApplicationMonitor {
         if (CredentialValidator is not null) {
             return CredentialValidator ( new NetworkCredential ( userEmail, userPassword ) );
         }
-        return new ValueTask<bool> ( true );
+        return new ValueTask<bool> ( false );
     }
 
     string PrefixPath ( string relativePath ) {
