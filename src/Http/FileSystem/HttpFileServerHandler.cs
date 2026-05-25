@@ -70,12 +70,73 @@ public class HttpFileServerHandler {
     /// <returns><see langword="true"/> if the entry is inside the configured root directory; otherwise, <see langword="false"/>.</returns>
     protected virtual bool IsEntryAllowedToListing ( string entryPath ) {
 
-        string normalizedEntryPath = PathHelper.NormalizePath ( entryPath );
-        string normalizedRootPath = PathHelper.NormalizePath ( RootDirectoryPath );
+        if (!IsPathContainedInRoot ( entryPath )) {
+            return false;
+        }
+
+        return !ContainsReparsePointBetweenRootAndPath ( entryPath );
+    }
+
+    /// <summary>
+    /// Determines whether the specified path resolves under the configured root directory.
+    /// </summary>
+    protected virtual bool IsPathContainedInRoot ( string path ) {
+        string normalizedPath = PathHelper.NormalizePath ( Path.GetFullPath ( path ) );
+        string normalizedRootPath = PathHelper.NormalizePath ( Path.GetFullPath ( RootDirectoryPath ) );
 
         return
-            normalizedEntryPath.Length >= normalizedRootPath.Length &&
-            normalizedEntryPath.StartsWith ( normalizedRootPath, StringComparison.InvariantCultureIgnoreCase );
+            normalizedPath.Length >= normalizedRootPath.Length &&
+            normalizedPath.StartsWith ( normalizedRootPath, StringComparison.InvariantCultureIgnoreCase );
+    }
+
+    /// <summary>
+    /// Checks whether any segment between the configured root and the requested path is a symlink/reparse point.
+    /// </summary>
+    protected virtual bool ContainsReparsePointBetweenRootAndPath ( string path ) {
+        string rootFullPath = Path.GetFullPath ( RootDirectoryPath );
+        string candidatePath = Path.GetFullPath ( path );
+
+        if (!IsPathContainedInRoot ( candidatePath )) {
+            return true;
+        }
+
+        string currentPath = rootFullPath;
+
+        if (HasReparsePoint ( currentPath )) {
+            return true;
+        }
+
+        string relativePath = Path.GetRelativePath ( rootFullPath, candidatePath );
+
+        if (relativePath == ".") {
+            return false;
+        }
+
+        foreach (string segment in PathHelper.Split ( relativePath )) {
+            currentPath = Path.Combine ( currentPath, segment );
+
+            if (HasReparsePoint ( currentPath )) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether a file-system path is a symlink/reparse point.
+    /// </summary>
+    protected virtual bool HasReparsePoint ( string path ) {
+        FileAttributes attributes;
+
+        try {
+            attributes = File.GetAttributes ( path );
+        }
+        catch {
+            return false;
+        }
+
+        return (attributes & FileAttributes.ReparsePoint) != 0;
     }
 
     /// <summary>
@@ -102,6 +163,10 @@ public class HttpFileServerHandler {
         path = PathHelper.CombinePaths ( pathParts );
 
         string fullPath = PathHelper.FilesystemCombinePaths ( allowRelativeReturn: false, Path.DirectorySeparatorChar, [ RootDirectoryPath, path ] );
+
+        if (!IsPathContainedInRoot ( fullPath ) || ContainsReparsePointBetweenRootAndPath ( fullPath )) {
+            return null;
+        }
 
         if (Directory.Exists ( fullPath )) {
             return new DirectoryInfo ( fullPath );
