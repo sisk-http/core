@@ -1118,7 +1118,13 @@ public class ApplicationMonitor {
             }
 
             string encodedCredentials = authorization [ "Basic ".Length.. ];
-            string decodedCredentials = System.Text.Encoding.UTF8.GetString ( Convert.FromBase64String ( encodedCredentials ) );
+            string decodedCredentials;
+            try {
+                decodedCredentials = System.Text.Encoding.UTF8.GetString ( Convert.FromBase64String ( encodedCredentials ) );
+            }
+            catch (FormatException) {
+                return UnauthorizedResponse;
+            }
 
             int separatorIndex = decodedCredentials.IndexOf ( ':' );
             if (separatorIndex < 0) {
