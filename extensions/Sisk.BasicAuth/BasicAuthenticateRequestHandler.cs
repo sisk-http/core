@@ -23,7 +23,7 @@ public class BasicAuthenticateRequestHandler : IRequestHandler {
     /// <summary>
     /// Initializes a new instance of the <see cref="BasicAuthenticateRequestHandler"/> class with default settings.
     /// </summary>
-    public BasicAuthenticateRequestHandler () : this ( ( a, b ) => null, null ) {
+    public BasicAuthenticateRequestHandler () : this ( ( _, _ ) => CreateDefaultUnauthorizedResponse ( DefaultRealm ), null ) {
     }
 
     /// <summary>
@@ -116,6 +116,15 @@ public class BasicAuthenticateRequestHandler : IRequestHandler {
             Status = HttpStatusInformation.Unauthorized,
             Headers = new () {
                 WWWAuthenticate = $"Basic realm=\"{Realm}\""
+            }
+        };
+    }
+
+    private static HttpResponse CreateDefaultUnauthorizedResponse ( string realm ) {
+        return new HttpResponse () {
+            Status = HttpStatusInformation.Unauthorized,
+            Headers = new () {
+                WWWAuthenticate = $"Basic realm=\"{realm}\""
             }
         };
     }
