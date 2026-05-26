@@ -21,7 +21,7 @@ namespace Sisk.Cadente;
 public sealed class HttpHost : IDisposable {
 
     private readonly IPEndPoint _endpoint;
-    private readonly Socket _listener;
+    private Socket _listener;
 
     // cache line padding to reduce false sharing
     private volatile bool _disposedValue;
@@ -29,6 +29,7 @@ public sealed class HttpHost : IDisposable {
 
     private readonly SocketAsyncEventArgs [] _acceptArgsPool;
     private readonly int [] _acceptArgsAvailable;
+    private int _listenerRestarting = 0;
     private const int AcceptPoolSize = 8;
     private const int ListenerAcceptRetryDelayMilliseconds = 250;
 
@@ -69,7 +70,7 @@ public sealed class HttpHost : IDisposable {
     /// <param name="endpoint">The <see cref="IPEndPoint"/> to listen on.</param>
     public HttpHost ( IPEndPoint endpoint ) {
         _endpoint = endpoint;
-        _listener = new Socket ( endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp );
+        _listener = CreateListenerSocket ();
 
         _acceptArgsPool = new SocketAsyncEventArgs [ AcceptPoolSize ];
         _acceptArgsAvailable = new int [ AcceptPoolSize ];
@@ -97,7 +98,12 @@ public sealed class HttpHost : IDisposable {
             return;
         ObjectDisposedException.ThrowIf ( _disposedValue, this );
 
-        ConfigureListenerSocket ();
+        try {
+            _listener.Dispose ();
+        }
+        catch { }
+
+        _listener = CreateListenerSocket ();
         _listener.Bind ( _endpoint );
         _listener.Listen ( backlog: 4096 ); // Alto para burst de conexões
         _isListening = true;
@@ -109,28 +115,35 @@ public sealed class HttpHost : IDisposable {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private void ConfigureListenerSocket () {
-        _listener.NoDelay = true;
-        _listener.LingerState = new LingerOption ( false, 0 );
+    private Socket CreateListenerSocket () {
+        var listener = new Socket ( _endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp );
+
+        listener.NoDelay = true;
+        listener.LingerState = new LingerOption ( false, 0 );
 
         // Buffers grandes para o listener reduzem syscalls
-        _listener.ReceiveBufferSize = 128 * 1024;
-        _listener.SendBufferSize = 128 * 1024;
+        listener.ReceiveBufferSize = 128 * 1024;
+        listener.SendBufferSize = 128 * 1024;
 
-        if (_listener.AddressFamily == AddressFamily.InterNetworkV6 && _endpoint.Address.Equals ( IPAddress.IPv6Any )) {
-            _listener.DualMode = true;
+        if (listener.AddressFamily == AddressFamily.InterNetworkV6 && _endpoint.Address.Equals ( IPAddress.IPv6Any )) {
+            listener.DualMode = true;
         }
 
-        _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
-        _listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 3 );
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 300 );
-        _listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
+        listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true );
+        listener.SetSocketOption ( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true );
+        listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 3 );
+        listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 300 );
+        listener.SetSocketOption ( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3 );
+
+        return listener;
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private void StartAccept ( int poolIndex ) {
         if (!_isListening)
+            return;
+
+        if (Volatile.Read ( ref _listenerRestarting ) == 1)
             return;
 
         while (_isListening) {
@@ -145,11 +158,17 @@ public sealed class HttpHost : IDisposable {
                 return;
             }
             catch (SocketException) {
+                if (Volatile.Read ( ref _listenerRestarting ) == 1)
+                    return;
+
                 QueueStartAccept ( poolIndex, ListenerAcceptRetryDelayMilliseconds );
                 return;
             }
 
             int rearmDelayMs = ProcessAcceptInline ( args, poolIndex );
+            if (rearmDelayMs < 0)
+                return;
+
             if (rearmDelayMs > 0) {
                 QueueStartAccept ( poolIndex, rearmDelayMs );
                 return;
@@ -160,6 +179,9 @@ public sealed class HttpHost : IDisposable {
     private void OnAcceptCompleted ( object? sender, SocketAsyncEventArgs e ) {
         int poolIndex = (int) e.UserToken!;
         int rearmDelayMs = ProcessAcceptInline ( e, poolIndex );
+        if (rearmDelayMs < 0)
+            return;
+
         if (rearmDelayMs > 0)
             QueueStartAccept ( poolIndex, rearmDelayMs );
         else
@@ -172,6 +194,11 @@ public sealed class HttpHost : IDisposable {
             var socketError = e.SocketError;
             e.AcceptSocket?.Dispose ();
             e.AcceptSocket = null;
+
+            if (IsListenerFatalError ( socketError )) {
+                TriggerListenerRebuild ();
+                return -1;
+            }
 
             return IsConnectionAcceptNoise ( socketError )
                 ? 0
@@ -214,6 +241,46 @@ public sealed class HttpHost : IDisposable {
             or SocketError.ConnectionReset
             or SocketError.ConnectionAborted
             or SocketError.NetworkReset;
+
+    private static bool IsListenerFatalError ( SocketError socketError ) =>
+        socketError is SocketError.InvalidArgument
+            or SocketError.NotSocket
+            or SocketError.Shutdown
+            or SocketError.OperationAborted
+            or SocketError.Interrupted;
+
+    private void TriggerListenerRebuild () {
+        if (Interlocked.CompareExchange ( ref _listenerRestarting, 1, 0 ) != 0)
+            return;
+
+        _ = RebuildListenerAsync ();
+    }
+
+    private async Task RebuildListenerAsync () {
+        try { _listener.Close (); } catch { }
+        try { _listener.Dispose (); } catch { }
+
+        while (_isListening && !_disposedValue) {
+            await Task.Delay ( ListenerAcceptRetryDelayMilliseconds ).ConfigureAwait ( false );
+
+            try {
+                Socket newListener = CreateListenerSocket ();
+                newListener.Bind ( _endpoint );
+                newListener.Listen ( backlog: 4096 );
+                _listener = newListener;
+                break;
+            }
+            catch (SocketException) {
+            }
+        }
+
+        Interlocked.Exchange ( ref _listenerRestarting, 0 );
+
+        if (_isListening && !_disposedValue) {
+            for (int i = 0; i < AcceptPoolSize; i++)
+                StartAccept ( i );
+        }
+    }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     internal async Task ProcessConnectionCoreAsync ( Socket client ) {
