@@ -560,8 +560,18 @@ namespace Sisk.Core.Http {
             string lineText = NormalizeEntries ?
                  line.Normalize ().Trim ().ReplaceLineEndings () : line;
 
-            if (!_channel.Writer.TryWrite ( lineText )) {
-                throw new InvalidOperationException ( SR.LogStream_FailedWrite );
+            try {
+                _channel.Writer.WriteAsync ( lineText, _cancellationTokenSource.Token )
+                    .AsTask ()
+                    .ConfigureAwait ( false )
+                    .GetAwaiter ()
+                    .GetResult ();
+            }
+            catch (ChannelClosedException) {
+                // Channel was closed, which is expected during shutdown. Ignore.
+            }
+            catch (OperationCanceledException) when (_cancellationTokenSource.IsCancellationRequested) {
+                // Cancellation requested during shutdown. Ignore.
             }
         }
 
