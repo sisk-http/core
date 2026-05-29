@@ -165,7 +165,7 @@ public sealed class HttpHost : IDisposable {
                 return;
             }
 
-            int rearmDelayMs = ProcessAcceptInline ( args, poolIndex );
+            int rearmDelayMs = ProcessAcceptInline ( args );
             if (rearmDelayMs < 0)
                 return;
 
@@ -178,7 +178,7 @@ public sealed class HttpHost : IDisposable {
 
     private void OnAcceptCompleted ( object? sender, SocketAsyncEventArgs e ) {
         int poolIndex = (int) e.UserToken!;
-        int rearmDelayMs = ProcessAcceptInline ( e, poolIndex );
+        int rearmDelayMs = ProcessAcceptInline ( e );
         if (rearmDelayMs < 0)
             return;
 
@@ -189,7 +189,7 @@ public sealed class HttpHost : IDisposable {
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    private int ProcessAcceptInline ( SocketAsyncEventArgs e, int poolIndex ) {
+    private int ProcessAcceptInline ( SocketAsyncEventArgs e ) {
         if (e.SocketError != SocketError.Success || e.AcceptSocket is null) {
             var socketError = e.SocketError;
             e.AcceptSocket?.Dispose ();
