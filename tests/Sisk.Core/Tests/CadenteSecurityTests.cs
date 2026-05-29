@@ -21,8 +21,6 @@ namespace tests.Tests;
 public sealed class CadenteSecurityTests {
     private static readonly TimeSpan HeaderTimeout = TimeSpan.FromMilliseconds ( 200 );
     private static readonly TimeSpan CloseWaitTimeout = TimeSpan.FromSeconds ( 2 );
-    private static readonly TimeSpan PollDelay = TimeSpan.FromMilliseconds ( 25 );
-    private const int SocketPollMicroseconds = 1000;
 
     [TestMethod]
     public async Task HeaderParsingTimeout_ClosesIdleConnection () {
@@ -38,7 +36,8 @@ public sealed class CadenteSecurityTests {
         using var connectCts = new CancellationTokenSource ( CloseWaitTimeout );
         await client.ConnectAsync ( IPAddress.Loopback, port, connectCts.Token );
 
-        bool closed = await WaitUntilClosedAsync ( client.Client, CloseWaitTimeout );
+        await using var stream = client.GetStream ();
+        bool closed = await WaitUntilClosedAsync ( stream, CloseWaitTimeout );
 
         Assert.IsTrue ( closed, "Cadente should close an idle connection when header parsing exceeds HeaderParsingTimeout." );
     }
@@ -90,25 +89,25 @@ public sealed class CadenteSecurityTests {
         return ((IPEndPoint) listener.LocalEndpoint).Port;
     }
 
-    private static async Task<bool> WaitUntilClosedAsync ( Socket socket, TimeSpan timeout ) {
-        DateTime deadline = DateTime.UtcNow + timeout;
+    private static async Task<bool> WaitUntilClosedAsync ( NetworkStream stream, TimeSpan timeout ) {
+        byte [] buffer = new byte [ 1 ];
 
-        while (DateTime.UtcNow < deadline) {
-            try {
-                if (socket.Poll ( microSeconds: SocketPollMicroseconds, SelectMode.SelectRead ) && socket.Available == 0)
-                    return true;
-            }
-            catch (SocketException) {
-                return true;
-            }
-            catch (ObjectDisposedException) {
-                return true;
-            }
-
-            await Task.Delay ( PollDelay );
+        try {
+            int read = await stream.ReadAsync ( buffer ).AsTask ().WaitAsync ( timeout );
+            return read == 0;
         }
-
-        return false;
+        catch (TimeoutException) {
+            return false;
+        }
+        catch (IOException) {
+            return true;
+        }
+        catch (SocketException) {
+            return true;
+        }
+        catch (ObjectDisposedException) {
+            return true;
+        }
     }
 
     private sealed class EmptyHandler : HttpHostHandler { }
