@@ -155,11 +155,19 @@ public sealed class HttpHost : IDisposable {
                     return;
             }
             catch (ObjectDisposedException) {
+                if (_isListening && Volatile.Read ( ref _listenerRestarting ) == 0)
+                    TriggerListenerRebuild ();
+
                 return;
             }
-            catch (SocketException) {
+            catch (SocketException ex) {
                 if (Volatile.Read ( ref _listenerRestarting ) == 1)
                     return;
+
+                if (IsListenerFatalError ( ex.SocketErrorCode )) {
+                    TriggerListenerRebuild ();
+                    return;
+                }
 
                 QueueStartAccept ( poolIndex, ListenerAcceptRetryDelayMilliseconds );
                 return;
@@ -222,6 +230,9 @@ public sealed class HttpHost : IDisposable {
             or SocketError.Interrupted;
 
     private void TriggerListenerRebuild () {
+        if (!_isListening || _disposedValue)
+            return;
+
         if (Interlocked.CompareExchange ( ref _listenerRestarting, 1, 0 ) != 0)
             return;
 
@@ -229,20 +240,29 @@ public sealed class HttpHost : IDisposable {
     }
 
     private async Task RebuildListenerAsync () {
-        try { _listener.Close (); } catch { }
-        try { _listener.Dispose (); } catch { }
+        Socket oldListener = _listener;
+
+        try { oldListener.Close (); } catch { }
+        try { oldListener.Dispose (); } catch { }
 
         while (_isListening && !_disposedValue) {
             await Task.Delay ( ListenerAcceptRetryDelayMilliseconds ).ConfigureAwait ( false );
 
+            Socket? newListener = null;
             try {
-                Socket newListener = CreateListenerSocket ();
+                newListener = CreateListenerSocket ();
                 newListener.Bind ( _endpoint );
                 newListener.Listen ( backlog: 4096 );
+
                 _listener = newListener;
                 break;
             }
             catch (SocketException) {
+                try { newListener?.Dispose (); } catch { }
+            }
+            catch (ObjectDisposedException) {
+                try { newListener?.Dispose (); } catch { }
+                break;
             }
         }
 
