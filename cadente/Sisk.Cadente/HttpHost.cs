@@ -214,34 +214,6 @@ public sealed class HttpHost : IDisposable {
         return 0;
     }
 
-    private void QueueStartAccept ( int poolIndex, int delayMs = 0 ) {
-        if (!_isListening)
-            return;
-
-        if (delayMs <= 0) {
-            ThreadPool.UnsafeQueueUserWorkItem (
-                static state => state.Host.StartAccept ( state.PoolIndex ),
-                (Host: this, PoolIndex: poolIndex),
-                preferLocal: false );
-            return;
-        }
-
-        _ = QueueStartAcceptAsync ( poolIndex, delayMs );
-    }
-
-    private async Task QueueStartAcceptAsync ( int poolIndex, int delayMs ) {
-        await Task.Delay ( delayMs ).ConfigureAwait ( false );
-
-        if (_isListening)
-            StartAccept ( poolIndex );
-    }
-
-    private static bool IsConnectionAcceptNoise ( SocketError socketError ) =>
-        socketError is SocketError.Success
-            or SocketError.ConnectionReset
-            or SocketError.ConnectionAborted
-            or SocketError.NetworkReset;
-
     private static bool IsListenerFatalError ( SocketError socketError ) =>
         socketError is SocketError.InvalidArgument
             or SocketError.NotSocket
@@ -281,6 +253,34 @@ public sealed class HttpHost : IDisposable {
                 StartAccept ( i );
         }
     }
+
+    private void QueueStartAccept ( int poolIndex, int delayMs = 0 ) {
+        if (!_isListening)
+            return;
+
+        if (delayMs <= 0) {
+            ThreadPool.UnsafeQueueUserWorkItem (
+                static state => state.Host.StartAccept ( state.PoolIndex ),
+                (Host: this, PoolIndex: poolIndex),
+                preferLocal: false );
+            return;
+        }
+
+        _ = QueueStartAcceptAsync ( poolIndex, delayMs );
+    }
+
+    private async Task QueueStartAcceptAsync ( int poolIndex, int delayMs ) {
+        await Task.Delay ( delayMs ).ConfigureAwait ( false );
+
+        if (_isListening)
+            StartAccept ( poolIndex );
+    }
+
+    private static bool IsConnectionAcceptNoise ( SocketError socketError ) =>
+        socketError is SocketError.Success
+            or SocketError.ConnectionReset
+            or SocketError.ConnectionAborted
+            or SocketError.NetworkReset;
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     internal async Task ProcessConnectionCoreAsync ( Socket client ) {
