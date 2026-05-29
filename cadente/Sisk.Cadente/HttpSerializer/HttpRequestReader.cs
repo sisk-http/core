@@ -21,6 +21,8 @@ static class HttpRequestReader {
     private const byte Colon = (byte) ':';
     private const byte LineFeed = (byte) '\n';
     private const byte CarriageReturn = (byte) '\r';
+    private const byte HorizontalTab = (byte) '\t';
+    private const byte NumberSign = (byte) '#';
 
     private const int DefaultHeaderReadTimeoutMs = 30_000;
     private static ReadOnlySpan<byte> HeaderTerminator => "\r\n\r\n"u8;
@@ -138,6 +140,14 @@ static class HttpRequestReader {
 
         int pathEnd = pathStart + pathEndRel;
         ReadOnlyMemory<byte> path = buffer.Slice ( pathStart, pathEndRel );
+        if (pathEndRel == 0) {
+            Logger.LogInformation ( $"failed to parse HTTP request: missing request target in request line" );
+            return null;
+        }
+        if (path.Span.Contains ( NumberSign )) {
+            Logger.LogInformation ( $"failed to parse HTTP request: fragment is not allowed in request target" );
+            return null;
+        }
 
         int protocolStart = pathEnd + 1;
         int protocolLineEndRel = span.Slice ( protocolStart ).IndexOf ( LineFeed );
@@ -216,9 +226,16 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> headerLine = span.Slice ( lineStart, headerLineLength );
                 cursor = lineEnd + 1;
 
+                if (headerLine [ 0 ] == Space || headerLine [ 0 ] == HorizontalTab) {
+                    failReason = "obs-fold header line violates RFC 9112 §5.2";
+                    goto ParseFailed;
+                }
+
                 int colonIndex = headerLine.IndexOf ( Colon );
-                if (colonIndex < 0)
-                    continue;
+                if (colonIndex < 0) {
+                    failReason = "header line without colon violates RFC 9112 §5";
+                    goto ParseFailed;
+                }
                 if (colonIndex == 0) {
                     failReason = "empty header name violates RFC 9110 §5.1";
                     goto ParseFailed; // empty header name (RFC 9110 §5.1)
@@ -241,7 +258,7 @@ static class HttpRequestReader {
                 int knownHeader = GetKnownHeaderIndex ( nameSpan );
                 switch (knownHeader) {
                     case 0: // Content-Length
-                        if (Utf8Parser.TryParse ( valueSpan, out long parsed, out int consumed ) && consumed == valueSpan.Length) {
+                        if (IsAsciiDigits ( valueSpan ) && Utf8Parser.TryParse ( valueSpan, out long parsed, out int consumed ) && consumed == valueSpan.Length) {
                             contentLength = parsed;
                             contentLengthExplicit = true;
                         }
@@ -426,5 +443,17 @@ ParseFailed:
         }
 
         return false;
+    }
+
+    private static bool IsAsciiDigits ( ReadOnlySpan<byte> value ) {
+        if (value.IsEmpty)
+            return false;
+
+        foreach (byte b in value) {
+            if ((uint) (b - '0') > 9)
+                return false;
+        }
+
+        return true;
     }
 }
