@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sisk.Cadente\Sisk.Cadente.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

@@ -68,6 +68,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
             HttpHostContext managedSession = new HttpHostContext ( _host, this, nextRequest, _client );
             await _host.InvokeContextCreated ( managedSession ).ConfigureAwait ( false );
+            managedSession.Response.FlushOutputStream ();
 
             Logger.LogInformation ( $"HTTP {managedSession.Request.Method} {managedSession.Request.Path} Headers={managedSession.Request.Headers.Count} ConLength={managedSession.Request.ContentLength}" );
 

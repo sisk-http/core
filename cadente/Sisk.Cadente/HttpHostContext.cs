@@ -7,8 +7,9 @@
 // File name:   HttpHostContext.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Runtime.CompilerServices;
 using System.Globalization;
+using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using Sisk.Cadente.HttpSerializer;
@@ -207,6 +208,7 @@ public sealed class HttpHostContext {
 
         private Stream _baseOutputStream;
         private HttpHostContext _session;
+        private Stream? _outputStream;
         internal bool headersSent = false;
 
         /// <summary>
@@ -232,7 +234,12 @@ public sealed class HttpHostContext {
         public async Task<Stream> GetResponseStreamAsync ( bool chunked = false ) {
             PrepareResponseStream ( chunked );
 
-            await _session.WriteHttpResponseHeadersAsync ().ConfigureAwait ( false );
+            if (_baseOutputStream is SslStream) {
+                await _session.WriteHttpResponseHeadersAsync ().ConfigureAwait ( false );
+            }
+            else {
+                _session.WriteHttpResponseHeaders ();
+            }
 
             headersSent = true;
             return CreateOutputStream ( chunked );
@@ -272,10 +279,17 @@ public sealed class HttpHostContext {
         }
 
         private Stream CreateOutputStream ( bool chunked ) {
-            return chunked switch {
+            _outputStream = chunked switch {
                 true => new HttpChunkedWriteStream ( _baseOutputStream ),
                 false => new UndisposableNetworkStream ( _baseOutputStream )
             };
+
+            return _outputStream;
+        }
+
+        internal void FlushOutputStream () {
+            if (_outputStream is UndisposableNetworkStream stream)
+                stream.FlushBufferedContent ();
         }
 
         private static HttpHeader CreateDateHeader () {
