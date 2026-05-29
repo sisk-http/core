@@ -14,10 +14,14 @@ namespace Sisk.Cadente;
 
 static class Logger {
 
+    static readonly bool LoggingEnabled = Environment.GetEnvironmentVariable ( "CADENTE_DISABLE_VERBOSE" ) == null;
+
     [Conditional ( "DEBUG" )]
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public static void LogInformation ( ref DefaultInterpolatedStringHandler message ) {
 #if DEBUG
+        if (!LoggingEnabled)
+            return;
         // Note: Connection ID logging is only available in DEBUG builds and may be uninitialized.
         var connectionId = HttpConnection.Id.Value != 0 ? HttpConnection.Id.Value.ToString () : "N/A";
         Console.WriteLine ( $"Sisk.ManagedHttpListener [{DateTime.Now:R}] [CON {connectionId}] {message.ToString ()}" );
