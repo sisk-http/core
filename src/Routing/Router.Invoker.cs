@@ -73,7 +73,11 @@ public partial class Router {
         for (int i = 0; i < baseLists.Length; i++) {
             var rh = baseLists [ i ];
 
-            if (rh.ExecutionMode.HasFlag ( mode )) {
+            bool isLegacyBeforeResponseHandler =
+                rh.ExecutionMode == 0 &&
+                mode == RequestHandlerExecutionMode.BeforeResponse;
+
+            if (rh.ExecutionMode.HasFlag ( mode ) || isLegacyBeforeResponseHandler) {
                 HttpResponse? response = InvokeHandler ( rh, request, context, bypassList, out exception );
                 if (response is not null) {
                     result = response;
