@@ -138,9 +138,6 @@ sealed class HttpChunkedReadStream2 : EndableStream {
         while (true) {
             int b = _s.ReadByte ();
             if (b == -1) {
-                if (ptr == 0)
-                    return -1;
-
                 throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete chunk metadata." );
             }
 

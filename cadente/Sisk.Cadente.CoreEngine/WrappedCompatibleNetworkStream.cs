@@ -44,6 +44,9 @@ sealed class WrappedCompatibleNetworkStream ( Stream inner ) : Stream {
             // Malformed chunk body = protocol violation → 400, not a network disconnect
             throw new Sisk.Core.Http.HttpRequestException ( chunkEx.Message, chunkEx );
         }
+        catch (EndOfStreamException eosEx) {
+            throw new Sisk.Core.Http.HttpRequestException ( eosEx.Message, eosEx );
+        }
         catch (IOException ioex) {
             throw GetWrappedException ( ioex, 11 );
         }
