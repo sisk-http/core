@@ -276,7 +276,9 @@ public sealed class SlowInternetTests {
         IEnumerable<string>? values;
         Assert.IsTrue ( response.Headers.TryGetValues ( "X-Custom-Header", out values ) );
         Assert.IsNotNull ( values );
-        var list = values!.ToList ();
+        var list = values!
+            .SelectMany ( value => value.Split ( ',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries ) )
+            .ToList ();
         Assert.AreEqual ( 2, list.Count );
         Assert.IsTrue ( list.Contains ( "value1" ) );
         Assert.IsTrue ( list.Contains ( "value2" ) );

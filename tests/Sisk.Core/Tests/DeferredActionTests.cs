@@ -313,8 +313,8 @@ public sealed class DeferredActionExceptionTests {
     }
 
     private static void InvokeProcessRequest ( HttpServer server, HttpServerEngineContext context ) {
-        var method = typeof ( HttpServer ).GetMethod ( "ProcessRequest", BindingFlags.Instance | BindingFlags.NonPublic );
-        Assert.IsNotNull ( method, "Could not locate HttpServer.ProcessRequest via reflection." );
+        var method = typeof ( HttpServer ).GetMethod ( "HandleContext", BindingFlags.Instance | BindingFlags.Public );
+        Assert.IsNotNull ( method, "Could not locate HttpServer.HandleContext via reflection." );
 
         try {
             method.Invoke ( server, new object [] { context } );
