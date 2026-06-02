@@ -104,10 +104,8 @@ public partial class Router {
         }
         catch (Exception ex) {
             exception = ex;
-            if (parentServer!.ServerConfiguration.ThrowExceptions == false) {
-                if (CallbackErrorHandler is not null) {
-                    result = CallbackErrorHandler ( ex, context );
-                }
+            if (parentServer!.ServerConfiguration.ThrowExceptions == false && CallbackErrorHandler is not null) {
+                result = CallbackErrorHandler ( ex, context );
             }
             else
                 throw;
