@@ -7,6 +7,7 @@
 // File name:   HttpRequestEventSource.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Collections.Concurrent;
 using System.Text;
 using Sisk.Core.Http.Engine;
 
@@ -21,9 +22,11 @@ namespace Sisk.Core.Http.Streams {
         readonly HttpServerEngineContextResponse res;
         readonly HttpRequest reqObj;
         readonly HttpServer hostServer;
+        readonly object disposeLock = new ();
         int length;
 
-        internal Queue<string> sendQueue = new Queue<string> ();
+        readonly SemaphoreSlim flushLock = new ( 1, 1 );
+        internal ConcurrentQueue<string> sendQueue = new ConcurrentQueue<string> ();
         internal bool hasSentData;
 
         // 
@@ -187,7 +190,6 @@ namespace Sisk.Core.Http.Streams {
                 isClosed = true;
                 Flush ();
                 Dispose ();
-                hostServer._eventCollection.UnregisterEventSource ( this );
             }
             return new HttpResponse ( HttpResponse.HTTPRESPONSE_SERVER_CLOSE ) {
                 CalculedLength = length
@@ -203,7 +205,6 @@ namespace Sisk.Core.Http.Streams {
                 isClosed = true;
                 await FlushAsync ().ConfigureAwait ( false );
                 Dispose ();
-                hostServer._eventCollection.UnregisterEventSource ( this );
             }
             return new HttpResponse ( HttpResponse.HTTPRESPONSE_SERVER_CLOSE ) {
                 CalculedLength = length
@@ -218,55 +219,79 @@ namespace Sisk.Core.Http.Streams {
         }
 
         internal void Flush () {
-            while (sendQueue.TryDequeue ( out string? item )) {
-                byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
-                try {
-                    res.OutputStream.Write ( itemBytes );
-                    length += itemBytes.Length;
-                }
-                catch (Exception) {
-                    Dispose ( false );
-                    break;
+            bool disposeOnFailure = false;
+
+            flushLock.Wait ();
+            try {
+                while (sendQueue.TryDequeue ( out string? item )) {
+                    if (item is null)
+                        continue;
+
+                    byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
+                    try {
+                        res.OutputStream.Write ( itemBytes );
+                        length += itemBytes.Length;
+                    }
+                    catch (Exception) {
+                        disposeOnFailure = true;
+                        break;
+                    }
                 }
             }
+            finally {
+                flushLock.Release ();
+            }
+
+            if (disposeOnFailure)
+                Dispose ();
         }
 
         internal async ValueTask FlushAsync () {
-            while (sendQueue.TryDequeue ( out string? item )) {
-                byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
-                try {
-                    await res.OutputStream.WriteAsync ( itemBytes );
-                    length += itemBytes.Length;
-                }
-                catch (Exception) {
-                    Dispose ( false );
-                    break;
+            bool disposeOnFailure = false;
+
+            await flushLock.WaitAsync ();
+            try {
+                while (sendQueue.TryDequeue ( out string? item )) {
+                    if (item is null)
+                        continue;
+
+                    byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
+                    try {
+                        await res.OutputStream.WriteAsync ( itemBytes );
+                        length += itemBytes.Length;
+                    }
+                    catch (Exception) {
+                        disposeOnFailure = true;
+                        break;
+                    }
                 }
             }
-        }
+            finally {
+                flushLock.Release ();
+            }
 
-        void Dispose ( bool closing ) {
-            if (isDisposed)
-                return;
-            if (closing && !isClosed)
-                Close ();
-
-            sendQueue.Clear ();
-            sseTerminationSource.TrySetResult ();
-            isDisposed = true;
+            if (disposeOnFailure)
+                Dispose ();
         }
 
         /// <summary>
-        /// Flushes and releases the used resources of this class instance.
+        /// Releases the used resources of this class instance.
         /// </summary>
         public void Dispose () {
             GC.SuppressFinalize ( this );
-            Dispose ( closing: false );
-        }
 
-        /// <exclude/>
-        ~HttpRequestEventSource () {
-            Dispose ( closing: true );
+            lock (disposeLock) {
+                if (isDisposed)
+                    return;
+
+                isClosed = true;
+                isDisposed = true;
+                pingPolicy.Dispose ();
+                sendQueue.Clear ();
+            }
+
+            sseTerminationSource.TrySetResult ();
+            hostServer._eventCollection.UnregisterEventSource ( this );
         }
     }
 }

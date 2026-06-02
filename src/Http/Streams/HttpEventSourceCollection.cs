@@ -97,10 +97,15 @@ namespace Sisk.Core.Http.Streams {
         /// Closes and disposes all registered and active <see cref="HttpRequestEventSource"/> in this collections.
         /// </summary>
         public void DropAll () {
+            HttpRequestEventSource [] allEventSources;
+
             lock (_eventSources) {
-                foreach (HttpRequestEventSource es in _eventSources)
-                    es.Dispose ();
+                allEventSources = _eventSources.ToArray ();
+                _eventSources.Clear ();
             }
+
+            foreach (HttpRequestEventSource es in allEventSources)
+                es.Dispose ();
         }
 
         /// <inheritdoc/>

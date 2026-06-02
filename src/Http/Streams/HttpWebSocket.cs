@@ -108,7 +108,7 @@ namespace Sisk.Core.Http.Streams {
                     }
                 }
                 request.baseServer._wsCollection.UnregisterWebSocket ( this );
-                Dispose ();
+                Dispose ( disposeSocket: false );
             }
             return new HttpResponse ( wasServerClosed ? HttpResponse.HTTPRESPONSE_SERVER_CLOSE : HttpResponse.HTTPRESPONSE_CLIENT_CLOSE ) {
                 CalculedLength = length
@@ -129,11 +129,14 @@ namespace Sisk.Core.Http.Streams {
 
             using (var ms = new MemoryStream ()) {
 
-                await receiveSemaphore.WaitAsync ( cancellation );
-                if (cancellation.IsCancellationRequested)
-                    return null;
-
+                bool semaphoreAcquired = false;
                 try {
+                    await receiveSemaphore.WaitAsync ( cancellation );
+                    semaphoreAcquired = true;
+
+                    if (cancellation.IsCancellationRequested)
+                        return null;
+
                     while (true) {
                         ms.SetLength ( 0 );
                         ms.Seek ( 0, SeekOrigin.Begin );
@@ -173,11 +176,13 @@ namespace Sisk.Core.Http.Streams {
                     return null;
                 }
                 finally {
-                    try {
-                        receiveSemaphore.Release ();
-                    }
-                    catch {
-                        ; // semaphore can throw if disposed
+                    if (semaphoreAcquired) {
+                        try {
+                            receiveSemaphore.Release ();
+                        }
+                        catch {
+                            ; // semaphore can throw if disposed
+                        }
                     }
                 }
             }
@@ -191,22 +196,27 @@ namespace Sisk.Core.Http.Streams {
             if (ctx.State != WebSocketState.Open && ctx.State != WebSocketState.CloseSent)
                 return false;
 
-            await sendSemaphore.WaitAsync ( cancellation );
+            bool semaphoreAcquired = false;
             try {
+                await sendSemaphore.WaitAsync ( cancellation );
+                semaphoreAcquired = true;
                 await ctx.SendAsync ( buffer, msgType, true, cancellation );
                 length += buffer.Length;
                 return true;
             }
             catch {
-                await CloseAsync ( cancellation );
+                if (semaphoreAcquired)
+                    await CloseAsync ( cancellation );
                 return false;
             }
             finally {
-                try {
-                    sendSemaphore.Release ();
-                }
-                catch {
-                    ; // semaphore can throw if disposed
+                if (semaphoreAcquired) {
+                    try {
+                        sendSemaphore.Release ();
+                    }
+                    catch {
+                        ; // semaphore can throw if disposed
+                    }
                 }
             }
         }
@@ -241,20 +251,21 @@ namespace Sisk.Core.Http.Streams {
 
         /// <inheritdoc/>
         public void Dispose () {
+            GC.SuppressFinalize ( this );
+            Dispose ( disposeSocket: true );
+        }
+
+        private void Dispose ( bool disposeSocket ) {
             if (isDisposed)
                 return;
 
-            GC.SuppressFinalize ( this );
-
             isDisposed = true;
             pingPolicy.Dispose ();
+            request.baseServer._wsCollection.UnregisterWebSocket ( this );
+            if (disposeSocket)
+                ctx.Dispose ();
             receiveSemaphore.Dispose ();
             sendSemaphore.Dispose ();
-        }
-
-        /// <exclude/>
-        ~HttpWebSocket () {
-            Dispose ();
         }
     }
 
