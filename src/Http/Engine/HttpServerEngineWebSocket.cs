@@ -14,7 +14,7 @@ namespace Sisk.Core.Http.Engine;
 /// <summary>
 /// Provides an abstract base class for WebSocket contexts.
 /// </summary>
-public abstract class HttpServerEngineWebSocket {
+public abstract class HttpServerEngineWebSocket : IDisposable {
 
     /// <summary>
     /// Creates a concrete <see cref="HttpServerEngineWebSocket"/> instance from the specified <see cref="WebSocket"/>.
@@ -68,4 +68,11 @@ public abstract class HttpServerEngineWebSocket {
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
     public abstract ValueTask SendAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken );
+
+    /// <summary>
+    /// Releases the resources associated with this WebSocket context.
+    /// </summary>
+    public virtual void Dispose () {
+        GC.SuppressFinalize ( this );
+    }
 }

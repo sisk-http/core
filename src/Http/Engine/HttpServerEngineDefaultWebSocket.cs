@@ -31,4 +31,9 @@ sealed class HttpServerEngineDefaultWebSocket ( WebSocket ws ) : HttpServerEngin
     public override async ValueTask SendAsync ( ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken ) {
         await _ws.SendAsync ( buffer, messageType, endOfMessage, cancellationToken ).ConfigureAwait ( false );
     }
+
+    public override void Dispose () {
+        _ws.Dispose ();
+        base.Dispose ();
+    }
 }
