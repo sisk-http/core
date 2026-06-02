@@ -177,7 +177,7 @@ internal class HttpResponseSerializer {
         }
     }
 
-    public static byte [] GetRawMessage ( string message, int statusCode, string statusReason ) {
+    public static byte [] GetRawMessage ( string message, int statusCode, string statusReason, string? headers = null ) {
         string content = $"""
             <HTML>
                 <HEAD>
@@ -197,7 +197,7 @@ internal class HttpResponseSerializer {
             $"Content-Type: text/html\r\n" +
             $"Content-Length: {content.Length}\r\n" +
             $"Connection: close\r\n" +
-            $"\r\n" +
+            $"{headers ?? string.Empty}\r\n" +
             content;
 
         return Encoding.ASCII.GetBytes ( html );
