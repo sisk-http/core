@@ -253,6 +253,7 @@ namespace Sisk.Core.Routing {
 
         void CheckForRouteCollisionsCore () {
 
+            // route collisions
             for (int i = 0; i < _routesList.Count; i++) {
                 Route I = _routesList [ i ];
 
@@ -270,6 +271,18 @@ namespace Sisk.Core.Routing {
                         throw new ArgumentException ( SR.Format ( SR.Router_Set_Collision, I, J ) );
                     }
                 }
+            }
+
+            // name collisions and validations
+            var names = _routesList
+                .Select ( s => s.Name )
+                .Where ( s => !string.IsNullOrEmpty ( s ) )
+                .GroupBy ( s => s )
+                .Where ( s => s.Count () > 1 )
+                .Select ( s => s.Key );
+
+            if (names.Any ()) {
+                throw new ArgumentException ( SR.Format ( SR.Rotuer_Set_Name_Duplicates, string.Join ( ", ", names.Take ( 3 ) ) ) );
             }
         }
 
