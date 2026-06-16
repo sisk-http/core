@@ -56,7 +56,13 @@ namespace Sisk.Cadente.CoreEngine {
         }
 
         /// <inheritdoc/>
-        public override string [] ListeningPrefixes => prefixes.SelectMany ( s => s.Ports ).Select ( s => s.ToString ( includePath: true ) ).ToArray ();
+        public override string [] ListeningPrefixes => prefixes
+            .SelectMany ( s => s.SslOptions switch {
+                null => s.Ports,
+                _ => s.Ports.Select ( p => new ListeningPort ( true, p.Hostname, p.Port, p.Path ) )
+            } )
+            .Select ( s => s.ToString ( includePath: true ) )
+            .ToArray ();
 
         /// <inheritdoc/>
         public override HttpServerEngineContextEventLoopMecanism EventLoopMecanism => HttpServerEngineContextEventLoopMecanism.EngineManagedContext;

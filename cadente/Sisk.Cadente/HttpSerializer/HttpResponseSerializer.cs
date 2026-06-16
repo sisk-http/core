@@ -192,12 +192,17 @@ internal class HttpResponseSerializer {
             </HTML>
             """;
 
+        string extraHeaders = string.IsNullOrEmpty ( headers )
+            ? string.Empty
+            : headers + "\r\n";
+
         string html =
             $"HTTP/1.1 {statusCode} {statusReason}\r\n" +
             $"Content-Type: text/html\r\n" +
             $"Content-Length: {content.Length}\r\n" +
             $"Connection: close\r\n" +
-            $"{headers ?? string.Empty}\r\n" +
+            extraHeaders +
+            "\r\n" +
             content;
 
         return Encoding.ASCII.GetBytes ( html );

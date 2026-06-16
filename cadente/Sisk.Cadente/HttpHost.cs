@@ -7,10 +7,12 @@
 // File name:   HttpHost.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Buffers;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Sisk.Cadente.HttpSerializer;
 
 namespace Sisk.Cadente;
@@ -31,6 +33,7 @@ public sealed class HttpHost : IDisposable {
     private readonly int [] _acceptArgsAvailable;
     private int _listenerRestarting = 0;
     private const int AcceptPoolSize = 8;
+    private const int TlsRecordHeaderLength = 5;
     private const int ListenerAcceptRetryDelayMilliseconds = 250;
 
     /// <summary>
@@ -242,8 +245,10 @@ public sealed class HttpHost : IDisposable {
     private async Task RebuildListenerAsync () {
         Socket oldListener = _listener;
 
-        try { oldListener.Close (); } catch { }
-        try { oldListener.Dispose (); } catch { }
+        try { oldListener.Close (); }
+        catch { }
+        try { oldListener.Dispose (); }
+        catch { }
 
         while (_isListening && !_disposedValue) {
             await Task.Delay ( ListenerAcceptRetryDelayMilliseconds ).ConfigureAwait ( false );
@@ -258,10 +263,12 @@ public sealed class HttpHost : IDisposable {
                 break;
             }
             catch (SocketException) {
-                try { newListener?.Dispose (); } catch { }
+                try { newListener?.Dispose (); }
+                catch { }
             }
             catch (ObjectDisposedException) {
-                try { newListener?.Dispose (); } catch { }
+                try { newListener?.Dispose (); }
+                catch { }
                 break;
             }
         }
@@ -329,6 +336,40 @@ public sealed class HttpHost : IDisposable {
 
         try {
             if (HttpsOptions is not null) {
+                bool isTlsConnection;
+                using (var probeOwner = MemoryPool<byte>.Shared.Rent ( TlsRecordHeaderLength ))
+                using (var probeCts = new CancellationTokenSource ( TimeoutManager.SslHandshakeTimeout )) {
+                    int probeRead;
+                    try {
+                        probeRead = await client.ReceiveAsync (
+                            probeOwner.Memory.Slice ( 0, TlsRecordHeaderLength ),
+                            SocketFlags.Peek,
+                            probeCts.Token ).ConfigureAwait ( false );
+                    }
+                    catch (OperationCanceledException) when (probeCts.IsCancellationRequested) {
+                        Logger.LogInformation ( $"TLS probe timed out" );
+                        return;
+                    }
+
+                    if (probeRead == 0) {
+                        Logger.LogInformation ( $"TLS probe returned no data" );
+                        return;
+                    }
+
+                    ReadOnlySpan<byte> probe = probeOwner.Memory.Span [ ..probeRead ];
+                    isTlsConnection = probeRead switch {
+                        >= 3 => probe [ 0 ] == 0x16 && probe [ 1 ] == 0x03 && probe [ 2 ] <= 0x04,
+                        2 => probe [ 0 ] == 0x16 && probe [ 1 ] == 0x03,
+                        _ => probe [ 0 ] == 0x16
+                    };
+                }
+
+                if (!isTlsConnection) {
+                    Logger.LogInformation ( $"Plain HTTP request detected on HTTPS listener" );
+                    await WritePlainHttpRedirectAsync ( clientStream ).ConfigureAwait ( false );
+                    return;
+                }
+
                 Logger.LogInformation ( $"Starting SSL handshake" );
                 sslStream = new SslStream ( clientStream, leaveInnerStreamOpen: false );
                 connectionStream = sslStream;
@@ -351,7 +392,8 @@ public sealed class HttpHost : IDisposable {
                 catch (Exception ex) {
                     // Responder erro no stream não-SSL
                     Logger.LogInformation ( $"Failed SSL handshake: {ex.Message}" );
-                    await WriteHandshakeErrorAsync ( clientStream ).ConfigureAwait ( false );
+                    using var shutdownToken = new CancellationTokenSource ( TimeSpan.FromSeconds ( 15 ) );
+                    await WriteHandshakeErrorAsync ( clientStream, shutdownToken.Token ).ConfigureAwait ( false );
                     return;
                 }
             }
@@ -408,14 +450,49 @@ public sealed class HttpHost : IDisposable {
         }
     }
 
-    // Método separado para não poluir o hot path com byte array
-    [MethodImpl ( MethodImplOptions.NoInlining )]
-    private static async Task WriteHandshakeErrorAsync ( Stream stream ) {
+    private static async Task WriteHandshakeErrorAsync ( Stream stream, CancellationToken cancellationToken ) {
         byte [] message = HttpResponseSerializer.GetRawMessage ( "SSL/TLS Handshake failed.", 400, "Bad Request" );
         try {
-            await stream.WriteAsync ( message ).ConfigureAwait ( false );
+            await stream.WriteAsync ( message, cancellationToken ).ConfigureAwait ( false );
         }
         catch { }
+    }
+
+    [MethodImpl ( MethodImplOptions.NoInlining )]
+    private static async Task WritePlainHttpRedirectAsync ( Stream stream ) {
+
+        using var memoryPin = MemoryPool<byte>.Shared.Rent ( HttpConnection.RESERVED_BUFFER_SIZE );
+        using var shutdownToken = new CancellationTokenSource ( TimeSpan.FromSeconds ( 15 ) );
+        HttpRequestBase? rawRequest = await HttpRequestReader.TryReadHttpRequestAsync ( memoryPin.Memory, stream, shutdownToken.Token, headerReadTimeoutMs: 5_000 ).ConfigureAwait ( false );
+
+        if (rawRequest is null) {
+
+            await WriteHandshakeErrorAsync ( stream, shutdownToken.Token ).ConfigureAwait ( false );
+            return;
+        }
+
+        var headers = rawRequest.Headers.Span;
+        string? host = null;
+        for (int i = 0; i < headers.Length; i++) {
+            var _h = headers [ i ];
+            if (Ascii.EqualsIgnoreCase ( _h.NameBytes.Span, "Host"u8 )) {
+                host = _h.Value;
+                break;
+            }
+        }
+
+        if (host is { }) {
+
+            byte [] message = HttpResponseSerializer.GetRawMessage ( "Redirecting to HTTPS.", 301, "Moved Permanently", $"Location: https://{host}{rawRequest.Path}" );
+            try {
+                await stream.WriteAsync ( message, shutdownToken.Token ).ConfigureAwait ( false );
+            }
+            catch { }
+            return;
+        }
+
+        await WriteHandshakeErrorAsync ( stream, shutdownToken.Token ).ConfigureAwait ( false );
+        return;
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
