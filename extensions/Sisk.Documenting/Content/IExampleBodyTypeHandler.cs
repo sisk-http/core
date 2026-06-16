@@ -7,7 +7,7 @@
 // File name:   IExampleBodyTypeHandler.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Content;
 
 /// <summary>
 /// Defines a contract for generating example bodies for a given <see cref="Type"/>.

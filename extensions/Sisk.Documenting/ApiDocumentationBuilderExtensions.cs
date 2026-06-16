@@ -11,6 +11,7 @@ using Sisk.Core.Http;
 using Sisk.Core.Http.Handlers;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Routing;
+using Sisk.Documenting.Exporters;
 
 namespace Sisk.Documenting;
 

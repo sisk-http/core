@@ -7,7 +7,7 @@
 // File name:   ParameterExampleResult.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Content;
 
 /// <summary>
 /// Represents a parameter example used in documentation.

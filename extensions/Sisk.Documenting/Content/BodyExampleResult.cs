@@ -7,7 +7,7 @@
 // File name:   BodyExampleResult.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Content;
 
 /// <summary>
 /// Represents the result of generating a body example, containing the example contents and an optional language.

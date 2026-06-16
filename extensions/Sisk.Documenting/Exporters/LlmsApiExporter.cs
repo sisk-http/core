@@ -12,7 +12,7 @@ using System.Text;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Exporters;
 
 /// <summary>
 /// Exports API documentation in a simple markdown format that can be easily rendered by LLMs or other tools.
@@ -23,6 +23,11 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
     /// Gets or sets the hostname to be used in generated endpoint URLs. If not set, the exporter will attempt to use the Host header from the current HTTP request, or fall back to relative URLs if no Host information is available.
     /// </summary>
     public string? Hostname { get; set; }
+
+    /// <summary>
+    /// Gets or sets the header text to be displayed at the beginning of the exported documentation.
+    /// </summary>
+    public string? HeaderText { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the LlmsApiExporter class.
@@ -38,12 +43,22 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
         Hostname = hostname;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LlmsApiExporter"/> class with the specified hostname and header text.
+    /// </summary>
+    /// <param name="hostname">The hostname of the API endpoint to connect to. Can be null to use the default configuration.</param>
+    /// <param name="headerText">The text to display at the beginning of the exported documentation. Can be null.</param>
+    public LlmsApiExporter ( string? hostname, string headerText ) {
+        Hostname = hostname;
+        HeaderText = headerText;
+    }
+
     static string TransformId ( string unsafeId ) {
         return new string ( unsafeId.Where ( c => char.IsLetterOrDigit ( c ) || c == '_' || c == '-' ).ToArray () );
     }
 
     [return: NotNullIfNotNull ( nameof ( description ) )]
-    static string? TruncateDescription ( string? description, int maxLength = 100 ) {
+    static string? TruncateDescription ( string? description, int maxLength = 140 ) {
         if (description == null) {
             return null;
         }
@@ -73,6 +88,7 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
                 sb.AppendLine ();
                 sb.AppendLine ( $"- Method: {endpoint.RouteMethod}" );
                 sb.AppendLine ( $"- Path: {endpoint.Path}" );
+                sb.AppendLine ( $"- Canonical name: {endpoint.CanonicalName}" );
                 sb.AppendLine ();
                 if (endpoint.Headers.Any ()) {
                     sb.AppendLine ( "## Headers" );
@@ -194,6 +210,11 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
 
                 return new StringContent ( sb.ToString () );
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace ( HeaderText )) {
+            sb.AppendLine ( HeaderText );
+            sb.AppendLine ();
         }
 
         var groups = documentation.Endpoints.DistinctBy ( e => $"{e.RouteMethod} {e.Name}" ).GroupBy ( e => e.Group );

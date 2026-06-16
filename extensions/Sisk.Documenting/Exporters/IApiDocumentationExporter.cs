@@ -7,7 +7,7 @@
 // File name:   IApiDocumentationExporter.cs
 // Repository:  https://github.com/sisk-http/core
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Exporters;
 
 /// <summary>
 /// Defines a contract for exporting API documentation content.

@@ -12,7 +12,7 @@ using System.Text;
 using LightJson;
 using Sisk.Core.Routing;
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Exporters;
 
 /// <summary>
 /// Exports API documentation to OpenAPI 3.0 format.

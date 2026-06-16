@@ -9,7 +9,7 @@
 
 using LightJson.Schema;
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Content;
 
 /// <summary>
 /// Defines a handler that provides JSON schema information for types.

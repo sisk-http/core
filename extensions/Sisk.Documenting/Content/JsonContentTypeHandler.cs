@@ -15,7 +15,7 @@ using System.Text.Json.Serialization.Metadata;
 using LightJson;
 using LightJson.Schema;
 
-namespace Sisk.Documenting;
+namespace Sisk.Documenting.Content;
 
 /// <summary>
 /// Provides JSON example generation for types used in documentation.
