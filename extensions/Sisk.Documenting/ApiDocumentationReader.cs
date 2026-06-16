@@ -78,6 +78,14 @@ internal class ApiDocumentationReader {
             if (string.IsNullOrEmpty ( endpointName ))
                 endpointName = route.Name ?? route.Action?.Method.Name ?? "(untitled endpoint)";
 
+            if (context.Handler is { } _handler) {
+                ApplyHandler ( responses, route, _handler.HandleApiEndpointResponse );
+                ApplyHandler ( parameters, route, _handler.HandleApiEndpointParameter );
+                ApplyHandler ( headers, route, _handler.HandleApiEndpointHeader );
+                ApplyHandler ( pathParameters, route, _handler.HandleApiEndpointPathParameter );
+                ApplyHandler ( requests, route, _handler.HandleApiEndpointRequestExample );
+                ApplyHandler ( queryParameters, route, _handler.HandleApiEndpointQueryParameter );
+            }
 
             ApiEndpoint endpoint = new ApiEndpoint () {
                 Description = apiEndpointAttr.Description,
@@ -91,8 +99,12 @@ internal class ApiDocumentationReader {
                 PathParameters = pathParameters.ToArray (),
                 RequestExamples = requests.ToArray (),
                 QueryParameters = queryParameters.ToArray (),
-                Order = apiEndpointAttr.Order
+                Order = apiEndpointAttr.Order,
+                CanonicalName = route.Name ?? route.Action?.Method.Name ?? "undefined"
             };
+
+            if (context.Handler?.ShouldCreateApiEndpoint ( endpoint, route ) == false)
+                continue;
 
             endpoints.Add ( endpoint );
         }
@@ -117,6 +129,16 @@ internal class ApiDocumentationReader {
         var apiRequestsAttrs = method.GetCustomAttributes<ApiRequestAttribute> ().ToArray ();
         var apiQueryParamsAttrs = method.GetCustomAttributes<ApiQueryParameterAttribute> ().ToArray ();
         return (apiResponsesAttrs, apiParametersAttrs, apiParametersFromAttrs, apiHeadersAttrs, apiPathParamsAttrs, apiRequestsAttrs, apiQueryParamsAttrs);
+    }
+
+    static void ApplyHandler<TValue> ( List<TValue> values, Route route, Func<TValue, Route, TValue?> handler ) where TValue : class {
+        var originalValues = values.ToArray ();
+        values.Clear ();
+
+        foreach (var item in originalValues) {
+            if (handler ( item, route ) is { } value)
+                values.Add ( value );
+        }
     }
 
     static MethodInfo? ExtractRhExecute ( IRequestHandler rh ) {

@@ -7,6 +7,8 @@
 // File name:   ApiGenerationContext.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Documenting.Content;
+
 namespace Sisk.Documenting;
 
 /// <summary>
@@ -52,4 +54,9 @@ public sealed class ApiGenerationContext {
     /// <remarks>Assign an implementation of <see cref="IContentSchemaTypeHandler"/> to customize how content
     /// schema types are interpreted or validated. If <see langword="null"/>, default handling will be used.</remarks>
     public IContentSchemaTypeHandler? ContentSchemaTypeHandler { get; set; }
+
+    /// <summary>
+    /// Gets or sets the handler used to modify generated API documentation items.
+    /// </summary>
+    public ApiDocumentationHandler? Handler { get; set; }
 }

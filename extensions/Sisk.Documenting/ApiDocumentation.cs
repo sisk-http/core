@@ -64,6 +64,11 @@ public sealed class ApiEndpoint {
     public string Name { get; internal set; } = null!;
 
     /// <summary>
+    /// Gets the canonical name of the API endpoint (the route name).
+    /// </summary>
+    public string CanonicalName { get; internal set; } = null!;
+
+    /// <summary>
     /// Gets the description of the API endpoint.
     /// </summary>
     public string? Description { get; internal set; }
