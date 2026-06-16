@@ -82,6 +82,55 @@ public sealed class CadenteSecurityTests {
         Assert.IsTrue ( isSecure, "Cadente should expose TLS transport state independently of client certificates." );
     }
 
+    [TestMethod]
+    public async Task HttpsListener_RedirectsPlainHttpRequest () {
+        int port = GetFreePort ();
+        using var certificate = CertificateHelper.CreateDevelopmentCertificate ( "localhost" );
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = new EmptyHandler (),
+            HttpsOptions = new HttpsOptions ( certificate )
+        };
+        host.TimeoutManager.SslHandshakeTimeout = CloseWaitTimeout;
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var connectCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, connectCts.Token );
+
+        await using var stream = client.GetStream ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            $"GET /hello?x=1 HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" );
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        using var responseBuffer = new MemoryStream ();
+        byte [] buffer = new byte [ 1024 ];
+        while (true) {
+            int read = await stream.ReadAsync ( buffer, ioCts.Token );
+            if (read == 0)
+                break;
+
+            responseBuffer.Write ( buffer, 0, read );
+        }
+
+        string response = Encoding.ASCII.GetString ( responseBuffer.ToArray () );
+
+        StringAssert.StartsWith ( response, "HTTP/1.1 301 Moved Permanently" );
+        StringAssert.Contains ( response, $"Location: https://localhost:{port}/hello?x=1" );
+
+        int headerEnd = response.IndexOf ( "\r\n\r\n", StringComparison.Ordinal );
+        Assert.IsTrue ( headerEnd > 0, "Response should terminate headers with CRLF CRLF." );
+
+        string [] headerLines = response [ ..headerEnd ].Split ( "\r\n" );
+        for (int i = 1; i < headerLines.Length; i++) {
+            StringAssert.Contains ( headerLines [ i ], ":" );
+        }
+    }
+
     private static int GetFreePort () {
         using var listener = new TcpListener ( IPAddress.Loopback, 0 );
         listener.Start ();
