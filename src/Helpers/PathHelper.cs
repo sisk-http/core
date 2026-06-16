@@ -117,4 +117,49 @@ public sealed class PathHelper {
             result = directorySeparator + result.Trim ( '/', '\\' ) + directorySeparator;
         return result;
     }
+
+    /// <summary>
+    /// Ensures that the directory for the specified file path exists, creating it if necessary.
+    /// </summary>
+    /// <param name="filePath">The file path whose parent directory should exist.</param>
+    /// <returns>
+    /// <see langword="true"/> if the directory already existed;
+    /// <see langword="false"/> if the directory was created.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="filePath"/> is <see langword="null"/> or empty.
+    /// </exception>
+    public static bool EnsureFileDirectoryExistance ( string filePath ) {
+        ArgumentNullException.ThrowIfNullOrEmpty ( filePath );
+
+        string? directory = Path.GetDirectoryName ( filePath );
+        if (directory is not null && !Directory.Exists ( directory )) {
+            Directory.CreateDirectory ( directory );
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Ensures that the specified directory exists, creating it if necessary.
+    /// </summary>
+    /// <param name="directoryPath">The directory path that should exist.</param>
+    /// <returns>
+    /// <see langword="true"/> if the directory already existed;
+    /// <see langword="false"/> if the directory was created.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="directoryPath"/> is <see langword="null"/> or empty.
+    /// </exception>
+    public static bool EnsureDirectoryExistance ( string directoryPath ) {
+        ArgumentNullException.ThrowIfNullOrEmpty ( directoryPath );
+
+        if (!Directory.Exists ( directoryPath )) {
+            Directory.CreateDirectory ( directoryPath );
+            return false;
+        }
+
+        return true;
+    }
 }
