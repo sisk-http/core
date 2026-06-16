@@ -114,7 +114,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
 
         public override HttpServerEngineContextResponse Response => new HttpListenerContextResponseAbstraction ( _context );
 
-        public override CancellationToken ContextAbortedToken => throw new HttpEngineException ( new NotSupportedException () );
+        public override CancellationToken ContextAbortedToken => CancellationToken.None;
 
         public override async Task<HttpServerEngineWebSocket> AcceptWebSocketAsync ( string? subProtocol ) {
             var ws = await _context.AcceptWebSocketAsync ( subProtocol ).ConfigureAwait ( false );
