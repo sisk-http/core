@@ -21,9 +21,9 @@
 		<PackageTags>mcp,http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		
-		<AssemblyVersion>1.5.1.0</AssemblyVersion>
-		<FileVersion>1.5.1.0</FileVersion>
-		<Version>1.5.1.0-alpha3</Version>
+		<AssemblyVersion>1.6.2</AssemblyVersion>
+		<FileVersion>1.6.2</FileVersion>
+		<Version>1.6.2-alpha4</Version>
 		
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
