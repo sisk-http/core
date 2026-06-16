@@ -1,42 +1,76 @@
 namespace Sisk.Monitoring;
 
-internal class Style {
+internal class Assets {
     public const string DefaultStyles = """
         :root {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f2f2f2;
-            --bg-tertiary: #e6e6e6;
-            --text-primary: #1f1f1f;
-            --text-secondary: #5f5f5f;
-            --text-muted: #9a9a9a;
-            --border-color: #d6d6d6;
-            --accent: #2563eb;
-            --accent-light: #2563eb1f;
-            --success: #707070;
-            --warning: #8a8a8a;
-            --danger: #5a5a5a;
-            --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --background: #fff;
+            --surface: #ffffff;
+            --surface-secondary: #f1f3f4;
+            --border: #dadce0;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --accent: #1a73e8;
+            --accent-hover: #1557b0;
+            --danger: #d93025;
+            --overlay: rgba(0,0,0,.10);
+            --text-muted: var(--text-secondary);
+            --accent-surface: color-mix(in srgb, var(--accent) 12%, var(--surface));
+            --accent-surface-hover: color-mix(in srgb, var(--accent) 18%, var(--surface));
+            --danger-surface: color-mix(in srgb, var(--danger) 14%, var(--surface));
+            --warning: #8a6d00;
+            --warning-surface: color-mix(in srgb, var(--warning) 14%, var(--surface));
+            --selected-text: var(--surface);
+            --focus-ring: color-mix(in srgb, var(--accent) 65%, transparent);
+            --shadow: 0 1px 2px rgba(0,0,0,.08);
+            --chart-cpu: var(--accent);
+            --chart-memory: #188038;
+            --chart-disk: #b06000;
+            --log-token-0-text: #1a73e8;
+            --log-token-1-text: #188038;
+            --log-token-2-text: #b06000;
+            --log-token-3-text: #d93025;
+            --log-token-4-text: #8430ce;
+            --log-token-5-text: #00796b;
+            --log-token-6-text: #c2185b;
+            --log-token-7-text: #5f6368;
+            --log-token-0-bg: color-mix(in srgb, var(--log-token-0-text) 14%, var(--surface));
+            --log-token-1-bg: color-mix(in srgb, var(--log-token-1-text) 14%, var(--surface));
+            --log-token-2-bg: color-mix(in srgb, var(--log-token-2-text) 14%, var(--surface));
+            --log-token-3-bg: color-mix(in srgb, var(--log-token-3-text) 14%, var(--surface));
+            --log-token-4-bg: color-mix(in srgb, var(--log-token-4-text) 14%, var(--surface));
+            --log-token-5-bg: color-mix(in srgb, var(--log-token-5-text) 14%, var(--surface));
+            --log-token-6-bg: color-mix(in srgb, var(--log-token-6-text) 14%, var(--surface));
+            --log-token-7-bg: color-mix(in srgb, var(--log-token-7-text) 14%, var(--surface));
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             --sidebar-width: 260px;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-primary: #1c1c1c;
-                --bg-secondary: #121212;
-                --bg-tertiary: #2a2a2a;
-                --text-primary: #e5e5e5;
-                --text-secondary: #b5b5b5;
-                --text-muted: #8b8b8b;
-                --border-color: #3a3a3a;
-                --accent: #60a5fa;
-                --accent-light: #60a5fa29;
-                --success: #9a9a9a;
-                --warning: #a8a8a8;
-                --danger: #8a8a8a;
-                --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            }
+        [data-theme="dark"] {
+            --background: #202124;
+            --surface: #292a2d;
+            --surface-secondary: #35363a;
+            --border: #5f6368;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --accent: #8ab4f8;
+            --accent-hover: #aecbfa;
+            --danger: #f28b82;
+            --overlay: rgba(255,255,255,.08);
+            --warning: #fdd663;
+            --selected-text: #202124;
+            --shadow: 0 1px 2px rgba(0,0,0,.40);
+            --chart-cpu: var(--accent);
+            --chart-memory: #81c995;
+            --chart-disk: #fdd663;
+            --log-token-0-text: #8ab4f8;
+            --log-token-1-text: #81c995;
+            --log-token-2-text: #fdd663;
+            --log-token-3-text: #f28b82;
+            --log-token-4-text: #d7aefb;
+            --log-token-5-text: #78d9c6;
+            --log-token-6-text: #ffb1c8;
+            --log-token-7-text: #c4c7c5;
         }
 
         *, *::before, *::after {
@@ -51,7 +85,8 @@ internal class Style {
             font-size: 14px;
             line-height: 1.6;
             color: var(--text-primary);
-            background: var(--bg-secondary);
+            background: var(--background);
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
         }
 
         .page-wrapper {
@@ -62,8 +97,7 @@ internal class Style {
         /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--bg-primary);
-            border-right: 1px solid var(--border-color);
+            background: var(--surface);
             padding: 1.5rem 0;
             position: fixed;
             top: 0;
@@ -75,7 +109,7 @@ internal class Style {
 
         .sidebar-header {
             padding: 0 1.25rem 1.25rem;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
             margin-bottom: 1rem;
         }
 
@@ -117,21 +151,20 @@ internal class Style {
             align-items: center;
             gap: 0.5rem;
             padding: 0.4rem 0.75rem;
-            border-radius: 6px;
+            border-radius: 66px;
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.85rem;
             margin-bottom: 3px;
-            transition: background 0.15s;
         }
 
         .nav-item:hover {
-            background: var(--accent-light);
-            color: var(--accent);
+            background: var(--accent-surface-hover);
+            color: var(--accent-hover);
         }
 
         .nav-item.active {
-            background: var(--accent-light);
+            background: var(--accent-surface);
             color: var(--accent);
             font-weight: 600;
         }
@@ -150,9 +183,11 @@ internal class Style {
         /* Main content */
         main {
             flex: 1;
-            margin-left: var(--sidebar-width);
+            margin: 0 auto;
             padding: 2rem 2.5rem;
-            max-width: 960px;
+            padding-left: 70px;
+            max-width: 1000px;
+            min-width: 0;
         }
 
         .content-header {
@@ -179,11 +214,11 @@ internal class Style {
         }
 
         .card {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1.25rem;
-            box-shadow: var(--card-shadow);
+            box-shadow: var(--shadow);
         }
 
         .card-label {
@@ -212,7 +247,7 @@ internal class Style {
             font-weight: 600;
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-color));
+            border-bottom: 1px solid var(--border);
         }
 
         .group-block {
@@ -226,7 +261,7 @@ internal class Style {
         .group-title {
             font-size: 0.85rem;
             font-weight: 600;
-            color: color-mix(in srgb, var(--accent) 58%, var(--text-secondary));
+            color: var(--accent);
             margin-bottom: 0.6rem;
         }
 
@@ -246,18 +281,19 @@ internal class Style {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem 1.25rem;
             text-decoration: none;
             color: var(--text-primary);
-            box-shadow: var(--card-shadow);
-            transition: border-color 0.15s;
+            box-shadow: var(--shadow);
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
         }
 
         .stream-item:hover {
-            border-color: var(--accent);
+            border-color: var(--accent-hover);
+            background: var(--accent-surface);
         }
 
         .stream-item-label {
@@ -269,7 +305,7 @@ internal class Style {
             font-size: 0.7rem;
             padding: 0.2rem 0.6rem;
             border-radius: 99px;
-            background: var(--accent-light);
+            background: var(--accent-surface);
             color: var(--accent);
             font-weight: 600;
         }
@@ -318,10 +354,9 @@ internal class Style {
         }
 
         .log-content {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 1rem;
             font-family: var(--font-mono);
             font-size: 0.8rem;
             line-height: 1.7;
@@ -330,15 +365,66 @@ internal class Style {
             overflow-x: auto;
             max-height: 75vh;
             overflow-y: auto;
-            box-shadow: var(--card-shadow);
+            box-shadow: var(--shadow);
             color: var(--text-primary);
         }
 
         .log-line {
+            position: relative;
             white-space: pre-wrap;
             word-break: break-word;
-            padding: 0.15rem 0;
-            border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+            padding: 0.15rem 2.75rem 0.15rem 1em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .log-line:hover {
+            background-color: var(--surface-secondary);
+        }
+
+        .log-copy-btn {
+            position: absolute;
+            top: 50%;
+            right: 0.35rem;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.65rem;
+            height: 1.65rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .log-copy-btn svg {
+            width: 0.95rem;
+            height: 0.95rem;
+        }
+
+        .log-line:hover .log-copy-btn,
+        .log-line:focus-within .log-copy-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .log-copy-btn:hover,
+        .log-copy-btn:focus-visible {
+            border-color: var(--accent-hover);
+            color: var(--accent-hover);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        .log-copy-btn.copied {
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .log-line:last-child {
@@ -346,7 +432,7 @@ internal class Style {
         }
 
         .log-token-date {
-            color: #b87700;
+            color: var(--warning);
             font-weight: 600;
         }
 
@@ -354,6 +440,48 @@ internal class Style {
             border-radius: 4px;
             padding: 0 0.2rem;
             font-weight: 600;
+            color: var(--log-token-color);
+            background: var(--log-token-background);
+        }
+
+        .log-token-tone-0 {
+            --log-token-color: var(--log-token-0-text);
+            --log-token-background: var(--log-token-0-bg);
+        }
+
+        .log-token-tone-1 {
+            --log-token-color: var(--log-token-1-text);
+            --log-token-background: var(--log-token-1-bg);
+        }
+
+        .log-token-tone-2 {
+            --log-token-color: var(--log-token-2-text);
+            --log-token-background: var(--log-token-2-bg);
+        }
+
+        .log-token-tone-3 {
+            --log-token-color: var(--log-token-3-text);
+            --log-token-background: var(--log-token-3-bg);
+        }
+
+        .log-token-tone-4 {
+            --log-token-color: var(--log-token-4-text);
+            --log-token-background: var(--log-token-4-bg);
+        }
+
+        .log-token-tone-5 {
+            --log-token-color: var(--log-token-5-text);
+            --log-token-background: var(--log-token-5-bg);
+        }
+
+        .log-token-tone-6 {
+            --log-token-color: var(--log-token-6-text);
+            --log-token-background: var(--log-token-6-bg);
+        }
+
+        .log-token-tone-7 {
+            --log-token-color: var(--log-token-7-text);
+            --log-token-background: var(--log-token-7-bg);
         }
 
         .log-token-number {
@@ -362,7 +490,11 @@ internal class Style {
         }
 
         body.log-expanded-page main {
+            margin-left: var(--sidebar-width);
+            margin-right: 0;
             max-width: none;
+            width: calc(100% - var(--sidebar-width));
+            height: 100dvh;
         }
 
         .log-content.log-expanded {
@@ -398,25 +530,42 @@ internal class Style {
 
         .toolbar-btn {
             padding: 0.35rem 0.75rem;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 6px;
-            background: var(--bg-primary);
+            background: var(--surface);
             color: var(--text-secondary);
             font-size: 0.8rem;
             font-family: var(--font-sans);
             cursor: pointer;
-            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            text-decoration: none;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
         }
 
         .toolbar-btn:hover {
+            background: var(--accent-surface);
+            border-color: var(--accent-hover);
+            color: var(--accent-hover);
+        }
+
+        .toolbar-btn:focus-visible {
             border-color: var(--accent);
             color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
         }
 
         .toolbar-btn.active {
             background: var(--accent);
             border-color: var(--accent);
-            color: #fff;
+            color: var(--selected-text);
+        }
+
+        .toolbar-btn:disabled,
+        .toolbar-btn[aria-disabled="true"] {
+            background: var(--surface-secondary);
+            border-color: var(--border);
+            color: var(--text-secondary);
+            cursor: not-allowed;
         }
 
         .log-meta {
@@ -447,10 +596,11 @@ internal class Style {
         .progress-bar {
             position: relative;
             height: 24px;
-            background: var(--bg-tertiary);
+            background: var(--surface-secondary);
             border-radius: 12px;
             overflow: hidden;
             margin-top: 0.75rem;
+            border: 1px solid var(--border);
         }
 
         .progress-fill {
@@ -468,7 +618,6 @@ internal class Style {
             font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-primary);
-            mix-blend-mode: difference;
         }
 
         .meters-grid {
@@ -505,9 +654,9 @@ internal class Style {
         .meter-chart-container {
             position: relative;
             height: 124px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            background: var(--bg-secondary);
+            background: var(--surface-secondary);
             overflow: hidden;
         }
 
@@ -518,13 +667,13 @@ internal class Style {
         }
 
         .meter-chart-axis {
-            stroke: var(--border-color);
+            stroke: var(--border);
             stroke-width: 1;
             vector-effect: non-scaling-stroke;
         }
 
         .meter-chart-area {
-            fill: color-mix(in srgb, var(--accent) 20%, transparent);
+            fill: var(--accent-surface);
         }
 
         .meter-chart-line {
@@ -546,7 +695,7 @@ internal class Style {
 
         .meter-chart-point {
             fill: var(--accent);
-            stroke: var(--bg-primary);
+            stroke: var(--surface);
             stroke-width: 2;
             opacity: 0;
             vector-effect: non-scaling-stroke;
@@ -560,10 +709,10 @@ internal class Style {
 
         .meter-chart-tooltip {
             position: absolute;
-            background: var(--bg-primary);
+            background: var(--surface);
             color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
             border-radius: 6px;
             font-size: 0.75rem;
             line-height: 1.3;
@@ -586,7 +735,7 @@ internal class Style {
         .meter-modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
+            background: var(--overlay);
             z-index: 50;
             display: flex;
             align-items: center;
@@ -596,9 +745,9 @@ internal class Style {
 
         .meter-modal {
             width: min(920px, 100%);
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--card-shadow);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
             border-radius: 10px;
             padding: 1rem;
             display: flex;
@@ -625,9 +774,9 @@ internal class Style {
         }
 
         .meter-stat {
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            background: var(--bg-secondary);
+            background: var(--surface-secondary);
             padding: 0.6rem 0.75rem;
             display: flex;
             flex-direction: column;
@@ -648,7 +797,7 @@ internal class Style {
         }
 
         .meter-modal-chart {
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -657,6 +806,118 @@ internal class Style {
             border: none;
             border-radius: 0;
             height: 320px;
+        }
+
+        .health-chart-container {
+            position: relative;
+            height: 320px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .health-chart-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .health-chart-axis,
+        .health-chart-grid {
+            stroke: var(--border);
+            stroke-width: 1;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .health-chart-grid {
+            opacity: 0.55;
+        }
+
+        .health-chart-line {
+            fill: none;
+            stroke-width: 2;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .health-chart-crosshair {
+            stroke: var(--accent);
+            stroke-width: 1;
+            stroke-dasharray: 3 3;
+            opacity: 0;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .health-chart-point {
+            stroke: var(--surface);
+            stroke-width: 2;
+            opacity: 0;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .health-chart-label {
+            fill: var(--text-muted);
+            font-size: 10px;
+            font-family: var(--font-sans);
+        }
+
+        .health-chart-tooltip {
+            position: absolute;
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            line-height: 1.35;
+            white-space: nowrap;
+            padding: 0.3rem 0.45rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+            z-index: 2;
+        }
+
+        .health-chart-legend {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .health-chart-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .health-chart-swatch {
+            width: 0.65rem;
+            height: 0.65rem;
+            border-radius: 999px;
+        }
+
+        .health-chart-swatch.cpu {
+            background: var(--chart-cpu);
+        }
+
+        .health-chart-swatch.memory {
+            background: var(--chart-memory);
+        }
+
+        .health-chart-swatch.disk {
+            background: var(--chart-disk);
         }
 
         /* Mobile */
@@ -671,24 +932,34 @@ internal class Style {
             border-radius: 50%;
             border: none;
             background: var(--accent);
-            color: #fff;
+            color: var(--selected-text);
             font-size: 1.25rem;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: var(--shadow);
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .mobile-menu-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .mobile-menu-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
         }
 
         .sidebar-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: var(--overlay);
             z-index: 9;
         }
 
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                transition: transform 0.2s;
+                transition: transform 0.15s;
             }
 
             .sidebar.open {
@@ -700,8 +971,14 @@ internal class Style {
             }
 
             main {
-                margin-left: 0;
+                margin: 0;
                 padding: 1.5rem 1rem;
+            }
+
+            body.log-expanded-page main {
+                margin-left: 0;
+                margin-right: 0;
+                width: 100%;
             }
 
             .mobile-menu-btn {
@@ -749,6 +1026,8 @@ internal class Style {
             const autoRefreshIntervalMs = isHealthPage ? 2000 : 10000;
             const metersGrid = document.querySelector('[data-meters-endpoint]');
             const metersEndpoint = metersGrid?.getAttribute('data-meters-endpoint') ?? null;
+            const healthChart = document.querySelector('[data-health-endpoint]');
+            const healthEndpoint = healthChart?.getAttribute('data-health-endpoint') ?? null;
             const numberFormatter = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
@@ -763,6 +1042,8 @@ internal class Style {
             let tailEnabled = true;
             let autoRefreshInterval = null;
             let refreshEnabled = true;
+            let tailManuallyChanged = false;
+            let refreshManuallyChanged = false;
 
             function formatNumber(value) {
                 const numeric = Number(value);
@@ -799,6 +1080,40 @@ internal class Style {
                         return { timestamp, value: Number.isFinite(value) ? value : 0 };
                     })
                     .filter(item => item !== null);
+            }
+
+            function parseHealthReadings(raw) {
+                let parsed = raw;
+                if (typeof raw === 'string') {
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch {
+                        parsed = [];
+                    }
+                }
+                if (!Array.isArray(parsed)) {
+                    return [];
+                }
+                return parsed
+                    .map(item => {
+                        const timestamp = new Date(item?.timestamp);
+                        if (Number.isNaN(timestamp.getTime())) {
+                            return null;
+                        }
+                        return {
+                            timestamp,
+                            cpu: Number(item?.cpu ?? 0),
+                            disk: Number(item?.disk ?? 0),
+                            memory: Number(item?.memory ?? 0)
+                        };
+                    })
+                    .filter(item => item !== null)
+                    .map(item => ({
+                        timestamp: item.timestamp,
+                        cpu: Number.isFinite(item.cpu) ? item.cpu : 0,
+                        disk: Number.isFinite(item.disk) ? item.disk : 0,
+                        memory: Number.isFinite(item.memory) ? item.memory : 0
+                    }));
             }
 
             function calculateStats(readings) {
@@ -992,6 +1307,175 @@ internal class Style {
                 svg.addEventListener('mouseleave', hideHover);
             }
 
+            function renderHealthChart(container, readings) {
+                const chartHeight = 320;
+                const width = Math.max(320, container.clientWidth || 320);
+                const padding = { top: 26, right: 18, bottom: 30, left: 42 };
+                const plotWidth = Math.max(1, width - padding.left - padding.right);
+                const plotHeight = Math.max(1, chartHeight - padding.top - padding.bottom);
+                const series = [
+                    { key: 'cpu', label: 'CPU', color: 'var(--chart-cpu)' },
+                    { key: 'memory', label: 'RAM', color: 'var(--chart-memory)' },
+                    { key: 'disk', label: 'Disk', color: 'var(--chart-disk)' }
+                ];
+
+                container.innerHTML = '';
+
+                if (!readings.length) {
+                    container.classList.add('meter-chart-empty');
+                    container.textContent = 'No data';
+                    return;
+                }
+
+                container.classList.remove('meter-chart-empty');
+
+                const svg = createSvgElement('svg');
+                svg.setAttribute('class', 'health-chart-svg');
+                svg.setAttribute('viewBox', `0 0 ${width} ${chartHeight}`);
+                svg.setAttribute('preserveAspectRatio', 'none');
+
+                [0, 25, 50, 75, 100].forEach(value => {
+                    const y = padding.top + ((100 - value) / 100 * plotHeight);
+
+                    const grid = createSvgElement('line');
+                    grid.setAttribute('class', value === 0 ? 'health-chart-axis' : 'health-chart-grid');
+                    grid.setAttribute('x1', String(padding.left));
+                    grid.setAttribute('x2', String(width - padding.right));
+                    grid.setAttribute('y1', String(y));
+                    grid.setAttribute('y2', String(y));
+                    svg.appendChild(grid);
+
+                    const label = createSvgElement('text');
+                    label.setAttribute('class', 'health-chart-label');
+                    label.setAttribute('x', String(padding.left - 8));
+                    label.setAttribute('y', String(y + 3));
+                    label.setAttribute('text-anchor', 'end');
+                    label.textContent = `${value}%`;
+                    svg.appendChild(label);
+                });
+
+                const firstLabel = createSvgElement('text');
+                firstLabel.setAttribute('class', 'health-chart-label');
+                firstLabel.setAttribute('x', String(padding.left));
+                firstLabel.setAttribute('y', String(chartHeight - 8));
+                firstLabel.textContent = formatDate(readings[0].timestamp);
+                svg.appendChild(firstLabel);
+
+                const lastLabel = createSvgElement('text');
+                lastLabel.setAttribute('class', 'health-chart-label');
+                lastLabel.setAttribute('x', String(width - padding.right));
+                lastLabel.setAttribute('y', String(chartHeight - 8));
+                lastLabel.setAttribute('text-anchor', 'end');
+                lastLabel.textContent = formatDate(readings[readings.length - 1].timestamp);
+                svg.appendChild(lastLabel);
+
+                const pointsBySeries = series.map(item => ({
+                    ...item,
+                    points: readings.map((reading, index) => {
+                        const x = padding.left + ((readings.length <= 1 ? 0 : index / (readings.length - 1)) * plotWidth);
+                        const value = Math.max(0, Math.min(100, Number(reading[item.key] ?? 0)));
+                        const y = padding.top + ((100 - value) / 100 * plotHeight);
+                        return { x, y, value, reading };
+                    })
+                }));
+
+                pointsBySeries.forEach(item => {
+                    const line = createSvgElement('polyline');
+                    line.setAttribute('class', 'health-chart-line');
+                    line.setAttribute('stroke', item.color);
+                    line.setAttribute('points', item.points.map(point => `${point.x},${point.y}`).join(' '));
+                    svg.appendChild(line);
+                });
+
+                const crosshair = createSvgElement('line');
+                crosshair.setAttribute('class', 'health-chart-crosshair');
+                svg.appendChild(crosshair);
+
+                const markers = pointsBySeries.map(item => {
+                    const marker = createSvgElement('circle');
+                    marker.setAttribute('class', 'health-chart-point');
+                    marker.setAttribute('fill', item.color);
+                    marker.setAttribute('r', '4');
+                    svg.appendChild(marker);
+                    return { ...item, marker };
+                });
+
+                const legend = document.createElement('div');
+                legend.className = 'health-chart-legend';
+                series.forEach(item => {
+                    const entry = document.createElement('span');
+                    entry.className = 'health-chart-legend-item';
+                    const swatch = document.createElement('span');
+                    swatch.className = `health-chart-swatch ${item.key}`;
+                    const label = document.createElement('span');
+                    label.textContent = item.label;
+                    entry.appendChild(swatch);
+                    entry.appendChild(label);
+                    legend.appendChild(entry);
+                });
+
+                container.appendChild(svg);
+                container.appendChild(legend);
+
+                const tooltip = document.createElement('div');
+                tooltip.className = 'health-chart-tooltip';
+                container.appendChild(tooltip);
+
+                function hideHealthHover() {
+                    crosshair.style.opacity = '0';
+                    tooltip.style.opacity = '0';
+                    markers.forEach(item => {
+                        item.marker.style.opacity = '0';
+                    });
+                }
+
+                svg.addEventListener('mousemove', event => {
+                    const bounds = svg.getBoundingClientRect();
+                    const relativeX = ((event.clientX - bounds.left) / bounds.width) * width;
+                    const normalized = (relativeX - padding.left) / plotWidth;
+                    const index = Math.max(0, Math.min(readings.length - 1, Math.round(normalized * (readings.length - 1))));
+                    const reading = readings[index];
+                    const x = padding.left + ((readings.length <= 1 ? 0 : index / (readings.length - 1)) * plotWidth);
+
+                    crosshair.setAttribute('x1', String(x));
+                    crosshair.setAttribute('x2', String(x));
+                    crosshair.setAttribute('y1', String(padding.top));
+                    crosshair.setAttribute('y2', String(padding.top + plotHeight));
+                    crosshair.style.opacity = '1';
+
+                    markers.forEach(item => {
+                        const point = item.points[index];
+                        item.marker.setAttribute('cx', String(point.x));
+                        item.marker.setAttribute('cy', String(point.y));
+                        item.marker.style.opacity = '1';
+                    });
+
+                    tooltip.innerHTML = [
+                        `<strong>${formatDate(reading.timestamp)}</strong>`,
+                        ...series.map(item => `${item.label}: ${formatNumber(reading[item.key])}%`)
+                    ].join('<br>');
+                    tooltip.style.opacity = '1';
+
+                    const tooltipMargin = 8;
+                    const tooltipWidth = tooltip.offsetWidth;
+                    const tooltipHeight = tooltip.offsetHeight;
+
+                    let tooltipLeft = x - (tooltipWidth / 2);
+                    tooltipLeft = Math.max(tooltipMargin, Math.min(width - tooltipWidth - tooltipMargin, tooltipLeft));
+
+                    let tooltipTop = padding.top + 12;
+                    if (event.clientY - bounds.top < chartHeight / 2) {
+                        tooltipTop = chartHeight - padding.bottom - tooltipHeight - 10;
+                    }
+                    tooltipTop = Math.max(tooltipMargin, Math.min(chartHeight - tooltipHeight - tooltipMargin, tooltipTop));
+
+                    tooltip.style.left = `${tooltipLeft}px`;
+                    tooltip.style.top = `${tooltipTop}px`;
+                });
+
+                svg.addEventListener('mouseleave', hideHealthHover);
+            }
+
             function setModalStats(modal, readings) {
                 const stats = calculateStats(readings);
                 modal.querySelector('[data-stat="min"]').textContent = formatNumber(stats.min);
@@ -1139,6 +1623,25 @@ internal class Style {
                     });
             }
 
+            function refreshHealth() {
+                if (!healthEndpoint || !healthChart) {
+                    location.reload();
+                    return;
+                }
+
+                fetch(healthEndpoint, { cache: 'no-store' })
+                    .then(response => response.ok ? response.json() : null)
+                    .then(payload => {
+                        if (!payload || !Array.isArray(payload.readings)) {
+                            return;
+                        }
+                        healthChart.setAttribute('data-health-readings', JSON.stringify(payload.readings));
+                        renderHealthChart(healthChart, parseHealthReadings(payload.readings));
+                    })
+                    .catch(() => {
+                    });
+            }
+
             function setRefreshButtonState() {
                 if (!btnToggleRefresh) return;
                 btnToggleRefresh.textContent = refreshEnabled ? 'Stop refresh' : 'Start refresh';
@@ -1150,13 +1653,16 @@ internal class Style {
                 logEl.scrollTop = logEl.scrollHeight;
             }
 
+            function isScrolledToBottom() {
+                if (!logEl) return true;
+                return logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight <= 2;
+            }
+
             function applyExpandedSizing() {
                 if (!logEl) return;
                 if (!logEl.classList.contains('log-expanded')) {
                     logEl.style.removeProperty('height');
                     logEl.style.removeProperty('max-height');
-                    logEl.style.removeProperty('width');
-                    logEl.style.removeProperty('max-width');
                     document.body.classList.remove('log-expanded-page');
                     return;
                 }
@@ -1168,15 +1674,8 @@ internal class Style {
                 const availableHeight = window.innerHeight - top - viewportBottomPadding;
                 const targetHeight = Math.max(240, availableHeight);
 
-                const left = logEl.getBoundingClientRect().left;
-                const viewportRightPadding = 24;
-                const availableWidth = window.innerWidth - left - viewportRightPadding;
-                const targetWidth = Math.max(560, availableWidth);
-
                 logEl.style.height = `${targetHeight}px`;
                 logEl.style.maxHeight = `${targetHeight}px`;
-                logEl.style.width = `${targetWidth}px`;
-                logEl.style.maxWidth = `${targetWidth}px`;
             }
 
             function refreshLog() {
@@ -1207,6 +1706,11 @@ internal class Style {
                     return;
                 }
 
+                if (isHealthPage && healthChart) {
+                    refreshHealth();
+                    return;
+                }
+
                 location.reload();
             }
 
@@ -1229,6 +1733,7 @@ internal class Style {
             }
 
             btnTail?.addEventListener('click', () => {
+                tailManuallyChanged = true;
                 tailEnabled = !tailEnabled;
                 btnTail.classList.toggle('active', tailEnabled);
                 if (tailEnabled) scrollToBottom();
@@ -1239,6 +1744,7 @@ internal class Style {
             });
 
             btnToggleRefresh?.addEventListener('click', () => {
+                refreshManuallyChanged = true;
                 if (refreshEnabled) {
                     stopAutoRefresh();
                 } else {
@@ -1246,8 +1752,70 @@ internal class Style {
                 }
             });
 
+            logEl?.addEventListener('scroll', () => {
+                if (isScrolledToBottom()) {
+                    if (!tailManuallyChanged) {
+                        tailEnabled = true;
+                        btnTail?.classList.add('active');
+                    }
+                    if (!refreshManuallyChanged && !refreshEnabled) {
+                        startAutoRefresh();
+                    }
+                    return;
+                }
+
+                if (!tailManuallyChanged) {
+                    tailEnabled = false;
+                    btnTail?.classList.remove('active');
+                }
+                if (!refreshManuallyChanged && refreshEnabled) {
+                    stopAutoRefresh();
+                }
+            });
+
+            function copyText(text) {
+                if (navigator.clipboard?.writeText) {
+                    return navigator.clipboard.writeText(text);
+                }
+
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.setAttribute('readonly', '');
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                    return Promise.resolve();
+                } finally {
+                    textArea.remove();
+                }
+            }
+
             document.addEventListener('click', event => {
                 if (!(event.target instanceof Element)) {
+                    return;
+                }
+
+                const copyButton = event.target.closest('.log-copy-btn');
+                if (copyButton) {
+                    const logLine = copyButton.closest('.log-line');
+                    const logText = logLine?.getAttribute('data-log-text') ?? '';
+
+                    copyText(logText)
+                        .then(() => {
+                            copyButton.classList.add('copied');
+                            copyButton.setAttribute('title', 'Copied');
+                            window.setTimeout(() => {
+                                copyButton.classList.remove('copied');
+                                copyButton.setAttribute('title', 'Copy');
+                            }, 900);
+                        })
+                        .catch(() => {
+                            copyButton.setAttribute('title', 'Copy failed');
+                        });
                     return;
                 }
 
@@ -1291,6 +1859,10 @@ internal class Style {
             });
 
             renderMeterCards();
+
+            if (healthChart) {
+                renderHealthChart(healthChart, parseHealthReadings(healthChart.getAttribute('data-health-readings') ?? '[]'));
+            }
 
             if (logEl) {
                 logEl.classList.add('log-expanded');

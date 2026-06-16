@@ -29,6 +29,19 @@ public sealed class MonitoringDefinition<T> : IEquatable<T>, IEquatable<Monitori
     public bool DashboardPinned { get; set; }
 
     /// <summary>
+    /// Gets or sets a stable persistence key for this monitored resource.
+    /// </summary>
+    /// <remarks>
+    /// When unset, <see cref="Label"/> is used as the key.
+    /// </remarks>
+    public string? Key { get; set; }
+
+    /// <summary>
+    /// Gets the key used to match this resource against persisted monitoring snapshots.
+    /// </summary>
+    public string StorageKey => string.IsNullOrWhiteSpace ( Key ) ? Label : Key!;
+
+    /// <summary>
     /// Gets a sanitized version of the label, suitable for use in URLs or other contexts where special characters may need to be encoded.
     /// </summary>
     public string SanitizedLabel => WebUtility.UrlEncode ( Label );

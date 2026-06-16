@@ -13,10 +13,14 @@ namespace Sisk.Monitoring;
 /// <summary>
 /// Provides an embedded web dashboard for monitoring application counters, log streams and server health.
 /// </summary>
-public class ApplicationMonitor {
+public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
     static readonly Regex dateTokenRegex = new Regex (
         @"\b(\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?(?:\s?(?:Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?)?|\d{1,2}/(?:\d{1,2}|[A-Za-z]{3,9})/\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?(?:\s+[+-]?\d{4})?)\b",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
+
+    static readonly Regex timeTokenRegex = new Regex (
+        @"^\d{1,2}:\d{2}(?::\d{2})?(?:[\.,]\d+)?(?:\s?(?:AM|PM|Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
 
     static readonly Regex numberTokenRegex = new Regex (
@@ -59,9 +63,22 @@ public class ApplicationMonitor {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3C19.5376 3 22 5.5 22 9C22 16 14.5 20 12 21.5C9.5 20 2 16 2 9C2 5.5 4.5 3 7.5 3C9.36 3 11 4 12 5C13 4 14.64 3 16.5 3ZM12.9339 10.5H17V8.5H14.0654L12.9339 10.5ZM7 8.5V10.5H9.9346L11.0661 8.5H7ZM11.5 12L10 15H7V17H9.9346L12 13L14.0654 17H17V15H14L12.5 12H11.5Z"></path></svg>
         """;
 
+    // file-copy-line from Remix Icon
+    const string CopyIcon = """
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6Z"></path></svg>
+        """;
+
     List<MonitoringDefinition<LogStream>> capturingLogStreams = new ();
     List<MonitoringDefinition<Counter>> counters = new ();
     List<MonitoringDefinition<Meter>> meters = new ();
+    readonly Dictionary<string, int> logStreamBufferLineCounts = new ( StringComparer.OrdinalIgnoreCase );
+    readonly List<HealthSnapshot> healthSnapshots = new ();
+    readonly object healthSnapshotsSync = new ();
+    CancellationTokenSource? storeFlushCancellation;
+    Task? storeFlushTask;
+    int storeFlushRunning;
+    bool storeStateLoaded;
+    bool disposed;
 
     /// <summary>
     /// Gets or sets the title displayed in the dashboard header and browser tab.
@@ -72,6 +89,16 @@ public class ApplicationMonitor {
     /// Gets or sets a function that validates user credentials for accessing the monitoring dashboard.
     /// </summary>
     public Func<NetworkCredential, ValueTask<bool>>? CredentialValidator { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the optional store used to persist and restore monitoring state.
+    /// </summary>
+    public IMonitoringStore? Store { get; set; }
+
+    /// <summary>
+    /// Gets or sets the interval used to flush monitoring state to <see cref="Store"/>.
+    /// </summary>
+    public TimeSpan StoreFlushInterval { get; set; } = TimeSpan.FromSeconds ( 10 );
 
     /// <summary>
     /// Registers a counter for monitoring within the dashboard.
@@ -96,8 +123,123 @@ public class ApplicationMonitor {
     /// <param name="bufferLineCount">The maximum number of lines to buffer; defaults to 500.</param>
     public void CaptureLogStream ( MonitoringDefinition<LogStream> logStream, int bufferLineCount = 500 ) {
         capturingLogStreams.Add ( logStream );
+        logStreamBufferLineCounts [ logStream.StorageKey ] = bufferLineCount;
         if (!logStream.Instance.IsBuffering)
             logStream.Instance.StartBuffering ( bufferLineCount );
+    }
+
+    /// <summary>
+    /// Flushes the current monitoring state to <see cref="Store"/>.
+    /// </summary>
+    /// <returns><see langword="true"/> when a store exists and the state was saved; otherwise, <see langword="false"/>.</returns>
+    public bool FlushStore () {
+        return FlushStoreAsync ().GetAwaiter ().GetResult ();
+    }
+
+    /// <summary>
+    /// Flushes the current monitoring state to <see cref="Store"/> asynchronously.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns><see langword="true"/> when a store exists and the state was saved; otherwise, <see langword="false"/>.</returns>
+    public async Task<bool> FlushStoreAsync ( CancellationToken cancellationToken = default ) {
+        if (Store is null || disposed)
+            return false;
+
+        if (Interlocked.Exchange ( ref storeFlushRunning, 1 ) == 1)
+            return false;
+
+        try {
+            await Store.SaveAsync ( CreateMonitoringSnapshot (), cancellationToken ).ConfigureAwait ( false );
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            return false;
+        }
+        catch {
+            return false;
+        }
+        finally {
+            Volatile.Write ( ref storeFlushRunning, 0 );
+        }
+    }
+
+    void RestoreStoreState () {
+        if (storeStateLoaded || Store is null)
+            return;
+
+        storeStateLoaded = true;
+        MonitoringSnapshot? snapshot = Store.LoadAsync ().ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+        if (snapshot is null)
+            return;
+
+        var counterSnapshots = (snapshot.Counters ?? []).ToDictionary ( item => item.Key, StringComparer.OrdinalIgnoreCase );
+        foreach (var counter in counters) {
+            if (counterSnapshots.TryGetValue ( counter.StorageKey, out var counterSnapshot )) {
+                counter.Instance.DefaultDuration = counterSnapshot.DefaultDuration;
+                counter.Instance.ImportState ( counterSnapshot.Increments );
+            }
+        }
+
+        var meterSnapshots = (snapshot.Meters ?? []).ToDictionary ( item => item.Key, StringComparer.OrdinalIgnoreCase );
+        foreach (var meter in meters) {
+            if (meterSnapshots.TryGetValue ( meter.StorageKey, out var meterSnapshot )) {
+                meter.Instance.ImportState ( meterSnapshot.Buckets );
+            }
+        }
+
+        DateTime threshold = DateTime.Now - TimeSpan.FromDays ( 7 );
+        lock (healthSnapshotsSync) {
+            healthSnapshots.Clear ();
+            healthSnapshots.AddRange ( (snapshot.Health ?? [])
+                .Where ( item => item.Timestamp >= threshold )
+                .Select ( item => new HealthSnapshot ( item.Timestamp, item.CpuPercent, item.DiskPercent, item.MemoryPercent, 0, 0, 0, string.Empty, DateTime.MinValue ) ) );
+        }
+    }
+
+    void StartStoreFlushLoop () {
+        if (Store is null || storeFlushTask is not null)
+            return;
+
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( StoreFlushInterval.TotalMilliseconds, nameof ( StoreFlushInterval ) );
+
+        storeFlushCancellation = new CancellationTokenSource ();
+        storeFlushTask = RunStoreFlushLoopAsync ( storeFlushCancellation.Token );
+    }
+
+    async Task RunStoreFlushLoopAsync ( CancellationToken cancellationToken ) {
+        try {
+            using var timer = new PeriodicTimer ( StoreFlushInterval );
+
+            while (await timer.WaitForNextTickAsync ( cancellationToken ).ConfigureAwait ( false )) {
+                await FlushStoreAsync ( cancellationToken ).ConfigureAwait ( false );
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+        }
+    }
+
+    MonitoringSnapshot CreateMonitoringSnapshot () {
+        var countersSnapshot = counters
+            .Select ( counter => new CounterSnapshot (
+                counter.StorageKey,
+                counter.Instance.DefaultDuration,
+                counter.Instance.ExportState () ) )
+            .ToArray ();
+
+        var metersSnapshot = meters
+            .Select ( meter => new MeterSnapshot (
+                meter.StorageKey,
+                meter.Instance.ExportState () ) )
+            .ToArray ();
+
+        MonitoringHealthSnapshot [] healthSnapshot;
+        lock (healthSnapshotsSync) {
+            healthSnapshot = healthSnapshots
+                .Select ( item => new MonitoringHealthSnapshot ( item.Timestamp, item.CpuPercent, item.DiskPercent, item.MemoryPercent ) )
+                .ToArray ();
+        }
+
+        return new MonitoringSnapshot ( DateTime.Now, countersSnapshot, metersSnapshot, healthSnapshot );
     }
 
     /// <summary>
@@ -130,7 +272,7 @@ public class ApplicationMonitor {
                 .WithAttribute ( "content", "width=device-width, initial-scale=1.0" )
                 .SelfClosed ();
             head += new HtmlElement ( "title", PageTitle );
-            head += new HtmlElement ( "style", RenderableText.Raw ( Style.DefaultStyles ) );
+            head += new HtmlElement ( "style", RenderableText.Raw ( Assets.DefaultStyles ) );
         } );
 
         html += new HtmlElement ( "body", body => {
@@ -154,7 +296,7 @@ public class ApplicationMonitor {
                 } );
             } );
 
-            body += new HtmlElement ( "script", RenderableText.Raw ( Style.DefaultScript ) );
+            body += new HtmlElement ( "script", RenderableText.Raw ( Assets.DefaultScript ) );
         } );
 
         return "<!DOCTYPE html>\n" + html.ToString ();
@@ -168,11 +310,6 @@ public class ApplicationMonitor {
     protected virtual HtmlElement WriteSidebar ( string? activeNavItem ) {
         return new HtmlElement ( "nav", nav => {
             nav.ClassList.Add ( "sidebar" );
-
-            nav += new HtmlElement ( "div", header => {
-                header.ClassList.Add ( "sidebar-header" );
-                header += new HtmlElement ( "h1", PageTitle );
-            } );
 
             nav += new HtmlElement ( "div", section => {
                 section.ClassList.Add ( "nav-section" );
@@ -468,6 +605,21 @@ public class ApplicationMonitor {
     }
 
     /// <summary>
+    /// Generates the JSON payload containing the server health history.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with health data in JSON format.</returns>
+    protected virtual ValueTask<HttpResponse> GetServerHealthDataAsync ( HttpRequest request ) {
+        var snapshot = CreateHealthSnapshot ();
+        TrackHealthSnapshot ( snapshot );
+        string json = SerializeHealthPayload ( snapshot, ReadHealthSnapshots () );
+
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
+        );
+    }
+
+    /// <summary>
     /// Generates the HTML for a specific log stream page.
     /// </summary>
     /// <param name="request">The incoming HTTP request.</param>
@@ -475,6 +627,10 @@ public class ApplicationMonitor {
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with log stream HTML.</returns>
     protected virtual ValueTask<HttpResponse> GetLogStreamPageHtmlAsync ( HttpRequest request, MonitoringDefinition<LogStream> logStream ) {
         string [] logContent = logStream.Instance.PeekEntries ();
+        if (logContent.Length == 0 && logStream.Instance.FilePath is { } filePath) {
+            logStreamBufferLineCounts.TryGetValue ( logStream.StorageKey, out int lineCount );
+            logContent = ReadLogFileTail ( filePath, lineCount > 0 ? lineCount : 500 );
+        }
 
         var content = new HtmlElement ( "", fragment => {
 
@@ -492,12 +648,6 @@ public class ApplicationMonitor {
 
             fragment += new HtmlElement ( "div", toolbar => {
                 toolbar.ClassList.Add ( "log-toolbar" );
-
-                toolbar += new HtmlElement ( "div", meta => {
-                    meta.ClassList.Add ( "log-meta" );
-                    meta += new HtmlElement ( "span", $"Buffering: {(logStream.Instance.IsBuffering ? "active" : "inactive")}" )
-                        .WithClass ( "log-meta-item" );
-                } );
 
                 toolbar += new HtmlElement ( "div", actions => {
                     actions.ClassList.Add ( "log-toolbar-actions" );
@@ -584,32 +734,18 @@ public class ApplicationMonitor {
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with server health HTML.</returns>
     protected virtual ValueTask<HttpResponse> GetServerHealthPageHtmlAsync ( HttpRequest request ) {
 
-        var process = Process.GetCurrentProcess ();
+        var snapshot = CreateHealthSnapshot ();
+        TrackHealthSnapshot ( snapshot );
+        var history = ReadHealthSnapshots ();
 
-        long appMemory = process.WorkingSet64;
-        TimeSpan uptime = DateTime.Now - process.StartTime;
-
-        double cpuUsage;
-        {
-            var startTime = DateTime.UtcNow;
-            var startCpuUsage = process.TotalProcessorTime;
-            Thread.Sleep ( 100 );
-            process.Refresh ();
-            var endTime = DateTime.UtcNow;
-            var endCpuUsage = process.TotalProcessorTime;
-            double cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
-            double totalMs = (endTime - startTime).TotalMilliseconds;
-            cpuUsage = cpuUsedMs / (Environment.ProcessorCount * totalMs) * 100.0;
-        }
-
-        string currentDir = Environment.CurrentDirectory;
-        string rootPath = Path.GetPathRoot ( currentDir ) ?? currentDir;
-        var driveInfo = new DriveInfo ( rootPath );
-
-        long diskTotal = driveInfo.TotalSize;
-        long diskFree = driveInfo.AvailableFreeSpace;
+        long appMemory = snapshot.AppMemoryBytes;
+        TimeSpan uptime = DateTime.Now - snapshot.ProcessStartTime;
+        double cpuUsage = snapshot.CpuPercent;
+        string rootPath = snapshot.DriveRoot;
+        long diskTotal = snapshot.DiskTotalBytes;
+        long diskFree = snapshot.DiskFreeBytes;
         long diskUsed = diskTotal - diskFree;
-        double diskPercent = diskTotal > 0 ? (double) diskUsed / diskTotal * 100.0 : 0;
+        double diskPercent = snapshot.DiskPercent;
 
         var content = new HtmlElement ( "", fragment => {
 
@@ -630,12 +766,23 @@ public class ApplicationMonitor {
 
             fragment += new HtmlElement ( "div", section => {
                 section.ClassList.Add ( "section" );
+                section += new HtmlElement ( "h2", "Usage History" );
+
+                section += new HtmlElement ( "div", chart => {
+                    chart.ClassList.Add ( "health-chart-container" );
+                    chart.Attributes [ "data-health-endpoint" ] = PrefixPath ( "/health/data" );
+                    chart.Attributes [ "data-health-readings" ] = SerializeHealthReadingsPayload ( history );
+                } );
+            } );
+
+            fragment += new HtmlElement ( "div", section => {
+                section.ClassList.Add ( "section" );
                 section += new HtmlElement ( "h2", "Uptime" );
 
                 section += new HtmlElement ( "div", grid => {
                     grid.ClassList.Add ( "cards-grid" );
                     grid += WriteHealthCard ( "Server Uptime", FormatUptime ( uptime ) );
-                    grid += WriteHealthCard ( "Started At", process.StartTime.ToString ( "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture ) );
+                    grid += WriteHealthCard ( "Started At", snapshot.ProcessStartTime.ToString ( "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture ) );
                 } );
             } );
 
@@ -694,6 +841,61 @@ public class ApplicationMonitor {
         );
     }
 
+    HealthSnapshot CreateHealthSnapshot () {
+        var process = Process.GetCurrentProcess ();
+        long appMemory = process.WorkingSet64;
+
+        double cpuUsage;
+        {
+            var startTime = DateTime.UtcNow;
+            var startCpuUsage = process.TotalProcessorTime;
+            Thread.Sleep ( 100 );
+            process.Refresh ();
+            var endTime = DateTime.UtcNow;
+            var endCpuUsage = process.TotalProcessorTime;
+            double cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
+            double totalMs = (endTime - startTime).TotalMilliseconds;
+            cpuUsage = totalMs > 0 ? cpuUsedMs / (Environment.ProcessorCount * totalMs) * 100.0 : 0;
+        }
+
+        string currentDir = Environment.CurrentDirectory;
+        string rootPath = Path.GetPathRoot ( currentDir ) ?? currentDir;
+        var driveInfo = new DriveInfo ( rootPath );
+
+        long diskTotal = driveInfo.TotalSize;
+        long diskFree = driveInfo.AvailableFreeSpace;
+        double diskPercent = diskTotal > 0 ? (double) (diskTotal - diskFree) / diskTotal * 100.0 : 0;
+        double memoryPercent = 0;
+
+        long totalAvailableMemory = GC.GetGCMemoryInfo ().TotalAvailableMemoryBytes;
+        if (totalAvailableMemory > 0)
+            memoryPercent = Math.Clamp ( (double) appMemory / totalAvailableMemory * 100.0, 0, 100 );
+
+        return new HealthSnapshot ( DateTime.Now, cpuUsage, diskPercent, memoryPercent, appMemory, diskTotal, diskFree, rootPath, process.StartTime );
+    }
+
+    void TrackHealthSnapshot ( HealthSnapshot snapshot ) {
+        DateTime threshold = snapshot.Timestamp - TimeSpan.FromDays ( 7 );
+
+        lock (healthSnapshotsSync) {
+            HealthSnapshot? latest = healthSnapshots.Count > 0 ? healthSnapshots [ ^1 ] : null;
+            if (latest is not { } existing || snapshot.Timestamp - existing.Timestamp >= TimeSpan.FromMinutes ( 1 )) {
+                healthSnapshots.Add ( snapshot );
+            }
+            else {
+                healthSnapshots [ ^1 ] = snapshot;
+            }
+
+            healthSnapshots.RemoveAll ( item => item.Timestamp < threshold );
+        }
+    }
+
+    HealthSnapshot [] ReadHealthSnapshots () {
+        lock (healthSnapshotsSync) {
+            return healthSnapshots.ToArray ();
+        }
+    }
+
     static string FormatUptime ( TimeSpan uptime ) {
         if (uptime.TotalDays >= 1)
             return $"{(int) uptime.TotalDays}d {uptime.Hours:D2}h {uptime.Minutes:D2}m {uptime.Seconds:D2}s";
@@ -715,54 +917,77 @@ public class ApplicationMonitor {
         return 0;
     }
 
+    static string [] ReadLogFileTail ( string filePath, int lineCount ) {
+        try {
+            if (!File.Exists ( filePath ))
+                return [];
+
+            return File.ReadLines ( filePath )
+                .TakeLast ( lineCount )
+                .ToArray ();
+        }
+        catch {
+            return [];
+        }
+    }
+
     HtmlElement CreateLogLineElement ( string line ) {
         return new HtmlElement ( "div", lineElement => {
             lineElement.ClassList.Add ( "log-line" );
+            lineElement.Attributes [ "data-log-text" ] = line;
 
             if (line.Length == 0) {
                 lineElement += "\u00a0";
-                return;
+            }
+            else {
+                foreach (object token in GetHighlightedTokens ( line )) {
+                    lineElement += token;
+                }
             }
 
-            foreach (object token in GetHighlightedTokens ( line )) {
-                lineElement += token;
-            }
+            lineElement += new HtmlElement ( "button", button => {
+                button.ClassList.Add ( "log-copy-btn" );
+                button.Attributes [ "type" ] = "button";
+                button.Attributes [ "aria-label" ] = "Copy log line";
+                button.Attributes [ "title" ] = "Copy";
+                button += RenderableText.Raw ( CopyIcon );
+            } );
         } );
     }
 
     IEnumerable<object> GetHighlightedTokens ( string line ) {
         int currentIndex = 0;
 
-        foreach (Match dateMatch in dateTokenRegex.Matches ( line )) {
-            if (dateMatch.Index > currentIndex) {
-                foreach (object token in GetBracketAndNumberTokens ( line [ currentIndex..dateMatch.Index ] )) {
-                    yield return token;
-                }
-            }
-
-            yield return new HtmlElement ( "span", dateMatch.Value ).WithClass ( "log-token-date" );
-            currentIndex = dateMatch.Index + dateMatch.Length;
-        }
-
-        if (currentIndex < line.Length) {
-            foreach (object token in GetBracketAndNumberTokens ( line [ currentIndex.. ] )) {
-                yield return token;
-            }
-        }
-    }
-
-    IEnumerable<object> GetBracketAndNumberTokens ( string segment ) {
-        int currentIndex = 0;
-
-        foreach (Match bracketMatch in bracketTokenRegex.Matches ( segment )) {
+        foreach (Match bracketMatch in bracketTokenRegex.Matches ( line )) {
             if (bracketMatch.Index > currentIndex) {
-                foreach (object token in GetNumberTokens ( segment.Substring ( currentIndex, bracketMatch.Index - currentIndex ) )) {
+                foreach (object token in GetDateAndNumberTokens ( line [ currentIndex..bracketMatch.Index ] )) {
                     yield return token;
                 }
             }
 
             yield return CreateBracketTokenElement ( bracketMatch.Value );
             currentIndex = bracketMatch.Index + bracketMatch.Length;
+        }
+
+        if (currentIndex < line.Length) {
+            foreach (object token in GetDateAndNumberTokens ( line [ currentIndex.. ] )) {
+                yield return token;
+            }
+        }
+    }
+
+    IEnumerable<object> GetDateAndNumberTokens ( string segment ) {
+        int currentIndex = 0;
+
+        foreach (Match dateMatch in dateTokenRegex.Matches ( segment )) {
+            if (dateMatch.Index > currentIndex) {
+                foreach (object token in GetNumberTokens ( segment.Substring ( currentIndex, dateMatch.Index - currentIndex ) )) {
+                    yield return token;
+                }
+            }
+
+            yield return new HtmlElement ( "span", new RenderableText ( dateMatch.Value ) ).WithClass ( "log-token-date" );
+            currentIndex = dateMatch.Index + dateMatch.Length;
         }
 
         if (currentIndex < segment.Length) {
@@ -773,25 +998,22 @@ public class ApplicationMonitor {
     }
 
     HtmlElement CreateBracketTokenElement ( string token ) {
-        int hue = GetTokenHueCaseSensitive ( token );
+        if (IsDateOrTimeToken ( token ))
+            return new HtmlElement ( "span", new RenderableText ( token ) ).WithClass ( "log-token-date" );
 
-        return new HtmlElement ( "span", token )
-            .WithClass ( "log-token-tag" )
-            .WithStyle ( new {
-                color = $"hsl({hue}, 72%, 38%)",
-                backgroundColor = $"hsla({hue}, 90%, 55%, 0.18)"
-            } );
+        uint hash = 2166136261;
+        foreach (char ch in token) {
+            hash ^= ch;
+            hash *= 16777619;
+        }
+
+        return new HtmlElement ( "span", new RenderableText ( token ) )
+            .WithClass ( $"log-token-tag log-token-tone-{hash % 8}" );
     }
 
-    static int GetTokenHueCaseSensitive ( string token ) {
-        unchecked {
-            uint hash = 2166136261;
-            foreach (char ch in token) {
-                hash ^= ch;
-                hash *= 16777619;
-            }
-            return (int) (hash % 360);
-        }
+    static bool IsDateOrTimeToken ( string token ) {
+        string value = token.Trim ( '[', ']', ' ' );
+        return dateTokenRegex.IsMatch ( value ) || timeTokenRegex.IsMatch ( value );
     }
 
     IEnumerable<object> GetNumberTokens ( string segment ) {
@@ -799,15 +1021,15 @@ public class ApplicationMonitor {
 
         foreach (Match numberMatch in numberTokenRegex.Matches ( segment )) {
             if (numberMatch.Index > currentIndex) {
-                yield return segment.Substring ( currentIndex, numberMatch.Index - currentIndex );
+                yield return new RenderableText ( segment.Substring ( currentIndex, numberMatch.Index - currentIndex ) );
             }
 
-            yield return new HtmlElement ( "span", numberMatch.Value ).WithClass ( "log-token-number" );
+            yield return new HtmlElement ( "span", new RenderableText ( numberMatch.Value ) ).WithClass ( "log-token-number" );
             currentIndex = numberMatch.Index + numberMatch.Length;
         }
 
         if (currentIndex < segment.Length) {
-            yield return segment [ currentIndex.. ];
+            yield return new RenderableText ( segment [ currentIndex.. ] );
         }
     }
 
@@ -996,6 +1218,65 @@ public class ApplicationMonitor {
         return builder.ToString ();
     }
 
+    static string SerializeHealthPayload ( HealthSnapshot snapshot, HealthSnapshot [] history ) {
+        var builder = new StringBuilder ();
+        builder.Append ( '{' );
+
+        builder.Append ( "\"cpuPercent\":" );
+        builder.Append ( JsonNumber ( snapshot.CpuPercent ) );
+        builder.Append ( ',' );
+
+        builder.Append ( "\"diskPercent\":" );
+        builder.Append ( JsonNumber ( snapshot.DiskPercent ) );
+        builder.Append ( ',' );
+
+        builder.Append ( "\"memoryPercent\":" );
+        builder.Append ( JsonNumber ( snapshot.MemoryPercent ) );
+        builder.Append ( ',' );
+
+        builder.Append ( "\"appMemoryBytes\":" );
+        builder.Append ( snapshot.AppMemoryBytes.ToString ( CultureInfo.InvariantCulture ) );
+        builder.Append ( ',' );
+
+        builder.Append ( "\"diskTotalBytes\":" );
+        builder.Append ( snapshot.DiskTotalBytes.ToString ( CultureInfo.InvariantCulture ) );
+        builder.Append ( ',' );
+
+        builder.Append ( "\"diskFreeBytes\":" );
+        builder.Append ( snapshot.DiskFreeBytes.ToString ( CultureInfo.InvariantCulture ) );
+        builder.Append ( ',' );
+
+        builder.Append ( "\"readings\":" );
+        builder.Append ( SerializeHealthReadingsPayload ( history ) );
+
+        builder.Append ( '}' );
+        return builder.ToString ();
+    }
+
+    static string SerializeHealthReadingsPayload ( HealthSnapshot [] history ) {
+        var builder = new StringBuilder ();
+        builder.Append ( '[' );
+
+        for (int index = 0; index < history.Length; index++) {
+            if (index > 0)
+                builder.Append ( ',' );
+
+            HealthSnapshot reading = history [ index ];
+            builder.Append ( "{\"timestamp\":\"" );
+            builder.Append ( reading.Timestamp.ToString ( "O", CultureInfo.InvariantCulture ) );
+            builder.Append ( "\",\"cpu\":" );
+            builder.Append ( JsonNumber ( reading.CpuPercent ) );
+            builder.Append ( ",\"disk\":" );
+            builder.Append ( JsonNumber ( reading.DiskPercent ) );
+            builder.Append ( ",\"memory\":" );
+            builder.Append ( JsonNumber ( reading.MemoryPercent ) );
+            builder.Append ( '}' );
+        }
+
+        builder.Append ( ']' );
+        return builder.ToString ();
+    }
+
     static string EscapeJsonString ( string value ) {
         var builder = new StringBuilder ( value.Length + 8 );
 
@@ -1050,6 +1331,8 @@ public class ApplicationMonitor {
             throw new InvalidOperationException ( $"Route prefix cannot be changed once set. Current prefix: '{currentRoutePrefix}', attempted new prefix: '{prefix}'. Please, use a new instance of the ApplicationMonitor class for multiple servers." );
 
         currentRoutePrefix = prefix;
+        RestoreStoreState ();
+        StartStoreFlushLoop ();
         IRequestHandler [] handlers = [ new AuthorizationRequestHandler ( this ) ];
 
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/" ), null, async ( HttpRequest request ) => {
@@ -1067,6 +1350,10 @@ public class ApplicationMonitor {
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/meters/data" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
             return await GetMetersDataAsync ( request );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/health/data" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            return await GetServerHealthDataAsync ( request );
         }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/logstream/<name>" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
@@ -1096,6 +1383,65 @@ public class ApplicationMonitor {
             request.Context.LogMode = LogOutput.ErrorLog;
             return await GetServerHealthPageHtmlAsync ( request );
         }, handlers );
+    }
+
+    /// <inheritdoc/>
+    public void Dispose () {
+        if (disposed)
+            return;
+
+        disposed = true;
+        storeFlushCancellation?.Cancel ();
+
+        try {
+            storeFlushTask?.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+        }
+        finally {
+            storeFlushCancellation?.Dispose ();
+
+            if (Store is IAsyncDisposable asyncDisposableStore) {
+                ValueTask disposeTask = asyncDisposableStore.DisposeAsync ();
+                if (disposeTask.IsCompletedSuccessfully) {
+                    disposeTask.GetAwaiter ().GetResult ();
+                }
+                else {
+                    disposeTask.AsTask ().ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+                }
+            }
+            else {
+                (Store as IDisposable)?.Dispose ();
+            }
+        }
+
+        GC.SuppressFinalize ( this );
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask DisposeAsync () {
+        if (disposed)
+            return;
+
+        disposed = true;
+
+        if (storeFlushCancellation is not null)
+            await storeFlushCancellation.CancelAsync ().ConfigureAwait ( false );
+
+        try {
+            if (storeFlushTask is not null)
+                await storeFlushTask.ConfigureAwait ( false );
+        }
+        finally {
+            storeFlushCancellation?.Dispose ();
+
+            if (Store is IAsyncDisposable asyncDisposableStore) {
+                await asyncDisposableStore.DisposeAsync ().ConfigureAwait ( false );
+            }
+            else {
+                (Store as IDisposable)?.Dispose ();
+            }
+        }
+
+        GC.SuppressFinalize ( this );
     }
 
     class AuthorizationRequestHandler ( ApplicationMonitor monitor ) : IRequestHandler {
@@ -1142,4 +1488,6 @@ public class ApplicationMonitor {
             return null;
         }
     }
+
+    record struct HealthSnapshot ( DateTime Timestamp, double CpuPercent, double DiskPercent, double MemoryPercent, long AppMemoryBytes, long DiskTotalBytes, long DiskFreeBytes, string DriveRoot, DateTime ProcessStartTime );
 }

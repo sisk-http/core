@@ -56,6 +56,29 @@ public sealed class Meter {
         }
     }
 
+    internal MeterBucketSnapshot [] ExportState () {
+        DateTime now = DateTime.Now;
+
+        lock (_sync) {
+            PruneExpiredBuckets ( now );
+            return _buckets
+                .Select ( item => new MeterBucketSnapshot ( item.Key, item.Value ) )
+                .ToArray ();
+        }
+    }
+
+    internal void ImportState ( MeterBucketSnapshot [] buckets ) {
+        DateTime now = DateTime.Now;
+        long threshold = ToBucketKey ( now - _slidingWindowDuration );
+
+        lock (_sync) {
+            _buckets.Clear ();
+            foreach (var bucket in buckets.Where ( item => item.BucketKey >= threshold )) {
+                _buckets [ bucket.BucketKey ] = bucket.Value;
+            }
+        }
+    }
+
     /// <summary>
     /// Returns aggregated readings for the default 1-hour tick within the sliding window.
     /// </summary>

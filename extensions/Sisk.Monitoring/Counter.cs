@@ -1,5 +1,3 @@
-﻿using CacheStorage;
-
 namespace Sisk.Monitoring;
 
 /// <summary>
@@ -7,7 +5,8 @@ namespace Sisk.Monitoring;
 /// </summary>
 public sealed class Counter {
 
-    private List<CachedObject<double>> _counts;
+    private readonly List<CounterEntry> _counts;
+    private readonly object _sync = new ();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Counter"/> class with default settings.
@@ -26,7 +25,7 @@ public sealed class Counter {
             _counts = new ();
         }
         else {
-            _counts = new () { new CachedObject<double> ( initialValue, initialDuration ) };
+            _counts = new () { new CounterEntry ( initialValue, DateTime.Now + initialDuration ) };
         }
         DefaultDuration = initialDuration;
     }
@@ -41,7 +40,14 @@ public sealed class Counter {
     /// Gets the current sum of all non-expired counter increments.
     /// </summary>
     /// <value>The total count of all valid increments.</value>
-    public double Current => _counts.Sum ( c => c.Value );
+    public double Current {
+        get {
+            lock (_sync) {
+                PruneExpiredEntries ();
+                return _counts.Sum ( c => c.Value );
+            }
+        }
+    }
 
     /// <summary>
     /// Increments the counter by the specified value using the specified duration.
@@ -49,8 +55,10 @@ public sealed class Counter {
     /// <param name="by">The amount to increment the counter.</param>
     /// <param name="duration">The duration for which this increment remains valid.</param>
     public void Increment ( double by, TimeSpan duration ) {
-        var count = new CachedObject<double> ( by, duration );
-        _counts.Add ( count );
+        lock (_sync) {
+            PruneExpiredEntries ();
+            _counts.Add ( new CounterEntry ( by, DateTime.Now + duration ) );
+        }
     }
 
     /// <summary>
@@ -72,6 +80,35 @@ public sealed class Counter {
     /// Resets the counter by clearing all increments.
     /// </summary>
     public void Reset () {
-        _counts.Clear ();
+        lock (_sync) {
+            _counts.Clear ();
+        }
     }
+
+    internal CounterIncrementSnapshot [] ExportState () {
+        lock (_sync) {
+            PruneExpiredEntries ();
+            return _counts
+                .Select ( entry => new CounterIncrementSnapshot ( entry.Value, entry.ExpiresAt ) )
+                .ToArray ();
+        }
+    }
+
+    internal void ImportState ( CounterIncrementSnapshot [] increments ) {
+        DateTime now = DateTime.Now;
+
+        lock (_sync) {
+            _counts.Clear ();
+            _counts.AddRange ( increments
+                .Where ( increment => increment.ExpiresAt > now )
+                .Select ( increment => new CounterEntry ( increment.Value, increment.ExpiresAt ) ) );
+        }
+    }
+
+    void PruneExpiredEntries () {
+        DateTime now = DateTime.Now;
+        _counts.RemoveAll ( entry => entry.ExpiresAt <= now );
+    }
+
+    record struct CounterEntry ( double Value, DateTime ExpiresAt );
 }
