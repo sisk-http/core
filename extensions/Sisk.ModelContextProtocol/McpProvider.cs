@@ -179,6 +179,9 @@ public sealed class McpProvider {
                         result [ "isError" ] = false;
                     }
                     catch (Exception ex) {
+                        if (request.Context.HttpServer.ServerConfiguration.ThrowExceptions)
+                            throw;
+
                         result [ "content" ] = new JsonArray ( [new JsonObject()
                         {
                             ["type"] = "text",
