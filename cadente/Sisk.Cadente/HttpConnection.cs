@@ -52,6 +52,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public async Task<HttpConnectionState> HandleConnectionEventsAsync ( CancellationToken shutdownToken ) {
         bool connectionCloseRequested = false;
+        using CancellationTokenSource headerReadTimeoutSource = new ();
 
 #if DEBUG
         Id.Value = Random.Shared.Next ( 100_000, 999_999 );
@@ -59,7 +60,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
         while (!disposedValue) {
 
-            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream, shutdownToken, headerParsingTimeout ).ConfigureAwait ( false );
+            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream, shutdownToken, headerParsingTimeout, headerReadTimeoutSource ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
                 Logger.LogInformation ( $"TryReadHttpRequestAsync returned no request" );
@@ -71,6 +72,14 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
             Logger.LogInformation ( $"HTTP {managedSession.Request.Method} {managedSession.Request.Path} Headers={managedSession.Request.Headers.Count} ConLength={managedSession.Request.ContentLength}" );
 
+            bool skipBodyDrain = nextRequest.IsExpecting100
+                && managedSession.Request._readingStream is null
+                && (nextRequest.IsChunked || nextRequest.ContentLength > 0);
+
+            if (skipBodyDrain) {
+                managedSession.KeepAlive = false;
+            }
+
             if (!managedSession.KeepAlive || !nextRequest.CanKeepAlive) {
                 connectionCloseRequested = true;
                 managedSession.Response.Headers.Set ( ConnCloseHeader );
@@ -81,12 +90,15 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
                 await managedSession.WriteHttpResponseHeadersAsync ();
             }
+            else {
+                await managedSession.WritePendingResponseHeadersAsync ( shutdownToken ).ConfigureAwait ( false );
+            }
 
             if (networkStream is SslStream) {
                 await networkStream.FlushAsync ().ConfigureAwait ( false );
             }
 
-            if (nextRequest.IsChunked || nextRequest.ContentLength > 0) {
+            if (!skipBodyDrain && (nextRequest.IsChunked || nextRequest.ContentLength > 0)) {
                 EndableStream? requestStream = managedSession.Request._readingStream;
 
                 if (requestStream is null) {

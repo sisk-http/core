@@ -31,15 +31,39 @@ sealed class HttpRequestBase {
 
     public string Method {
         get {
-            _method ??= Encoding.ASCII.GetString ( MethodRef.Span );
-            return _method;
+            if (_method is { })
+                return _method;
+
+            ReadOnlySpan<byte> method = MethodRef.Span;
+            if (method.SequenceEqual ( "GET"u8 ))
+                return _method = "GET";
+            if (method.SequenceEqual ( "POST"u8 ))
+                return _method = "POST";
+            if (method.SequenceEqual ( "PUT"u8 ))
+                return _method = "PUT";
+            if (method.SequenceEqual ( "DELETE"u8 ))
+                return _method = "DELETE";
+            if (method.SequenceEqual ( "PATCH"u8 ))
+                return _method = "PATCH";
+            if (method.SequenceEqual ( "HEAD"u8 ))
+                return _method = "HEAD";
+            if (method.SequenceEqual ( "OPTIONS"u8 ))
+                return _method = "OPTIONS";
+
+            return _method = Encoding.ASCII.GetString ( method );
         }
     }
 
     public string Path {
         get {
-            _path ??= Encoding.ASCII.GetString ( PathRef.Span );
-            return _path;
+            if (_path is { })
+                return _path;
+
+            ReadOnlySpan<byte> path = PathRef.Span;
+            if (path.Length == 1 && path [ 0 ] == (byte) '/')
+                return _path = "/";
+
+            return _path = Encoding.ASCII.GetString ( path );
         }
     }
 

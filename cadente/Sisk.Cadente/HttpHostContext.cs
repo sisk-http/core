@@ -26,6 +26,7 @@ public sealed class HttpHostContext {
     private HttpConnection _connection;
 
     internal bool ResponseHeadersAlreadySent = false;
+    internal UndisposableNetworkStream? PendingResponseStream;
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     internal Task WriteHttpResponseHeadersAsync () {
@@ -34,6 +35,7 @@ public sealed class HttpHostContext {
         }
 
         ResponseHeadersAlreadySent = true;
+        PendingResponseStream = null;
         return HttpResponseSerializer.WriteHttpResponseHeadersAsync ( _connection.responsePool.Memory, _connection.networkStream, Response );
     }
 
@@ -44,6 +46,7 @@ public sealed class HttpHostContext {
         }
 
         ResponseHeadersAlreadySent = true;
+        PendingResponseStream = null;
         HttpResponseSerializer.WriteHttpResponseHeaders ( _connection.responsePool.Memory, _connection.networkStream, Response );
     }
 
@@ -55,6 +58,7 @@ public sealed class HttpHostContext {
         }
 
         ResponseHeadersAlreadySent = true;
+        PendingResponseStream = null;
         int headerSize = HttpResponseSerializer.GetResponseHeadersBytes ( _connection.responsePool.Memory.Span, Response );
         Memory<byte> responseBuffer = _connection.responsePool.Memory;
 
@@ -66,6 +70,12 @@ public sealed class HttpHostContext {
             _connection.networkStream.Write ( responseBuffer.Span [ ..headerSize ] );
             _connection.networkStream.Write ( body );
         }
+    }
+
+    internal ValueTask WritePendingResponseHeadersAsync ( CancellationToken cancellationToken ) {
+        return PendingResponseStream is { HasPendingHeaders: true } pending
+            ? pending.WritePendingHeadersAsync ( cancellationToken )
+            : ValueTask.CompletedTask;
     }
 
     /// <summary>
@@ -105,8 +115,7 @@ public sealed class HttpHostContext {
         _connection = connection;
         _host = host;
 
-        HttpRequestStream requestStream = new HttpRequestStream ( _connection.networkStream, baseRequest );
-        Request = new HttpRequest ( baseRequest, requestStream );
+        Request = new HttpRequest ( baseRequest, _connection.networkStream );
         Response = new HttpResponse ( this, _connection.networkStream );
     }
 
@@ -116,7 +125,8 @@ public sealed class HttpHostContext {
     public sealed class HttpRequest {
 
         bool wasExpectationSent = false;
-        private HttpRequestStream _requestStream;
+        private readonly Stream _networkStream;
+        private HttpRequestStream? _requestStream;
         private HttpRequestBase _baseRequest;
         internal EndableStream? _readingStream;
         private HttpHeaderList? _headers;
@@ -174,11 +184,14 @@ public sealed class HttpHostContext {
             }
 
             if (_baseRequest.IsExpecting100 && !wasExpectationSent && sendExpectation) {
+                _requestStream ??= new HttpRequestStream ( _networkStream, _baseRequest );
                 wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( _requestStream );
 
                 if (!wasExpectationSent)
                     throw new InvalidOperationException ( "Unable to obtain the input stream for the request." );
             }
+
+            _requestStream ??= new HttpRequestStream ( _networkStream, _baseRequest );
 
             _readingStream = _baseRequest.IsChunked switch {
                 true => new HttpChunkedReadStream2 ( _requestStream ),
@@ -188,9 +201,9 @@ public sealed class HttpHostContext {
             return _readingStream;
         }
 
-        internal HttpRequest ( HttpRequestBase request, HttpRequestStream requestStream ) {
+        internal HttpRequest ( HttpRequestBase request, Stream networkStream ) {
             _baseRequest = request;
-            _requestStream = requestStream;
+            _networkStream = networkStream;
         }
     }
 
@@ -229,28 +242,99 @@ public sealed class HttpHostContext {
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with the response content stream as the result.</returns>
         /// <exception cref="InvalidOperationException">Thrown when unable to obtain an output stream for the response.</exception>
-        public async Task<Stream> GetResponseStreamAsync ( bool chunked = false ) {
-            PrepareResponseStream ( chunked );
+        public Task<Stream> GetResponseStreamAsync ( bool chunked = false ) {
+            try {
+                PrepareResponseStream ( chunked );
 
+                if (chunked)
+                    return GetResponseStreamAsyncCore ( chunked: true );
+
+                if (StatusCode == 101 && IsUpgradeResponse ()) {
+                    return GetResponseStreamAsyncCore ( chunked: false );
+                }
+
+                _session.ResponseHeadersAlreadySent = true;
+                int headerSize = HttpResponseSerializer.GetResponseHeadersBytes ( _session._connection.responsePool.Memory.Span, this );
+                var outputStream = new UndisposableNetworkStream (
+                    _baseOutputStream,
+                    _session._connection.responsePool.Memory,
+                    headerSize,
+                    () => _session.PendingResponseStream = null );
+                _session.PendingResponseStream = outputStream;
+                headersSent = true;
+                return Task.FromResult<Stream> ( outputStream );
+            }
+            catch (Exception ex) {
+                return Task.FromException<Stream> ( ex );
+            }
+        }
+
+        private async Task<Stream> GetResponseStreamAsyncCore ( bool chunked ) {
             await _session.WriteHttpResponseHeadersAsync ().ConfigureAwait ( false );
-
             headersSent = true;
             return CreateOutputStream ( chunked );
+        }
+
+        private bool IsUpgradeResponse () {
+            return Headers.Contains ( HttpHeaderName.Upgrade );
         }
 
         internal Stream GetResponseStream ( bool chunked = false ) {
             PrepareResponseStream ( chunked );
 
-            _session.WriteHttpResponseHeaders ();
+            if (chunked || StatusCode == 101 && IsUpgradeResponse ()) {
+                _session.WriteHttpResponseHeaders ();
+                headersSent = true;
+                return CreateOutputStream ( chunked );
+            }
 
             headersSent = true;
-            return CreateOutputStream ( chunked );
+            _session.ResponseHeadersAlreadySent = true;
+            int headerSize = HttpResponseSerializer.GetResponseHeadersBytes ( _session._connection.responsePool.Memory.Span, this );
+            var outputStream = new UndisposableNetworkStream (
+                _baseOutputStream,
+                _session._connection.responsePool.Memory,
+                headerSize,
+                () => _session.PendingResponseStream = null );
+            _session.PendingResponseStream = outputStream;
+            return outputStream;
         }
 
-        internal void WriteInlineContent ( ReadOnlySpan<byte> content ) {
+        /// <summary>
+        /// Writes response headers and a known fixed-size body in a single operation.
+        /// </summary>
+        /// <param name="content">The response body bytes to write.</param>
+        public void WriteInlineContent ( ReadOnlySpan<byte> content ) {
             PrepareResponseStream ( chunked: false );
             _session.WriteHttpResponse ( content );
             headersSent = true;
+        }
+
+        /// <summary>
+        /// Asynchronously writes response headers and a known fixed-size body in a single operation.
+        /// </summary>
+        /// <param name="content">The response body bytes to write.</param>
+        /// <param name="cancellationToken">A token used to cancel the write operation.</param>
+        public ValueTask WriteInlineContentAsync ( ReadOnlyMemory<byte> content, CancellationToken cancellationToken = default ) {
+            PrepareResponseStream ( chunked: false );
+            _session.ResponseHeadersAlreadySent = true;
+            _session.PendingResponseStream = null;
+            headersSent = true;
+
+            int headerSize = HttpResponseSerializer.GetResponseHeadersBytes ( _session._connection.responsePool.Memory.Span, this );
+            Memory<byte> responseBuffer = _session._connection.responsePool.Memory;
+
+            if (headerSize + content.Length <= responseBuffer.Length) {
+                content.CopyTo ( responseBuffer [ headerSize.. ] );
+                return _baseOutputStream.WriteAsync ( responseBuffer [ ..(headerSize + content.Length) ], cancellationToken );
+            }
+
+            return WriteInlineContentLargeAsync ( content, headerSize, cancellationToken );
+        }
+
+        private async ValueTask WriteInlineContentLargeAsync ( ReadOnlyMemory<byte> content, int headerSize, CancellationToken cancellationToken ) {
+            await _baseOutputStream.WriteAsync ( _session._connection.responsePool.Memory [ ..headerSize ], cancellationToken ).ConfigureAwait ( false );
+            await _baseOutputStream.WriteAsync ( content, cancellationToken ).ConfigureAwait ( false );
         }
 
         private void PrepareResponseStream ( bool chunked ) {
@@ -312,7 +396,7 @@ public sealed class HttpHostContext {
             StatusCode = 200;
             StatusDescription = "Ok";
 
-            Headers = new HttpHeaderList ( 2 )
+            Headers = new HttpHeaderList ( 4 )
             {
                 CreateDateHeader (),
                 CreateServerHeader ()

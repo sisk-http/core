@@ -37,7 +37,7 @@ static class HttpRequestReader {
 
     [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs ) {
+    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
 
         int bufferLength = sharedBuffer.Length;
         int totalRead = 0;
@@ -60,7 +60,8 @@ static class HttpRequestReader {
                     stream,
                     sharedBuffer.Slice ( totalRead ),
                     remainingMs,
-                    cancellationToken
+                    cancellationToken,
+                    timeoutSource
                 ).ConfigureAwait ( false );
 
                 if (bytesRead == 0) {
@@ -104,13 +105,29 @@ static class HttpRequestReader {
 
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
-    private static async ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken ) {
+    private static async ValueTask<int> ReadWithTimeoutAsync ( Stream stream, Memory<byte> buffer, int timeoutMs, CancellationToken cancellationToken, CancellationTokenSource? timeoutSource ) {
         if (timeoutMs <= 0) {
             throw new OperationCanceledException ();
         }
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource ( cancellationToken );
-        timeoutCts.CancelAfter ( timeoutMs );
+        if (timeoutSource is not null && !cancellationToken.CanBeCanceled) {
+            timeoutSource.CancelAfter ( timeoutMs );
+            try {
+                return await stream.ReadAsync ( buffer, timeoutSource.Token ).ConfigureAwait ( false );
+            }
+            finally {
+                if (!timeoutSource.IsCancellationRequested) {
+                    timeoutSource.CancelAfter ( Timeout.Infinite );
+                }
+            }
+        }
+
+        using var timeoutCts = cancellationToken.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource ( cancellationToken )
+            : new CancellationTokenSource ( timeoutMs );
+
+        if (cancellationToken.CanBeCanceled)
+            timeoutCts.CancelAfter ( timeoutMs );
 
         return await stream.ReadAsync ( buffer, timeoutCts.Token ).ConfigureAwait ( false );
     }
@@ -259,6 +276,11 @@ static class HttpRequestReader {
                 switch (knownHeader) {
                     case 0: // Content-Length
                         if (IsAsciiDigits ( valueSpan ) && Utf8Parser.TryParse ( valueSpan, out long parsed, out int consumed ) && consumed == valueSpan.Length) {
+                            if (contentLengthExplicit && contentLength != parsed) {
+                                failReason = "conflicting duplicate Content-Length headers violate RFC 9112 §6.3.3";
+                                goto ParseFailed;
+                            }
+
                             contentLength = parsed;
                             contentLengthExplicit = true;
                         }
