@@ -35,8 +35,8 @@
 		<Company>Project Principium</Company>
 		<Product>Sisk.HttpServer</Product>
 		<NeutralLanguage>en-US</NeutralLanguage>
-		<Description>Sisk is an powerful framework for building web applications with .NET.</Description>
-		<Summary>Sisk is an powerful framework for building web applications with .NET.</Summary>
+		<Description>Core Sisk HTTP framework with routing, request and response primitives, handlers, WebSockets, server-sent events, and host integration for .NET.</Description>
+		<Summary>Core Sisk HTTP framework with routing, request and response primitives, handlers, WebSockets, server-sent events, and host integration for .NET.</Summary>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>http-server,http,web framework,event sources,web sockets</PackageTags>
 		<PackageProjectUrl>https://sisk-framework.org/</PackageProjectUrl>
@@ -49,7 +49,7 @@
 	<PropertyGroup>
 		<AssemblyVersion>1.6.3</AssemblyVersion>
 		<FileVersion>1.6.3</FileVersion>
-		<Version>1.6.3-beta1</Version>
+		<Version>1.6.3-rc1</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->

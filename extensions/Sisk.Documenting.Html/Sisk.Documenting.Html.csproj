@@ -16,7 +16,7 @@
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.Documenting.Html</Product>
-		<Description>This package provides the HtmlDocumentationExporter object.</Description>
+		<Description>HTML documentation exporter for Sisk APIs, turning Sisk.Documenting metadata into browsable endpoint reference pages.</Description>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -24,13 +24,15 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<AssemblyVersion>1.6.2</AssemblyVersion>
-		<FileVersion>1.6.2</FileVersion>
-		<Version>1.6.2</Version>
+		<AssemblyVersion>1.6.3</AssemblyVersion>
+		<FileVersion>1.6.3</FileVersion>
+		<Version>1.6.3-rc1</Version>
 		
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

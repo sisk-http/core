@@ -7,7 +7,6 @@
 // File name:   JsonRpcResponse.cs
 // Repository:  https://github.com/sisk-http/core
 
-using System.Net;
 using System.Text.Json.Serialization;
 
 namespace Sisk.ModelContextProtocol;
