@@ -403,8 +403,8 @@ public sealed class HttpHost : IDisposable {
 
             IPEndPoint clientEndpoint = (IPEndPoint) client.RemoteEndPoint!;
 
-            // TODO: Pool de HttpHostClient se profiling mostrar que é hot spot
-            HttpHostClient hostClient = new ( clientEndpoint, CancellationToken.None );
+            using CancellationTokenSource disconnectCts = new ();
+            HttpHostClient hostClient = new ( clientEndpoint, disconnectCts.Token );
 
             if (sslStream is not null) {
                 hostClient.IsSecureConnection = true;
@@ -426,6 +426,7 @@ public sealed class HttpHost : IDisposable {
             }
             finally {
                 Logger.LogInformation ( $"call OnClientDisconnectedAsync" );
+                disconnectCts.Cancel ();
                 await Handler.OnClientDisconnectedAsync ( this, hostClient ).ConfigureAwait ( false );
             }
         }
