@@ -20,6 +20,11 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
 
     static readonly SearchValues<byte> _headerNameInvalidBytes = SearchValues.Create ( "()<>@,;:\\\"/[]?={} \t\r\n\0"u8.ToArray () );
     static readonly SearchValues<byte> _headerValueInvalidBytes = SearchValues.Create ( "\r\n\0"u8.ToArray () );
+    static readonly ReadOnlyMemory<byte> ContentLengthNameBytes = "Content-Length"u8.ToArray ();
+    static readonly ReadOnlyMemory<byte> ContentTypeNameBytes = "Content-Type"u8.ToArray ();
+    static readonly ReadOnlyMemory<byte> ConnectionNameBytes = "Connection"u8.ToArray ();
+    static readonly ReadOnlyMemory<byte> TransferEncodingNameBytes = "Transfer-Encoding"u8.ToArray ();
+    static readonly ReadOnlyMemory<byte> UpgradeNameBytes = "Upgrade"u8.ToArray ();
 
     internal readonly ReadOnlyMemory<byte> NameBytes;
     internal readonly ReadOnlyMemory<byte> ValueBytes;
@@ -63,18 +68,42 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     /// <param name="name">The name of the header.</param>
     /// <param name="value">The value of the header.</param>
     public HttpHeader ( string name, string value ) {
-        NameBytes = HeaderEncoding.GetBytes ( name );
+        bool validateName = false;
+        switch (name) {
+            case "Content-Length":
+                NameBytes = ContentLengthNameBytes;
+                break;
+            case "Content-Type":
+                NameBytes = ContentTypeNameBytes;
+                break;
+            case "Connection":
+                NameBytes = ConnectionNameBytes;
+                break;
+            case "Transfer-Encoding":
+                NameBytes = TransferEncodingNameBytes;
+                break;
+            case "Upgrade":
+                NameBytes = UpgradeNameBytes;
+                break;
+            default:
+                NameBytes = HeaderEncoding.GetBytes ( name );
+                validateName = true;
+                break;
+        }
+
         ValueBytes = HeaderEncoding.GetBytes ( value.Trim () );
 
-        ValidateHeaderBytes ();
+        ValidateHeaderBytes ( validateName );
     }
 
-    void ValidateHeaderBytes () {
-        if (NameBytes.IsEmpty) {
-            throw new ArgumentException ( "Header name cannot be empty.", nameof ( NameBytes ) );
-        }
-        if (ContainsInvalidNameBytes ( NameBytes.Span )) {
-            throw new ArgumentException ( "Header name contains not allowed characters.", nameof ( NameBytes ) );
+    void ValidateHeaderBytes ( bool validateName = true ) {
+        if (validateName) {
+            if (NameBytes.IsEmpty) {
+                throw new ArgumentException ( "Header name cannot be empty.", nameof ( NameBytes ) );
+            }
+            if (ContainsInvalidNameBytes ( NameBytes.Span )) {
+                throw new ArgumentException ( "Header name contains not allowed characters.", nameof ( NameBytes ) );
+            }
         }
         if (ContainsInvalidValueBytes ( ValueBytes.Span )) {
             throw new ArgumentException ( "Header value contains not allowed characters.", nameof ( ValueBytes ) );
