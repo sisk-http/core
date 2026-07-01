@@ -131,11 +131,59 @@ public sealed class CadenteSecurityTests {
         }
     }
 
+    [TestMethod]
+    public async Task FixedLengthResponseStream_WithoutWrite_FlushesHeadersBeforeKeepAliveRead () {
+        int port = GetFreePort ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = new HeaderOnlyStreamHandler ()
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            $"GET / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            "\r\n" );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        string firstResponse = await ReadHeadersAsync ( stream, ioCts.Token );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        string secondResponse = await ReadHeadersAsync ( stream, ioCts.Token );
+
+        StringAssert.StartsWith ( firstResponse, "HTTP/1.1 200 OK" );
+        StringAssert.Contains ( firstResponse, "Content-Length: 0" );
+        StringAssert.StartsWith ( secondResponse, "HTTP/1.1 200 OK" );
+        StringAssert.Contains ( secondResponse, "Content-Length: 0" );
+    }
+
     private static int GetFreePort () {
         using var listener = new TcpListener ( IPAddress.Loopback, 0 );
         listener.Start ();
 
         return ((IPEndPoint) listener.LocalEndpoint).Port;
+    }
+
+    private static async Task<string> ReadHeadersAsync ( NetworkStream stream, CancellationToken cancellationToken ) {
+        using var responseBuffer = new MemoryStream ();
+        byte [] buffer = new byte [ 256 ];
+
+        while (true) {
+            int read = await stream.ReadAsync ( buffer, cancellationToken );
+            if (read == 0)
+                break;
+
+            responseBuffer.Write ( buffer, 0, read );
+            string response = Encoding.ASCII.GetString ( responseBuffer.ToArray () );
+            if (response.Contains ( "\r\n\r\n", StringComparison.Ordinal ))
+                return response;
+        }
+
+        return Encoding.ASCII.GetString ( responseBuffer.ToArray () );
     }
 
     private static async Task<bool> WaitUntilClosedAsync ( NetworkStream stream, TimeSpan timeout ) {
@@ -168,6 +216,13 @@ public sealed class CadenteSecurityTests {
             SecureState.TrySetResult ( context.Client.IsSecureConnection );
             context.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class HeaderOnlyStreamHandler : HttpHostHandler {
+        public override async Task OnContextCreatedAsync ( HttpHost host, HttpHostContext context ) {
+            context.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
+            _ = await context.Response.GetResponseStreamAsync ( chunked: false );
         }
     }
 }
