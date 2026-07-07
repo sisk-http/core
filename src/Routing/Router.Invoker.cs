@@ -24,6 +24,10 @@ public partial class Router {
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     private bool IsMethodMatching ( in string ogRqMethod, RouteMethod method ) {
 
+        if (method == RouteMethod.Any) {
+            return true;
+        }
+
         if (ogRqMethod.Equals ( "GET", StringComparison.Ordinal )) {
             return method.HasFlag ( RouteMethod.Get );
         }
