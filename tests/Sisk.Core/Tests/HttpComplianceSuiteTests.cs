@@ -91,9 +91,21 @@ public sealed class HttpComplianceSuiteTests {
         yield return Case ( "COMP-OPTIONS-STAR", "OPTIONS * is the only valid asterisk-form request",
             u => Bytes ( $"OPTIONS * HTTP/1.1\r\nHost: {Authority ( u )}\r\nConnection: close\r\n\r\n" ),
             ExpectAcceptedOrRejected );
-        yield return Case ( "COMP-UNKNOWN-TE-501", "Unknown Transfer-Encoding without Content-Length should be rejected with 501",
+        yield return Case ( "COMP-UNKNOWN-TE", "Unknown Transfer-Encoding without Content-Length must be rejected",
             u => Bytes ( $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\nHost: {Authority ( u )}\r\nTransfer-Encoding: gzip\r\nConnection: close\r\n\r\n" ),
-            ExpectAcceptedOrRejected );
+            ExpectProtocolRejected );
+        yield return Case ( "COMP-UNKNOWN-TE-WITH-CL", "Unknown Transfer-Encoding with Content-Length must be rejected",
+            u => Bytes ( $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\nHost: {Authority ( u )}\r\nTransfer-Encoding: gzip\r\nContent-Length: 5\r\nConnection: close\r\n\r\nHello" ),
+            ExpectProtocolRejected );
+        yield return Case ( "COMP-MIXED-TE-GZIP-CHUNKED", "Transfer-Encoding with unsupported coding before chunked must be rejected",
+            u => Bytes ( $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\nHost: {Authority ( u )}\r\nTransfer-Encoding: gzip, chunked\r\nConnection: close\r\n\r\n5\r\nHello\r\n0\r\n\r\n" ),
+            ExpectProtocolRejected );
+        yield return Case ( "COMP-MIXED-TE-CHUNKED-GZIP", "Transfer-Encoding with unsupported final coding must be rejected",
+            u => Bytes ( $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\nHost: {Authority ( u )}\r\nTransfer-Encoding: chunked, gzip\r\nConnection: close\r\n\r\n5\r\nHello\r\n0\r\n\r\n" ),
+            ExpectProtocolRejected );
+        yield return Case ( "COMP-DUPLICATE-CHUNKED-TE", "Transfer-Encoding with repeated chunked codings must be rejected",
+            u => Bytes ( $"POST /tests/httprequest/getBodyContents HTTP/1.1\r\nHost: {Authority ( u )}\r\nTransfer-Encoding: chunked, chunked\r\nConnection: close\r\n\r\n5\r\nHello\r\n0\r\n\r\n" ),
+            ExpectProtocolRejected );
         yield return Case ( "COMP-LEADING-CRLF", "Leading CRLF before request-line may be ignored",
             u => Bytes ( $"\r\nGET /tests/plaintext HTTP/1.1\r\nHost: {Authority ( u )}\r\nConnection: close\r\n\r\n" ),
             ExpectAcceptedOrRejected );

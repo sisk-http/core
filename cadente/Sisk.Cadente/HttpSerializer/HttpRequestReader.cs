@@ -302,9 +302,12 @@ static class HttpRequestReader {
                             goto ParseFailed; // duplicate TE = request-smuggling vector (RFC 9112 §6.3.3)
                         }
                         seenTransferEncoding = true;
-                        isChunked = TokenListContains ( valueSpan, ChunkedValue );
-                        if (isChunked)
-                            contentLength = -1;
+                        if (!TokenListEqualsSingle ( valueSpan, ChunkedValue )) {
+                            failReason = $"unsupported Transfer-Encoding value '{Encoding.ASCII.GetString ( valueSpan )}' (only chunked is supported)";
+                            goto ParseFailed;
+                        }
+                        isChunked = true;
+                        contentLength = -1;
                         break;
                     case 4: // Host
                         if (seenHost) {
@@ -465,6 +468,12 @@ ParseFailed:
         }
 
         return false;
+    }
+
+    [MethodImpl ( MethodImplOptions.AggressiveInlining )]
+    private static bool TokenListEqualsSingle ( ReadOnlySpan<byte> value, ReadOnlySpan<byte> expectedToken ) {
+        return value.IndexOf ( (byte) ',' ) < 0
+            && Ascii.EqualsIgnoreCase ( value.Trim ( TrimChars ), expectedToken );
     }
 
     private static bool IsAsciiDigits ( ReadOnlySpan<byte> value ) {

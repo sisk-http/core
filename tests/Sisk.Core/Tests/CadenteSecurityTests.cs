@@ -161,6 +161,113 @@ public sealed class CadenteSecurityTests {
         StringAssert.Contains ( secondResponse, "Content-Length: 0" );
     }
 
+    [TestMethod]
+    public async Task DisconnectToken_IsCanceledWhenBodyReadDetectsClientDisconnect () {
+        int port = GetFreePort ();
+        var handler = new DisconnectTokenBodyReadHandler ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = handler
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            $"POST / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            $"Content-Length: 16\r\n" +
+            "\r\n" +
+            "partial" );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+        client.Close ();
+
+        bool tokenCanceled = await handler.DisconnectTokenCanceled.Task.WaitAsync ( CloseWaitTimeout );
+
+        Assert.IsTrue ( tokenCanceled, "Cadente should cancel DisconnectToken when a request body read detects that the client disconnected." );
+    }
+
+    [DataTestMethod]
+    [DataRow ( "gzip", "Hello" )]
+    [DataRow ( "deflate", "Hello" )]
+    [DataRow ( "br", "Hello" )]
+    [DataRow ( "gzip, chunked", "5\r\nHello\r\n0\r\n\r\n" )]
+    [DataRow ( "chunked, gzip", "5\r\nHello\r\n0\r\n\r\n" )]
+    [DataRow ( "chunked, chunked", "5\r\nHello\r\n0\r\n\r\n" )]
+    public async Task TransferEncoding_RejectsUnsupportedCodingsBeforeHandler ( string transferEncoding, string body ) {
+        int port = GetFreePort ();
+        var handler = new ContextInvocationHandler ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = handler
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            $"POST / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            $"Transfer-Encoding: {transferEncoding}\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            body );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+        client.Client.Shutdown ( SocketShutdown.Send );
+
+        string response = await ReadHeadersAsync ( stream, ioCts.Token );
+
+        Assert.IsFalse ( handler.ContextCreated.Task.IsCompleted, "Unsupported Transfer-Encoding values must be rejected before user handlers run." );
+        Assert.IsTrue (
+            response.Length == 0 ||
+            response.StartsWith ( "HTTP/1.1 4", StringComparison.Ordinal ) ||
+            response.StartsWith ( "HTTP/1.1 5", StringComparison.Ordinal ),
+            $"Unsupported Transfer-Encoding values must not produce a successful response. Response: {response}" );
+    }
+
+    [TestMethod]
+    public async Task ContentEncoding_DoesNotAffectRequestFraming () {
+        int port = GetFreePort ();
+        var handler = new ContentEncodingCaptureHandler ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = handler
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            $"POST / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            "Content-Encoding: gzip\r\n" +
+            "Content-Length: 5\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "Hello" );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        CapturedRequest captured = await handler.Captured.Task.WaitAsync ( CloseWaitTimeout );
+        string response = await ReadHeadersAsync ( stream, ioCts.Token );
+
+        Assert.AreEqual ( 5, captured.ContentLength );
+        Assert.AreEqual ( "Hello", captured.Body );
+        Assert.AreEqual ( "gzip", captured.ContentEncoding );
+        StringAssert.StartsWith ( response, "HTTP/1.1 200 OK" );
+    }
+
     private static int GetFreePort () {
         using var listener = new TcpListener ( IPAddress.Loopback, 0 );
         listener.Start ();
@@ -223,6 +330,66 @@ public sealed class CadenteSecurityTests {
         public override async Task OnContextCreatedAsync ( HttpHost host, HttpHostContext context ) {
             context.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
             _ = await context.Response.GetResponseStreamAsync ( chunked: false );
+        }
+    }
+
+    private sealed class ContextInvocationHandler : HttpHostHandler {
+        public TaskCompletionSource<bool> ContextCreated { get; } = new ( TaskCreationOptions.RunContinuationsAsynchronously );
+
+        public override Task OnContextCreatedAsync ( HttpHost host, HttpHostContext context ) {
+            ContextCreated.TrySetResult ( true );
+            context.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ContentEncodingCaptureHandler : HttpHostHandler {
+        public TaskCompletionSource<CapturedRequest> Captured { get; } = new ( TaskCreationOptions.RunContinuationsAsynchronously );
+
+        public override Task OnContextCreatedAsync ( HttpHost host, HttpHostContext context ) {
+            using var bodyBuffer = new MemoryStream ();
+            context.Request.GetRequestStream ().CopyTo ( bodyBuffer );
+
+            string? contentEncoding = null;
+            foreach (HttpHeader header in context.Request.Headers) {
+                if (header.Name.Equals ( "Content-Encoding", StringComparison.OrdinalIgnoreCase )) {
+                    contentEncoding = header.Value;
+                    break;
+                }
+            }
+
+            Captured.TrySetResult ( new CapturedRequest (
+                context.Request.ContentLength,
+                Encoding.ASCII.GetString ( bodyBuffer.ToArray () ),
+                contentEncoding ) );
+            context.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed record CapturedRequest ( long ContentLength, string Body, string? ContentEncoding );
+
+    private sealed class DisconnectTokenBodyReadHandler : HttpHostHandler {
+        public TaskCompletionSource<bool> DisconnectTokenCanceled { get; } = new ( TaskCreationOptions.RunContinuationsAsynchronously );
+
+        public override Task OnContextCreatedAsync ( HttpHost host, HttpHostContext context ) {
+            byte [] buffer = new byte [ 16 ];
+            Stream bodyStream = context.Request.GetRequestStream ();
+
+            try {
+                while (bodyStream.Read ( buffer, 0, buffer.Length ) > 0) {
+                }
+            }
+            catch (IOException) {
+            }
+            catch (ObjectDisposedException) {
+            }
+
+            DisconnectTokenCanceled.TrySetResult ( context.Client.DisconnectToken.IsCancellationRequested );
+            context.Response.Headers.Set ( new HttpHeader ( "Content-Length", "0" ) );
+
+            return Task.CompletedTask;
         }
     }
 }

@@ -14,6 +14,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Sisk.Cadente.HttpSerializer;
+using Sisk.Cadente.Streams;
 
 namespace Sisk.Cadente;
 
@@ -404,6 +405,7 @@ public sealed class HttpHost : IDisposable {
             IPEndPoint clientEndpoint = (IPEndPoint) client.RemoteEndPoint!;
 
             using CancellationTokenSource disconnectCts = new ();
+            connectionStream = new DisconnectAwareStream ( connectionStream, disconnectCts );
             HttpHostClient hostClient = new ( clientEndpoint, disconnectCts.Token );
 
             if (sslStream is not null) {
