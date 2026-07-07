@@ -109,7 +109,7 @@ namespace Sisk.Core.Http {
 
         internal async Task<byte []> ReadRequestStreamContentsAsync ( CancellationToken cancellation = default ) {
             if (contentBytes is null) {
-                if (ContentLength > Int32.MaxValue) {
+                if (ContentLength > Array.MaxLength) {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
                 else if (ContentLength > 0) {
@@ -120,9 +120,9 @@ namespace Sisk.Core.Http {
                 }
                 else if (ContentLength < 0) {
                     using (var memoryStream = new MemoryStream ()) {
-                        long maxLength = contextServerConfiguration.MaximumContentLength <= 0 ?
-                            Int32.MaxValue :
-                            contextServerConfiguration.MaximumContentLength;
+                        long maxLength = contextServerConfiguration.MaximumContentLength <= 0
+                            ? Array.MaxLength
+                            : Math.Min ( contextServerConfiguration.MaximumContentLength, Array.MaxLength );
 
                         await StreamUtil.CopyToLimitedAsync ( listenerRequest.InputStream, memoryStream, 81920, maxLength, cancellation ).ConfigureAwait ( false );
                         contentBytes = memoryStream.ToArray ();
@@ -139,7 +139,7 @@ namespace Sisk.Core.Http {
 
         byte [] ReadRequestStreamContents () {
             if (contentBytes is null) {
-                if (ContentLength > Int32.MaxValue) {
+                if (ContentLength > Array.MaxLength) {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
                 else if (ContentLength > 0) {
@@ -150,9 +150,9 @@ namespace Sisk.Core.Http {
                 }
                 else if (ContentLength < 0) {
                     using (var memoryStream = new MemoryStream ()) {
-                        long maxLength = contextServerConfiguration.MaximumContentLength <= 0 ?
-                            Int32.MaxValue :
-                            contextServerConfiguration.MaximumContentLength;
+                        long maxLength = contextServerConfiguration.MaximumContentLength <= 0
+                            ? Array.MaxLength
+                            : Math.Min ( contextServerConfiguration.MaximumContentLength, Array.MaxLength );
 
                         StreamUtil.CopyToLimited ( listenerRequest.InputStream, memoryStream, 81920, maxLength );
                         contentBytes = memoryStream.ToArray ();

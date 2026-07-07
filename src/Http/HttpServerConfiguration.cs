@@ -7,6 +7,7 @@
 // File name:   HttpServerConfiguration.cs
 // Repository:  https://github.com/sisk-http/core
 
+using Sisk.Core.Helpers;
 using Sisk.Core.Http.Engine;
 using Sisk.Core.Routing;
 
@@ -15,7 +16,7 @@ namespace Sisk.Core.Http {
     /// Provides execution parameters for an <see cref="HttpServer"/>.
     /// </summary>
     public sealed class HttpServerConfiguration : IDisposable {
-        private long _maximumContentLength;
+        private long _maximumContentLength = 100 * SizeHelper.UnitMb;
 
         /// <summary>
         /// Represents the default access logging format for incoming HTTP requests.
