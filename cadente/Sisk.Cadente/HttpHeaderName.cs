@@ -47,6 +47,12 @@ static class HttpHeaderName {
     public const string AcceptPatch = "Accept-Patch";
 
     /// <summary>
+    /// The HTTP Accept-Query header.
+    /// <para>Specifies which media types are accepted by the server in a QUERY request.</para>
+    /// </summary>
+    public const string AcceptQuery = "Accept-Query";
+
+    /// <summary>
     /// The HTTP Accept-Ranges header.
     /// <para>Indicates that the server supports range requests for the resource, allowing clients to request specific byte ranges.</para>
     /// </summary>

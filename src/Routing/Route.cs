@@ -342,6 +342,22 @@ namespace Sisk.Core.Routing {
         /// <param name="action">The action to be executed when the route is matched.</param>
         /// <returns>A <see cref="Route"/> object configured for OPTIONS requests.</returns>
         public static Route Options ( string path, RouteAction action ) => new Route ( RouteMethod.Options, path, action );
+
+        /// <summary>
+        /// Creates a route that responds to HTTP QUERY requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for QUERY requests.</returns>
+        public static Route Query ( string path, Delegate? action ) => new Route ( RouteMethod.Query, path, action );
+
+        /// <summary>
+        /// Creates a route that responds to HTTP QUERY requests.
+        /// </summary>
+        /// <param name="path">The URL path for the route.</param>
+        /// <param name="action">The action to be executed when the route is matched.</param>
+        /// <returns>A <see cref="Route"/> object configured for QUERY requests.</returns>
+        public static Route Query ( string path, RouteAction action ) => new Route ( RouteMethod.Query, path, action );
         #endregion
     }
 

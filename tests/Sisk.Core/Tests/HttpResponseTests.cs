@@ -61,6 +61,40 @@ public sealed class HttpResponseTests {
     }
 
     [TestMethod]
+    public async Task QueryMethod_MapQueryMatchesRequest () {
+        using (var client = Server.GetHttpClient ()) {
+            var request = new HttpRequestMessage ( new HttpMethod ( "QUERY" ), "tests/query/map" );
+            var response = await client.SendAsync ( request );
+            var content = await response.Content.ReadAsStringAsync ();
+            Assert.IsTrue ( response.IsSuccessStatusCode );
+            Assert.AreEqual ( "QUERY", content );
+            Assert.AreEqual ( "application/json", response.Headers.GetValues ( "Accept-Query" ).Single () );
+        }
+    }
+
+    [TestMethod]
+    public async Task QueryMethod_MapAnyMatchesRequest () {
+        using (var client = Server.GetHttpClient ()) {
+            var request = new HttpRequestMessage ( new HttpMethod ( "QUERY" ), "tests/query/any" );
+            var response = await client.SendAsync ( request );
+            var content = await response.Content.ReadAsStringAsync ();
+            Assert.IsTrue ( response.IsSuccessStatusCode );
+            Assert.AreEqual ( "QUERY", content );
+        }
+    }
+
+    [TestMethod]
+    public async Task QueryMethod_RouteQueryAttributeMatchesRequest () {
+        using (var client = Server.GetHttpClient ()) {
+            var request = new HttpRequestMessage ( new HttpMethod ( "QUERY" ), "tests/query/attribute" );
+            var response = await client.SendAsync ( request );
+            var content = await response.Content.ReadAsStringAsync ();
+            Assert.IsTrue ( response.IsSuccessStatusCode );
+            Assert.AreEqual ( "QUERY", content );
+        }
+    }
+
+    [TestMethod]
     public async Task HttpResponse_WithSiskByteArrayContent_CustomContentType () {
         using (var client = Server.GetHttpClient ()) {
             var request = new HttpRequestMessage ( HttpMethod.Get, "tests/bytearray" );

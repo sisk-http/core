@@ -46,6 +46,9 @@ public partial class Router {
         else if (ogRqMethod.Equals ( "HEAD", StringComparison.Ordinal )) {
             return method.HasFlag ( RouteMethod.Head ) || method.HasFlag ( RouteMethod.Get );
         }
+        else if (ogRqMethod.Equals ( "QUERY", StringComparison.Ordinal )) {
+            return method.HasFlag ( RouteMethod.Query );
+        }
         else if (ogRqMethod.Equals ( "DELETE", StringComparison.Ordinal )) {
             return method.HasFlag ( RouteMethod.Delete );
         }

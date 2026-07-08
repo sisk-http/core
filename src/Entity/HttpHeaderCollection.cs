@@ -98,6 +98,12 @@ public sealed class HttpHeaderCollection : StringKeyStoreCollection {
     public string? AcceptPost { get => this [ Header.AcceptPost ]; set => this [ Header.AcceptPost ] = value; }
 
     /// <summary>
+    /// Gets or sets the value of the HTTP Accept-Query header.
+    /// <para>Specifies the accepted formats for querying data from the server.</para>
+    /// </summary>
+    public string? AcceptQuery { get => this [ Header.AcceptQuery ]; set => this [ Header.AcceptQuery ] = value; }
+
+    /// <summary>
     /// Gets or sets the value of the HTTP Accept-CH header.
     /// <para>Specifies the client hints that the server supports, allowing clients to provide additional information about their capabilities.</para>
     /// </summary>

@@ -638,6 +638,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             RouteMethod.Put => "#3210f2",
             RouteMethod.Patch => "#6319c4",
             RouteMethod.Delete => "#c41919",
+            RouteMethod.Query => "#087ea4",
             _ => "#549696"
         };
     }

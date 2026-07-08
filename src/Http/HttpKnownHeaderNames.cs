@@ -67,6 +67,12 @@ public static class HttpKnownHeaderNames {
     public const string AcceptPost = "Accept-Post";
 
     /// <summary>
+    /// The HTTP Accept-Query header.
+    /// <para>Specifies which media types are accepted by the server in a QUERY request.</para>
+    /// </summary>
+    public const string AcceptQuery = "Accept-Query";
+
+    /// <summary>
     /// The HTTP Access-Control-Allow-Credentials header.
     /// <para>Indicates whether the response to the request can expose credentials, allowing cross-origin requests to include credentials.</para>
     /// </summary>

@@ -38,6 +38,7 @@ partial class Router {
             "PATCH" => RouteMethod.Patch,
             "DELETE" => RouteMethod.Delete,
             "HEAD" => RouteMethod.Head,
+            "QUERY" => RouteMethod.Query,
             "OPTIONS" => RouteMethod.Options,
             _ => fallback
         };

@@ -49,6 +49,8 @@ sealed class HttpRequestBase {
                 return _method = "HEAD";
             if (method.SequenceEqual ( "OPTIONS"u8 ))
                 return _method = "OPTIONS";
+            if (method.SequenceEqual ( "QUERY"u8 ))
+                return _method = "QUERY";
 
             return _method = Encoding.ASCII.GetString ( method );
         }

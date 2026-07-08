@@ -179,6 +179,8 @@ public sealed class OpenApiExporter : IApiDocumentationExporter {
             methods.Add ( "HEAD" );
         if (routeMethod.HasFlag ( RouteMethod.Options ))
             methods.Add ( "OPTIONS" );
+        if (routeMethod.HasFlag ( RouteMethod.Query ))
+            methods.Add ( "QUERY" );
 
         return methods.ToArray ();
     }

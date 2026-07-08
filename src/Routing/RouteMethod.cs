@@ -49,8 +49,13 @@ namespace Sisk.Core.Routing {
         Options = 2 << 7,
 
         /// <summary>
+        /// Represents the HTTP QUERY method.
+        /// </summary>
+        Query = 2 << 8,
+
+        /// <summary>
         /// Represents any HTTP method.
         /// </summary>
-        Any = Get | Post | Put | Patch | Delete | Head | Options
+        Any = Get | Post | Put | Patch | Delete | Query | Head | Options
     }
 }

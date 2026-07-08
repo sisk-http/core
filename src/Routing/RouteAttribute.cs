@@ -156,4 +156,21 @@ namespace Sisk.Core.Routing {
         /// </summary>
         public RouteDeleteAttribute () : base ( RouteMethod.Delete, "/" ) { }
     }
+
+    /// <summary>
+    /// Represents a mapping to an HTTP QUERY route. This attribute is an shorthand from <see cref="RouteAttribute"/>.
+    /// </summary>
+    [AttributeUsage ( AttributeTargets.Method, AllowMultiple = true, Inherited = true )]
+    public sealed class RouteQueryAttribute : RouteAttribute {
+        /// <summary>
+        /// Creates an new <see cref="RouteQueryAttribute"/> attribute instance with given path.
+        /// </summary>
+        /// <param name="path">The QUERY route path.</param>
+        public RouteQueryAttribute ( string path ) : base ( RouteMethod.Query, path ) { }
+
+        /// <summary>
+        /// Creates an new <see cref="RouteQueryAttribute"/> attribute instance with an root path (/).
+        /// </summary>
+        public RouteQueryAttribute () : base ( RouteMethod.Query, "/" ) { }
+    }
 }

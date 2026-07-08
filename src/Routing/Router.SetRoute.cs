@@ -268,6 +268,22 @@ public partial class Router {
         => Map ( RouteMethod.Patch, path, action );
 
     /// <summary>
+    /// Maps an QUERY route using the specified path and action function.
+    /// </summary>
+    /// <param name="path">The route path.</param>
+    /// <param name="action">The route function to be called after matched.</param>
+    public void MapQuery ( string path, Delegate action )
+        => Map ( RouteMethod.Query, path, action );
+
+    /// <summary>
+    /// Maps an QUERY route using the specified path and action function.
+    /// </summary>
+    /// <param name="path">The route path.</param>
+    /// <param name="action">The route function to be called after matched.</param>
+    public void MapQuery ( string path, RouteAction action )
+        => Map ( RouteMethod.Query, path, action );
+
+    /// <summary>
     /// Maps an route which matches any HTTP method, using the specified path and action function.
     /// </summary>
     /// <param name="path">The route path.</param>

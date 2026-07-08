@@ -59,6 +59,22 @@ public sealed class Server {
                         SendChunked = true
                     };
                 } );
+                router.MapQuery ( "/tests/query/map", delegate ( HttpRequest request ) {
+                    return new HttpResponse () {
+                        Content = new StringContent ( request.Method.Method, Encoding.UTF8, "text/plain" ),
+                        Headers = new () {
+                            AcceptQuery = "application/json"
+                        },
+                        Status = HttpStatusInformation.Ok
+                    };
+                } );
+                router.MapAny ( "/tests/query/any", delegate ( HttpRequest request ) {
+                    return new HttpResponse () {
+                        Content = new StringContent ( request.Method.Method, Encoding.UTF8, "text/plain" ),
+                        Status = HttpStatusInformation.Ok
+                    };
+                } );
+                router.MapInstance ( new QueryRouteModule () );
 
                 router.SetRoute ( RouteMethod.Get, "/tests/bytearray", ( req ) => {
                     byte [] byteArray = Encoding.UTF8.GetBytes ( "This is a Sisk byte array response." );
@@ -609,6 +625,16 @@ public sealed class Server {
     [AssemblyCleanup]
     public static void AssemblyCleanup () {
         Instance.Dispose ();
+    }
+
+    private sealed class QueryRouteModule {
+        [RouteQuery ( "/tests/query/attribute" )]
+        public HttpResponse Query ( HttpRequest request ) {
+            return new HttpResponse () {
+                Content = new StringContent ( request.Method.Method, Encoding.UTF8, "text/plain" ),
+                Status = HttpStatusInformation.Ok
+            };
+        }
     }
 }
 
