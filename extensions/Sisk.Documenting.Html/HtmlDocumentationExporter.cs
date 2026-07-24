@@ -623,7 +623,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
         if (text is null)
             return null;
 
-        return new MarkdownText ( text );
+        return RenderableText.Raw ( CommonMark.CommonMarkConverter.Convert ( text ) );
     }
 
     /// <summary>

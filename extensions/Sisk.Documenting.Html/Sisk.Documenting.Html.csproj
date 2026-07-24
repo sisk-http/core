@@ -16,7 +16,8 @@
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.Documenting.Html</Product>
-		<Description>HTML documentation exporter for Sisk APIs, turning Sisk.Documenting metadata into browsable endpoint reference pages.</Description>
+		<Description>HTML documentation exporter for Sisk APIs, turning Sisk.Documenting metadata
+			into browsable endpoint reference pages.</Description>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -27,7 +28,7 @@
 		<AssemblyVersion>1.6.3</AssemblyVersion>
 		<FileVersion>1.6.3</FileVersion>
 		<Version>1.6.3-rc1</Version>
-		
+
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -41,7 +42,7 @@
 		<!-- SYSLIB0020: IgnoreNullValues is obsolete -->
 		<NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<None Include="..\..\.github\Icon.png">
 			<Pack>True</Pack>
@@ -58,9 +59,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\..\typed-components\src\TinyComponents.csproj" />
-	  <ProjectReference Include="..\..\src\Sisk.Core.csproj" />
-	  <ProjectReference Include="..\Sisk.Documenting\Sisk.Documenting.csproj" />
+		<PackageReference Include="CommonMark.NET" Version="0.15.1" />
+		<PackageReference Include="TinyComponents" Version="0.7.0" />
+		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+		<ProjectReference Include="..\Sisk.Documenting\Sisk.Documenting.csproj" />
 	</ItemGroup>
 
 </Project>
