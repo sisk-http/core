@@ -13,6 +13,7 @@ static class PlainTextFileMimeTypes {
 
     public static readonly string [] PlainTextMimeTypes = [
         "application/json",
+        "application/toon",
         "application/javascript",
         "application/xml",
         "application/ld+json",
