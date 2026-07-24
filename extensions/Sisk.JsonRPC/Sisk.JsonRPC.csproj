@@ -24,13 +24,14 @@
 		<PackageTags>http-server,http,web framework</PackageTags>
 		<RepositoryType>git</RepositoryType>
 
-		<AssemblyVersion>1.4.1</AssemblyVersion>
-		<FileVersion>1.4.1</FileVersion>
-		<Version>1.4.1</Version>
+		<AssemblyVersion>1.6.3</AssemblyVersion>
+		<FileVersion>1.6.3</FileVersion>
+		<Version>1.6.3</Version>
 
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -56,12 +57,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="TinyComponents" Version="0.5.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\..\..\..\LightJson\Sources\LightJson\LightJson.csproj" />
-		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
+		<PackageReference Include="CypherPotato.LightJson" Version="0.16.1" />
+		<PackageReference Include="Sisk.HttpServer" Version="1.6.3" />
+		<PackageReference Include="TinyComponents" Version="0.5.0" />
 	</ItemGroup>
 
 </Project>

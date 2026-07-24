@@ -16,7 +16,8 @@
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.Documenting</Product>
-		<Description>Annotation and export utilities for generating structured API documentation from Sisk routes, requests, responses, and endpoint metadata.</Description>
+		<Description>Annotation and export utilities for generating structured API documentation
+			from Sisk routes, requests, responses, and endpoint metadata.</Description>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -58,9 +59,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="CypherPotato.LightJson" Version="0.15.2" />
-	  <PackageReference Include="Namotion.Reflection" Version="3.3.0" />
-	  <PackageReference Include="System.Text.Json" Version="9.0.12" />
+		<PackageReference Include="CypherPotato.LightJson" Version="0.16.1" />
+		<PackageReference Include="Namotion.Reflection" Version="3.3.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.18" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -16,7 +16,8 @@
 		<Authors>CypherPotato</Authors>
 		<Company>Project Principium</Company>
 		<Product>Sisk.Monitoring</Product>
-		<Description>Embedded monitoring dashboard for Sisk applications, exposing counters, meters, logs, and runtime status through HTTP routes.</Description>
+		<Description>Embedded monitoring dashboard for Sisk applications, exposing counters, meters,
+			logs, and runtime status through HTTP routes.</Description>
 		<PackageProjectUrl>https://sisk.proj.pw/</PackageProjectUrl>
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -62,7 +63,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\typed-components\src\TinyComponents.csproj" />
+		<PackageReference Include="TinyComponents" Version="0.7.0" />
 		<ProjectReference Include="..\..\src\Sisk.Core.csproj" />
 	</ItemGroup>
 
