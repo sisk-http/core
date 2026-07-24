@@ -7,6 +7,7 @@
 // File name:   LogStreamTests.cs
 // Repository:  https://github.com/sisk-http/core
 
+using System.Text;
 using Sisk.Core.Http;
 
 namespace Sisk.Core.Tests {
@@ -35,6 +36,82 @@ namespace Sisk.Core.Tests {
 
             string content = File.ReadAllText ( _tempFilePath! );
             Assert.AreEqual ( "Test message to file." + Environment.NewLine, content );
+        }
+
+        [TestMethod]
+        public void LogStream_SafeWriteToFile_WritesLinesEndingWithLineBreak () {
+            Assert.IsTrue ( LogStream.SafeWriteToFile ( _tempFilePath!, [ "Line 1", "Line 2" ] ) );
+
+            Assert.AreEqual ( $"Line 1{Environment.NewLine}Line 2{Environment.NewLine}", File.ReadAllText ( _tempFilePath! ) );
+        }
+
+        [TestMethod]
+        public void LogStream_SafeWriteToFile_WritesLinesUsingEncoding () {
+            Assert.IsTrue ( LogStream.SafeWriteToFile ( _tempFilePath!, [ "Olá" ], Encoding.Unicode ) );
+
+            Assert.AreEqual ( $"Olá{Environment.NewLine}", File.ReadAllText ( _tempFilePath!, Encoding.Unicode ) );
+        }
+
+        [TestMethod]
+        public void LogStream_SafeAppendToFile_AppendsText () {
+            File.WriteAllText ( _tempFilePath!, "First" );
+
+            Assert.IsTrue ( LogStream.SafeAppendToFile ( _tempFilePath!, " second" ) );
+            Assert.IsTrue ( LogStream.SafeAppendToFile ( _tempFilePath!, " third", Encoding.Default ) );
+
+            Assert.AreEqual ( "First second third", File.ReadAllText ( _tempFilePath! ) );
+        }
+
+        [TestMethod]
+        public void LogStream_SafeAppendToFile_AppendsLinesEndingWithLineBreak () {
+            Assert.IsTrue ( LogStream.SafeAppendToFile ( _tempFilePath!, [ "Line 1" ] ) );
+            Assert.IsTrue ( LogStream.SafeAppendToFile ( _tempFilePath!, [ "Linha 2" ], Encoding.Default ) );
+
+            Assert.AreEqual ( $"Line 1{Environment.NewLine}Linha 2{Environment.NewLine}", File.ReadAllText ( _tempFilePath! ) );
+        }
+
+        [TestMethod]
+        public async Task LogStream_SafeWriteToFileAsync_WritesLinesEndingWithLineBreak () {
+            Assert.IsTrue ( await LogStream.SafeWriteToFileAsync ( _tempFilePath!, [ "Line 1" ] ) );
+            Assert.IsTrue ( await LogStream.SafeWriteToFileAsync ( _tempFilePath!, [ "Linha 2" ], Encoding.Unicode ) );
+
+            Assert.AreEqual ( $"Linha 2{Environment.NewLine}", await File.ReadAllTextAsync ( _tempFilePath!, Encoding.Unicode ) );
+        }
+
+        [TestMethod]
+        public async Task LogStream_SafeAppendToFileAsync_AppendsText () {
+            await File.WriteAllTextAsync ( _tempFilePath!, "First" );
+
+            Assert.IsTrue ( await LogStream.SafeAppendToFileAsync ( _tempFilePath!, " second" ) );
+            Assert.IsTrue ( await LogStream.SafeAppendToFileAsync ( _tempFilePath!, " third", Encoding.Default ) );
+
+            Assert.AreEqual ( "First second third", await File.ReadAllTextAsync ( _tempFilePath! ) );
+        }
+
+        [TestMethod]
+        public async Task LogStream_SafeAppendToFileAsync_AppendsLinesEndingWithLineBreak () {
+            Assert.IsTrue ( await LogStream.SafeAppendToFileAsync ( _tempFilePath!, [ "Line 1" ] ) );
+            Assert.IsTrue ( await LogStream.SafeAppendToFileAsync ( _tempFilePath!, [ "Linha 2" ], Encoding.Default ) );
+
+            Assert.AreEqual ( $"Line 1{Environment.NewLine}Linha 2{Environment.NewLine}", await File.ReadAllTextAsync ( _tempFilePath! ) );
+        }
+
+        [TestMethod]
+        public async Task LogStream_SafeFileMethods_SerializeConcurrentAppends () {
+            const int operationCount = 40;
+            string [] expectedLines = Enumerable.Range ( 0, operationCount ).Select ( i => $"Line {i}" ).ToArray ();
+            Task<bool> [] writes = Enumerable.Range ( 0, operationCount ).Select ( i => i switch {
+                0 => Task.Run ( () => LogStream.SafeAppendToFile ( _tempFilePath!, $"Line {i}{Environment.NewLine}", Encoding.UTF8 ) ),
+                1 => Task.Run ( () => LogStream.SafeAppendToFile ( _tempFilePath!, [ $"Line {i}" ], Encoding.UTF8 ) ),
+                _ when (i & 1) == 0 => LogStream.SafeAppendToFileAsync ( _tempFilePath!, $"Line {i}{Environment.NewLine}", Encoding.UTF8 ),
+                _ => LogStream.SafeAppendToFileAsync ( _tempFilePath!, [ $"Line {i}" ], Encoding.UTF8 )
+            } ).ToArray ();
+
+            bool [] results = await Task.WhenAll ( writes );
+            string [] actualLines = await File.ReadAllLinesAsync ( _tempFilePath!, Encoding.UTF8 );
+
+            Assert.IsTrue ( results.All ( result => result ) );
+            CollectionAssert.AreEquivalent ( expectedLines, actualLines );
         }
 
         [TestMethod]

@@ -38,6 +38,9 @@ namespace Sisk.Core.Http {
 
         private static readonly Lazy<LogStream> _consoleOutputLazy = new Lazy<LogStream> ( () => new LogStream ( Console.Out ) );
         private static readonly Lazy<LogStream> _emptyLazy = new Lazy<LogStream> ( () => new LogStream () );
+        private static readonly object _safeFileLocksSync = new object ();
+        private static readonly Dictionary<string, SafeFileLock> _safeFileLocks = new Dictionary<string, SafeFileLock> (
+            OperatingSystem.IsWindows () ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal );
 
         /// <summary>
         /// Converts the specified <see cref="DateTime"/> to a file-name-safe string representation
@@ -81,8 +84,11 @@ namespace Sisk.Core.Http {
         /// <param name="filePath">The path to the file where the string will be written.</param>
         /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
         public static bool SafeWriteToFile ( string filePath, string? contents ) {
-            return SafeWriteToFile ( filePath, contents, Encoding.UTF8 );
+            return SafeWriteToFile ( filePath, contents, Encoding.Default );
         }
 
         /// <summary>
@@ -90,8 +96,11 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="filePath">The path to the file where the string will be written.</param>
         /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
-        /// <param name="encoding">The encoding to use when writing the string. Defaults to <see cref="Encoding.UTF8"/>.</param>
+        /// <param name="encoding">The encoding to use when writing the string. Defaults to <see cref="Encoding.Default"/>.</param>
         /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
         public static bool SafeWriteToFile ( string filePath, string? contents, Encoding encoding ) {
             string fullPath = Path.GetFullPath ( filePath );
             string? directoryPath = Path.GetDirectoryName ( fullPath );
@@ -99,7 +108,13 @@ namespace Sisk.Core.Http {
             if (directoryPath is null)
                 return false; // user is trying to write to a root directory?
 
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
             try {
+                fileLock.Semaphore.Wait ();
+                lockTaken = true;
+
                 if (!Directory.Exists ( directoryPath ))
                     Directory.CreateDirectory ( directoryPath );
 
@@ -110,6 +125,165 @@ namespace Sisk.Core.Http {
             catch {
                 return false;
             }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
+        }
+
+        /// <summary>
+        /// Safely writes the specified lines to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be written.</param>
+        /// <param name="lines">The lines to write to the file.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static bool SafeWriteToFile ( string filePath, string [] lines ) {
+            return SafeWriteToFile ( filePath, lines, Encoding.Default );
+        }
+
+        /// <summary>
+        /// Safely writes the specified lines to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be written.</param>
+        /// <param name="lines">The lines to write to the file.</param>
+        /// <param name="encoding">The encoding to use when writing the lines.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static bool SafeWriteToFile ( string filePath, string [] lines, Encoding encoding ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
+            try {
+                fileLock.Semaphore.Wait ();
+                lockTaken = true;
+
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                File.WriteAllLines ( fullPath, lines, encoding );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
+        }
+
+        /// <summary>
+        /// Safely appends the specified string to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be appended.</param>
+        /// <param name="text">The string to append to the file. Can be <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static bool SafeAppendToFile ( string filePath, string? text ) {
+            return SafeAppendToFile ( filePath, text, Encoding.Default );
+        }
+
+        /// <summary>
+        /// Safely appends the specified string to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be appended.</param>
+        /// <param name="text">The string to append to the file. Can be <see langword="null"/>.</param>
+        /// <param name="encoding">The encoding to use when appending the string.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static bool SafeAppendToFile ( string filePath, string? text, Encoding encoding ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
+            try {
+                fileLock.Semaphore.Wait ();
+                lockTaken = true;
+
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                File.AppendAllText ( fullPath, text, encoding );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
+        }
+
+        /// <summary>
+        /// Safely appends the specified lines to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be appended.</param>
+        /// <param name="lines">The lines to append to the file.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static bool SafeAppendToFile ( string filePath, string [] lines ) {
+            return SafeAppendToFile ( filePath, lines, Encoding.Default );
+        }
+
+        /// <summary>
+        /// Safely appends the specified lines to the specified file path.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be appended.</param>
+        /// <param name="lines">The lines to append to the file.</param>
+        /// <param name="encoding">The encoding to use when appending the lines.</param>
+        /// <returns><see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static bool SafeAppendToFile ( string filePath, string [] lines, Encoding encoding ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
+            try {
+                fileLock.Semaphore.Wait ();
+                lockTaken = true;
+
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                File.AppendAllLines ( fullPath, lines, encoding );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
         }
 
         /// <summary>
@@ -119,8 +293,11 @@ namespace Sisk.Core.Http {
         /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
         /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task that represents the asynchronous write operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
         public static Task<bool> SafeWriteToFileAsync ( string filePath, string? contents, CancellationToken cancellation = default ) {
-            return SafeWriteToFileAsync ( filePath, contents, Encoding.UTF8, cancellation );
+            return SafeWriteToFileAsync ( filePath, contents, Encoding.Default, cancellation );
         }
 
         /// <summary>
@@ -128,9 +305,12 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="filePath">The path to the file where the string will be written.</param>
         /// <param name="contents">The string to write to the file. Can be <see langword="null"/>.</param>
-        /// <param name="encoding">The encoding to use when writing the string. Defaults to <see cref="Encoding.UTF8"/>.</param>
+        /// <param name="encoding">The encoding to use when writing the string.</param>
         /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task that represents the asynchronous write operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
         public static async Task<bool> SafeWriteToFileAsync ( string filePath, string? contents, Encoding encoding, CancellationToken cancellation = default ) {
             string fullPath = Path.GetFullPath ( filePath );
             string? directoryPath = Path.GetDirectoryName ( fullPath );
@@ -138,7 +318,13 @@ namespace Sisk.Core.Http {
             if (directoryPath is null)
                 return false; // user is trying to write to a root directory?
 
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
             try {
+                await fileLock.Semaphore.WaitAsync ( cancellation );
+                lockTaken = true;
+
                 if (!Directory.Exists ( directoryPath ))
                     Directory.CreateDirectory ( directoryPath );
 
@@ -148,6 +334,171 @@ namespace Sisk.Core.Http {
             }
             catch {
                 return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
+        }
+
+        /// <summary>
+        /// Safely writes the specified lines to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be written.</param>
+        /// <param name="lines">The lines to write to the file.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static Task<bool> SafeWriteToFileAsync ( string filePath, string [] lines, CancellationToken cancellation = default ) {
+            return SafeWriteToFileAsync ( filePath, lines, Encoding.Default, cancellation );
+        }
+
+        /// <summary>
+        /// Safely writes the specified lines to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be written.</param>
+        /// <param name="lines">The lines to write to the file.</param>
+        /// <param name="encoding">The encoding to use when writing the lines.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static async Task<bool> SafeWriteToFileAsync ( string filePath, string [] lines, Encoding encoding, CancellationToken cancellation = default ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
+            try {
+                await fileLock.Semaphore.WaitAsync ( cancellation );
+                lockTaken = true;
+
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                await File.WriteAllLinesAsync ( fullPath, lines, encoding, cancellation );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
+        }
+
+        /// <summary>
+        /// Safely appends the specified string to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be appended.</param>
+        /// <param name="text">The string to append to the file. Can be <see langword="null"/>.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static Task<bool> SafeAppendToFileAsync ( string filePath, string? text, CancellationToken cancellation = default ) {
+            return SafeAppendToFileAsync ( filePath, text, Encoding.Default, cancellation );
+        }
+
+        /// <summary>
+        /// Safely appends the specified string to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the string will be appended.</param>
+        /// <param name="text">The string to append to the file. Can be <see langword="null"/>.</param>
+        /// <param name="encoding">The encoding to use when appending the string.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static async Task<bool> SafeAppendToFileAsync ( string filePath, string? text, Encoding encoding, CancellationToken cancellation = default ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
+            try {
+                await fileLock.Semaphore.WaitAsync ( cancellation );
+                lockTaken = true;
+
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                await File.AppendAllTextAsync ( fullPath, text, encoding, cancellation );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
+            }
+        }
+
+        /// <summary>
+        /// Safely appends the specified lines to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be appended.</param>
+        /// <param name="lines">The lines to append to the file.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static Task<bool> SafeAppendToFileAsync ( string filePath, string [] lines, CancellationToken cancellation = default ) {
+            return SafeAppendToFileAsync ( filePath, lines, Encoding.Default, cancellation );
+        }
+
+        /// <summary>
+        /// Safely appends the specified lines to the specified file path asynchronously.
+        /// </summary>
+        /// <param name="filePath">The path to the file where the lines will be appended.</param>
+        /// <param name="lines">The lines to append to the file.</param>
+        /// <param name="encoding">The encoding to use when appending the lines.</param>
+        /// <param name="cancellation">The cancellation token to use for the operation. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation. The task returns <see langword="true"/> if the operation was successful, otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Calls to these file helper methods for the same normalized full path are serialized within the current process. Synchronous and asynchronous overloads share the same per-file lock, while calls for different files can run concurrently. Access is not coordinated across processes.
+        /// </remarks>
+        public static async Task<bool> SafeAppendToFileAsync ( string filePath, string [] lines, Encoding encoding, CancellationToken cancellation = default ) {
+            string fullPath = Path.GetFullPath ( filePath );
+            string? directoryPath = Path.GetDirectoryName ( fullPath );
+
+            if (directoryPath is null)
+                return false; // user is trying to write to a root directory?
+
+            SafeFileLock fileLock = RetainSafeFileLock ( fullPath );
+            bool lockTaken = false;
+
+            try {
+                await fileLock.Semaphore.WaitAsync ( cancellation );
+                lockTaken = true;
+
+                if (!Directory.Exists ( directoryPath ))
+                    Directory.CreateDirectory ( directoryPath );
+
+                await File.AppendAllLinesAsync ( fullPath, lines, encoding, cancellation );
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+            finally {
+                ReleaseSafeFileLock ( fullPath, fileLock, lockTaken );
             }
         }
 
@@ -742,6 +1093,39 @@ namespace Sisk.Core.Http {
         /// <inheritdoc/>
         ~LogStream () {
             Dispose ();
+        }
+
+        private static SafeFileLock RetainSafeFileLock ( string fullPath ) {
+            lock (_safeFileLocksSync) {
+                if (!_safeFileLocks.TryGetValue ( fullPath, out SafeFileLock? fileLock )) {
+                    fileLock = new SafeFileLock ();
+                    _safeFileLocks.Add ( fullPath, fileLock );
+                }
+
+                fileLock.ReferenceCount++;
+                return fileLock;
+            }
+        }
+
+        private static void ReleaseSafeFileLock ( string fullPath, SafeFileLock fileLock, bool lockTaken ) {
+            if (lockTaken)
+                fileLock.Semaphore.Release ();
+
+            lock (_safeFileLocksSync) {
+                fileLock.ReferenceCount--;
+
+                if (fileLock.ReferenceCount == 0) {
+                    _safeFileLocks.Remove ( fullPath );
+                    fileLock.Dispose ();
+                }
+            }
+        }
+
+        private sealed class SafeFileLock : IDisposable {
+            public readonly SemaphoreSlim Semaphore = new SemaphoreSlim ( 1, 1 );
+            public int ReferenceCount;
+
+            public void Dispose () => Semaphore.Dispose ();
         }
 
         private sealed class FlushSignal {
