@@ -213,7 +213,7 @@ public partial class HttpServer {
         HttpServerEngineContextResponse baseResponse = context.Response;
         HttpServerEngineContextRequest baseRequest = context.Request;
 
-        HttpContext? srContext = new HttpContext ( this );
+        using HttpContext? srContext = new HttpContext ( this );
         bool closeStream = true;
 
         HttpContext._context.Value = srContext;
@@ -466,11 +466,12 @@ finishSending:
             errorLogStream = null;
         }
         catch (Exception ex) {
+            executionResult.ServerException = ex;
+            executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
+
             if (!currentConfig.ThrowExceptions) {
                 baseResponse.StatusCode = 500/*InternalServerError*/;
                 baseResponse.StatusDescription = HttpStatusInformation.InternalServerError.Description;
-                executionResult.ServerException = ex;
-                executionResult.Status = HttpServerExecutionStatus.ExceptionThrown;
             }
             else {
                 throw;

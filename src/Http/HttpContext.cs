@@ -16,10 +16,12 @@ namespace Sisk.Core.Http {
     /// <summary>
     /// Represents an context that is shared in a entire HTTP session.
     /// </summary>
-    public sealed class HttpContext {
+    public sealed class HttpContext : IDisposable {
 
+        bool _disposed;
         internal readonly static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?> ();
         internal readonly ConcurrentQueue<Func<Task>> _deferredActions = new ();
+        internal readonly SemaphoreSlim _contextSyncronizedTask = new ( 1 );
 
         /// <summary>
         /// Gets the current running <see cref="HttpContext"/>.
@@ -154,6 +156,16 @@ namespace Sisk.Core.Http {
                 cts.Dispose ();
                 return Task.CompletedTask;
             } );
+        }
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose () {
+            if (_disposed)
+                return;
+
+            _contextSyncronizedTask.Dispose ();
+
+            _disposed = true;
         }
 
         internal HttpContext ( HttpServer httpServer ) {
