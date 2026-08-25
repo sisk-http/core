@@ -21,7 +21,6 @@ namespace Sisk.Core.Http {
         bool _disposed;
         internal readonly static AsyncLocal<HttpContext?> _context = new AsyncLocal<HttpContext?> ();
         internal readonly ConcurrentQueue<Func<Task>> _deferredActions = new ();
-        internal readonly SemaphoreSlim _contextSyncronizedTask = new ( 1 );
 
         /// <summary>
         /// Gets the current running <see cref="HttpContext"/>.
@@ -67,6 +66,15 @@ namespace Sisk.Core.Http {
         /// Gets or sets a managed collection for this HTTP context.
         /// </summary>
         public TypedValueDictionary RequestBag { get; set; } = new TypedValueDictionary ();
+
+        /// <summary>
+        /// Gets the atomic numeric operations available for values stored in <see cref="RequestBag"/>.
+        /// </summary>
+        /// <remarks>
+        /// Atomicity is guaranteed only between operations performed through this property. Concurrent direct
+        /// access to <see cref="RequestBag"/> is not synchronized by these operations.
+        /// </remarks>
+        public HttpContextInterlocked Interlocked { get; }
 
         /// <summary>
         /// Gets the context <see cref="Http.HttpServer"/> instance.
@@ -163,8 +171,6 @@ namespace Sisk.Core.Http {
             if (_disposed)
                 return;
 
-            _contextSyncronizedTask.Dispose ();
-
             _disposed = true;
         }
 
@@ -173,6 +179,129 @@ namespace Sisk.Core.Http {
             Request = null!; // associated later
             Router = null!;// associated later, may be null
             ListeningHost = null!; // associated later, may be null
+            Interlocked = new HttpContextInterlocked ( this );
+        }
+
+        /// <summary>
+        /// Provides atomic operations for numeric values stored by name in an <see cref="HttpContext.RequestBag"/>.
+        /// </summary>
+        /// <remarks>
+        /// Values created by this type are stored as <see cref="double"/>. Operations are atomic with respect to
+        /// other operations performed by this instance, but not with respect to direct access to the context bag.
+        /// </remarks>
+        public sealed class HttpContextInterlocked {
+
+            readonly HttpContext _context;
+
+            internal HttpContextInterlocked ( HttpContext inner ) {
+                _context = inner;
+            }
+
+            /// <summary>
+            /// Atomically adds an integer to the value associated with the specified name.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <param name="value">The value to add.</param>
+            /// <remarks>If <paramref name="name"/> is not present, it is created with <paramref name="value"/>.</remarks>
+            public void Add ( string name, Int32 value ) {
+                Add ( name, (double) value );
+            }
+
+            /// <summary>
+            /// Atomically adds a number to the value associated with the specified name.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <param name="value">The value to add.</param>
+            /// <remarks>If <paramref name="name"/> is not present, it is created with <paramref name="value"/>.</remarks>
+            public void Add ( string name, double value ) {
+                var requestBag = _context.RequestBag;
+                lock (requestBag._values) {
+                    if (requestBag.TryGetValue ( name, out double currentValue )) {
+                        requestBag [ name ] = currentValue + value;
+                    }
+                    else {
+                        requestBag [ name ] = value;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Atomically compares the value associated with the specified name and replaces it when equal.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <param name="value">The replacement value.</param>
+            /// <param name="comparand">The value to compare with the stored value.</param>
+            /// <param name="notFound">The value returned when <paramref name="name"/> is not present.</param>
+            /// <returns>The original stored value, or <paramref name="notFound"/> when the name is not present.</returns>
+            public double CompareExchange ( string name, Int64 value, Int64 comparand, Int64 notFound = -1 ) {
+                return CompareExchange ( name, (double) value, (double) comparand, (double) notFound );
+            }
+
+            /// <summary>
+            /// Atomically compares the value associated with the specified name and replaces it when equal.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <param name="value">The replacement value.</param>
+            /// <param name="comparand">The value to compare with the stored value.</param>
+            /// <param name="notFound">The value returned when <paramref name="name"/> is not present.</param>
+            /// <returns>The original stored value, or <paramref name="notFound"/> when the name is not present.</returns>
+            public double CompareExchange ( string name, double value, double comparand, double notFound = -1 ) {
+                var requestBag = _context.RequestBag;
+                lock (requestBag._values) {
+                    if (requestBag.TryGetValue ( name, out double currentValue )) {
+                        if (currentValue == comparand) {
+                            requestBag [ name ] = value;
+                        }
+                        return currentValue;
+                    }
+                    return notFound;
+                }
+            }
+
+            /// <summary>
+            /// Atomically replaces the value associated with the specified name.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <param name="value">The replacement value.</param>
+            /// <returns>The original stored value, or <paramref name="value"/> when the name was not present.</returns>
+            public double Exchange ( string name, Int64 value ) {
+                return Exchange ( name, (double) value );
+            }
+
+            /// <summary>
+            /// Atomically replaces the value associated with the specified name.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <param name="value">The replacement value.</param>
+            /// <returns>The original stored value, or <paramref name="value"/> when the name was not present.</returns>
+            public double Exchange ( string name, double value ) {
+                var requestBag = _context.RequestBag;
+                lock (requestBag._values) {
+                    if (requestBag.TryGetValue ( name, out double currentValue )) {
+                        requestBag [ name ] = value;
+                        return currentValue;
+                    }
+                    else {
+                        requestBag [ name ] = value;
+                        return value;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Atomically reads the value associated with the specified name.
+            /// </summary>
+            /// <param name="name">The name of the value.</param>
+            /// <returns>The stored value, or <see langword="null"/> when the name is not present.</returns>
+            public double? Inspect ( string name ) {
+                var requestBag = _context.RequestBag;
+                lock (requestBag._values) {
+                    if (requestBag.TryGetValue ( name, out double currentValue )) {
+                        return currentValue;
+                    }
+                    return null;
+                }
+            }
         }
     }
 }

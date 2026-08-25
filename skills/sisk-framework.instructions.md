@@ -21,8 +21,8 @@ mainRouter.MapGet("/hello/<name>", req => {
     return new HttpResponse($"Hello, {name}");
 });
 
-// SetRoute
-mainRouter.SetRoute(RouteMethod.Get, "/user/<id>", req => {
+// Map (preferred over deprecated SetRoute)
+mainRouter.Map(RouteMethod.Get, "/user/<id>", req => {
     Guid id = req.RouteParameters["id"].GetGuid();
     return new HttpResponse(200);
 });
@@ -54,12 +54,12 @@ public class UsersController : RouterModule
     public HttpResponse Delete(HttpRequest req) { ... }
 }
 
-mainRouter.SetObject(new UsersController());
+mainRouter.MapInstance(new UsersController());  // or MapType<UsersController>() for static methods
 ```
 
 **Routes with Regex:**
 ```csharp
-mainRouter.SetRoute(new RegexRoute(RouteMethod.Get, @"/uploads/(?<filename>.*\.(jpg|png))", req => {
+mainRouter.Map(new RegexRoute(RouteMethod.Get, @"/uploads/(?<filename>.*\.(jpg|png))", req => {
     string filename = req.RouteParameters["filename"].GetString();
     return new HttpResponse($"File: {filename}");
 }));
@@ -69,24 +69,24 @@ mainRouter.SetRoute(new RegexRoute(RouteMethod.Get, @"/uploads/(?<filename>.*\.(
 ```csharp
 mainRouter.MatchRoutesIgnoreCase = true;
 
-mainRouter.NotFoundErrorHandler = () =>
+mainRouter.NotFoundErrorHandler = (HttpContext ctx) =>
     new HttpResponse(404) { Content = new StringContent("Not found") };
 
-mainRouter.MethodNotAllowedErrorHandler = (ctx) =>
+mainRouter.MethodNotAllowedErrorHandler = (HttpContext ctx) =>
     new HttpResponse(405) { Content = new StringContent("Method not allowed") };
 
-mainRouter.CallbackErrorHandler = (ex, ctx) =>
+mainRouter.CallbackErrorHandler = (Exception ex, HttpContext ctx) =>
     new HttpResponse(500) { Content = new StringContent(ex.Message) };
 ```
 
 **Wildcard routes:**
 ```csharp
-mainRouter.SetRoute(RouteMethod.Any, "/", handler);           // any method
-mainRouter.SetRoute(RouteMethod.Post, Route.AnyPath, handler); // any path
+mainRouter.Map(RouteMethod.Any, "/", handler);           // any method
+mainRouter.Map(RouteMethod.Post, Route.AnyPath, handler); // any path
 ```
 
 - `RouteParameters` and `Query` return `StringValueCollection` — each value is `StringValue` with helpers: `.GetString()`, `.GetGuid()`, `.GetInteger()`, etc.
-- Trailing slash is ignored by default. To force: flag `HttpServerFlags.ForceTrailingSlash`.
+- Trailing slash is ignored by default. To force: `HttpServerConfiguration.ForceTrailingSlash = true`.
 - Sisk detects route collisions automatically when defining.
 
 ---
@@ -112,8 +112,8 @@ bool hasContent      = request.HasContents;
 bool loaded          = request.IsContentAvailable;
 
 // Form
-var form             = request.GetFormContent();         // NameValueCollection
-var multipart        = request.GetMultipartFormContent(); // MultipartObject[]
+var form             = request.GetFormContent();         // StringKeyStoreCollection
+var multipart        = request.GetMultipartFormContent(); // MultipartFormCollection
 
 // Headers
 string? auth         = request.Headers.Authorization;
@@ -128,7 +128,7 @@ CancellationToken dc = request.DisconnectToken;
 
 - Configurable size limit in `HttpServerConfiguration.MaximumContentLength` — exceeding returns 413.
 - `GetRequestStream()` can only be read once; after that `Body` and `RawBody` become unavailable.
-- `HttpContext.Current` / `HttpContext.GetCurrentContext()` gets the current thread's context.
+- `HttpContext.Current` gets the current thread's context (throws if none). `HttpContext.GetCurrentContext()` returns `HttpContext?` (null if none).
 - `request.Bag.Set<T>()` / `request.Bag.Get<T>()` to pass typed data between handlers.
 
 ### HttpResponse
@@ -139,12 +139,15 @@ var res = new HttpResponse(200) {
     Content = new StringContent(json, Encoding.UTF8, "application/json")
 };
 
+// Status is a single HttpStatusInformation struct (not separate StatusCode/StatusDescription)
+res.Status = new HttpStatusInformation(201, "Created");
+
 // Fluent API
 return new HttpResponse()
     .WithStatus(HttpStatusCode.Created)
     .WithHeader("Location", $"/users/{id}")
     .WithContent(JsonContent.Create(user))
-    .WithCookie("session", token, expiresAt: DateTime.UtcNow.AddDays(7));
+    .WithCookie("session", token, expires: DateTime.UtcNow.AddDays(7));
 
 // Redirect
 return new HttpResponse(301).WithHeader("Location", "/login");
@@ -152,7 +155,7 @@ return new HttpResponse(301).WithHeader("Location", "/login");
 // Chunked
 var res = new HttpResponse { SendChunked = true };
 
-// Response stream (large files)
+// Response stream (large files) — returns HttpResponseStreamManager
 var responseStream = request.GetResponseStream();
 responseStream.SendChunked = true;
 responseStream.SetStatus(200);
@@ -199,12 +202,12 @@ static async Task<HttpResponse> DoSomething ( HttpRequest request ) {
     DayOfWeek enumFromQuery = request.Query [ "day-of-week" ].GetEnum<DayOfWeek> ();
     // both RouteParameters and Query return StringValueCollection with functional StringValue items
 
-    // functional helpers to reading form data
+    // functional helpers to reading form data (returns StringKeyStoreCollection)
     var form = await request.GetFormContentAsync ();
     string? singleField = form [ "something" ];
     string [] multipleValues = form.GetValues ( "multiple-values" );
 
-    // functional helpers to reading multipart form
+    // functional helpers to reading multipart form (returns MultipartFormCollection)
     var multipartForm = await request.GetMultipartFormContentAsync ();
     MultipartObject? singleItem = multipartForm.GetItem ( "multipart field name" );
     MultipartObject [] allMatches = multipartForm.GetItems ( "items-with-this-name" );
@@ -264,7 +267,7 @@ public class AuthHandler : IRequestHandler
 
 ```csharp
 // per route
-mainRouter.SetRoute(RouteMethod.Get, "/", IndexPage, "", new IRequestHandler[] {
+mainRouter.Map(RouteMethod.Get, "/", IndexPage, "", new IRequestHandler[] {
     new AuthHandler(),
     new RateLimitHandler(),
     // ↑ IndexPage executes here
@@ -289,7 +292,7 @@ public HttpResponse Limited(HttpRequest req) { ... }
 var auth = new AuthHandler();
 mainRouter.GlobalRequestHandlers = new IRequestHandler[] { auth };
 
-mainRouter.SetRoute(new Route(RouteMethod.Get, "/public", ...) {
+mainRouter.Map(new Route(RouteMethod.Get, "/public", ...) {
     BypassGlobalRequestHandlers = new IRequestHandler[] { auth } // same instance
 });
 ```
@@ -395,7 +398,7 @@ foreach (var e in server.EventSources.Find(id => id.StartsWith("client-")))
 
 - Browsers reconnect automatically after server closure; send a termination message to avoid infinite reconnection.
 - SSE supports only GET in most browsers; don't expect other methods or custom headers.
-- `server.EventSources.All` lists all active identified connections.
+- `server.EventSources.All()` lists all active identified connections (method, not property).
 
 ---
 
@@ -490,9 +493,13 @@ public static class DbExtensions
 ```
 
 Available events (override as needed):
-- `OnServerStarting` / `OnServerStopping`
+- `OnServerStarting(HttpServer)` / `OnServerStarted(HttpServer)`
+- `OnServerStopping(HttpServer)` / `OnServerStopped(HttpServer)`
+- `OnSetupRouter(Router)` — called when the router is being configured
 - `OnHttpRequestOpen(HttpRequest)` — connection opened, headers available
 - `OnHttpRequestClose(HttpServerExecutionResult)` — response sent, cleanup here
-- `OnContextBagCreated(HttpContextBag)`
+- `OnContextBagCreated(TypedValueDictionary)` — context bag created
+- `OnException(Exception)` — unhandled exception
+- `Priority` (virtual property) — controls handler execution order
 
 > Use `HttpServerHandler` to manage request-scoped resources (DB connections, sessions, telemetry). Use `IRequestHandler` for conditional logic per route (authentication, rate limit, validation).

@@ -16,7 +16,7 @@ namespace Sisk.Core.Entity;
 /// Represents the base class for storing and retriving data by their type.
 /// </summary>
 public class TypedValueDictionary : IDictionary<string, object?> {
-    readonly Dictionary<string, object?> _values;
+    internal readonly Dictionary<string, object?> _values;
 
     /// <summary>
     /// Creates an new <see cref="TypedValueDictionary"/> instance with default parameters.
