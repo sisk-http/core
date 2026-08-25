@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
@@ -15,23 +14,11 @@ namespace Sisk.Monitoring;
 /// </summary>
 public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
-    static readonly Regex dateTokenRegex = new Regex (
-        @"\b(\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?(?:\s?(?:Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?)?|\d{1,2}/(?:\d{1,2}|[A-Za-z]{3,9})/\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?(?:\s+[+-]?\d{4})?)\b",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
-
-    static readonly Regex timeTokenRegex = new Regex (
-        @"^\d{1,2}:\d{2}(?::\d{2})?(?:[\.,]\d+)?(?:\s?(?:AM|PM|Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?$",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
-
-    static readonly Regex numberTokenRegex = new Regex (
-        @"(?<![A-Za-z])[-+]?\d+(?:[\.,]\d+)?(?![A-Za-z])",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant );
-
-    static readonly Regex bracketTokenRegex = new Regex (
-        @"\[[^\]\r\n]+\]",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant );
-
     string? currentRoutePrefix = null;
+    long http2xxResponses;
+    long http4xxResponses;
+    long http5xxResponses;
+    long httpResponseMinuteStamp;
 
     // arrow-left-s-line from Remix Icon
     const string ArrowLeftIcon = """
@@ -63,19 +50,18 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3C19.5376 3 22 5.5 22 9C22 16 14.5 20 12 21.5C9.5 20 2 16 2 9C2 5.5 4.5 3 7.5 3C9.36 3 11 4 12 5C13 4 14.64 3 16.5 3ZM12.9339 10.5H17V8.5H14.0654L12.9339 10.5ZM7 8.5V10.5H9.9346L11.0661 8.5H7ZM11.5 12L10 15H7V17H9.9346L12 13L14.0654 17H17V15H14L12.5 12H11.5Z"></path></svg>
         """;
 
-    // file-copy-line from Remix Icon
-    const string CopyIcon = """
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6Z"></path></svg>
-        """;
-
     List<MonitoringDefinition<LogStream>> capturingLogStreams = new ();
     List<MonitoringDefinition<Counter>> counters = new ();
     List<MonitoringDefinition<Meter>> meters = new ();
     readonly Dictionary<string, int> logStreamBufferLineCounts = new ( StringComparer.OrdinalIgnoreCase );
     readonly List<HealthSnapshot> healthSnapshots = new ();
     readonly object healthSnapshotsSync = new ();
+    readonly List<HttpResponseSnapshot> httpResponseSnapshots = new ();
+    readonly object httpResponseSnapshotsSync = new ();
     CancellationTokenSource? storeFlushCancellation;
     Task? storeFlushTask;
+    CancellationTokenSource? healthSamplingCancellation;
+    Task? healthSamplingTask;
     int storeFlushRunning;
     bool storeStateLoaded;
     bool disposed;
@@ -187,7 +173,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             }
         }
 
-        DateTime threshold = DateTime.Now - TimeSpan.FromDays ( 7 );
+        DateTime threshold = DateTime.Now - TimeSpan.FromDays ( 30 );
         lock (healthSnapshotsSync) {
             healthSnapshots.Clear ();
             healthSnapshots.AddRange ( (snapshot.Health ?? [])
@@ -270,6 +256,10 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             head += new HtmlElement ( "meta" )
                 .WithAttribute ( "name", "viewport" )
                 .WithAttribute ( "content", "width=device-width, initial-scale=1.0" )
+                .SelfClosed ();
+            head += new HtmlElement ( "meta" )
+                .WithAttribute ( "name", "color-scheme" )
+                .WithAttribute ( "content", "light dark" )
                 .SelfClosed ();
             head += new HtmlElement ( "title", PageTitle );
             head += new HtmlElement ( "style", RenderableText.Raw ( Assets.DefaultStyles ) );
@@ -388,6 +378,56 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             } );
 
             fragment += WriteAutoRefreshToolbar ();
+
+            fragment += new HtmlElement ( "div", section => {
+                section.ClassList.Add ( "section" );
+                section += new HtmlElement ( "h2", "HTTP Responses" );
+
+                section += new HtmlElement ( "div", chart => {
+                    chart.ClassList.Add ( "http-response-chart" );
+                    chart.Attributes [ "role" ] = "img";
+                    chart.Attributes [ "aria-label" ] = "HTTP responses chart";
+
+                    chart += new HtmlElement ( "div", chartReadings => {
+                        chartReadings.ClassList.Add ( "http-response-chart-container" );
+                        chartReadings.Attributes [ "data-http-responses-endpoint" ] = PrefixPath ( "/data" );
+                    } );
+
+                    chart += new HtmlElement ( "div", legend => {
+                        legend.ClassList.Add ( "http-response-chart-legend" );
+
+                        (string Status, string Description, string ClassName, string StatKey) [] responseGroups = [
+                            ("2xx", "Successful responses", "success", "success"),
+                            ("4xx", "Client errors", "client-error", "clientError"),
+                            ("5xx", "Server errors", "server-error", "serverError")
+                        ];
+
+                        foreach (var responseGroup in responseGroups) {
+                            legend += new HtmlElement ( "div", item => {
+                                item.ClassList.Add ( "http-response-chart-item" );
+                                item += new HtmlElement ( "span" ).WithClass ( $"http-response-chart-dot {responseGroup.ClassName}" );
+                                item += new HtmlElement ( "div", label => {
+                                    label.ClassList.Add ( "http-response-chart-label" );
+                                    label += new HtmlElement ( "strong", responseGroup.Status );
+                                    label += new HtmlElement ( "span", responseGroup.Description );
+                                } );
+                                item += new HtmlElement ( "div", value => {
+                                    value.ClassList.Add ( "http-response-chart-value" );
+
+                                    var totalElement = new HtmlElement ( "strong", "-" );
+                                    totalElement.Attributes [ "data-http-total" ] = responseGroup.StatKey;
+                                    value += totalElement;
+
+                                    var percentElement = new HtmlElement ( "span", "-" );
+                                    percentElement.ClassList.Add ( "http-response-chart-percentage" );
+                                    percentElement.Attributes [ "data-http-percent" ] = responseGroup.StatKey;
+                                    value += percentElement;
+                                } );
+                            } );
+                        }
+                    } );
+                } );
+            } );
 
             var pinnedCounters = counters.Where ( c => c.DashboardPinned ).ToArray ();
             if (pinnedCounters.Length > 0) {
@@ -515,6 +555,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
                     section += new HtmlElement ( "div", grid => {
                         grid.ClassList.Add ( "cards-grid" );
+                        grid.Attributes [ "data-counters-endpoint" ] = PrefixPath ( "/counters/data" );
 
                         foreach (var counter in counterGroup) {
                             grid += WriteCounterCard ( counter );
@@ -610,9 +651,72 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// <param name="request">The incoming HTTP request.</param>
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with health data in JSON format.</returns>
     protected virtual ValueTask<HttpResponse> GetServerHealthDataAsync ( HttpRequest request ) {
-        var snapshot = CreateHealthSnapshot ();
-        TrackHealthSnapshot ( snapshot );
-        string json = SerializeHealthPayload ( snapshot, ReadHealthSnapshots () );
+        string? requestedPeriod = request.Query [ "period" ].Value;
+        (TimeSpan period, TimeSpan bucket) = requestedPeriod switch {
+            "1d" => (TimeSpan.FromDays ( 1 ), TimeSpan.FromMinutes ( 5 )),
+            "7d" => (TimeSpan.FromDays ( 7 ), TimeSpan.FromMinutes ( 30 )),
+            "30d" => (TimeSpan.FromDays ( 30 ), TimeSpan.FromHours ( 2 )),
+            _ => (TimeSpan.FromHours ( 1 ), TimeSpan.FromMinutes ( 1 ))
+        };
+
+        HealthSnapshot [] history = ReadHealthSnapshots ( period, bucket );
+        HealthSnapshot snapshot = ReadCurrentHealthSnapshot ();
+        string json = SerializeHealthPayload ( snapshot, history );
+
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
+        );
+    }
+
+    /// <summary>
+    /// Generates the JSON payload consumed by the dashboard page, containing HTTP response readings, totals and pinned counters.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with dashboard data in JSON format.</returns>
+    protected virtual ValueTask<HttpResponse> GetDashboardDataAsync ( HttpRequest request ) {
+        long responses2xx = Interlocked.Read ( ref http2xxResponses );
+        long responses4xx = Interlocked.Read ( ref http4xxResponses );
+        long responses5xx = Interlocked.Read ( ref http5xxResponses );
+
+        string json = SerializeDashboardPayload (
+            SerializeHttpResponseReadingsPayload ( ReadHttpResponseSnapshots (), responses2xx, responses4xx, responses5xx ),
+            responses2xx,
+            responses4xx,
+            responses5xx,
+            counters.Where ( c => c.DashboardPinned ) );
+
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
+        );
+    }
+
+    /// <summary>
+    /// Generates the JSON payload containing the current values of all captured counters.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with counter data in JSON format.</returns>
+    protected virtual ValueTask<HttpResponse> GetCountersDataAsync ( HttpRequest request ) {
+        string json = SerializeCountersPayload ( counters );
+
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
+        );
+    }
+
+    /// <summary>
+    /// Generates the JSON payload containing the current buffered lines of a log stream.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <param name="logStream">The log stream definition whose buffered lines will be returned.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with log lines in JSON format.</returns>
+    protected virtual ValueTask<HttpResponse> GetLogStreamDataAsync ( HttpRequest request, MonitoringDefinition<LogStream> logStream ) {
+        string [] logContent = logStream.Instance.PeekEntries ();
+        if (logContent.Length == 0 && logStream.Instance.FilePath is { } filePath) {
+            logStreamBufferLineCounts.TryGetValue ( logStream.StorageKey, out int lineCount );
+            logContent = ReadLogFileTail ( filePath, lineCount > 0 ? lineCount : 500 );
+        }
+
+        string json = SerializeLogStreamPayload ( logContent );
 
         return new ValueTask<HttpResponse> (
             new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
@@ -626,12 +730,6 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// <param name="logStream">The log stream definition to display.</param>
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with log stream HTML.</returns>
     protected virtual ValueTask<HttpResponse> GetLogStreamPageHtmlAsync ( HttpRequest request, MonitoringDefinition<LogStream> logStream ) {
-        string [] logContent = logStream.Instance.PeekEntries ();
-        if (logContent.Length == 0 && logStream.Instance.FilePath is { } filePath) {
-            logStreamBufferLineCounts.TryGetValue ( logStream.StorageKey, out int lineCount );
-            logContent = ReadLogFileTail ( filePath, lineCount > 0 ? lineCount : 500 );
-        }
-
         var content = new HtmlElement ( "", fragment => {
 
             fragment += new HtmlElement ( "a", back => {
@@ -689,17 +787,10 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             fragment += new HtmlElement ( "div", logContainer => {
                 logContainer.ClassList.Add ( "log-content" );
                 logContainer.ClassList.Add ( "log-expanded" );
+                logContainer.ClassList.Add ( "log-empty" );
                 logContainer.Id = "log-content";
-
-                if (!logContent.Any ()) {
-                    logContainer.ClassList.Add ( "log-empty" );
-                    logContainer += "No log entries yet.";
-                    return;
-                }
-
-                foreach (string line in logContent) {
-                    logContainer += CreateLogLineElement ( line );
-                }
+                logContainer.Attributes [ "data-logstream-endpoint" ] = PrefixPath ( $"/logstream/{logStream.SanitizedLabel}/data" );
+                logContainer += "No log entries yet.";
             } );
         } );
 
@@ -734,9 +825,8 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with server health HTML.</returns>
     protected virtual ValueTask<HttpResponse> GetServerHealthPageHtmlAsync ( HttpRequest request ) {
 
-        var snapshot = CreateHealthSnapshot ();
-        TrackHealthSnapshot ( snapshot );
-        var history = ReadHealthSnapshots ();
+        var snapshot = ReadCurrentHealthSnapshot ();
+        var history = ReadHealthSnapshots ( TimeSpan.FromHours ( 1 ), TimeSpan.FromMinutes ( 1 ) );
 
         long appMemory = snapshot.AppMemoryBytes;
         TimeSpan uptime = DateTime.Now - snapshot.ProcessStartTime;
@@ -766,7 +856,27 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
             fragment += new HtmlElement ( "div", section => {
                 section.ClassList.Add ( "section" );
-                section += new HtmlElement ( "h2", "Usage History" );
+                section += new HtmlElement ( "div", header => {
+                    header.ClassList.Add ( "usage-history-header" );
+                    header += new HtmlElement ( "h2", "Usage History" );
+                    header += new HtmlElement ( "div", periods => {
+                        periods.ClassList.Add ( "usage-history-periods" );
+                        periods.Attributes [ "role" ] = "group";
+                        periods.Attributes [ "aria-label" ] = "Usage history period";
+
+                        foreach ((string value, string label) in new [] { ("1h", "1h"), ("1d", "1d"), ("7d", "7d"), ("30d", "30d") }) {
+                            periods += new HtmlElement ( "button", button => {
+                                button.ClassList.Add ( "toolbar-btn" );
+                                if (value == "1h")
+                                    button.ClassList.Add ( "active" );
+                                button.Attributes [ "type" ] = "button";
+                                button.Attributes [ "data-health-period" ] = value;
+                                button.Attributes [ "aria-pressed" ] = value == "1h" ? "true" : "false";
+                                button += label;
+                            } );
+                        }
+                    } );
+                } );
 
                 section += new HtmlElement ( "div", chart => {
                     chart.ClassList.Add ( "health-chart-container" );
@@ -875,7 +985,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     void TrackHealthSnapshot ( HealthSnapshot snapshot ) {
-        DateTime threshold = snapshot.Timestamp - TimeSpan.FromDays ( 7 );
+        DateTime threshold = snapshot.Timestamp - TimeSpan.FromDays ( 30 );
 
         lock (healthSnapshotsSync) {
             HealthSnapshot? latest = healthSnapshots.Count > 0 ? healthSnapshots [ ^1 ] : null;
@@ -883,16 +993,108 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                 healthSnapshots.Add ( snapshot );
             }
             else {
-                healthSnapshots [ ^1 ] = snapshot;
+                healthSnapshots [ ^1 ] = snapshot with { Timestamp = existing.Timestamp };
             }
 
             healthSnapshots.RemoveAll ( item => item.Timestamp < threshold );
         }
     }
 
-    HealthSnapshot [] ReadHealthSnapshots () {
+    HealthSnapshot ReadCurrentHealthSnapshot () {
         lock (healthSnapshotsSync) {
-            return healthSnapshots.ToArray ();
+            return healthSnapshots.Count > 0 ? healthSnapshots [ ^1 ] : CreateHealthSnapshot ();
+        }
+    }
+
+    HealthSnapshot [] ReadHealthSnapshots ( TimeSpan period, TimeSpan bucket ) {
+        DateTime threshold = DateTime.Now - period;
+
+        lock (healthSnapshotsSync) {
+            return healthSnapshots
+                .Where ( item => item.Timestamp >= threshold )
+                .GroupBy ( item => item.Timestamp.Ticks / bucket.Ticks )
+                .Select ( group => {
+                    HealthSnapshot latest = group.Last ();
+                    return latest with {
+                        CpuPercent = group.Average ( item => item.CpuPercent ),
+                        DiskPercent = group.Average ( item => item.DiskPercent ),
+                        MemoryPercent = group.Average ( item => item.MemoryPercent )
+                    };
+                } )
+                .ToArray ();
+        }
+    }
+
+    internal void SetHealthSampling ( bool enabled ) {
+        if (enabled) {
+            if (healthSamplingTask is not null)
+                return;
+
+            var cancellation = new CancellationTokenSource ();
+            healthSamplingCancellation = cancellation;
+            TrackHealthSnapshot ( CreateHealthSnapshot () );
+            healthSamplingTask = Task.Run ( async () => {
+                try {
+                    using var timer = new PeriodicTimer ( TimeSpan.FromMinutes ( 1 ) );
+                    while (await timer.WaitForNextTickAsync ( cancellation.Token ).ConfigureAwait ( false ))
+                        TrackHealthSnapshot ( CreateHealthSnapshot () );
+                }
+                catch (OperationCanceledException) when (cancellation.IsCancellationRequested) {
+                }
+            } );
+            return;
+        }
+
+        healthSamplingCancellation?.Cancel ();
+        healthSamplingTask?.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+        healthSamplingCancellation?.Dispose ();
+        healthSamplingCancellation = null;
+        healthSamplingTask = null;
+    }
+
+    internal void RecordHttpResponse ( int statusCode ) {
+        switch (statusCode) {
+            case >= 200 and < 300:
+                Interlocked.Increment ( ref http2xxResponses );
+                break;
+            case >= 400 and < 500:
+                Interlocked.Increment ( ref http4xxResponses );
+                break;
+            case >= 500 and < 600:
+                Interlocked.Increment ( ref http5xxResponses );
+                break;
+            default:
+                return;
+        }
+
+        TrackHttpResponseSnapshot ();
+    }
+
+    void TrackHttpResponseSnapshot () {
+        DateTime now = DateTime.Now;
+        long minuteStamp = now.Ticks / TimeSpan.TicksPerMinute;
+
+        if (Volatile.Read ( ref httpResponseMinuteStamp ) == minuteStamp)
+            return;
+
+        lock (httpResponseSnapshotsSync) {
+            if (Volatile.Read ( ref httpResponseMinuteStamp ) == minuteStamp)
+                return;
+
+            httpResponseSnapshots.Add ( new HttpResponseSnapshot (
+                now,
+                Interlocked.Read ( ref http2xxResponses ),
+                Interlocked.Read ( ref http4xxResponses ),
+                Interlocked.Read ( ref http5xxResponses ) ) );
+
+            httpResponseSnapshots.RemoveAll ( item => item.Timestamp < now - TimeSpan.FromDays ( 7 ) );
+            Volatile.Write ( ref httpResponseMinuteStamp, minuteStamp );
+        }
+    }
+
+    HttpResponseSnapshot [] ReadHttpResponseSnapshots () {
+        lock (httpResponseSnapshotsSync) {
+            return httpResponseSnapshots.ToArray ();
         }
     }
 
@@ -931,108 +1133,6 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         }
     }
 
-    HtmlElement CreateLogLineElement ( string line ) {
-        return new HtmlElement ( "div", lineElement => {
-            lineElement.ClassList.Add ( "log-line" );
-            lineElement.Attributes [ "data-log-text" ] = line;
-
-            if (line.Length == 0) {
-                lineElement += "\u00a0";
-            }
-            else {
-                foreach (object token in GetHighlightedTokens ( line )) {
-                    lineElement += token;
-                }
-            }
-
-            lineElement += new HtmlElement ( "button", button => {
-                button.ClassList.Add ( "log-copy-btn" );
-                button.Attributes [ "type" ] = "button";
-                button.Attributes [ "aria-label" ] = "Copy log line";
-                button.Attributes [ "title" ] = "Copy";
-                button += RenderableText.Raw ( CopyIcon );
-            } );
-        } );
-    }
-
-    IEnumerable<object> GetHighlightedTokens ( string line ) {
-        int currentIndex = 0;
-
-        foreach (Match bracketMatch in bracketTokenRegex.Matches ( line )) {
-            if (bracketMatch.Index > currentIndex) {
-                foreach (object token in GetDateAndNumberTokens ( line [ currentIndex..bracketMatch.Index ] )) {
-                    yield return token;
-                }
-            }
-
-            yield return CreateBracketTokenElement ( bracketMatch.Value );
-            currentIndex = bracketMatch.Index + bracketMatch.Length;
-        }
-
-        if (currentIndex < line.Length) {
-            foreach (object token in GetDateAndNumberTokens ( line [ currentIndex.. ] )) {
-                yield return token;
-            }
-        }
-    }
-
-    IEnumerable<object> GetDateAndNumberTokens ( string segment ) {
-        int currentIndex = 0;
-
-        foreach (Match dateMatch in dateTokenRegex.Matches ( segment )) {
-            if (dateMatch.Index > currentIndex) {
-                foreach (object token in GetNumberTokens ( segment.Substring ( currentIndex, dateMatch.Index - currentIndex ) )) {
-                    yield return token;
-                }
-            }
-
-            yield return new HtmlElement ( "span", new RenderableText ( dateMatch.Value ) ).WithClass ( "log-token-date" );
-            currentIndex = dateMatch.Index + dateMatch.Length;
-        }
-
-        if (currentIndex < segment.Length) {
-            foreach (object token in GetNumberTokens ( segment [ currentIndex.. ] )) {
-                yield return token;
-            }
-        }
-    }
-
-    HtmlElement CreateBracketTokenElement ( string token ) {
-        if (IsDateOrTimeToken ( token ))
-            return new HtmlElement ( "span", new RenderableText ( token ) ).WithClass ( "log-token-date" );
-
-        uint hash = 2166136261;
-        foreach (char ch in token) {
-            hash ^= ch;
-            hash *= 16777619;
-        }
-
-        return new HtmlElement ( "span", new RenderableText ( token ) )
-            .WithClass ( $"log-token-tag log-token-tone-{hash % 8}" );
-    }
-
-    static bool IsDateOrTimeToken ( string token ) {
-        string value = token.Trim ( '[', ']', ' ' );
-        return dateTokenRegex.IsMatch ( value ) || timeTokenRegex.IsMatch ( value );
-    }
-
-    IEnumerable<object> GetNumberTokens ( string segment ) {
-        int currentIndex = 0;
-
-        foreach (Match numberMatch in numberTokenRegex.Matches ( segment )) {
-            if (numberMatch.Index > currentIndex) {
-                yield return new RenderableText ( segment.Substring ( currentIndex, numberMatch.Index - currentIndex ) );
-            }
-
-            yield return new HtmlElement ( "span", new RenderableText ( numberMatch.Value ) ).WithClass ( "log-token-number" );
-            currentIndex = numberMatch.Index + numberMatch.Length;
-        }
-
-        if (currentIndex < segment.Length) {
-            yield return new RenderableText ( segment [ currentIndex.. ] );
-        }
-    }
-
     HtmlElement WriteHealthCard ( string label, string value ) {
         return new HtmlElement ( "div", card => {
             card.ClassList.Add ( "card" );
@@ -1042,13 +1142,11 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     HtmlElement WriteCounterCard ( MonitoringDefinition<Counter> counter ) {
-        double current = counter.Instance.Current;
-        string currentText = FormatMeasuredValue ( current );
-
         return new HtmlElement ( "div", card => {
             card.ClassList.Add ( "card" );
+            card.Attributes [ "data-counter-id" ] = counter.SanitizedLabel;
             card += new HtmlElement ( "div", counter.Label ).WithClass ( "card-label" );
-            card += new HtmlElement ( "div", currentText ).WithClass ( "card-value" );
+            card += new HtmlElement ( "div", "-" ).WithClass ( "card-value" );
         } );
     }
 
@@ -1277,6 +1375,120 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         return builder.ToString ();
     }
 
+    static string SerializeHttpResponseReadingsPayload ( HttpResponseSnapshot [] history, long current2xx, long current4xx, long current5xx ) {
+        var builder = new StringBuilder ();
+        builder.Append ( '[' );
+
+        long previous2xx = 0;
+        long previous4xx = 0;
+        long previous5xx = 0;
+
+        void appendReading ( DateTime timestamp, long success, long clientError, long serverError ) {
+            if (builder.Length > 1)
+                builder.Append ( ',' );
+
+            builder.Append ( "{\"timestamp\":\"" )
+                .Append ( timestamp.ToString ( "O", CultureInfo.InvariantCulture ) )
+                .Append ( "\",\"success\":" )
+                .Append ( success.ToString ( CultureInfo.InvariantCulture ) )
+                .Append ( ",\"clientError\":" )
+                .Append ( clientError.ToString ( CultureInfo.InvariantCulture ) )
+                .Append ( ",\"serverError\":" )
+                .Append ( serverError.ToString ( CultureInfo.InvariantCulture ) )
+                .Append ( '}' );
+        }
+
+        foreach (HttpResponseSnapshot snapshot in history) {
+            appendReading (
+                snapshot.Timestamp,
+                snapshot.Responses2xx - previous2xx,
+                snapshot.Responses4xx - previous4xx,
+                snapshot.Responses5xx - previous5xx );
+            previous2xx = snapshot.Responses2xx;
+            previous4xx = snapshot.Responses4xx;
+            previous5xx = snapshot.Responses5xx;
+        }
+
+        appendReading (
+            DateTime.Now,
+            current2xx - previous2xx,
+            current4xx - previous4xx,
+            current5xx - previous5xx );
+
+        builder.Append ( ']' );
+        return builder.ToString ();
+    }
+
+    static string SerializeDashboardPayload ( string readingsJson, long responses2xx, long responses4xx, long responses5xx, IEnumerable<MonitoringDefinition<Counter>> dashboardCounters ) {
+        var builder = new StringBuilder ();
+        builder.Append ( "{\"httpResponses\":{\"readings\":" )
+            .Append ( readingsJson )
+            .Append ( ",\"totals\":{\"success\":" )
+            .Append ( responses2xx.ToString ( CultureInfo.InvariantCulture ) )
+            .Append ( ",\"clientError\":" )
+            .Append ( responses4xx.ToString ( CultureInfo.InvariantCulture ) )
+            .Append ( ",\"serverError\":" )
+            .Append ( responses5xx.ToString ( CultureInfo.InvariantCulture ) )
+            .Append ( "}},\"counters\":" )
+            .Append ( SerializeCountersPayload ( dashboardCounters ) )
+            .Append ( '}' );
+
+        return builder.ToString ();
+    }
+
+    static string SerializeCountersPayload ( IEnumerable<MonitoringDefinition<Counter>> definitions ) {
+        var builder = new StringBuilder ();
+        builder.Append ( '[' );
+
+        bool first = true;
+        foreach (var definition in definitions) {
+            if (!first)
+                builder.Append ( ',' );
+            first = false;
+
+            builder.Append ( "{\"id\":\"" )
+                .Append ( EscapeJsonString ( definition.SanitizedLabel ) )
+                .Append ( "\",\"label\":\"" )
+                .Append ( EscapeJsonString ( definition.Label ) )
+                .Append ( "\",\"group\":" );
+
+            if (definition.Group is null) {
+                builder.Append ( "null" );
+            }
+            else {
+                builder.Append ( '"' )
+                    .Append ( EscapeJsonString ( definition.Group ) )
+                    .Append ( '"' );
+            }
+
+            builder.Append ( ",\"value\":" )
+                .Append ( JsonNumber ( definition.Instance.Current ) )
+                .Append ( '}' );
+        }
+
+        builder.Append ( ']' );
+        return builder.ToString ();
+    }
+
+    static string SerializeLogStreamPayload ( IEnumerable<string> lines ) {
+        var builder = new StringBuilder ();
+        builder.Append ( "{\"lines\":[" );
+
+        bool first = true;
+        foreach (string line in lines) {
+            if (!first)
+                builder.Append ( ',' );
+            first = false;
+
+            builder.Append ( '"' )
+                .Append ( EscapeJsonString ( line ) )
+                .Append ( '"' );
+        }
+
+        builder.Append ( "]}" );
+        return builder.ToString ();
+    }
+
     static string EscapeJsonString ( string value ) {
         var builder = new StringBuilder ( value.Length + 8 );
 
@@ -1339,9 +1551,17 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             request.Context.LogMode = LogOutput.ErrorLog;
             return await GetDashboardPageHtmlAsync ( request );
         }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/data" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            return await GetDashboardDataAsync ( request );
+        }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/counters" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
             return await GetCountersPageHtmlAsync ( request );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/counters/data" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            return await GetCountersDataAsync ( request );
         }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/meters" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
@@ -1366,6 +1586,18 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                 return new HttpResponse ( 404 );
 
             return await GetLogStreamPageHtmlAsync ( request, matchedLogStream );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/logstream/<name>/data" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+
+            string logstreamDataName = request.RouteParameters [ "name" ].GetString ();
+            var matchedDataLogStream = capturingLogStreams
+                .FirstOrDefault ( f => f.Label.Equals ( logstreamDataName, StringComparison.OrdinalIgnoreCase ) );
+
+            if (matchedDataLogStream is null)
+                return new HttpResponse ( 404 );
+
+            return await GetLogStreamDataAsync ( request, matchedDataLogStream );
         }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/logstream/<name>/download" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
@@ -1392,6 +1624,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
         disposed = true;
         storeFlushCancellation?.Cancel ();
+        SetHealthSampling ( enabled: false );
 
         try {
             storeFlushTask?.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
@@ -1425,6 +1658,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
         if (storeFlushCancellation is not null)
             await storeFlushCancellation.CancelAsync ().ConfigureAwait ( false );
+        SetHealthSampling ( enabled: false );
 
         try {
             if (storeFlushTask is not null)
@@ -1490,4 +1724,6 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     record struct HealthSnapshot ( DateTime Timestamp, double CpuPercent, double DiskPercent, double MemoryPercent, long AppMemoryBytes, long DiskTotalBytes, long DiskFreeBytes, string DriveRoot, DateTime ProcessStartTime );
+
+    record struct HttpResponseSnapshot ( DateTime Timestamp, long Responses2xx, long Responses4xx, long Responses5xx );
 }

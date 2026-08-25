@@ -3,6 +3,7 @@ namespace Sisk.Monitoring;
 internal class Assets {
     public const string DefaultStyles = """
         :root {
+            color-scheme: light;
             --background: #fff;
             --surface: #ffffff;
             --surface-secondary: #f1f3f4;
@@ -25,6 +26,9 @@ internal class Assets {
             --chart-cpu: var(--accent);
             --chart-memory: #188038;
             --chart-disk: #b06000;
+            --chart-http-success: #188038;
+            --chart-http-client-error: #b06000;
+            --chart-http-server-error: var(--danger);
             --log-token-0-text: #1a73e8;
             --log-token-1-text: #188038;
             --log-token-2-text: #b06000;
@@ -46,31 +50,37 @@ internal class Assets {
             --sidebar-width: 260px;
         }
 
-        [data-theme="dark"] {
-            --background: #202124;
-            --surface: #292a2d;
-            --surface-secondary: #35363a;
-            --border: #5f6368;
-            --text-primary: #e8eaed;
-            --text-secondary: #9aa0a6;
-            --accent: #8ab4f8;
-            --accent-hover: #aecbfa;
-            --danger: #f28b82;
-            --overlay: rgba(255,255,255,.08);
-            --warning: #fdd663;
-            --selected-text: #202124;
-            --shadow: 0 1px 2px rgba(0,0,0,.40);
-            --chart-cpu: var(--accent);
-            --chart-memory: #81c995;
-            --chart-disk: #fdd663;
-            --log-token-0-text: #8ab4f8;
-            --log-token-1-text: #81c995;
-            --log-token-2-text: #fdd663;
-            --log-token-3-text: #f28b82;
-            --log-token-4-text: #d7aefb;
-            --log-token-5-text: #78d9c6;
-            --log-token-6-text: #ffb1c8;
-            --log-token-7-text: #c4c7c5;
+        @media (prefers-color-scheme: dark) {
+            :root {
+                color-scheme: dark;
+                --background: #202124;
+                --surface: #292a2d;
+                --surface-secondary: #35363a;
+                --border: #5f6368;
+                --text-primary: #e8eaed;
+                --text-secondary: #9aa0a6;
+                --accent: #8ab4f8;
+                --accent-hover: #aecbfa;
+                --danger: #f28b82;
+                --overlay: rgba(255,255,255,.08);
+                --warning: #fdd663;
+                --selected-text: #202124;
+                --shadow: 0 1px 2px rgba(0,0,0,.40);
+                --chart-cpu: var(--accent);
+                --chart-memory: #81c995;
+                --chart-disk: #fdd663;
+                --chart-http-success: #81c995;
+                --chart-http-client-error: #fdd663;
+                --chart-http-server-error: var(--danger);
+                --log-token-0-text: #8ab4f8;
+                --log-token-1-text: #81c995;
+                --log-token-2-text: #fdd663;
+                --log-token-3-text: #f28b82;
+                --log-token-4-text: #d7aefb;
+                --log-token-5-text: #78d9c6;
+                --log-token-6-text: #ffb1c8;
+                --log-token-7-text: #c4c7c5;
+            }
         }
 
         *, *::before, *::after {
@@ -620,6 +630,90 @@ internal class Assets {
             color: var(--text-primary);
         }
 
+        .http-response-chart {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+            padding: 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .http-response-chart-container {
+            position: relative;
+            height: 320px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-secondary);
+            overflow: hidden;
+        }
+
+        .http-response-chart-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .http-response-chart-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-secondary);
+        }
+
+        .http-response-chart-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .http-response-chart-dot.success {
+            background: var(--chart-http-success);
+        }
+
+        .http-response-chart-dot.client-error {
+            background: var(--chart-http-client-error);
+        }
+
+        .http-response-chart-dot.server-error {
+            background: var(--chart-http-server-error);
+        }
+
+        .http-response-chart-label {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.25;
+        }
+
+        .http-response-chart-label strong {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .http-response-chart-label span,
+        .http-response-chart-percentage {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .http-response-chart-value {
+            min-width: 5rem;
+            text-align: right;
+        }
+
+        .http-response-chart-value strong {
+            display: block;
+            font-size: 1.1rem;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
         .meters-grid {
             margin-bottom: 0;
         }
@@ -808,6 +902,23 @@ internal class Assets {
             height: 320px;
         }
 
+        .usage-history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .usage-history-header h2 {
+            margin: 0;
+        }
+
+        .usage-history-periods {
+            display: flex;
+            gap: 0.4rem;
+        }
+
         .health-chart-container {
             position: relative;
             height: 320px;
@@ -908,18 +1019,6 @@ internal class Assets {
             border-radius: 999px;
         }
 
-        .health-chart-swatch.cpu {
-            background: var(--chart-cpu);
-        }
-
-        .health-chart-swatch.memory {
-            background: var(--chart-memory);
-        }
-
-        .health-chart-swatch.disk {
-            background: var(--chart-disk);
-        }
-
         /* Mobile */
         .mobile-menu-btn {
             display: none;
@@ -991,6 +1090,24 @@ internal class Assets {
                 grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             }
 
+            .http-response-chart {
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .usage-history-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .usage-history-periods {
+                width: 100%;
+            }
+
+            .usage-history-periods .toolbar-btn {
+                flex: 1;
+            }
+
             .meter-modal-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -1028,10 +1145,16 @@ internal class Assets {
             const metersEndpoint = metersGrid?.getAttribute('data-meters-endpoint') ?? null;
             const healthChart = document.querySelector('[data-health-endpoint]');
             const healthEndpoint = healthChart?.getAttribute('data-health-endpoint') ?? null;
+            const healthPeriodButtons = Array.from(document.querySelectorAll('[data-health-period]'));
+            const httpResponseChart = document.querySelector('.http-response-chart-container');
+            const httpResponsesEndpoint = httpResponseChart?.getAttribute('data-http-responses-endpoint') ?? null;
+            const countersEndpoint = document.querySelector('[data-counters-endpoint]')?.getAttribute('data-counters-endpoint') ?? null;
+            const logEndpoint = logEl?.getAttribute('data-logstream-endpoint') ?? null;
             const numberFormatter = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
+            const integerFormatter = new Intl.NumberFormat('en-US');
             const dateFormatter = new Intl.DateTimeFormat(undefined, {
                 month: '2-digit',
                 day: '2-digit',
@@ -1044,6 +1167,9 @@ internal class Assets {
             let refreshEnabled = true;
             let tailManuallyChanged = false;
             let refreshManuallyChanged = false;
+            let selectedHealthPeriod = '1h';
+            let renderedLogLineCount = 0;
+            let renderedLogLastLine = null;
 
             function formatNumber(value) {
                 const numeric = Number(value);
@@ -1307,17 +1433,23 @@ internal class Assets {
                 svg.addEventListener('mouseleave', hideHover);
             }
 
-            function renderHealthChart(container, readings) {
+            function renderHealthChart(container, readings, options = {}) {
                 const chartHeight = 320;
                 const width = Math.max(320, container.clientWidth || 320);
                 const padding = { top: 26, right: 18, bottom: 30, left: 42 };
                 const plotWidth = Math.max(1, width - padding.left - padding.right);
                 const plotHeight = Math.max(1, chartHeight - padding.top - padding.bottom);
-                const series = [
+                const series = options.series ?? [
                     { key: 'cpu', label: 'CPU', color: 'var(--chart-cpu)' },
                     { key: 'memory', label: 'RAM', color: 'var(--chart-memory)' },
                     { key: 'disk', label: 'Disk', color: 'var(--chart-disk)' }
                 ];
+                const scaleMax = options.scaleMax ?? 100;
+                const formatValue = options.formatValue ?? (value => `${formatNumber(value)}%`);
+                const formatAxisValue = options.formatAxisValue ?? (value => `${value}%`);
+                const firstTimestamp = readings[0]?.timestamp.getTime() ?? 0;
+                const lastTimestamp = readings[readings.length - 1]?.timestamp.getTime() ?? firstTimestamp;
+                const timestampRange = Math.max(1, lastTimestamp - firstTimestamp);
 
                 container.innerHTML = '';
 
@@ -1334,11 +1466,11 @@ internal class Assets {
                 svg.setAttribute('viewBox', `0 0 ${width} ${chartHeight}`);
                 svg.setAttribute('preserveAspectRatio', 'none');
 
-                [0, 25, 50, 75, 100].forEach(value => {
-                    const y = padding.top + ((100 - value) / 100 * plotHeight);
+                [0, 0.25, 0.5, 0.75, 1].forEach(fraction => {
+                    const y = padding.top + ((1 - fraction) * plotHeight);
 
                     const grid = createSvgElement('line');
-                    grid.setAttribute('class', value === 0 ? 'health-chart-axis' : 'health-chart-grid');
+                    grid.setAttribute('class', fraction === 0 ? 'health-chart-axis' : 'health-chart-grid');
                     grid.setAttribute('x1', String(padding.left));
                     grid.setAttribute('x2', String(width - padding.right));
                     grid.setAttribute('y1', String(y));
@@ -1350,7 +1482,7 @@ internal class Assets {
                     label.setAttribute('x', String(padding.left - 8));
                     label.setAttribute('y', String(y + 3));
                     label.setAttribute('text-anchor', 'end');
-                    label.textContent = `${value}%`;
+                    label.textContent = formatAxisValue(Math.round(fraction * scaleMax));
                     svg.appendChild(label);
                 });
 
@@ -1371,10 +1503,10 @@ internal class Assets {
 
                 const pointsBySeries = series.map(item => ({
                     ...item,
-                    points: readings.map((reading, index) => {
-                        const x = padding.left + ((readings.length <= 1 ? 0 : index / (readings.length - 1)) * plotWidth);
-                        const value = Math.max(0, Math.min(100, Number(reading[item.key] ?? 0)));
-                        const y = padding.top + ((100 - value) / 100 * plotHeight);
+                    points: readings.map(reading => {
+                        const x = padding.left + ((reading.timestamp.getTime() - firstTimestamp) / timestampRange * plotWidth);
+                        const value = Math.max(0, Math.min(scaleMax, Number(reading[item.key] ?? 0)));
+                        const y = padding.top + ((scaleMax - value) / scaleMax * plotHeight);
                         return { x, y, value, reading };
                     })
                 }));
@@ -1406,7 +1538,8 @@ internal class Assets {
                     const entry = document.createElement('span');
                     entry.className = 'health-chart-legend-item';
                     const swatch = document.createElement('span');
-                    swatch.className = `health-chart-swatch ${item.key}`;
+                    swatch.className = 'health-chart-swatch';
+                    swatch.style.background = item.color;
                     const label = document.createElement('span');
                     label.textContent = item.label;
                     entry.appendChild(swatch);
@@ -1432,10 +1565,10 @@ internal class Assets {
                 svg.addEventListener('mousemove', event => {
                     const bounds = svg.getBoundingClientRect();
                     const relativeX = ((event.clientX - bounds.left) / bounds.width) * width;
-                    const normalized = (relativeX - padding.left) / plotWidth;
-                    const index = Math.max(0, Math.min(readings.length - 1, Math.round(normalized * (readings.length - 1))));
+                    const index = pointsBySeries[0].points.reduce((nearestIndex, point, pointIndex, points) =>
+                        Math.abs(point.x - relativeX) < Math.abs(points[nearestIndex].x - relativeX) ? pointIndex : nearestIndex, 0);
                     const reading = readings[index];
-                    const x = padding.left + ((readings.length <= 1 ? 0 : index / (readings.length - 1)) * plotWidth);
+                    const x = pointsBySeries[0].points[index].x;
 
                     crosshair.setAttribute('x1', String(x));
                     crosshair.setAttribute('x2', String(x));
@@ -1452,7 +1585,7 @@ internal class Assets {
 
                     tooltip.innerHTML = [
                         `<strong>${formatDate(reading.timestamp)}</strong>`,
-                        ...series.map(item => `${item.label}: ${formatNumber(reading[item.key])}%`)
+                        ...series.map(item => `${item.label}: ${formatValue(reading[item.key])}`)
                     ].join('<br>');
                     tooltip.style.opacity = '1';
 
@@ -1474,6 +1607,52 @@ internal class Assets {
                 });
 
                 svg.addEventListener('mouseleave', hideHealthHover);
+            }
+
+            function parseHttpResponseReadings(raw) {
+                let parsed = raw;
+                if (typeof raw === 'string') {
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch {
+                        parsed = [];
+                    }
+                }
+                if (!Array.isArray(parsed)) {
+                    return [];
+                }
+                return parsed
+                    .map(item => {
+                        const timestamp = new Date(item?.timestamp);
+                        if (Number.isNaN(timestamp.getTime())) {
+                            return null;
+                        }
+                        return {
+                            timestamp,
+                            success: Math.max(0, Number(item?.success) || 0),
+                            clientError: Math.max(0, Number(item?.clientError) || 0),
+                            serverError: Math.max(0, Number(item?.serverError) || 0)
+                        };
+                    })
+                    .filter(item => item !== null);
+            }
+
+            function renderHttpResponseChart(container, readings) {
+                const series = [
+                    { key: 'success', label: '2xx', color: 'var(--chart-http-success)' },
+                    { key: 'clientError', label: '4xx', color: 'var(--chart-http-client-error)' },
+                    { key: 'serverError', label: '5xx', color: 'var(--chart-http-server-error)' }
+                ];
+                const rawMax = Math.max(1, ...readings.flatMap(reading => series.map(item => Number(reading[item.key] ?? 0))));
+                const magnitude = 10 ** Math.floor(Math.log10(rawMax));
+                const scaleMax = Math.max(4, Math.ceil(rawMax / (magnitude / 2)) * (magnitude / 2));
+
+                renderHealthChart(container, readings, {
+                    series,
+                    scaleMax,
+                    formatValue: value => value.toLocaleString('en-US'),
+                    formatAxisValue: value => String(value)
+                });
             }
 
             function setModalStats(modal, readings) {
@@ -1582,12 +1761,10 @@ internal class Assets {
 
             function refreshMeters() {
                 if (!metersEndpoint) {
-                    location.reload();
                     return;
                 }
 
-                fetch(metersEndpoint, { cache: 'no-store' })
-                    .then(response => response.ok ? response.json() : [])
+                fetchJson(metersEndpoint)
                     .then(payload => {
                         if (!Array.isArray(payload)) {
                             return;
@@ -1625,12 +1802,11 @@ internal class Assets {
 
             function refreshHealth() {
                 if (!healthEndpoint || !healthChart) {
-                    location.reload();
                     return;
                 }
 
-                fetch(healthEndpoint, { cache: 'no-store' })
-                    .then(response => response.ok ? response.json() : null)
+                const separator = healthEndpoint.includes('?') ? '&' : '?';
+                fetchJson(`${healthEndpoint}${separator}period=${encodeURIComponent(selectedHealthPeriod)}`)
                     .then(payload => {
                         if (!payload || !Array.isArray(payload.readings)) {
                             return;
@@ -1639,6 +1815,276 @@ internal class Assets {
                         renderHealthChart(healthChart, parseHealthReadings(payload.readings));
                     })
                     .catch(() => {
+                    });
+            }
+
+            healthPeriodButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    selectedHealthPeriod = button.getAttribute('data-health-period') ?? '1h';
+                    healthPeriodButtons.forEach(item => {
+                        const selected = item === button;
+                        item.classList.toggle('active', selected);
+                        item.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                    });
+                    refreshHealth();
+                });
+            });
+
+            function fetchJson(url) {
+                // Resolve the endpoint against the document base and strips any embedded credentials:
+                // when the dashboard URL itself carries user:pass, relative fetch() calls would throw.
+                let target = url;
+                try {
+                    const resolved = new URL(url, location.href);
+                    resolved.username = '';
+                    resolved.password = '';
+                    target = resolved.origin + resolved.pathname + resolved.search;
+                } catch {
+                }
+
+                return fetch(target, { cache: 'no-store' })
+                    .then(response => response.ok ? response.json() : null)
+                    .catch(() => null);
+            }
+
+            function formatInteger(value) {
+                const numeric = Number(value);
+                return Number.isFinite(numeric) ? integerFormatter.format(numeric) : '-';
+            }
+
+            function applyCounterValues(counters) {
+                if (!Array.isArray(counters)) {
+                    return;
+                }
+
+                const byId = new Map(counters
+                    .filter(counter => counter && typeof counter.id === 'string')
+                    .map(counter => [counter.id, Number(counter.value ?? 0)]));
+
+                document.querySelectorAll('.card[data-counter-id]').forEach(card => {
+                    const counterId = card.getAttribute('data-counter-id');
+                    if (!byId.has(counterId)) {
+                        return;
+                    }
+
+                    const valueElement = card.querySelector('.card-value');
+                    if (valueElement) {
+                        valueElement.textContent = formatNumber(byId.get(counterId));
+                    }
+                });
+            }
+
+            function refreshCounters() {
+                if (!countersEndpoint) {
+                    return;
+                }
+
+                fetchJson(countersEndpoint)
+                    .then(payload => {
+                        applyCounterValues(payload);
+                    });
+            }
+
+            function setHttpStat(statKey, value, total) {
+                const totalElement = document.querySelector(`[data-http-total="${statKey}"]`);
+                const percentElement = document.querySelector(`[data-http-percent="${statKey}"]`);
+                const percent = total > 0 ? value * 100 / total : 0;
+
+                if (totalElement) {
+                    totalElement.textContent = formatInteger(value);
+                }
+                if (percentElement) {
+                    percentElement.textContent = `${percent.toFixed(1)}%`;
+                }
+            }
+
+            function refreshDashboard() {
+                if (!httpResponsesEndpoint || !httpResponseChart) {
+                    return;
+                }
+
+                fetchJson(httpResponsesEndpoint)
+                    .then(payload => {
+                        if (!payload) {
+                            return;
+                        }
+
+                        const httpResponses = payload.httpResponses;
+                        if (httpResponses && Array.isArray(httpResponses.readings)) {
+                            const readingsJson = JSON.stringify(httpResponses.readings);
+                            httpResponseChart.setAttribute('data-http-responses-readings', readingsJson);
+                            renderHttpResponseChart(httpResponseChart, parseHttpResponseReadings(readingsJson));
+                        }
+
+                        const totals = httpResponses?.totals;
+                        if (totals) {
+                            const success = Number(totals.success ?? 0);
+                            const clientError = Number(totals.clientError ?? 0);
+                            const serverError = Number(totals.serverError ?? 0);
+                            const total = success + clientError + serverError;
+
+                            setHttpStat('success', success, total);
+                            setHttpStat('clientError', clientError, total);
+                            setHttpStat('serverError', serverError, total);
+
+                            document.querySelector('.http-response-chart')?.setAttribute(
+                                'aria-label',
+                                `HTTP responses: ${formatInteger(success)} successful, ${formatInteger(clientError)} client errors, ${formatInteger(serverError)} server errors`);
+                        }
+
+                        applyCounterValues(payload.counters);
+                    });
+            }
+
+            const logDateTokenRegex = /\b(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?(?:\s?(?:Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?)?|\d{1,2}\/(?:\d{1,2}|[A-Za-z]{3,9})\/\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?(?:\s+[+-]?\d{4})?)\b/gi;
+            const logDateTokenTestRegex = new RegExp(logDateTokenRegex.source, 'i');
+            const logTimeTokenRegex = /^\d{1,2}:\d{2}(?::\d{2})?(?:[\.,]\d+)?(?:\s?(?:AM|PM|Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?$/i;
+            const logNumberTokenRegex = /(?<![A-Za-z])[-+]?\d+(?:[\.,]\d+)?(?![A-Za-z])/g;
+            const logBracketTokenRegex = /\[[^\]\r\n]+\]/g;
+            const copyIconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6Z"></path></svg>';
+
+            function bracketToneClass(token) {
+                let hash = 2166136261;
+                for (let i = 0; i < token.length; i++) {
+                    hash ^= token.charCodeAt(i);
+                    hash = Math.imul(hash, 16777619);
+                }
+                return `log-token-tag log-token-tone-${(hash >>> 0) % 8}`;
+            }
+
+            function isDateOrTimeToken(token) {
+                const value = token.replace(/^[\[\] ]+/, '').replace(/[\[\] ]+$/, '');
+                return logDateTokenTestRegex.test(value) || logTimeTokenRegex.test(value);
+            }
+
+            function appendNumberTokens(segment, parts) {
+                let currentIndex = 0;
+
+                for (const numberMatch of segment.matchAll(logNumberTokenRegex)) {
+                    const index = numberMatch.index ?? 0;
+                    if (index > currentIndex) {
+                        parts.push(escapeHtml(segment.slice(currentIndex, index)));
+                    }
+                    parts.push(`<span class="log-token-number">${escapeHtml(numberMatch[0])}</span>`);
+                    currentIndex = index + numberMatch[0].length;
+                }
+
+                if (currentIndex < segment.length) {
+                    parts.push(escapeHtml(segment.slice(currentIndex)));
+                }
+            }
+
+            function appendDateAndNumberTokens(segment, parts) {
+                let currentIndex = 0;
+
+                for (const dateMatch of segment.matchAll(logDateTokenRegex)) {
+                    const index = dateMatch.index ?? 0;
+                    if (index > currentIndex) {
+                        appendNumberTokens(segment.slice(currentIndex, index), parts);
+                    }
+                    parts.push(`<span class="log-token-date">${escapeHtml(dateMatch[0])}</span>`);
+                    currentIndex = index + dateMatch[0].length;
+                }
+
+                if (currentIndex < segment.length) {
+                    appendNumberTokens(segment.slice(currentIndex), parts);
+                }
+            }
+
+            function renderLogTokens(line) {
+                const parts = [];
+                let currentIndex = 0;
+
+                for (const bracketMatch of line.matchAll(logBracketTokenRegex)) {
+                    const index = bracketMatch.index ?? 0;
+                    if (index > currentIndex) {
+                        appendDateAndNumberTokens(line.slice(currentIndex, index), parts);
+                    }
+
+                    const token = bracketMatch[0];
+                    if (isDateOrTimeToken(token)) {
+                        parts.push(`<span class="log-token-date">${escapeHtml(token)}</span>`);
+                    } else {
+                        parts.push(`<span class="${bracketToneClass(token)}">${escapeHtml(token)}</span>`);
+                    }
+                    currentIndex = index + token.length;
+                }
+
+                if (currentIndex < line.length) {
+                    appendDateAndNumberTokens(line.slice(currentIndex), parts);
+                }
+
+                return parts.join('');
+            }
+
+            function createLogLine(line) {
+                const lineElement = document.createElement('div');
+                lineElement.className = 'log-line';
+                lineElement.setAttribute('data-log-text', line);
+
+                if (line.length === 0) {
+                    lineElement.appendChild(document.createTextNode('\u00a0'));
+                } else {
+                    lineElement.innerHTML = renderLogTokens(line);
+                }
+
+                const copyButton = document.createElement('button');
+                copyButton.type = 'button';
+                copyButton.className = 'log-copy-btn';
+                copyButton.setAttribute('aria-label', 'Copy log line');
+                copyButton.title = 'Copy';
+                copyButton.innerHTML = copyIconSvg;
+                lineElement.appendChild(copyButton);
+
+                return lineElement;
+            }
+
+            function renderLogLines(lines) {
+                if (!logEl) {
+                    return;
+                }
+
+                if (!Array.isArray(lines) || lines.length === 0) {
+                    if (renderedLogLineCount !== 0) {
+                        logEl.replaceChildren(document.createTextNode('No log entries yet.'));
+                        logEl.classList.add('log-empty');
+                        renderedLogLineCount = 0;
+                        renderedLogLastLine = null;
+                    }
+                    return;
+                }
+
+                const newestLine = lines[lines.length - 1];
+                const bufferOverflowed = lines.length === renderedLogLineCount && newestLine !== renderedLogLastLine;
+                if (renderedLogLineCount === 0 || lines.length < renderedLogLineCount || bufferOverflowed) {
+                    logEl.replaceChildren();
+                    renderedLogLineCount = 0;
+                }
+
+                logEl.classList.remove('log-empty');
+                const fragment = document.createDocumentFragment();
+                for (let i = renderedLogLineCount; i < lines.length; i++) {
+                    fragment.appendChild(createLogLine(lines[i]));
+                }
+                logEl.appendChild(fragment);
+                renderedLogLineCount = lines.length;
+                renderedLogLastLine = newestLine;
+
+                if (tailEnabled) {
+                    scrollToBottom();
+                }
+            }
+
+            function refreshLogStream() {
+                if (!logEndpoint) {
+                    return;
+                }
+
+                fetchJson(logEndpoint)
+                    .then(payload => {
+                        if (payload && Array.isArray(payload.lines)) {
+                            renderLogLines(payload.lines);
+                        }
                     });
             }
 
@@ -1678,40 +2124,31 @@ internal class Assets {
                 logEl.style.maxHeight = `${targetHeight}px`;
             }
 
-            function refreshLog() {
-                fetch(location.href)
-                    .then(r => r.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const newContent = doc.getElementById('log-content');
-                        if (newContent) {
-                            logEl.innerHTML = newContent.innerHTML;
-                            logEl.className = newContent.className;
-                            logEl.classList.add('log-expanded');
-                            applyExpandedSizing();
-                            if (tailEnabled) scrollToBottom();
-                        }
-                    });
-            }
-
             function refreshCurrentPage() {
                 if (logEl) {
-                    refreshLog();
+                    refreshLogStream();
                     return;
                 }
 
-                if (isMetersPage && document.querySelector('.meter-card')) {
+                if (httpResponsesEndpoint) {
+                    refreshDashboard();
                     refreshMeters();
                     return;
                 }
 
-                if (isHealthPage && healthChart) {
+                if (isMetersPage && metersEndpoint) {
+                    refreshMeters();
+                    return;
+                }
+
+                if (isHealthPage && healthEndpoint) {
                     refreshHealth();
                     return;
                 }
 
-                location.reload();
+                if (countersEndpoint) {
+                    refreshCounters();
+                }
             }
 
             function startAutoRefresh() {
@@ -1856,6 +2293,10 @@ internal class Assets {
                         }
                     }
                 }
+
+                if (httpResponseChart) {
+                    renderHttpResponseChart(httpResponseChart, parseHttpResponseReadings(httpResponseChart.getAttribute('data-http-responses-readings') ?? '[]'));
+                }
             });
 
             renderMeterCards();
@@ -1872,6 +2313,8 @@ internal class Assets {
                     scrollToBottom();
                 }
             }
+
+            refreshCurrentPage();
 
             if (btnToggleRefresh) {
                 startAutoRefresh();

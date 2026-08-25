@@ -1,4 +1,6 @@
-﻿using Sisk.Core.Http.Hosting;
+﻿using Sisk.Core.Http;
+using Sisk.Core.Http.Handlers;
+using Sisk.Core.Http.Hosting;
 
 namespace Sisk.Monitoring;
 
@@ -6,6 +8,24 @@ namespace Sisk.Monitoring;
 /// Provides extension methods to register the Sisk monitoring dashboard within an <see cref="HttpServerHostContextBuilder"/>.
 /// </summary>
 public static class MonitoringBuilderExtensions {
+
+    sealed class MonitoringHttpServerHandler ( ApplicationMonitor monitor ) : HttpServerHandler {
+
+        protected override void OnServerStarted ( HttpServer server ) {
+            monitor.SetHealthSampling ( enabled: true );
+        }
+
+        protected override void OnServerStopping ( HttpServer server ) {
+            monitor.SetHealthSampling ( enabled: false );
+        }
+
+        protected override void OnHttpRequestClose ( HttpServerExecutionResult result ) {
+            if (result.Response is not { Status.StatusCode: var statusCode })
+                return;
+
+            monitor.RecordHttpResponse ( statusCode );
+        }
+    }
 
     /// <summary>
     /// Registers a custom <see cref="ApplicationMonitor"/> implementation at the specified base path.
@@ -17,6 +37,7 @@ public static class MonitoringBuilderExtensions {
     /// <returns>The same <paramref name="builder"/> for method chaining.</returns>
     public static HttpServerHostContextBuilder UseMonitoring<TApplicationMonitor> ( this HttpServerHostContextBuilder builder, string basePath, Func<TApplicationMonitor> factory ) where TApplicationMonitor : ApplicationMonitor {
         var monitor = factory ();
+        builder.UseHandler ( new MonitoringHttpServerHandler ( monitor ) );
         builder.UseRouter ( r => {
             foreach (var route in monitor.GetRoutes ( basePath ))
                 r.SetRoute ( route );
@@ -45,6 +66,7 @@ public static class MonitoringBuilderExtensions {
     public static HttpServerHostContextBuilder UseMonitoring ( this HttpServerHostContextBuilder builder, string basePath, Action<ApplicationMonitor> factory ) {
         var monitor = new ApplicationMonitor ();
         factory ( monitor );
+        builder.UseHandler ( new MonitoringHttpServerHandler ( monitor ) );
         builder.UseRouter ( r => {
             foreach (var route in monitor.GetRoutes ( basePath ))
                 r.SetRoute ( route );

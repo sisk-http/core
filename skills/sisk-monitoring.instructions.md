@@ -25,19 +25,25 @@ monitor.CaptureLogStream(new MonitoringDefinition<LogStream>("App Log", logStrea
 Key members:
 - `PageTitle` — title shown in the dashboard header and browser tab.
 - `CredentialValidator` — optional `Func<NetworkCredential, ValueTask<bool>>` for Basic Auth protection.
+- `Store` — optional `IMonitoringStore?` for persisting monitoring data. Use `FileMonitoringStore` for file-based persistence.
+- `StoreFlushInterval` — `TimeSpan` (default 10s) between automatic store flushes.
 - `CaptureCounter(MonitoringDefinition<Counter>)` — registers a counter.
 - `CaptureMeter(MonitoringDefinition<Meter>)` — registers a meter.
 - `CaptureLogStream(MonitoringDefinition<LogStream>, int bufferLineCount = 500)` — registers a log stream and starts buffering it.
+- `FlushStore()` / `FlushStoreAsync(CancellationToken)` — manually flush the store.
 - `GetRoutes(string prefix)` — internal; returns the dashboard routes for a given prefix.
 
-Virtual overrides for customization:
-- `AuthenticateAccountAsync(string email, string password)` — override to plug in custom auth logic.
-- `WriteSidebar(string? activeNavItem)` — override to change sidebar HTML.
+Virtual overrides for customization (all return `ValueTask<HttpResponse>` unless noted):
+- `AuthenticateAccountAsync(string userEmail, string userPassword)` → `ValueTask<bool>` — override to plug in custom auth logic.
+- `WriteSidebar(string? activeNavItem)` → `HtmlElement` — override to change sidebar HTML.
 - `GetDashboardPageHtmlAsync(HttpRequest)` — override dashboard page.
 - `GetCountersPageHtmlAsync(HttpRequest)` — override counters page.
 - `GetMetersPageHtmlAsync(HttpRequest)` — override meters page.
 - `GetMetersDataAsync(HttpRequest)` — override meters JSON endpoint.
+- `GetServerHealthDataAsync(HttpRequest)` — override server health JSON endpoint.
+- `GetServerHealthPageHtmlAsync(HttpRequest)` — override server health page.
 - `GetLogStreamPageHtmlAsync(HttpRequest, MonitoringDefinition<LogStream>)` — override log stream page.
+- `GetLogStreamFileDownloadAsync(HttpRequest, MonitoringDefinition<LogStream>)` — override log file download.
 
 ---
 
@@ -152,8 +158,8 @@ Or override `AuthenticateAccountAsync`:
 
 ```csharp
 public class MyMonitor : ApplicationMonitor {
-    protected override ValueTask<bool> AuthenticateAccountAsync(string email, string password) {
-        return new ValueTask<bool>(email == "admin@example.com" && password == "pass");
+    protected override ValueTask<bool> AuthenticateAccountAsync(string userEmail, string userPassword) {
+        return new ValueTask<bool>(userEmail == "admin@example.com" && userPassword == "pass");
     }
 }
 ```
