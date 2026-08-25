@@ -163,6 +163,92 @@ internal class Style {
             color: #4b5563;
             font-size: 0.9em;
         }
+        .sisk-api-embed .parameter-examples {
+            margin-top: 1.25rem;
+        }
+        .sisk-api-embed .parameter-examples-title {
+            margin: 0 0 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .sisk-api-embed .parameter-example {
+            margin-top: 0.5rem;
+            border: 1px solid #d8dee6;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .sisk-api-embed .parameter-example > summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            min-height: 3.5rem;
+            padding: .5rem;
+            cursor: pointer;
+            list-style: none;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.2;
+            color: #1a1a2e;
+            background: #f6f8fa;
+            transition: background-color 0.15s;
+        }
+        .sisk-api-embed .parameter-example > summary::-webkit-details-marker {
+            display: none;
+        }
+        .sisk-api-embed .parameter-example > summary::marker {
+            content: "";
+        }
+        .sisk-api-embed .parameter-example > summary::after {
+            content: "";
+            width: 0.4rem;
+            height: 0.4rem;
+            flex: 0 0 auto;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            opacity: 0.55;
+            transform: rotate(-45deg);
+            transition: transform 0.15s ease;
+        }
+        .sisk-api-embed .parameter-example[open] > summary::after {
+            transform: rotate(45deg);
+        }
+        .sisk-api-embed .parameter-example > summary:hover {
+            background: #eef1f4;
+        }
+        .sisk-api-embed .parameter-example > summary:focus-visible {
+            outline: 2px solid #0969da;
+            outline-offset: -2px;
+        }
+        .sisk-api-embed .parameter-example[open] > summary {
+            border-bottom: 1px solid #d8dee6;
+        }
+        .sisk-api-embed .parameter-example-body {
+            padding: 1rem;
+        }
+        .sisk-api-embed .parameter-example-description {
+            color: #4b5563;
+            font-size: 1rem;
+        }
+        .sisk-api-embed .parameter-example-description > :first-child {
+            margin-top: 0;
+        }
+        .sisk-api-embed .parameter-example-description > :last-child {
+            margin-bottom: 0;
+        }
+        .sisk-api-embed .parameter-example-body > pre {
+            margin: 1rem 0 0;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            background: #f6f8fa;
+            color: #1a1a2e;
+        }
+        .sisk-api-embed .parameter-example-body > pre:first-child {
+            margin-top: 0;
+        }
         .sisk-api-embed .status-code {
             display: inline-block;
             padding: 0.125rem 0.5rem;
@@ -188,7 +274,7 @@ internal class Style {
     public const string DefaultStyles =
         """
         * { box-sizing: border-box; }
-        p, li { line-height: 1.6 }
+        p, li { line-height: 1.6; font-size: 1rem }
 
         :root {
             --font-monospace: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
@@ -940,8 +1026,12 @@ internal class Style {
 
         .param-name {
             font-family: var(--font-monospace);
-            font-weight: 600;
+            font-weight: 400;
             color: var(--accent-color);
+            background: var(--bg-secondary);
+            padding: 0 8px;
+            font-size: 1rem;
+            border-radius: 8px;
         }
 
         .param-type {
@@ -961,6 +1051,112 @@ internal class Style {
         .param-description {
             color: var(--text-secondary);
             font-size: 0.9em;
+            margin-top: -.8em;
+        }
+
+        .parameter-examples {
+            margin-top: 20px;
+        }
+
+        .parameter-examples-title {
+            margin: 0 0 12px;
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .parameter-example {
+            margin-top: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .parameter-example + .parameter-example {
+            margin-top: 2px;
+        }
+
+        .parameter-example > summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: .5rem;
+            cursor: pointer;
+            list-style: none;
+            font-size: .9rem;
+            font-weight: 400;
+            line-height: 1.2;
+            color: #1a1a2e;
+            background: #f6f8fa;
+            transition: background-color 0.15s;
+        }
+
+        .parameter-example > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .parameter-example > summary::marker {
+            content: "";
+        }
+
+        .parameter-example > summary::after {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            opacity: 0.55;
+            transform: rotate(-45deg);
+            transition: transform 0.15s ease;
+        }
+
+        .parameter-example[open] > summary::after {
+            transform: rotate(45deg);
+        }
+
+        .parameter-example > summary:hover {
+            background: #eef1f4;
+        }
+
+        .parameter-example > summary:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -2px;
+        }
+
+        .parameter-example[open] > summary {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .parameter-example-body {
+            padding: 16px;
+        }
+
+        .parameter-example-description {
+            color: var(--text-secondary);
+            font-size: 1em;
+        }
+
+        .parameter-example-description > :first-child {
+            margin-top: 0;
+        }
+
+        .parameter-example-description > :last-child {
+            margin-bottom: 0;
+        }
+
+        .parameter-example-body > pre {
+            margin: 16px 0 0;
+            padding: 16px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .parameter-example-body > pre:first-child {
+            margin-top: 0;
         }
 
         .endpoint + .endpoint {
@@ -1232,6 +1428,11 @@ internal class Style {
             .endpoint-content {
                 padding: 12px;
             }
+
+            .parameter-example > summary,
+            .parameter-example-body {
+                padding: 12px;
+            }
     
             pre {
                 font-size: 0.75em;
@@ -1329,6 +1530,23 @@ internal class Style {
             .param-required {
                 background: #3d1f1f;
                 color: #f85149;
+            }
+
+            .parameter-example {
+                background: #060606;
+            }
+
+            .parameter-example > summary {
+                background: var(--bg-secondary);
+            }
+
+            .parameter-example > summary:hover {
+                background: #161616;
+            }
+
+            .parameter-example-body > pre {
+                background: var(--bg-secondary);
+                color: var(--text-primary);
             }
     
             .status-code.success {

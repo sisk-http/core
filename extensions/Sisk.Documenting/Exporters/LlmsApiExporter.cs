@@ -162,6 +162,23 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
                             sb.Append ( "(no description available)" );
                         }
                         sb.AppendLine ();
+
+                        var parameterExamples = endpoint.ParameterExamples
+                            .Where ( example => string.Equals ( example.ParameterName, _b.Name, StringComparison.Ordinal ) );
+                        foreach (var example in parameterExamples) {
+                            sb.Append ( $"  - Example \"{example.Title}\"" );
+                            if (example.Description is { Length: > 0 }) {
+                                sb.Append ( $": {example.Description.ReplaceLineEndings ( " " )}" );
+                            }
+                            sb.AppendLine ();
+
+                            if (example.Example is { } exampleValue) {
+                                sb.AppendLine ( $"    ```{example.ExampleLanguage ?? "text"}" );
+                                sb.Append ( "    " );
+                                sb.AppendLine ( exampleValue.ReplaceLineEndings ( "\n    " ) );
+                                sb.AppendLine ( "    ```" );
+                            }
+                        }
                     }
                 }
                 if (endpoint.RequestExamples.Any ()) {

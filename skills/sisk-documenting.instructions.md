@@ -292,6 +292,19 @@ host.UseApiDocumentation(
 | `FormatEndpointParameters` | `"Request parameters:"` | Section heading. |
 | `FormatEndpointResponses` | `"Responses:"` | Section heading. |
 | `FormatEndpointRequestExamples` | `"Request examples:"` | Section heading. |
+| `FormatRequiredText` | `"Required"` | Text for required badge. |
+| `FormatNavApiReference` | `"API Reference"` | Sidebar nav label. |
+| `FormatTabExample` | `"Example"` | Tab label for example view. |
+| `FormatTabSchema` | `"Schema"` | Tab label for schema view. |
+| `IncludeSidebar` | `true` | Whether to render the sidebar. |
+| `Header` / `Footer` / `Head` | `null` | Optional custom HTML objects injected into the page. |
+
+Call `IncludePrismJs()` to append bundled Prism.js syntax highlighting JS+CSS to `Script`/`Style`.
+
+Protected virtual methods for deeper customization:
+- `WriteMainTitle(ApiDocumentation)` → `HtmlElement?`
+- `WriteSidebarNavigation(ApiDocumentation)` → `HtmlElement?`
+- `WriteEndpointDescription(ApiEndpoint)` → `HtmlElement?`
 
 ### Custom Exporter
 
@@ -329,7 +342,7 @@ var router = new Router();
 
 var docs = ApiDocumentation.Generate(router, context);
 
-// docs.ApplicationName / docs.ApplicationDescription / docs.ApiVersion
+// docs.ApplicationName / docs.ApplicationDescription / docs.ApiVersion (not ApplicationVersion)
 // docs.Endpoints → ApiEndpoint[]
 //   .Name / .Description / .Group / .RouteMethod / .Path / .Order
 //   .Headers           → ApiEndpointHeader[]
@@ -374,10 +387,10 @@ public class ReflectionParameterHandler : IExampleParameterTypeHandler
     public ParameterExampleResult[] GetParameterExamplesForType(Type type)
         => type.GetProperties()
                .Select(p => new ParameterExampleResult(
-                   name:        p.Name,
-                   typeName:    p.PropertyType.Name,
-                   isRequired:  true,
-                   description: null))
+                   parameterName: p.Name,
+                   typeName:      p.PropertyType.Name,
+                   isRequired:    true,
+                   description:   null))
                .ToArray();
 }
 ```
@@ -389,9 +402,9 @@ Generates JSON Schema strings for `PayloadType` in `[ApiRequest]` / `[ApiRespons
 ```csharp
 public class MySchemaHandler : IContentSchemaTypeHandler
 {
-    public JsonObject? GetJsonSchemaForType(Type type)
+    public JsonSchema GetJsonSchemaForType(Type type)
     {
-        // return a LightJson JsonObject representing the schema
+        // return a LightJson.Schema.JsonSchema representing the schema
     }
 }
 ```

@@ -272,6 +272,21 @@ public sealed class OpenApiExporter : IApiDocumentationExporter {
                         propertySchema [ "description" ] = param.Description;
                     }
 
+                    var parameterExamples = endpoint.ParameterExamples
+                        .Where ( example => string.Equals ( example.ParameterName, param.Name, StringComparison.Ordinal ) )
+                        .ToArray ();
+                    if (parameterExamples.FirstOrDefault ( example => example.Example != null )?.Example is { } firstExample) {
+                        propertySchema [ "example" ] = firstExample;
+                    }
+                    if (parameterExamples.Length > 0) {
+                        propertySchema [ "x-examples" ] = new JsonArray ( parameterExamples.Select ( example => new JsonObject {
+                            [ "title" ] = example.Title,
+                            [ "description" ] = example.Description,
+                            [ "language" ] = example.ExampleLanguage,
+                            [ "value" ] = example.Example
+                        } ) );
+                    }
+
                     properties [ param.Name ] = propertySchema;
 
                     if (param.IsRequired) {

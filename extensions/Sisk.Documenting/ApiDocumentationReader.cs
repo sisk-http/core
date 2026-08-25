@@ -31,6 +31,7 @@ internal class ApiDocumentationReader {
 
             List<ApiEndpointResponse> responses = new List<ApiEndpointResponse> ();
             List<ApiEndpointParameter> parameters = new List<ApiEndpointParameter> ();
+            List<ApiEndpointParameterExample> parameterExamples = new List<ApiEndpointParameterExample> ();
             List<ApiEndpointHeader> headers = new List<ApiEndpointHeader> ();
             List<ApiEndpointPathParameter> pathParameters = new List<ApiEndpointPathParameter> ();
             List<ApiEndpointRequestExample> requests = new List<ApiEndpointRequestExample> ();
@@ -56,6 +57,8 @@ internal class ApiDocumentationReader {
                     requests.Add ( apiReq.GetApiEndpointObject ( context ) );
                 foreach (var apiReq in rhAttrs.Item7)
                     queryParameters.Add ( apiReq.GetApiEndpointObject () );
+                foreach (var apiParamExample in rhAttrs.Item8)
+                    parameterExamples.Add ( apiParamExample.GetApiEndpointObject () );
             }
 
             var attrs = ExtractAttributesFromMethod ( routeMethod );
@@ -73,6 +76,8 @@ internal class ApiDocumentationReader {
                 requests.Add ( apiReqParam.GetApiEndpointObject ( context ) );
             foreach (var apiReqParam in attrs.Item7)
                 queryParameters.Add ( apiReqParam.GetApiEndpointObject () );
+            foreach (var apiParamExample in attrs.Item8)
+                parameterExamples.Add ( apiParamExample.GetApiEndpointObject () );
 
             string endpointName = apiEndpointAttr.Name;
             if (string.IsNullOrEmpty ( endpointName ))
@@ -81,6 +86,7 @@ internal class ApiDocumentationReader {
             if (context.Handler is { } _handler) {
                 ApplyHandler ( responses, route, _handler.HandleApiEndpointResponse );
                 ApplyHandler ( parameters, route, _handler.HandleApiEndpointParameter );
+                ApplyHandler ( parameterExamples, route, _handler.HandleApiEndpointParameterExample );
                 ApplyHandler ( headers, route, _handler.HandleApiEndpointHeader );
                 ApplyHandler ( pathParameters, route, _handler.HandleApiEndpointPathParameter );
                 ApplyHandler ( requests, route, _handler.HandleApiEndpointRequestExample );
@@ -95,6 +101,7 @@ internal class ApiDocumentationReader {
                 RouteMethod = route.Method,
                 Headers = headers.ToArray (),
                 Parameters = parameters.ToArray (),
+                ParameterExamples = parameterExamples.ToArray (),
                 Responses = responses.ToArray (),
                 PathParameters = pathParameters.ToArray (),
                 RequestExamples = requests.ToArray (),
@@ -120,7 +127,7 @@ internal class ApiDocumentationReader {
         };
     }
 
-    static (ApiResponseAttribute [], ApiParameterAttribute [], ApiParametersFromAttribute [], ApiHeaderAttribute [], ApiPathParameterAttribute [], ApiRequestAttribute [], ApiQueryParameterAttribute []) ExtractAttributesFromMethod ( MethodInfo method ) {
+    static (ApiResponseAttribute [], ApiParameterAttribute [], ApiParametersFromAttribute [], ApiHeaderAttribute [], ApiPathParameterAttribute [], ApiRequestAttribute [], ApiQueryParameterAttribute [], ApiParameterExampleAttribute []) ExtractAttributesFromMethod ( MethodInfo method ) {
         var apiResponsesAttrs = method.GetCustomAttributes<ApiResponseAttribute> ().ToArray ();
         var apiParametersAttrs = method.GetCustomAttributes<ApiParameterAttribute> ().ToArray ();
         var apiParametersFromAttrs = method.GetCustomAttributes<ApiParametersFromAttribute> ().ToArray ();
@@ -128,16 +135,17 @@ internal class ApiDocumentationReader {
         var apiPathParamsAttrs = method.GetCustomAttributes<ApiPathParameterAttribute> ().ToArray ();
         var apiRequestsAttrs = method.GetCustomAttributes<ApiRequestAttribute> ().ToArray ();
         var apiQueryParamsAttrs = method.GetCustomAttributes<ApiQueryParameterAttribute> ().ToArray ();
-        return (apiResponsesAttrs, apiParametersAttrs, apiParametersFromAttrs, apiHeadersAttrs, apiPathParamsAttrs, apiRequestsAttrs, apiQueryParamsAttrs);
+        var apiParameterExamplesAttrs = method.GetCustomAttributes<ApiParameterExampleAttribute> ().ToArray ();
+        return (apiResponsesAttrs, apiParametersAttrs, apiParametersFromAttrs, apiHeadersAttrs, apiPathParamsAttrs, apiRequestsAttrs, apiQueryParamsAttrs, apiParameterExamplesAttrs);
     }
 
-    static void ApplyHandler<TValue> ( List<TValue> values, Route route, Func<TValue, Route, TValue?> handler ) where TValue : class {
+    static void ApplyHandler<TValue> ( List<TValue> values, Route route, Func<TValue, Route, bool> handler ) where TValue : class {
         var originalValues = values.ToArray ();
         values.Clear ();
 
         foreach (var item in originalValues) {
-            if (handler ( item, route ) is { } value)
-                values.Add ( value );
+            if (handler ( item, route ))
+                values.Add ( item );
         }
     }
 

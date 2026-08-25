@@ -90,6 +90,11 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     public string FormatEndpointParameters { get; set; } = "Request parameters:";
 
     /// <summary>
+    /// Gets or sets the heading displayed above the situational examples for a request parameter.
+    /// </summary>
+    public string FormatParameterExamples { get; set; } = "Examples:";
+
+    /// <summary>
     /// Gets or sets the format string for endpoint responses.
     /// </summary>
     public string FormatEndpointResponses { get; set; } = "Responses:";
@@ -434,6 +439,33 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
                                     li += new HtmlElement ( "div", CreateParagraphs ( param.Description ) )
                                         .WithClass ( "param-description" );
+
+                                    var parameterExamples = endpoint.ParameterExamples
+                                        .Where ( example => string.Equals ( example.ParameterName, param.Name, StringComparison.Ordinal ) );
+                                    if (parameterExamples.Any ()) {
+                                        li += new HtmlElement ( "div", examplesDiv => {
+                                            examplesDiv.ClassList.Add ( "parameter-examples" );
+                                            examplesDiv += new HtmlElement ( "p", FormatParameterExamples )
+                                                .WithClass ( "parameter-examples-title" );
+
+                                            foreach (var example in parameterExamples) {
+                                                examplesDiv += new HtmlElement ( "details", exampleDetails => {
+                                                    exampleDetails.ClassList.Add ( "parameter-example" );
+                                                    exampleDetails += new HtmlElement ( "summary", example.Title );
+                                                    exampleDetails += new HtmlElement ( "div", exampleBody => {
+                                                        exampleBody.ClassList.Add ( "parameter-example-body" );
+                                                        if (example.Description is { Length: > 0 }) {
+                                                            exampleBody += new HtmlElement ( "div", CreateParagraphs ( example.Description ) )
+                                                                .WithClass ( "parameter-example-description" );
+                                                        }
+                                                        if (example.Example is { } exampleValue) {
+                                                            exampleBody += CreateCodeBlock ( exampleValue, example.ExampleLanguage );
+                                                        }
+                                                    } );
+                                                } );
+                                            }
+                                        } );
+                                    }
                                 } );
                             }
                         } );
