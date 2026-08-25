@@ -106,6 +106,7 @@ new HttpHost(IPEndPoint endpoint)     // full control over IP and port
 | `IsDisposed` | Whether the host has been disposed. |
 | `ServerNameHeader` | Static. Default `"Sisk"`. Sets the `Server` response header. |
 | `Start()` | Begins accepting connections. Call once. |
+| `Stop()` | Stops accepting connections. |
 | `Dispose()` | Stops accepting and releases resources. |
 
 ---
@@ -155,6 +156,7 @@ public override async Task OnContextCreatedAsync(HttpHost host, HttpHostContext 
     HttpHostContext.HttpRequest  req = context.Request;
     HttpHostContext.HttpResponse res = context.Response;
     HttpHostClient client            = context.Client;
+    HttpHost hostRef                 = context.Host;  // the owning HttpHost
 
     context.KeepAlive = true;  // default true; set false to close after this response
 
@@ -214,6 +216,14 @@ await writer.WriteLineAsync("chunk 2");
 - Headers are sent on the first call to `GetResponseStreamAsync`; adding headers after that has no effect.
 - Default headers added automatically: `Date`, `Server`.
 
+**Inline content (small responses without a stream):**
+```csharp
+res.StatusCode = 200;
+res.Headers.Set(new HttpHeader("Content-Type", "text/plain"));
+res.WriteInlineContent("Hello, world!"u8);          // sync, ReadOnlySpan<byte>
+await res.WriteInlineContentAsync(bytes);            // async, ReadOnlyMemory<byte>
+```
+
 ---
 
 ## HttpHostClient
@@ -223,6 +233,7 @@ IPEndPoint         ep      = client.ClientEndpoint;    // remote IP:port
 X509Certificate?   cert    = client.ClientCertificate; // null unless mTLS configured
 CancellationToken  dc      = client.DisconnectToken;   // raised on disconnection
 object?            state   = client.State;             // free slot for connection-scoped data
+bool             secure   = client.IsSecureConnection; // true when TLS is active
 ```
 
 ---
@@ -244,8 +255,8 @@ headers.Remove(HttpHeaderName.ContentLength);
 // check existence
 bool has = headers.Contains(HttpHeaderName.ContentType);
 
-// get value(s)
-string value = headers.Get(HttpHeaderName.ContentType); // first match or ""
+// get value(s) — returns all matching values
+string[] values = headers.Get(HttpHeaderName.ContentType);
 ```
 
 Use `HttpHeaderName` constants (`HttpHeaderName.ContentType`, `HttpHeaderName.ContentLength`, `HttpHeaderName.TransferEncoding`, etc.) instead of raw strings to avoid typos.
