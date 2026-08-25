@@ -17,5 +17,6 @@ using System.Threading.Tasks;
 namespace Sisk.ModelContextProtocol;
 
 [JsonSerializable ( typeof ( JsonRpcResponse ) )]
+[JsonSerializable ( typeof ( JsonRpcErrorResponse ) )]
 internal partial class McpSerializerContext : JsonSerializerContext {
 }

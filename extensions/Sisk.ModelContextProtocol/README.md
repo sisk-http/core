@@ -14,7 +14,7 @@ Currently, the following MCP features are supported:
 
 ### Transport
 
-The implemented transport is by [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http), supporting only singular messages.
+The implemented transport is [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http), supporting singular request/response messages. The provider supports modern stateless requests for protocol `2026-07-28` and preserves the legacy initialization flow for older clients.
 
 #### Usage Example
 

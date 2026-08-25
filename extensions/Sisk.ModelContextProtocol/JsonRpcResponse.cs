@@ -28,6 +28,29 @@ sealed class JsonRpcResponse {
     }
 }
 
+sealed class JsonRpcErrorResponse {
+
+    [JsonPropertyName ( "jsonrpc" )]
+    public string Version => "2.0";
+
+    [JsonPropertyName ( "error" )]
+    public JsonObject Error { get; }
+
+    [JsonPropertyName ( "id" )]
+    [JsonIgnore ( Condition = JsonIgnoreCondition.WhenWritingNull )]
+    public JsonValue? Id { get; }
+
+    public JsonRpcErrorResponse ( int code, string message, JsonValue? id, JsonValue? data = null ) {
+        Error = new JsonObject () {
+            [ "code" ] = code,
+            [ "message" ] = message
+        };
+        if (data is { } errorData)
+            Error [ "data" ] = errorData;
+        Id = id;
+    }
+}
+
 class McpJsonResponse : HttpResponse {
     public McpJsonResponse ( object obj, string? sessionId ) : base ( System.Net.HttpStatusCode.OK ) {
         Headers [ HttpKnownHeaderNames.ContentType ] = "application/json; charset=utf-8";

@@ -27,6 +27,11 @@ public sealed class McpToolResult {
     public JsonValue Result { get; }
 
     /// <summary>
+    /// Gets or sets the structured content produced by the tool.
+    /// </summary>
+    public JsonValue? StructuredContent { get; set; }
+
+    /// <summary>
     /// Creates a text-based result for an MCP tool.
     /// </summary>
     /// <param name="text">The text content of the result.</param>

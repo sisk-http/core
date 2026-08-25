@@ -23,7 +23,7 @@
 		
 		<AssemblyVersion>1.6.3</AssemblyVersion>
 		<FileVersion>1.6.3</FileVersion>
-		<Version>1.6.3-rc1</Version>
+		<Version>1.6.3</Version>
 		
 		<NeutralLanguage>en</NeutralLanguage>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -63,7 +63,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="CypherPotato.LightJson" Version="0.15.2" />
+	  <PackageReference Include="CypherPotato.LightJson" Version="0.16.1" />
 	</ItemGroup>
 
 	<!-- global imports -->

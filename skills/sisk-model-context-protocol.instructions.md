@@ -11,7 +11,7 @@ dotnet add package Sisk.ModelContextProtocol
 ```
 
 > **Status: Under development.** Only **Tools** are currently supported. Prompts, Resources, Completions, and server-side Logging are not yet implemented.  
-> Protocol version: `2025-06-18`
+> Current protocol version: `2026-07-28`, with legacy initialization compatibility through `2025-03-26`.
 
 Reference: https://docs.sisk-framework.org/docs/extensions/mcp  
 Namespace: `Sisk.ModelContextProtocol`
@@ -95,10 +95,10 @@ using var host = HttpServer.CreateBuilder()
 | `ServerTitle` | Human-readable display name. Default `"Example Server Display Name"`. |
 | `ServerVersion` | `Version` object. Default `1.0`. |
 | `Tools` | `IList<McpTool>` — add tools here before the server starts. |
-| `PROTOCOL_VERSION` | Const `"2025-06-18"` — the supported MCP spec version. |
+| `PROTOCOL_VERSION` | Const `"2026-07-28"` — the current MCP spec version. |
 | `HandleRequestAsync(HttpRequest, CancellationToken)` | Processes a single MCP HTTP request and returns an `HttpResponse`. |
 
-The endpoint handler must accept both **GET** (initialization) and **POST** (tool calls) — use `RouteMethod.Get | RouteMethod.Post` or `MapAny`.
+Use `MapAny` when initialization-based clients must remain compatible over POST. Modern and legacy Streamable HTTP requests use **POST**; **GET** is rejected because this provider does not implement an SSE endpoint.
 
 ---
 
@@ -250,7 +250,7 @@ The following JSON-RPC methods are handled by `HandleRequestAsync`:
 
 | Method | Notes |
 |---|---|
-| `GET` (HTTP) | Returns an `initialize` response (capabilities). |
+| `GET` (HTTP) | Returns `405 Method Not Allowed`; SSE streams are not implemented. |
 | `initialize` | Handshake — returns server info and capabilities. Protocol version mismatch is tolerated. |
 | `tools/list` | Returns the registered `Tools` list. |
 | `tools/call` | Validates schema, invokes `ExecuteAsync`, returns result. |

@@ -47,6 +47,21 @@ public sealed class McpTool {
     public McpToolHandler ExecuteAsync { get; set; }
 
     /// <summary>
+    /// Gets or sets the icons that clients can display for this tool.
+    /// </summary>
+    public IList<McpProviderIcon> Icons { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the JSON schema that defines the structured output of this tool.
+    /// </summary>
+    public JsonSchema? OutputSchema { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional hints describing the behavior of this tool.
+    /// </summary>
+    public McpToolAnnotations? Annotations { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="McpTool"/> class.
     /// </summary>
     /// <param name="name">The unique name of the tool.</param>
