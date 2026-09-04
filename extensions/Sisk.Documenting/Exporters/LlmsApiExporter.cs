@@ -29,6 +29,8 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
     /// </summary>
     public string? HeaderText { get; set; }
 
+    public string? FooterText { get; set; }
+
     /// <summary>
     /// Initializes a new instance of the LlmsApiExporter class.
     /// </summary>
@@ -51,6 +53,12 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
     public LlmsApiExporter ( string? hostname, string headerText ) {
         Hostname = hostname;
         HeaderText = headerText;
+    }
+
+    public LlmsApiExporter ( string? hostname, string? headerText, string? footerText ) {
+        Hostname = hostname;
+        HeaderText = headerText;
+        FooterText = footerText;
     }
 
     static string TransformId ( string unsafeId ) {
@@ -255,6 +263,11 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
                 sb.AppendLine ( $"- [{endpoint.Name}]({endpointPath}): {TruncateDescription ( endpoint.Description ) ?? "(no description available)"}" );
             }
             sb.AppendLine ();
+        }
+
+        if (!string.IsNullOrWhiteSpace ( FooterText )) {
+            sb.AppendLine ();
+            sb.AppendLine ( FooterText );
         }
 
         return new StringContent ( sb.ToString () );
