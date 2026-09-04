@@ -169,6 +169,7 @@ internal class HttpResponseSerializer {
     public static bool WriteExpectationContinue ( Stream outgoingStream ) {
         try {
             outgoingStream.Write ( "HTTP/1.1 100 Continue\r\n\r\n"u8 );
+            outgoingStream.Flush ();
 
             return true;
         }

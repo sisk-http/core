@@ -37,24 +37,36 @@ static class HttpRequestReader {
 
     [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public static async ValueTask<HttpRequestBase?> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
+    public static async ValueTask<(HttpRequestBase? Request, int BufferedLength)> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, int bufferedLength, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
 
         int bufferLength = sharedBuffer.Length;
-        int totalRead = 0;
+        int totalRead = bufferedLength;
         long deadlineTicks = Environment.TickCount64 + headerReadTimeoutMs;
-
         int searchStart = 0;
 
         try {
-            while (totalRead < bufferLength) {
+            while (true) {
+                int effectiveSearchStart = Math.Max ( 0, searchStart - 3 );
+                ReadOnlySpan<byte> searchRegion = sharedBuffer.Span.Slice ( effectiveSearchStart, totalRead - effectiveSearchStart );
+
+                if (searchRegion.IndexOf ( HeaderTerminator ) >= 0) {
+                    return (ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) ), totalRead);
+                }
+
+                if (totalRead >= bufferLength) {
+                    Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
+                    return (null, totalRead);
+                }
+
                 long currentTicks = Environment.TickCount64;
                 if (currentTicks >= deadlineTicks) {
                     Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
-                    return null;
+                    return (null, totalRead);
                 }
 
                 int remainingMs = (int) (deadlineTicks - currentTicks);
                 cancellationToken.ThrowIfCancellationRequested ();
+                searchStart = totalRead;
 
                 int bytesRead = await ReadWithTimeoutAsync (
                     stream,
@@ -66,40 +78,27 @@ static class HttpRequestReader {
 
                 if (bytesRead == 0) {
                     Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
-                    return null;
+                    return (null, totalRead);
                 }
 
                 totalRead += bytesRead;
-
-                int effectiveSearchStart = Math.Max ( 0, searchStart - 3 );
-                ReadOnlySpan<byte> searchRegion = sharedBuffer.Span.Slice ( effectiveSearchStart, totalRead - effectiveSearchStart );
-
-                int terminatorIndex = searchRegion.IndexOf ( HeaderTerminator );
-                if (terminatorIndex >= 0) {
-                    return ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) );
-                }
-
-                searchStart = totalRead;
             }
-
-            Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
-            return null;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
             Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
-            return null;
+            return (null, totalRead);
         }
         catch (OperationCanceledException) {
             Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
-            return null;
+            return (null, totalRead);
         }
         catch (SocketException sex) {
             Logger.LogInformation ( $"failed to parse HTTP request: {sex.Message}" );
-            return null; // socket errors are common when client disconnects abruptly
+            return (null, totalRead);
         }
         catch (Exception ex) {
             Logger.LogInformation ( $"failed to parse HTTP request (exception): {ex.Message}" );
-            return null;
+            return (null, totalRead);
         }
     }
 
@@ -337,11 +336,8 @@ HeadersComplete:
                 return null;
             }
 
-            ReadOnlyMemory<byte> bufferedContent = expect100
-                ? ReadOnlyMemory<byte>.Empty
-                : buffer.Slice ( cursor );
-
             return new HttpRequestBase {
+                HeaderLength = cursor,
                 MethodRef = method,
                 PathRef = path,
                 HeaderBlockRef = buffer.Slice ( headersStart, cursor - headersStart ),
@@ -349,7 +345,7 @@ HeadersComplete:
                 CanKeepAlive = keepAliveEnabled,
                 IsChunked = isChunked,
                 IsExpecting100 = expect100,
-                BufferedContent = bufferedContent
+                BufferedContent = buffer.Slice ( cursor )
             };
 
 ParseFailed:

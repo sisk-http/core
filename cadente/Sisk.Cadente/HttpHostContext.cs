@@ -126,7 +126,7 @@ public sealed class HttpHostContext {
 
         bool wasExpectationSent = false;
         private readonly Stream _networkStream;
-        private HttpRequestStream? _requestStream;
+        internal HttpRequestStream? _requestStream;
         private HttpRequestBase _baseRequest;
         internal EndableStream? _readingStream;
         private HttpHeaderList? _headers;

@@ -64,9 +64,9 @@ sealed class HttpChunkedReadStream2 : EndableStream {
 
     public override bool CanRead => true;
 
-    public override bool CanSeek => throw new NotImplementedException ();
+    public override bool CanSeek => false;
 
-    public override bool CanWrite => throw new NotImplementedException ();
+    public override bool CanWrite => false;
 
     public override long Length => throw new NotImplementedException ();
 
@@ -190,5 +190,14 @@ sealed class HttpChunkedReadStream2 : EndableStream {
 
     public override void Write ( byte [] buffer, int offset, int count ) {
         throw new NotImplementedException ();
+    }
+
+    protected override void Dispose ( bool disposing ) {
+        if (disposing && _buffer.Length > 0) {
+            ArrayPool<byte>.Shared.Return ( _buffer );
+            _buffer = Array.Empty<byte> ();
+        }
+
+        base.Dispose ( disposing );
     }
 }

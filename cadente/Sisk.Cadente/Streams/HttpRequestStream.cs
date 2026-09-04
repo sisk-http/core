@@ -17,6 +17,8 @@ internal sealed class HttpRequestStream : EndableStream {
     int read = 0;
     int bufferPosition = 0;
 
+    internal int ConsumedBufferedBytes => bufferPosition;
+
     public HttpRequestStream ( Stream clientStream, HttpRequestBase baseRequest ) {
         s = clientStream;
         this.baseRequest = baseRequest;
@@ -52,6 +54,10 @@ internal sealed class HttpRequestStream : EndableStream {
             return bufferRead;
         }
         else {
+            if (baseRequest.ContentLength > 0) {
+                count = (int) Math.Min ( count, baseRequest.ContentLength - read );
+            }
+
             int streamRead = s.Read ( buffer, offset, count );
             if (streamRead == 0 && baseRequest.ContentLength > 0 && read < baseRequest.ContentLength)
                 throw new EndOfStreamException ( "Request body ended before the declared Content-Length was fully read." );

@@ -32,7 +32,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
     public const int RESERVED_BUFFER_SIZE = 8 * 1024;
 
     internal readonly Stream networkStream;
-    internal IMemoryOwner<byte> requestPool, responsePool;
+    internal IMemoryOwner<byte> requestPool, responsePool, outputPool;
 
     static readonly HttpHeader ConnCloseHeader = new HttpHeader ( HttpHeaderName.Connection, "close" );
     static readonly HttpHeader ContLengzHeader = new HttpHeader ( HttpHeaderName.ContentLength, "0" );
@@ -43,15 +43,17 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
         _endpoint = endpoint;
         headerParsingTimeout = (int) host.TimeoutManager.HeaderParsingTimeout.TotalMilliseconds;
 
-        networkStream = connectionStream;
-
         requestPool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
         responsePool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
+        outputPool = MemoryPool<byte>.Shared.Rent ( RESERVED_BUFFER_SIZE );
+
+        networkStream = new BufferedConnectionStream ( connectionStream, outputPool.Memory );
     }
 
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public async Task<HttpConnectionState> HandleConnectionEventsAsync ( CancellationToken shutdownToken ) {
         bool connectionCloseRequested = false;
+        int bufferedRequestLength = 0;
         using CancellationTokenSource headerReadTimeoutSource = new ();
 
 #if DEBUG
@@ -60,7 +62,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
         while (!disposedValue) {
 
-            HttpRequestBase? nextRequest = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, networkStream, shutdownToken, headerParsingTimeout, headerReadTimeoutSource ).ConfigureAwait ( false );
+            (HttpRequestBase? nextRequest, bufferedRequestLength) = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, bufferedRequestLength, networkStream, shutdownToken, headerParsingTimeout, headerReadTimeoutSource ).ConfigureAwait ( false );
 
             if (nextRequest is null) {
                 Logger.LogInformation ( $"TryReadHttpRequestAsync returned no request" );
@@ -123,11 +125,22 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
                 }
             }
 
+            int consumedBufferedBodyLength = managedSession.Request._requestStream?.ConsumedBufferedBytes ?? 0;
+            managedSession.Request._readingStream?.Dispose ();
+
             if (connectionCloseRequested) {
                 break;
             }
+
+            int consumedRequestLength = nextRequest.HeaderLength + consumedBufferedBodyLength;
+            int remainingRequestLength = bufferedRequestLength - consumedRequestLength;
+            if (remainingRequestLength > 0) {
+                requestPool.Memory.Span.Slice ( consumedRequestLength, remainingRequestLength ).CopyTo ( requestPool.Memory.Span );
+            }
+            bufferedRequestLength = remainingRequestLength;
         }
 
+        await networkStream.FlushAsync ( shutdownToken ).ConfigureAwait ( false );
         return HttpConnectionState.ConnectionClosed;
     }
 
@@ -137,6 +150,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
                 networkStream.Dispose ();
                 requestPool.Dispose ();
                 responsePool.Dispose ();
+                outputPool.Dispose ();
             }
 
             disposedValue = true;
@@ -152,6 +166,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
         await networkStream.DisposeAsync ().ConfigureAwait ( false );
         requestPool.Dispose ();
         responsePool.Dispose ();
+        outputPool.Dispose ();
         disposedValue = true;
     }
 }

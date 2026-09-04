@@ -466,7 +466,7 @@ public sealed class HttpHost : IDisposable {
 
         using var memoryPin = MemoryPool<byte>.Shared.Rent ( HttpConnection.RESERVED_BUFFER_SIZE );
         using var shutdownToken = new CancellationTokenSource ( TimeSpan.FromSeconds ( 15 ) );
-        HttpRequestBase? rawRequest = await HttpRequestReader.TryReadHttpRequestAsync ( memoryPin.Memory, stream, shutdownToken.Token, headerReadTimeoutMs: 5_000 ).ConfigureAwait ( false );
+        (HttpRequestBase? rawRequest, _) = await HttpRequestReader.TryReadHttpRequestAsync ( memoryPin.Memory, bufferedLength: 0, stream, shutdownToken.Token, headerReadTimeoutMs: 5_000 ).ConfigureAwait ( false );
 
         if (rawRequest is null) {
 
