@@ -242,8 +242,12 @@ namespace Sisk.Core.Http.Streams {
                 flushLock.Release ();
             }
 
-            if (disposeOnFailure)
+            if (disposeOnFailure) {
                 Dispose ();
+            }
+            else {
+                res.OutputStream.Flush ();
+            }
         }
 
         internal async ValueTask FlushAsync () {
@@ -270,8 +274,12 @@ namespace Sisk.Core.Http.Streams {
                 flushLock.Release ();
             }
 
-            if (disposeOnFailure)
+            if (disposeOnFailure) {
                 Dispose ();
+            }
+            else {
+                await res.OutputStream.FlushAsync ().ConfigureAwait ( false );
+            }
         }
 
         /// <summary>
