@@ -45,9 +45,9 @@
 
 	<!-- version info -->
 	<PropertyGroup>
-		<AssemblyVersion>1.6.3</AssemblyVersion>
-		<FileVersion>1.6.3</FileVersion>
-		<Version>1.6.3-rc2</Version>
+		<AssemblyVersion>1.7.0</AssemblyVersion>
+		<FileVersion>1.7.0</FileVersion>
+		<Version>1.7.0-rc2</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->
@@ -62,7 +62,7 @@
 
 	<!-- source link -->
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup>
