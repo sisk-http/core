@@ -10,9 +10,9 @@
 	<!-- debug info, symbols -->
 	<PropertyGroup>
 		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<DebugType>embedded</DebugType>
+		<DebugType>portable</DebugType>
 	</PropertyGroup>
 
 	<!-- aot, build options -->
@@ -47,7 +47,7 @@
 	<PropertyGroup>
 		<AssemblyVersion>1.7.0</AssemblyVersion>
 		<FileVersion>1.7.0</FileVersion>
-		<Version>1.7.0-rc2</Version>
+		<Version>1.7.0-rc3</Version>
 	</PropertyGroup>
 
 	<!-- licensing, readme, signing -->

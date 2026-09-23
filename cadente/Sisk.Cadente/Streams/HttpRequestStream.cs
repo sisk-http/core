@@ -14,7 +14,7 @@ namespace Sisk.Cadente.Streams;
 internal sealed class HttpRequestStream : EndableStream {
     private Stream s;
     private HttpRequestBase baseRequest;
-    int read = 0;
+    long read = 0;
     int bufferPosition = 0;
 
     internal int ConsumedBufferedBytes => bufferPosition;
