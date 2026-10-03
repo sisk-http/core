@@ -304,15 +304,16 @@ public class HttpFileServerHandler {
             return new HttpResponse ( System.Net.HttpStatusCode.Forbidden );
         }
 
-        var resolvedEntry = ResolvePath ( HttpUtility.UrlDecode ( request.Path ) );
+        string requestPath = Uri.UnescapeDataString ( request.Path );
+        var resolvedEntry = ResolvePath ( requestPath );
 
         if (resolvedEntry is DirectoryInfo dirInfo) {
 
-            if (AllowIndex && ResolvePath ( PathHelper.CombinePaths ( HttpUtility.UrlDecode ( request.Path ), "index.html" ) ) is FileInfo { Exists: true } indexHtmlFile) {
+            if (AllowIndex && ResolvePath ( PathHelper.CombinePaths ( requestPath, "index.html" ) ) is FileInfo { Exists: true } indexHtmlFile) {
 
                 return ServeFile ( indexHtmlFile, request );
             }
-            else if (AllowIndex && ResolvePath ( PathHelper.CombinePaths ( HttpUtility.UrlDecode ( request.Path ), "index.htm" ) ) is FileInfo { Exists: true } indexHtmFile) {
+            else if (AllowIndex && ResolvePath ( PathHelper.CombinePaths ( requestPath, "index.htm" ) ) is FileInfo { Exists: true } indexHtmFile) {
 
                 return ServeFile ( indexHtmFile, request );
             }
