@@ -13,6 +13,7 @@ using System.Text;
 using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
+using Sisk.Core.Http.FileSystem;
 using Sisk.Core.Http.Hosting;
 using Sisk.Core.Http.Streams;
 using Sisk.Core.Routing;
@@ -52,6 +53,18 @@ public sealed class Server {
                         Status = HttpStatusInformation.Ok
                     };
                 } );
+
+                router.MapAny ( "/tests/routing/any", ( HttpRequest request ) => new HttpResponse ( "any" ) {
+                    Headers = new () { [ "X-Route-Action" ] = "any" }
+                } );
+
+                router.Map ( new RegexRoute ( RouteMethod.Get, @"^/tests/routing/regex/(?<id>\d+)$",
+                    request => new HttpResponse ( request.RouteParameters [ "id" ].GetString () ) ) );
+
+                string fileServerRoot = Directory.CreateTempSubdirectory ( "sisk-file-server-" ).FullName;
+                File.WriteAllText ( Path.Combine ( fileServerRoot, "sample.txt" ), "prefix" );
+                router.Map ( HttpFileServer.CreateServingRoute ( "/tests/routing/files", fileServerRoot ) );
+                router.MapGet ( "/tests/routing/files/static", ( HttpRequest request ) => new HttpResponse ( "static" ) );
                 router.MapGet ( "/tests/plaintext/chunked", delegate ( HttpRequest request ) {
                     return new HttpResponse () {
                         Content = new StringContent ( "Hello, world!", Encoding.UTF8, "text/plain" ),

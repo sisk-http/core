@@ -54,6 +54,8 @@ namespace Sisk.Core.Routing {
                 server.handler.SetupRouter ( this );
                 parentServer = server;
 
+                SortRoutesByPrecedence ();
+
                 if (CheckForRouteCollisions)
                     CheckForRouteCollisionsCore ();
             }
@@ -251,14 +253,25 @@ namespace Sisk.Core.Routing {
             }
         }
 
+        void SortRoutesByPrecedence () {
+            Route [] routes = [ .. _routesList.Where ( r => r.IsStatic ), .. _routesList.Where ( r => !r.IsStatic ) ];
+
+            _routesList.Clear ();
+            _routesList.AddRange ( routes );
+        }
+
         void CheckForRouteCollisionsCore () {
 
-            // route collisions
+            // route collisions: only static routes can be compared by their route templates
             for (int i = 0; i < _routesList.Count; i++) {
                 Route I = _routesList [ i ];
 
-                for (int j = 0; j < _routesList.Count; j++) {
+                for (int j = i + 1; j < _routesList.Count; j++) {
                     Route J = _routesList [ j ];
+
+                    if (!I.IsStatic || !J.IsStatic) {
+                        continue;
+                    }
 
                     bool methodMatched =
                         I.Method == RouteMethod.Any ||
@@ -266,7 +279,7 @@ namespace Sisk.Core.Routing {
                         I.Method.HasFlag ( J.Method ) ||
                         J.Method.HasFlag ( I.Method );
 
-                    if (!ReferenceEquals ( I, J ) && methodMatched && HttpStringInternals.IsRoutePatternMatch ( I.Path, J.Path,
+                    if (methodMatched && HttpStringInternals.IsRoutePatternMatch ( I.Path, J.Path,
                         MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal )) {
                         throw new ArgumentException ( SR.Format ( SR.Router_Set_Collision, I, J ) );
                     }

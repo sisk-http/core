@@ -9,8 +9,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Sisk.Core.Entity;
+using Sisk.Core.Internal;
 
 namespace Sisk.Core.Routing {
 
@@ -23,7 +23,6 @@ namespace Sisk.Core.Routing {
 
         internal bool _isAsyncEnumerable;
         internal bool _isAsyncTask;
-        internal Regex? routeRegex;
         private string path;
 
         /// <summary>
@@ -48,9 +47,11 @@ namespace Sisk.Core.Routing {
         public LogOutput LogMode { get; set; } = LogOutput.Both;
 
         /// <summary>
-        /// Get or sets if this route should use regex to be interpreted instead of predefined templates.
+        /// Gets if this route is interpreted as an regular expression. This property is kept for compatibility
+        /// and is only <see langword="true"/> for <see cref="RegexRoute"/> instances.
         /// </summary>
-        public bool UseRegex { get; set; }
+        [Obsolete ( "Use RegexRoute to create regex routes, or check if the route is an RegexRoute." )]
+        public bool UseRegex => this is RegexRoute;
 
         /// <summary>
         /// Gets or sets whether this route should send Cross-Origin Resource Sharing headers in the response.
@@ -70,11 +71,9 @@ namespace Sisk.Core.Routing {
                 return path;
             }
             set {
-                if (UseRegex && routeRegex != null) {
-                    // routeRegex is created in the router invocation
-                    routeRegex = null;
-                }
+                string oldPath = path;
                 path = value;
+                OnPathModified ( oldPath, value );
             }
         }
 
@@ -82,6 +81,24 @@ namespace Sisk.Core.Routing {
         /// Gets or sets the route name.
         /// </summary>
         public string? Name { get; set; }
+
+        /// <summary>
+        /// Gets whether the router can redirect requests to this route into their trailing-slash path when
+        /// <see cref="Http.HttpServerConfiguration.ForceTrailingSlash"/> is enabled.
+        /// </summary>
+        public virtual bool AllowRewrites => true;
+
+        /// <summary>
+        /// Gets whether this route strictly matches its <see cref="Path"/> as an route template.
+        /// </summary>
+        /// <remarks>
+        /// Static routes are matched before non-static routes, are validated for route collisions and receive
+        /// the router <see cref="Router.Prefix"/>. Non-static routes, such as <see cref="RegexRoute"/> and
+        /// <see cref="PrefixRoute"/>, interpret their path dynamically: they are matched after every static route,
+        /// in their registration order, and are not validated for route collisions. Routes which override
+        /// <see cref="Match"/> with a different semantic than route templates should also override this property.
+        /// </remarks>
+        public virtual bool IsStatic => true;
 
         /// <summary>
         /// Gets or sets the function that is called after the route is matched with the request.
@@ -171,6 +188,32 @@ namespace Sisk.Core.Routing {
         /// Gets or sets the global request handlers instances that will not run on this route.
         /// </summary>
         public IRequestHandler [] BypassGlobalRequestHandlers { get; set; } = Array.Empty<IRequestHandler> ();
+
+        /// <summary>
+        /// Tests if the specified request path matches this route path. The HTTP method is validated
+        /// by the <see cref="Router"/> after the path matches.
+        /// </summary>
+        /// <remarks>
+        /// When overriding this method with a semantic other than route templates, also override
+        /// <see cref="IsStatic"/> to return <see langword="false"/>.
+        /// </remarks>
+        /// <param name="requestPath">The request path to test.</param>
+        /// <param name="router">The router which is matching this route.</param>
+        /// <returns>A <see cref="RouteMatch"/> with the match result and the captured route parameters.</returns>
+        public virtual RouteMatch Match ( string requestPath, Router router ) {
+            return HttpStringInternals.IsReqPathMatch ( Path, requestPath,
+                router.MatchRoutesIgnoreCase ?
+                    StringComparison.OrdinalIgnoreCase :
+                    StringComparison.Ordinal );
+        }
+
+        /// <summary>
+        /// Called after the <see cref="Path"/> property is changed.
+        /// </summary>
+        /// <param name="oldPath">The previous route path.</param>
+        /// <param name="newPath">The new route path.</param>
+        protected virtual void OnPathModified ( string oldPath, string newPath ) {
+        }
 
         /// <summary>
         /// Creates an new <see cref="Route"/> instance with given parameters.

@@ -8,14 +8,11 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Collections;
-using System.Collections.Specialized;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Web;
 using Sisk.Core.Http;
-using Sisk.Core.Internal;
 
 namespace Sisk.Core.Routing;
 
@@ -54,25 +51,6 @@ public partial class Router {
         }
         else {
             return method.HasFlag ( RouteMethod.Any );
-        }
-    }
-
-    private RouteMatch TestRouteMatchUsingRegex ( Route route, string requestPath ) {
-        route.routeRegex ??= new Regex ( route.Path, MatchRoutesIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None );
-
-        var test = route.routeRegex.Match ( requestPath );
-        if (test.Success) {
-            NameValueCollection query = new NameValueCollection ();
-            for (int i = 0; i < test.Groups.Count; i++) {
-                Group group = test.Groups [ i ];
-                if (group.Index.ToString ( provider: null ) == group.Name)
-                    continue;
-                query.Add ( group.Name, group.Value );
-            }
-            return new RouteMatch ( true, query );
-        }
-        else {
-            return new RouteMatch ( false, null );
         }
     }
 
@@ -144,57 +122,45 @@ public partial class Router {
             ref Route route = ref Unsafe.Add ( ref rPointer, i );
 
             // test path
-            RouteMatch pathTest;
             string reqUrlTest = request.Path;
-
-            if (route.UseRegex) {
-                pathTest = TestRouteMatchUsingRegex ( route, reqUrlTest );
-            }
-            else {
-                pathTest = HttpStringInternals.IsReqPathMatch ( route.Path, reqUrlTest,
-                    MatchRoutesIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal );
-            }
+            RouteMatch pathTest = route.Match ( reqUrlTest, this );
 
             if (!pathTest.Success) {
                 continue;
             }
 
             matchResult = RouteMatchResult.PathMatched;
-            bool isMethodMatched = false;
 
-            // test method
-            if (IsMethodMatching ( request.Method.Method, route.Method )) {
-                isMethodMatched = true;
-            }
-            else if (request.Method == HttpMethod.Options) {
-                matchResult = RouteMatchResult.OptionsMatched;
-                break;
+            if (!IsMethodMatching ( request.Method.Method, route.Method )) {
+                if (request.Method == HttpMethod.Options) {
+                    matchResult = RouteMatchResult.OptionsMatched;
+                    break;
+                }
+                continue;
             }
 
-            if (isMethodMatched) {
-                if (pathTest.Parameters is not null) {
-                    var keys = pathTest.Parameters.Keys;
+            if (pathTest.Parameters is not null) {
+                var keys = pathTest.Parameters.Keys;
 
-                    for (int j = 0; j < keys.Count; j++) {
-                        string? name = keys [ j ];
-                        if (string.IsNullOrEmpty ( name ))
-                            continue;
+                for (int j = 0; j < keys.Count; j++) {
+                    string? name = keys [ j ];
+                    if (string.IsNullOrEmpty ( name ))
+                        continue;
 
-                        string? value = pathTest.Parameters [ name ];
-                        if (string.IsNullOrEmpty ( value ))
-                            continue;
+                    string? value = pathTest.Parameters [ name ];
+                    if (string.IsNullOrEmpty ( value ))
+                        continue;
 
-                        string valueDecoded = HttpUtility.UrlDecode ( value );
-                        request.RouteParameters.SetItemInternal ( name, valueDecoded );
-                    }
-
-                    request.RouteParameters.MakeReadOnly ();
+                    string valueDecoded = HttpUtility.UrlDecode ( value );
+                    request.RouteParameters.SetItemInternal ( name, valueDecoded );
                 }
 
-                matchResult = RouteMatchResult.FullyMatched;
-                matchedRoute = route;
-                break;
+                request.RouteParameters.MakeReadOnly ();
             }
+
+            matchResult = RouteMatchResult.FullyMatched;
+            matchedRoute = route;
+            break;
         }
 
         if (matchResult == RouteMatchResult.NotMatched) {
@@ -221,7 +187,7 @@ public partial class Router {
             context.MatchedRoute = matchedRoute;
             HttpResponse? result = null;
 
-            if (currentConfig.ForceTrailingSlash && !matchedRoute.UseRegex && !request.Path.EndsWith ( '/' ) && request.Method == HttpMethod.Get) {
+            if (currentConfig.ForceTrailingSlash && matchedRoute.AllowRewrites && !request.Path.EndsWith ( '/' ) && request.Method == HttpMethod.Get) {
                 HttpResponse res = new HttpResponse () {
                     Status = HttpStatusInformation.TemporaryRedirect,
                     Headers = new () {

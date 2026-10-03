@@ -28,9 +28,7 @@ public static class HttpFileServer {
 
         ioHandler.RoutePrefix = PathHelper.NormalizePath ( basePath );
         var action = CreateFileSystemRouteAction ( ioHandler );
-        var route = new RegexRoute ( RouteMethod.Get, $@"^\/{basePath.Trim ( '/' )}(\/?.*)?$", string.Empty, action, requestHandlers );
-
-        return route;
+        return new PrefixRoute ( RouteMethod.Get, basePath, string.Empty, action, requestHandlers );
     }
 
     /// <summary>

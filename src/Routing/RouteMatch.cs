@@ -17,6 +17,11 @@ namespace Sisk.Core.Routing;
 public sealed class RouteMatch {
 
     /// <summary>
+    /// Gets an shared <see cref="RouteMatch"/> instance which represents an unsuccessful match.
+    /// </summary>
+    public static readonly RouteMatch NotMatched = new ( false, null );
+
+    /// <summary>
     /// Gets a value indicating whether the route matching operation was successful.
     /// </summary>
     public bool Success { get; }
@@ -26,8 +31,18 @@ public sealed class RouteMatch {
     /// </summary>
     public NameValueCollection? Parameters { get; }
 
-    internal RouteMatch ( bool success, NameValueCollection? parameters ) {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RouteMatch"/> class.
+    /// </summary>
+    /// <param name="success">Whether the route matching operation was successful.</param>
+    /// <param name="parameters">The parameters extracted from the route, if any.</param>
+    public RouteMatch ( bool success, NameValueCollection? parameters ) {
         Success = success;
         Parameters = parameters;
+    }
+
+    /// <inheritdoc/>
+    public override string ToString () {
+        return $"RouteMatch {{ Success = {Success}, Parameters = {Parameters} }}";
     }
 }

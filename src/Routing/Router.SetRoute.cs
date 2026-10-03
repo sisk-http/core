@@ -91,7 +91,7 @@ public partial class Router {
             throw new InvalidOperationException ( SR.Router_ReadOnlyException );
         }
 
-        if (!route.UseRegex && Prefix is string prefix) {
+        if (route.IsStatic && Prefix is string prefix) {
             route.Path = PathUtility.CombinePaths ( prefix, route.Path );
         }
 
@@ -520,16 +520,18 @@ public partial class Router {
                         path = PathUtility.CombinePaths ( prefix, path );
                     }
 
-                    Route route = new Route () {
-                        Method = routeAttribute.Method,
-                        Path = path,
-                        Name = routeAttribute.Name,
-                        RequestHandlers = methodAttrReqHandlers.ToArray (),
-                        LogMode = routeAttribute.LogMode,
-                        UseCors = routeAttribute.UseCors,
-                        UseRegex = routeAttribute.UseRegex,
-                        Bag = [ .. callerMetadata, .. routeMetadata ]
+                    Route route = routeAttribute.UseRegex switch {
+                        true => new RegexRoute (),
+                        false => new Route ()
                     };
+
+                    route.Method = routeAttribute.Method;
+                    route.Path = path;
+                    route.Name = routeAttribute.Name;
+                    route.RequestHandlers = methodAttrReqHandlers.ToArray ();
+                    route.LogMode = routeAttribute.LogMode;
+                    route.UseCors = routeAttribute.UseCors;
+                    route.Bag = [ .. callerMetadata, .. routeMetadata ];
 
                     if (!route.TrySetRouteAction ( method, instance, out Exception? ex )) {
                         throw ex;
