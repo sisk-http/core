@@ -56,6 +56,7 @@ namespace Sisk.Core.Http {
         private readonly HttpServerEngineContextRequest listenerRequest;
         private readonly HttpServerEngineContext context;
         private byte []? contentBytes;
+        private Stream? requestInputStream;
         private HttpHeaderCollection? headers;
         private StringKeyStoreCollection? cookies;
         private StringValueCollection? query;
@@ -107,14 +108,18 @@ namespace Sisk.Core.Http {
             }
         }
 
+        Stream RequestInputStream => requestInputStream ??= contextServerConfiguration.MaximumContentLength > 0
+            ? new LimitedReadStream ( listenerRequest.InputStream, contextServerConfiguration.MaximumContentLength )
+            : listenerRequest.InputStream;
+
         internal async Task<byte []> ReadRequestStreamContentsAsync ( CancellationToken cancellation = default ) {
             if (contentBytes is null) {
                 if (ContentLength > Array.MaxLength) {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
                 else if (ContentLength > 0) {
-                    using (var memoryStream = new MemoryStream ( (int) ContentLength )) {
-                        await listenerRequest.InputStream.CopyToAsync ( memoryStream, cancellation ).ConfigureAwait ( false );
+                    using (var memoryStream = new MemoryStream ()) {
+                        await RequestInputStream.CopyToAsync ( memoryStream, cancellation ).ConfigureAwait ( false );
                         contentBytes = memoryStream.ToArray ();
                     }
                 }
@@ -124,7 +129,7 @@ namespace Sisk.Core.Http {
                             ? Array.MaxLength
                             : Math.Min ( contextServerConfiguration.MaximumContentLength, Array.MaxLength );
 
-                        await StreamUtil.CopyToLimitedAsync ( listenerRequest.InputStream, memoryStream, 81920, maxLength, cancellation ).ConfigureAwait ( false );
+                        await StreamUtil.CopyToLimitedAsync ( RequestInputStream, memoryStream, 81920, maxLength, cancellation ).ConfigureAwait ( false );
                         contentBytes = memoryStream.ToArray ();
                     }
                 }
@@ -143,8 +148,8 @@ namespace Sisk.Core.Http {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
                 else if (ContentLength > 0) {
-                    using (var memoryStream = new MemoryStream ( (int) ContentLength )) {
-                        listenerRequest.InputStream.CopyTo ( memoryStream );
+                    using (var memoryStream = new MemoryStream ()) {
+                        RequestInputStream.CopyTo ( memoryStream );
                         contentBytes = memoryStream.ToArray ();
                     }
                 }
@@ -154,7 +159,7 @@ namespace Sisk.Core.Http {
                             ? Array.MaxLength
                             : Math.Min ( contextServerConfiguration.MaximumContentLength, Array.MaxLength );
 
-                        StreamUtil.CopyToLimited ( listenerRequest.InputStream, memoryStream, 81920, maxLength );
+                        StreamUtil.CopyToLimited ( RequestInputStream, memoryStream, 81920, maxLength );
                         contentBytes = memoryStream.ToArray ();
                     }
                 }
@@ -663,11 +668,15 @@ namespace Sisk.Core.Http {
         /// content has not been imported by the HTTP server and will invalidate the body content 
         /// cached in this object.
         /// </summary>
+        /// <remarks>
+        /// When <see cref="HttpServerConfiguration.MaximumContentLength"/> is set, reading more bytes than the limit
+        /// throws an <see cref="InsufficientMemoryException"/>, as when reading the content through <see cref="RawBody"/>.
+        /// </remarks>
         public Stream GetRequestStream () {
             if (contentBytes is not null) {
                 throw new InvalidOperationException ( SR.HttpRequest_InputStreamAlreadyLoaded );
             }
-            return listenerRequest.InputStream;
+            return RequestInputStream;
         }
 
         /// <summary>
