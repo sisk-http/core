@@ -110,6 +110,7 @@ public partial class Router {
         HttpServerConfiguration currentConfig = parentServer!.ServerConfiguration;
 
         Route? matchedRoute = null;
+        Route? optionsCandidateRoute = null;
         RouteMatchResult matchResult = RouteMatchResult.NotMatched;
         Exception? handledException = null;
 
@@ -133,8 +134,7 @@ public partial class Router {
 
             if (!IsMethodMatching ( request.Method.Method, route.Method )) {
                 if (request.Method == HttpMethod.Options) {
-                    matchResult = RouteMatchResult.OptionsMatched;
-                    break;
+                    optionsCandidateRoute ??= route;
                 }
                 continue;
             }
@@ -163,6 +163,10 @@ public partial class Router {
             break;
         }
 
+        if (matchResult == RouteMatchResult.PathMatched && optionsCandidateRoute is not null) {
+            matchResult = RouteMatchResult.OptionsMatched;
+        }
+
         if (matchResult == RouteMatchResult.NotMatched) {
             if (NotFoundErrorHandler is not null) {
                 return new RouterExecutionResult ( NotFoundErrorHandler ( context ), null, matchResult, null );
@@ -172,7 +176,7 @@ public partial class Router {
             }
         }
         else if (matchResult == RouteMatchResult.OptionsMatched) {
-            return new RouterExecutionResult ( new HttpResponse ( HttpStatusCode.OK ), null, matchResult, null );
+            return new RouterExecutionResult ( new HttpResponse ( HttpStatusCode.OK ), optionsCandidateRoute, matchResult, null );
         }
         else if (matchResult == RouteMatchResult.PathMatched) {
             context.MatchedRoute = matchedRoute;

@@ -106,6 +106,7 @@ public partial class HttpServer {
         if (cors.AllowOrigin is { } allowOriginValue) {
 
             if (allowOriginValue == CrossOriginResourceSharingHeaders.AutoAllowOrigin) {
+                baseResponse.Headers.AppendHeader ( HttpKnownHeaderNames.Vary, HttpKnownHeaderNames.Origin );
 
                 string? requestOrigin = baseRequest.Headers [ HttpKnownHeaderNames.Origin ];
                 if (requestOrigin != null)
@@ -117,6 +118,7 @@ public partial class HttpServer {
         }
         else if (cors.AllowOrigins?.Length > 0) {
             string? origin = baseRequest.Headers [ HttpKnownHeaderNames.Origin ];
+            baseResponse.Headers.AppendHeader ( HttpKnownHeaderNames.Vary, HttpKnownHeaderNames.Origin );
 
             if (origin is not null) {
                 for (int i = 0; i < cors.AllowOrigins.Length; i++) {
