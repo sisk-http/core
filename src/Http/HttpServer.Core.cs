@@ -193,7 +193,9 @@ public partial class HttpServer {
         engine.BeginGetContext ( UnboundAsyncListenerCallback, engine );
         HttpServerEngineContext context = engine.EndGetContext ( result );
 
-        HandleContext ( context );
+        // BeginGetContext may complete synchronously and run the next callback inline on this thread,
+        // before this context is handled. Handling inline would make this request wait for the next one.
+        ThreadPool.UnsafeQueueUserWorkItem ( ( state ) => HandleContext ( (HttpServerEngineContext) state! ), context );
     }
 
     /// <summary>
