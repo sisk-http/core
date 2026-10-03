@@ -28,6 +28,7 @@ public sealed class McpProviderTests {
             result.GetProperty ( "supportedVersions" ).EnumerateArray ().Select ( x => x.GetString () ).ToArray () );
         Assert.AreEqual ( "test", result.GetProperty ( "_meta" ).GetProperty ( "io.modelcontextprotocol/serverInfo" ).GetProperty ( "name" ).GetString () );
         Assert.AreEqual ( 0, result.GetProperty ( "ttlMs" ).GetInt32 () );
+        Assert.IsFalse ( result.GetProperty ( "capabilities" ).TryGetProperty ( "extensions", out _ ) );
     }
 
     [TestMethod]
@@ -255,6 +256,143 @@ public sealed class McpProviderTests {
             Assert.AreEqual ( HttpStatusCode.BadRequest, response.StatusCode );
             Assert.AreEqual ( -32600, document.RootElement.GetProperty ( "error" ).GetProperty ( "code" ).GetInt32 () );
         }
+    }
+
+    [TestMethod]
+    public async Task Skills_AdvertiseListGetAndReadConsistentSnapshots () {
+        byte[] attachment = [0, 255, 42];
+        var frontmatter = new JsonObject () {
+            [ "name" ] = "refunds",
+            [ "description" ] = "Processar devoluções.",
+            [ "metadata" ] = new JsonObject () { [ "custom" ] = "preserved" }
+        };
+        var provider = new McpProvider ();
+        var skill = new McpSkill ( "acme/refunds", frontmatter, "# Devoluções\nUse references/data.bin.",
+            new Dictionary<string, byte[]> { [ "references/data.bin" ] = attachment } );
+        provider.Skills.Add ( skill );
+        attachment [ 0 ] = 99;
+        frontmatter [ "name" ] = "changed";
+        using var host = new TestHost ( provider );
+
+        using HttpResponseMessage discover = await host.SendModernAsync ( "server/discover", "{}" );
+        using JsonDocument discovery = await JsonDocument.ParseAsync ( await discover.Content.ReadAsStreamAsync () );
+        JsonElement capabilities = discovery.RootElement.GetProperty ( "result" ).GetProperty ( "capabilities" );
+        Assert.IsTrue ( capabilities.TryGetProperty ( "resources", out _ ) );
+        Assert.AreEqual ( 0, capabilities.GetProperty ( "extensions" ).GetProperty ( "io.modelcontextprotocol/skills" ).EnumerateObject ().Count () );
+
+        using HttpResponseMessage list = await host.SendModernAsync ( "skills/list", "{}" );
+        using JsonDocument listing = await JsonDocument.ParseAsync ( await list.Content.ReadAsStreamAsync () );
+        JsonElement result = listing.RootElement.GetProperty ( "result" );
+        Assert.AreEqual ( "complete", result.GetProperty ( "resultType" ).GetString () );
+        Assert.AreEqual ( 0, result.GetProperty ( "ttlMs" ).GetInt32 () );
+        Assert.AreEqual ( "private", result.GetProperty ( "cacheScope" ).GetString () );
+        Assert.IsFalse ( result.TryGetProperty ( "nextCursor", out _ ) );
+        JsonElement entry = result.GetProperty ( "skills" ) [ 0 ];
+        Assert.AreEqual ( "refunds", entry.GetProperty ( "frontmatter" ).GetProperty ( "name" ).GetString () );
+        Assert.AreEqual ( "preserved", entry.GetProperty ( "frontmatter" ).GetProperty ( "metadata" ).GetProperty ( "custom" ).GetString () );
+
+        using HttpResponseMessage get = await host.SendModernAsync ( "skills/get", $"\"uri\":\"{skill.Uri}\"" );
+        using JsonDocument fetched = await JsonDocument.ParseAsync ( await get.Content.ReadAsStreamAsync () );
+        Assert.AreEqual ( entry.GetRawText (), fetched.RootElement.GetProperty ( "result" ).GetProperty ( "skill" ).GetRawText () );
+        Assert.AreEqual ( 2, entry.GetProperty ( "resources" ).GetArrayLength () );
+        foreach (JsonElement resource in entry.GetProperty ( "resources" ).EnumerateArray ()) {
+            string uri = resource.GetProperty ( "uri" ).GetString ()!;
+            using HttpResponseMessage read = await host.SendModernAsync ( "resources/read", $"\"uri\":\"{uri}\"" );
+            using JsonDocument document = await JsonDocument.ParseAsync ( await read.Content.ReadAsStreamAsync () );
+            JsonElement content = document.RootElement.GetProperty ( "result" ).GetProperty ( "contents" ) [ 0 ];
+            byte[] bytes = content.TryGetProperty ( "text", out JsonElement text )
+                ? Encoding.UTF8.GetBytes ( text.GetString ()! )
+                : Convert.FromBase64String ( content.GetProperty ( "blob" ).GetString ()! );
+            Assert.AreEqual ( resource.GetProperty ( "size" ).GetInt32 (), bytes.Length );
+            Assert.AreEqual ( resource.GetProperty ( "digest" ).GetString (),
+                "sha256:" + Convert.ToHexString ( System.Security.Cryptography.SHA256.HashData ( bytes ) ).ToLowerInvariant () );
+            if (uri == skill.Uri) {
+                string[] sections = text.GetString ()!.Split ( "---\n" );
+                using JsonDocument yamlJson = JsonDocument.Parse ( sections [ 1 ] );
+                Assert.AreEqual ( entry.GetProperty ( "frontmatter" ).GetRawText (), yamlJson.RootElement.GetRawText () );
+            }
+            else
+                CollectionAssert.AreEqual ( new byte [] { 0, 255, 42 }, bytes );
+        }
+
+        using HttpResponseMessage resources = await host.SendModernAsync ( "resources/list", "{}" );
+        using JsonDocument resourceList = await JsonDocument.ParseAsync ( await resources.Content.ReadAsStreamAsync () );
+        Assert.AreEqual ( 2, resourceList.RootElement.GetProperty ( "result" ).GetProperty ( "resources" ).GetArrayLength () );
+    }
+
+    [TestMethod]
+    public async Task Skills_EmptyCatalogInvalidParametersAndLegacyIsolation () {
+        var provider = new McpProvider ();
+        using var host = new TestHost ( provider );
+        using HttpResponseMessage list = await host.SendModernAsync ( "skills/list", "{}" );
+        using JsonDocument listing = await JsonDocument.ParseAsync ( await list.Content.ReadAsStreamAsync () );
+        Assert.AreEqual ( 0, listing.RootElement.GetProperty ( "result" ).GetProperty ( "skills" ).GetArrayLength () );
+        foreach (var (method, parameters) in new [] {
+            ("skills/get", "{}"),
+            ("skills/get", "\"uri\":42"),
+            ("skills/get", "\"uri\":\"skill://missing/SKILL.md\""),
+            ("resources/read", "\"uri\":\"skill://missing/../secret\""),
+            ("skills/list", "\"cursor\":\"invalid\"")
+        }) {
+            using HttpResponseMessage response = await host.SendModernAsync ( method, parameters );
+            using JsonDocument document = await JsonDocument.ParseAsync ( await response.Content.ReadAsStreamAsync () );
+            Assert.AreEqual ( -32602, document.RootElement.GetProperty ( "error" ).GetProperty ( "code" ).GetInt32 () );
+        }
+        provider.Skills.Add ( new McpSkill ( "example", new JsonObject () {
+            [ "name" ] = "example", [ "description" ] = "Example skill."
+        }, "Instructions." ) );
+        using var initializeBody = new StringContent (
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\"}}", Encoding.UTF8, "application/json" );
+        using HttpResponseMessage initialize = await host.Client.PostAsync ( host.Endpoint, initializeBody );
+        using JsonDocument initialized = await JsonDocument.ParseAsync ( await initialize.Content.ReadAsStreamAsync () );
+        Assert.IsFalse ( initialized.RootElement.GetProperty ( "result" ).GetProperty ( "capabilities" ).TryGetProperty ( "extensions", out _ ) );
+        using var legacyBody = new StringContent ( "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"skills/list\"}", Encoding.UTF8, "application/json" );
+        using HttpResponseMessage legacy = await host.Client.PostAsync ( host.Endpoint, legacyBody );
+        using JsonDocument legacyResult = await JsonDocument.ParseAsync ( await legacy.Content.ReadAsStreamAsync () );
+        Assert.AreEqual ( -32601, legacyResult.RootElement.GetProperty ( "error" ).GetProperty ( "code" ).GetInt32 () );
+    }
+
+    [TestMethod]
+    public async Task Skills_RejectInconsistentCatalogs () {
+        var frontmatter = new JsonObject () { [ "name" ] = "example", [ "description" ] = "Example." };
+        var skill = new McpSkill ( "example", frontmatter, "Body" );
+        var provider = new McpProvider () { Skills = [skill, skill] };
+        using var host = new TestHost ( provider );
+        foreach (string method in new [] { "skills/list", "resources/list" }) {
+            using HttpResponseMessage response = await host.SendModernAsync ( method, "{}" );
+            using JsonDocument document = await JsonDocument.ParseAsync ( await response.Content.ReadAsStreamAsync () );
+            Assert.AreEqual ( -32603, document.RootElement.GetProperty ( "error" ).GetProperty ( "code" ).GetInt32 () );
+        }
+        provider.Skills = [skill, new McpSkill ( "example/example", frontmatter, "Nested" )];
+        using HttpResponseMessage incomplete = await host.SendModernAsync ( "skills/list", "{}" );
+        using JsonDocument incompleteDocument = await JsonDocument.ParseAsync ( await incomplete.Content.ReadAsStreamAsync () );
+        Assert.AreEqual ( -32603, incompleteDocument.RootElement.GetProperty ( "error" ).GetProperty ( "code" ).GetInt32 () );
+
+        provider.Skills = [new McpSkill ( "example", frontmatter, "Body", new Dictionary<string, byte[]> {
+            [ "example/SKILL.md" ] = Encoding.UTF8.GetBytes ( "Different content" )
+        } ), new McpSkill ( "example/example", frontmatter, "Nested" )];
+        using HttpResponseMessage conflict = await host.SendModernAsync ( "skills/list", "{}" );
+        using JsonDocument conflictDocument = await JsonDocument.ParseAsync ( await conflict.Content.ReadAsStreamAsync () );
+        Assert.AreEqual ( -32603, conflictDocument.RootElement.GetProperty ( "error" ).GetProperty ( "code" ).GetInt32 () );
+    }
+
+    [TestMethod]
+    public void Skill_RejectsInvalidNamesPathsAndFiles () {
+        var frontmatter = new JsonObject () { [ "name" ] = "example", [ "description" ] = "Example." };
+        foreach (string path in new [] { "different", "../example", "acme//example", "acme\\example" })
+            Assert.ThrowsException<ArgumentException> ( () => new McpSkill ( path, frontmatter, "Body" ) );
+        foreach (string file in new [] { "SKILL.md", "../secret", "/absolute", "a//b", "a\\b", "C:secret" })
+            Assert.ThrowsException<ArgumentException> ( () => new McpSkill ( "example", frontmatter, "Body",
+                new Dictionary<string, byte[]> { [ file ] = [] } ) );
+        Assert.ThrowsException<ArgumentException> ( () => new McpSkill ( "example", new JsonObject (), "Body" ) );
+        foreach (string name in new [] { "Upper", "two--hyphens", "trailing-", "example\n", new string ( 'a', 65 ) }) {
+            var invalid = new JsonObject () { [ "name" ] = name, [ "description" ] = "Example." };
+            Assert.ThrowsException<ArgumentException> ( () => new McpSkill ( name, invalid, "Body" ) );
+        }
+        Assert.ThrowsException<ArgumentException> ( () => new McpSkill ( "example", frontmatter, "Body",
+            Enumerable.Range ( 0, 512 ).ToDictionary ( i => $"{i}.txt", _ => Array.Empty<byte> () ) ) );
+        Assert.ThrowsException<ArgumentException> ( () => new McpSkill ( "example", frontmatter, "Body",
+            new Dictionary<string, byte[]> { [ "large.bin" ] = new byte [ 16_777_216 ] } ) );
     }
 
     private sealed class TestHost : IDisposable {

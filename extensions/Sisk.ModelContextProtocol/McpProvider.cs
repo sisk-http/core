@@ -121,6 +121,11 @@ public sealed class McpProvider {
     /// </summary>
     public IList<McpTool> Tools { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the skills hosted by this server. Register skills before handling requests.
+    /// </summary>
+    public IList<McpSkill> Skills { get; set; } = [];
+
     JsonObject GetServerInfo () {
         JsonObject serverInfo = new JsonObject () {
             [ "name" ] = ServerName,
@@ -138,12 +143,18 @@ public sealed class McpProvider {
         return serverInfo;
     }
 
-    JsonObject GetCapabilities () {
+    JsonObject GetCapabilities ( bool modern ) {
         JsonObject capabilities = [];
         if (Tools.Any ())
             capabilities [ "tools" ] = new JsonObject () {
                 [ "listChanged" ] = false
             };
+        if (modern && Skills.Any ()) {
+            capabilities [ "resources" ] = new JsonObject ();
+            capabilities [ "extensions" ] = new JsonObject () {
+                [ "io.modelcontextprotocol/skills" ] = new JsonObject ()
+            };
+        }
         return capabilities;
     }
 
@@ -152,7 +163,7 @@ public sealed class McpProvider {
             JsonObject discoverResult = new JsonObject () {
                 [ "resultType" ] = "complete",
                 [ "supportedVersions" ] = new JsonArray ( [.. SupportedProtocolVersions] ),
-                [ "capabilities" ] = GetCapabilities (),
+                [ "capabilities" ] = GetCapabilities ( modern: true ),
                 [ "ttlMs" ] = 0,
                 [ "cacheScope" ] = "private",
                 [ "_meta" ] = new JsonObject () {
@@ -212,7 +223,7 @@ public sealed class McpProvider {
         JsonObject result = new JsonObject () {
             [ "protocolVersion" ] = protocolVersion,
             [ "serverInfo" ] = GetServerInfo (),
-            [ "capabilities" ] = GetCapabilities ()
+            [ "capabilities" ] = GetCapabilities ( modern: false )
         };
         if (!string.IsNullOrWhiteSpace ( ClientInstructions ))
             result [ "instructions" ] = ClientInstructions;
@@ -383,6 +394,71 @@ public sealed class McpProvider {
             return new McpJsonResponse (
                 new JsonRpcResponse ( GetResult ( method, modern ), id ),
                 modern ? null : sessionId );
+        }
+        if (modern && method is "skills/list" or "skills/get" or "resources/list" or "resources/read") {
+            bool listing = method is "skills/list" or "resources/list";
+            JsonValue uriValue = parameters [ "uri" ];
+            JsonValue cursorValue = parameters [ "cursor" ];
+            if ((listing && cursorValue.Type != JsonValueType.Undefined)
+                || (!listing && uriValue.Type != JsonValueType.String)) {
+                return new McpJsonResponse (
+                    new JsonRpcErrorResponse ( -32602, "Invalid params", id ),
+                    sessionId: null );
+            }
+
+            var files = Skills.SelectMany ( skill => skill.Contents ).ToArray ();
+            bool invalidCatalog = Skills.GroupBy ( skill => skill.Uri, StringComparer.Ordinal ).Any ( group => group.Count () > 1 )
+                || files.GroupBy ( file => file.Key, StringComparer.Ordinal ).Any ( group =>
+                    group.Select ( file => file.Value [ "text" ].Type == JsonValueType.String
+                        ? Convert.ToBase64String ( Encoding.UTF8.GetBytes ( file.Value [ "text" ].GetString () ) )
+                        : file.Value [ "blob" ].GetString () ).Distinct ( StringComparer.Ordinal ).Count () > 1 )
+                || Skills.Any ( skill => files.Any ( file =>
+                    file.Key.StartsWith ( skill.Uri [ ..^"SKILL.md".Length ], StringComparison.Ordinal )
+                    && !skill.Contents.ContainsKey ( file.Key ) ) );
+            if (invalidCatalog) {
+                return new McpJsonResponse (
+                    new JsonRpcErrorResponse ( -32603, "Invalid skill catalog: duplicate skills, conflicting files or incomplete nested manifests", id ),
+                    sessionId: null );
+            }
+
+            JsonObject result = new JsonObject () {
+                [ "resultType" ] = "complete",
+                [ "ttlMs" ] = 0,
+                [ "cacheScope" ] = "private",
+                [ "_meta" ] = new JsonObject () {
+                    [ "io.modelcontextprotocol/serverInfo" ] = GetServerInfo ()
+                }
+            };
+            if (method == "skills/list") {
+                JsonArray skills = [];
+                foreach (var skill in Skills.DistinctBy ( skill => skill.Uri, StringComparer.Ordinal ))
+                    skills.Add ( Json.Deserialize<JsonValue> ( skill.EntryJson ) );
+                result [ "skills" ] = skills;
+            }
+            else if (method == "resources/list") {
+                JsonArray resources = [];
+                foreach (var file in Skills.SelectMany ( skill => skill.Contents ).DistinctBy ( file => file.Key, StringComparer.Ordinal )) {
+                    resources.Add ( new JsonObject () {
+                        [ "uri" ] = file.Key,
+                        [ "name" ] = Uri.UnescapeDataString ( file.Key [ (file.Key.LastIndexOf ( '/' ) + 1).. ] ),
+                        [ "mimeType" ] = file.Value [ "mimeType" ]
+                    } );
+                }
+                result [ "resources" ] = resources;
+            }
+            else if (method == "skills/get" && Skills.FirstOrDefault ( skill => skill.Uri == uriValue.GetString () ) is { } skill) {
+                result [ "skill" ] = Json.Deserialize<JsonValue> ( skill.EntryJson );
+            }
+            else if (method == "resources/read"
+                && Skills.SelectMany ( skill => skill.Contents ).FirstOrDefault ( file => file.Key == uriValue.GetString () ).Value is { } content) {
+                result [ "contents" ] = new JsonArray ( [content] );
+            }
+            else {
+                return new McpJsonResponse (
+                    new JsonRpcErrorResponse ( -32602, "Unknown skill or resource URI", id ),
+                    sessionId: null );
+            }
+            return new McpJsonResponse ( new JsonRpcResponse ( result, id ), sessionId: null );
         }
         if (method == "tools/call") {
             JsonValue toolNameValue = parameters [ "name" ];
