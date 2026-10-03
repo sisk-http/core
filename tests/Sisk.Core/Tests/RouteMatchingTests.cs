@@ -9,8 +9,8 @@
 
 using System.Net;
 using Sisk.Core.Http;
-using Sisk.Core.Http.Hosting;
 using Sisk.Core.Routing;
+using tests.TestUtils;
 
 namespace tests.Tests;
 
@@ -265,7 +265,7 @@ public sealed class RouteMatchingTests {
 
     [TestMethod]
     public async Task CustomRouteParametersAreDecodedIntoRequest () {
-        using var host = StartHost ( r => {
+        using var host = TestHost.Start ( r => {
             r.Map ( new DelegateRoute ( "/custom", isStatic: false,
                 ( path, router ) => path.StartsWith ( "/custom/", StringComparison.Ordinal )
                     ? new RouteMatch ( true, new System.Collections.Specialized.NameValueCollection {
@@ -275,7 +275,7 @@ public sealed class RouteMatchingTests {
                     : RouteMatch.NotMatched,
                 req => new HttpResponse ( $"{req.RouteParameters [ "value" ].GetString ()}|{req.RouteParameters.ContainsKey ( "empty" )}" ) ) );
         } );
-        using var client = CreateClient ( host );
+        using var client = TestHost.CreateClient ( host );
 
         var response = await client.GetAsync ( "custom/anything" );
 
@@ -286,12 +286,12 @@ public sealed class RouteMatchingTests {
 
     [TestMethod]
     public async Task StaticRoutesWinOverEarlierRegisteredCustomRoutes () {
-        using var host = StartHost ( r => {
+        using var host = TestHost.Start ( r => {
             r.Map ( new DelegateRoute ( "/", isStatic: false, ( path, router ) => new RouteMatch ( true, null ),
                 req => new HttpResponse ( "custom" ) ) );
             r.MapGet ( "/exact", ( HttpRequest req ) => new HttpResponse ( "static" ) );
         } );
-        using var client = CreateClient ( host );
+        using var client = TestHost.CreateClient ( host );
 
         Assert.AreEqual ( "static", await client.GetStringAsync ( "exact" ) );
         Assert.AreEqual ( "custom", await client.GetStringAsync ( "anything/else" ) );
@@ -299,24 +299,24 @@ public sealed class RouteMatchingTests {
 
     [TestMethod]
     public async Task DynamicRoutesAreMatchedInRegistrationOrder () {
-        using var host = StartHost ( r => {
+        using var host = TestHost.Start ( r => {
             r.Map ( new DelegateRoute ( "/first", isStatic: false, ( path, router ) => new RouteMatch ( true, null ),
                 req => new HttpResponse ( "first" ) ) );
             r.Map ( new DelegateRoute ( "/second", isStatic: false, ( path, router ) => new RouteMatch ( true, null ),
                 req => new HttpResponse ( "second" ) ) );
         } );
-        using var client = CreateClient ( host );
+        using var client = TestHost.CreateClient ( host );
 
         Assert.AreEqual ( "first", await client.GetStringAsync ( "whatever" ) );
     }
 
     [TestMethod]
     public async Task CustomRouteMethodMismatchReturnsMethodNotAllowedOrOptionsOk () {
-        using var host = StartHost ( r => {
+        using var host = TestHost.Start ( r => {
             r.Map ( new DelegateRoute ( "/m", isStatic: false, ( path, router ) => new RouteMatch ( path == "/m", null ),
                 req => new HttpResponse ( "ok" ) ) );
         } );
-        using var client = CreateClient ( host );
+        using var client = TestHost.CreateClient ( host );
 
         Assert.AreEqual ( HttpStatusCode.OK, ( await client.GetAsync ( "m" ) ).StatusCode );
         Assert.AreEqual ( HttpStatusCode.MethodNotAllowed, ( await client.PostAsync ( "m", null ) ).StatusCode );
@@ -325,13 +325,13 @@ public sealed class RouteMatchingTests {
 
     [TestMethod]
     public async Task ForceTrailingSlashRespectsAllowRewrites () {
-        using var host = StartHost ( r => {
+        using var host = TestHost.Start ( r => {
             r.MapGet ( "/static", ( HttpRequest req ) => new HttpResponse ( "static" ) );
             r.Map ( new DelegateRoute ( "/dynamic", isStatic: false, ( path, router ) => new RouteMatch ( path.StartsWith ( "/dynamic", StringComparison.Ordinal ), null ),
                 req => new HttpResponse ( "dynamic" ) ) );
             r.Map ( new PrefixRoute ( RouteMethod.Get, "/prefix", null, req => new HttpResponse ( "prefix" ), null ) );
         }, config => config.ForceTrailingSlash = true );
-        using var client = CreateClient ( host );
+        using var client = TestHost.CreateClient ( host );
 
         var staticResponse = await client.GetAsync ( "static" );
         Assert.AreEqual ( HttpStatusCode.TemporaryRedirect, staticResponse.StatusCode );
@@ -379,24 +379,6 @@ public sealed class RouteMatchingTests {
         [RouteGet ( "/template", Name = "template" )]
         public static HttpResponse Template ( HttpRequest req ) => new HttpResponse ();
     }
-
-    static HttpServerHostContext StartHost ( Action<Router> setup, Action<HttpServerConfiguration>? configure = null ) {
-        var router = new Router ();
-        setup ( router );
-
-        var host = HttpServer.CreateBuilder ( ListeningPort.GetRandomPort ().Port )
-            .UseConfiguration ( config => configure?.Invoke ( config ) )
-            .UseRouter ( router )
-            .Build ();
-
-        host.Start ( verbose: false, preventHault: false );
-        return host;
-    }
-
-    static HttpClient CreateClient ( HttpServerHostContext host ) => new HttpClient ( new HttpClientHandler { AllowAutoRedirect = false } ) {
-        BaseAddress = new Uri ( host.HttpServer.ListeningPrefixes [ 0 ] ),
-        Timeout = TimeSpan.FromSeconds ( 20 )
-    };
 
     static void AssertStart ( Action<Router> setup, bool shouldThrow ) {
         var router = new Router ();
