@@ -13,6 +13,11 @@ namespace Sisk.Core.Routing {
     /// <summary>
     /// Represents an interface that is executed before a request.
     /// </summary>
+    /// <remarks>
+    /// A single request handler instance is shared by every request that it handles, including concurrent requests.
+    /// Request handlers must not store individual request state in their own fields or properties, as it would leak
+    /// between requests. Store per-request values in <see cref="HttpContext.RequestBag"/> instead.
+    /// </remarks>
     public interface IRequestHandler {
 
         /// <summary>

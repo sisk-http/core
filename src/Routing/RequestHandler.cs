@@ -14,6 +14,10 @@ namespace Sisk.Core.Routing;
 /// <summary>
 /// Represents an abstract class which implements <see cref="IRequestHandler"/>.
 /// </summary>
+/// <remarks>
+/// A single instance is shared by every request that it handles. Do not store individual request state in this
+/// class; use <see cref="HttpContext.RequestBag"/> instead.
+/// </remarks>
 public abstract class RequestHandler : IRequestHandler {
     /// <inheritdoc/>
     /// <exclude/>

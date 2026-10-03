@@ -14,6 +14,10 @@ namespace Sisk.Core.Routing;
 /// <summary>
 /// Represents a class that implements <see cref="IRequestHandler"/> and its execution method is asynchronous.
 /// </summary>
+/// <remarks>
+/// A single instance is shared by every request that it handles. Do not store individual request state in this
+/// class; use <see cref="HttpContext.RequestBag"/> instead.
+/// </remarks>
 public abstract class AsyncRequestHandler : IRequestHandler {
     /// <inheritdoc/>
     public virtual RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeResponse;

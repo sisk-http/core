@@ -60,6 +60,9 @@ public sealed class RegexRoute : Route {
             routeRegex = regex = new Regex ( Path, options );
         }
 
+        // The pattern is matched as written, without implicit anchors: an unanchored pattern such as "/admin"
+        // also matches "/x/admin/y". Anchoring here would break existing patterns that rely on partial matches,
+        // so routes that must match the whole path should use explicit "^...$" anchors.
         var test = regex.Match ( requestPath );
         if (test.Success) {
             NameValueCollection query = new NameValueCollection ();
