@@ -228,15 +228,14 @@ namespace Sisk.Core.Http.Streams {
                         continue;
 
                     byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
-                    try {
-                        res.OutputStream.Write ( itemBytes );
-                        length += itemBytes.Length;
-                    }
-                    catch (Exception) {
-                        disposeOnFailure = true;
-                        break;
-                    }
+                    res.OutputStream.Write ( itemBytes );
+                    length += itemBytes.Length;
                 }
+
+                res.OutputStream.Flush ();
+            }
+            catch (Exception) {
+                disposeOnFailure = true;
             }
             finally {
                 flushLock.Release ();
@@ -244,9 +243,6 @@ namespace Sisk.Core.Http.Streams {
 
             if (disposeOnFailure) {
                 Dispose ();
-            }
-            else {
-                res.OutputStream.Flush ();
             }
         }
 
@@ -260,15 +256,14 @@ namespace Sisk.Core.Http.Streams {
                         continue;
 
                     byte [] itemBytes = Encoding.UTF8.GetBytes ( item );
-                    try {
-                        await res.OutputStream.WriteAsync ( itemBytes );
-                        length += itemBytes.Length;
-                    }
-                    catch (Exception) {
-                        disposeOnFailure = true;
-                        break;
-                    }
+                    await res.OutputStream.WriteAsync ( itemBytes );
+                    length += itemBytes.Length;
                 }
+
+                await res.OutputStream.FlushAsync ().ConfigureAwait ( false );
+            }
+            catch (Exception) {
+                disposeOnFailure = true;
             }
             finally {
                 flushLock.Release ();
@@ -276,9 +271,6 @@ namespace Sisk.Core.Http.Streams {
 
             if (disposeOnFailure) {
                 Dispose ();
-            }
-            else {
-                await res.OutputStream.FlushAsync ().ConfigureAwait ( false );
             }
         }
 
