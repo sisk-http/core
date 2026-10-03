@@ -67,7 +67,11 @@ static class LogFormatter {
 
             if (term is [ '{', .., '}' ]) {
                 string headerName = new string ( term [ 1..^1 ] );
-                if (headerName.StartsWith ( ':' )) {
+                if (headerName.StartsWith ( '$' )) {
+                    result = executionResult.Context.RequestBag.GetValue ( headerName [ 1.. ] )?.ToString ()
+                        ?? string.Empty;
+                }
+                else if (headerName.StartsWith ( ':' )) {
                     result = executionResult.Response?.GetHeaderValue ( headerName [ 1.. ] )
                         ?? string.Empty;
                 }
