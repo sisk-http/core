@@ -1,6 +1,50 @@
 namespace Sisk.Monitoring;
 
 internal class Assets {
+    public const string ThemeBootstrapScript = """
+        (function() {
+            const storageKey = 'sisk-monitoring-theme';
+            const options = ['light', 'dark', 'system'];
+            const media = window.matchMedia('(prefers-color-scheme: dark)');
+            let preference = 'system';
+
+            try {
+                preference = localStorage.getItem(storageKey) ?? 'system';
+            } catch {
+            }
+
+            if (!options.includes(preference)) {
+                preference = 'system';
+            }
+
+            function applyTheme() {
+                const resolved = preference === 'system' ? (media.matches ? 'dark' : 'light') : preference;
+                document.documentElement.setAttribute('data-theme', resolved);
+                document.querySelectorAll('[data-theme-option]').forEach(button => {
+                    button.setAttribute('aria-pressed', button.getAttribute('data-theme-option') === preference ? 'true' : 'false');
+                });
+            }
+
+            media.addEventListener('change', applyTheme);
+            document.addEventListener('DOMContentLoaded', applyTheme);
+            document.addEventListener('click', event => {
+                const button = event.target instanceof Element ? event.target.closest('[data-theme-option]') : null;
+                if (!button) {
+                    return;
+                }
+
+                preference = button.getAttribute('data-theme-option') ?? 'system';
+                try {
+                    localStorage.setItem(storageKey, preference);
+                } catch {
+                }
+                applyTheme();
+            });
+
+            applyTheme();
+        })();
+        """;
+
     public const string DefaultStyles = """
         :root {
             color-scheme: light;
@@ -27,6 +71,7 @@ internal class Assets {
             --chart-memory: #188038;
             --chart-disk: #b06000;
             --chart-http-success: #188038;
+            --chart-http-redirect: var(--accent);
             --chart-http-client-error: #b06000;
             --chart-http-server-error: var(--danger);
             --log-token-0-text: #1a73e8;
@@ -50,37 +95,35 @@ internal class Assets {
             --sidebar-width: 260px;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                color-scheme: dark;
-                --background: #202124;
-                --surface: #292a2d;
-                --surface-secondary: #35363a;
-                --border: #5f6368;
-                --text-primary: #e8eaed;
-                --text-secondary: #9aa0a6;
-                --accent: #8ab4f8;
-                --accent-hover: #aecbfa;
-                --danger: #f28b82;
-                --overlay: rgba(255,255,255,.08);
-                --warning: #fdd663;
-                --selected-text: #202124;
-                --shadow: 0 1px 2px rgba(0,0,0,.40);
-                --chart-cpu: var(--accent);
-                --chart-memory: #81c995;
-                --chart-disk: #fdd663;
-                --chart-http-success: #81c995;
-                --chart-http-client-error: #fdd663;
-                --chart-http-server-error: var(--danger);
-                --log-token-0-text: #8ab4f8;
-                --log-token-1-text: #81c995;
-                --log-token-2-text: #fdd663;
-                --log-token-3-text: #f28b82;
-                --log-token-4-text: #d7aefb;
-                --log-token-5-text: #78d9c6;
-                --log-token-6-text: #ffb1c8;
-                --log-token-7-text: #c4c7c5;
-            }
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --background: #202124;
+            --surface: #292a2d;
+            --surface-secondary: #35363a;
+            --border: #5f6368;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --accent: #8ab4f8;
+            --accent-hover: #aecbfa;
+            --danger: #f28b82;
+            --overlay: rgba(255,255,255,.08);
+            --warning: #fdd663;
+            --selected-text: #202124;
+            --shadow: 0 1px 2px rgba(0,0,0,.40);
+            --chart-cpu: var(--accent);
+            --chart-memory: #81c995;
+            --chart-disk: #fdd663;
+            --chart-http-success: #81c995;
+            --chart-http-client-error: #fdd663;
+            --chart-http-server-error: var(--danger);
+            --log-token-0-text: #8ab4f8;
+            --log-token-1-text: #81c995;
+            --log-token-2-text: #fdd663;
+            --log-token-3-text: #f28b82;
+            --log-token-4-text: #d7aefb;
+            --log-token-5-text: #78d9c6;
+            --log-token-6-text: #ffb1c8;
+            --log-token-7-text: #c4c7c5;
         }
 
         *, *::before, *::after {
@@ -106,6 +149,8 @@ internal class Assets {
 
         /* Sidebar */
         .sidebar {
+            display: flex;
+            flex-direction: column;
             width: var(--sidebar-width);
             background: var(--surface);
             padding: 1.5rem 0;
@@ -188,6 +233,51 @@ internal class Assets {
         .nav-icon svg {
             width: 100%;
             height: 100%;
+        }
+
+        .theme-switcher {
+            display: flex;
+            gap: 0.25rem;
+            margin: auto 1.25rem 0;
+            padding: 0.25rem;
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            background: var(--surface-secondary);
+            align-self: flex-start;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 26px;
+            border: none;
+            border-radius: 99px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background-color 0.15s, color 0.15s;
+        }
+
+        .theme-option svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .theme-option:hover {
+            color: var(--accent-hover);
+        }
+
+        .theme-option:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        .theme-option[aria-pressed="true"] {
+            background: var(--surface);
+            color: var(--accent);
+            box-shadow: var(--shadow);
         }
 
         /* Main content */
@@ -630,88 +720,119 @@ internal class Assets {
             color: var(--text-primary);
         }
 
-        .http-response-chart {
+        .http-stats-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.25rem;
-            padding: 1.5rem;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .http-stat-card {
+            padding: 0.9rem 1rem;
+        }
+
+        .http-stat-card .card-value {
+            font-size: 1.35rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .http-charts,
+        .http-tables {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .http-chart-block .health-chart-container {
+            height: 240px;
+        }
+
+        .http-table-block {
+            min-width: 0;
+        }
+
+        .http-table-wrapper,
+        .http-exceptions {
+            border: 1px solid var(--border);
+            border-radius: 8px;
             background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
             box-shadow: var(--shadow);
+            overflow-x: auto;
         }
 
-        .http-response-chart-container {
-            position: relative;
-            height: 320px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .http-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .http-table th,
+        .http-table td {
+            padding: 0.5rem 0.75rem;
+            text-align: right;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .http-table th {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
             background: var(--surface-secondary);
+        }
+
+        .http-table th:first-child,
+        .http-table td:first-child {
+            text-align: left;
+            max-width: 260px;
             overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: var(--font-mono);
         }
 
-        .http-response-chart-legend {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 0.75rem;
+        .http-table tr:last-child td {
+            border-bottom: none;
         }
 
-        .http-response-chart-item {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.8rem 0.9rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--surface-secondary);
-        }
-
-        .http-response-chart-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .http-response-chart-dot.success {
-            background: var(--chart-http-success);
-        }
-
-        .http-response-chart-dot.client-error {
-            background: var(--chart-http-client-error);
-        }
-
-        .http-response-chart-dot.server-error {
-            background: var(--chart-http-server-error);
-        }
-
-        .http-response-chart-label {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.25;
-        }
-
-        .http-response-chart-label strong {
-            font-size: 0.9rem;
-            color: var(--text-primary);
-        }
-
-        .http-response-chart-label span,
-        .http-response-chart-percentage {
-            font-size: 0.75rem;
+        .http-table-empty {
+            padding: 1.25rem;
+            text-align: center;
+            font-size: 0.8rem;
             color: var(--text-muted);
         }
 
-        .http-response-chart-value {
-            min-width: 5rem;
-            text-align: right;
+        .http-exception {
+            padding: 0.6rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
         }
 
-        .http-response-chart-value strong {
-            display: block;
-            font-size: 1.1rem;
-            line-height: 1.2;
+        .http-exception:last-child {
+            border-bottom: none;
+        }
+
+        .http-exception-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+        }
+
+        .http-exception-type {
+            color: var(--danger);
+            font-family: var(--font-mono);
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .http-exception-message {
             color: var(--text-primary);
+            word-break: break-word;
         }
 
         .meters-grid {
@@ -1090,9 +1211,17 @@ internal class Assets {
                 grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             }
 
-            .http-response-chart {
-                gap: 1rem;
-                padding: 1rem;
+            .http-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .http-charts,
+            .http-tables {
+                grid-template-columns: 1fr;
+            }
+
+            .theme-switcher {
+                margin-top: 1.5rem;
             }
 
             .usage-history-header {
@@ -1146,8 +1275,8 @@ internal class Assets {
             const healthChart = document.querySelector('[data-health-endpoint]');
             const healthEndpoint = healthChart?.getAttribute('data-health-endpoint') ?? null;
             const healthPeriodButtons = Array.from(document.querySelectorAll('[data-health-period]'));
-            const httpResponseChart = document.querySelector('.http-response-chart-container');
-            const httpResponsesEndpoint = httpResponseChart?.getAttribute('data-http-responses-endpoint') ?? null;
+            const httpEndpoint = document.querySelector('[data-http-endpoint]')?.getAttribute('data-http-endpoint') ?? null;
+            const httpPeriodButtons = Array.from(document.querySelectorAll('[data-http-period]'));
             const countersEndpoint = document.querySelector('[data-counters-endpoint]')?.getAttribute('data-counters-endpoint') ?? null;
             const logEndpoint = logEl?.getAttribute('data-logstream-endpoint') ?? null;
             const numberFormatter = new Intl.NumberFormat('en-US', {
@@ -1168,6 +1297,8 @@ internal class Assets {
             let tailManuallyChanged = false;
             let refreshManuallyChanged = false;
             let selectedHealthPeriod = '1h';
+            let selectedHttpPeriod = '1h';
+            let httpPayload = null;
             let renderedLogLineCount = 0;
             let renderedLogLastLine = null;
 
@@ -1434,7 +1565,7 @@ internal class Assets {
             }
 
             function renderHealthChart(container, readings, options = {}) {
-                const chartHeight = 320;
+                const chartHeight = options.height ?? 320;
                 const width = Math.max(320, container.clientWidth || 320);
                 const padding = { top: 26, right: 18, bottom: 30, left: 42 };
                 const plotWidth = Math.max(1, width - padding.left - padding.right);
@@ -1609,19 +1740,11 @@ internal class Assets {
                 svg.addEventListener('mouseleave', hideHealthHover);
             }
 
-            function parseHttpResponseReadings(raw) {
-                let parsed = raw;
-                if (typeof raw === 'string') {
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch {
-                        parsed = [];
-                    }
-                }
-                if (!Array.isArray(parsed)) {
+            function parseHttpReadings(raw) {
+                if (!Array.isArray(raw)) {
                     return [];
                 }
-                return parsed
+                return raw
                     .map(item => {
                         const timestamp = new Date(item?.timestamp);
                         if (Number.isNaN(timestamp.getTime())) {
@@ -1629,20 +1752,20 @@ internal class Assets {
                         }
                         return {
                             timestamp,
-                            success: Math.max(0, Number(item?.success) || 0),
-                            clientError: Math.max(0, Number(item?.clientError) || 0),
-                            serverError: Math.max(0, Number(item?.serverError) || 0)
+                            requests: Number(item?.totals?.requests) || 0,
+                            success: Number(item?.totals?.success) || 0,
+                            redirect: Number(item?.totals?.redirect) || 0,
+                            clientError: Number(item?.totals?.clientError) || 0,
+                            serverError: Number(item?.totals?.serverError) || 0,
+                            p50: Number(item?.latency?.p50) || 0,
+                            p95: Number(item?.latency?.p95) || 0,
+                            p99: Number(item?.latency?.p99) || 0
                         };
                     })
                     .filter(item => item !== null);
             }
 
-            function renderHttpResponseChart(container, readings) {
-                const series = [
-                    { key: 'success', label: '2xx', color: 'var(--chart-http-success)' },
-                    { key: 'clientError', label: '4xx', color: 'var(--chart-http-client-error)' },
-                    { key: 'serverError', label: '5xx', color: 'var(--chart-http-server-error)' }
-                ];
+            function renderHttpChart(container, readings, series, formatValue) {
                 const rawMax = Math.max(1, ...readings.flatMap(reading => series.map(item => Number(reading[item.key] ?? 0))));
                 const magnitude = 10 ** Math.floor(Math.log10(rawMax));
                 const scaleMax = Math.max(4, Math.ceil(rawMax / (magnitude / 2)) * (magnitude / 2));
@@ -1650,9 +1773,41 @@ internal class Assets {
                 renderHealthChart(container, readings, {
                     series,
                     scaleMax,
-                    formatValue: value => value.toLocaleString('en-US'),
+                    height: 240,
+                    formatValue,
                     formatAxisValue: value => String(value)
                 });
+            }
+
+            function renderHttpCharts() {
+                const readings = httpPayload ? parseHttpReadings(httpPayload.readings) : [];
+                const responsesChart = document.querySelector('[data-http-chart="responses"]');
+                const latencyChart = document.querySelector('[data-http-chart="latency"]');
+
+                if (responsesChart) {
+                    renderHttpChart(responsesChart, readings, [
+                        { key: 'success', label: '2xx', color: 'var(--chart-http-success)' },
+                        { key: 'redirect', label: '3xx', color: 'var(--chart-http-redirect)' },
+                        { key: 'clientError', label: '4xx', color: 'var(--chart-http-client-error)' },
+                        { key: 'serverError', label: '5xx', color: 'var(--chart-http-server-error)' }
+                    ], value => formatInteger(value));
+                }
+
+                if (latencyChart) {
+                    renderHttpChart(latencyChart, readings.filter(reading => reading.requests > 0), [
+                        { key: 'p50', label: 'p50', color: 'var(--chart-http-success)' },
+                        { key: 'p95', label: 'p95', color: 'var(--chart-http-client-error)' },
+                        { key: 'p99', label: 'p99', color: 'var(--chart-http-server-error)' }
+                    ], value => formatMilliseconds(value));
+                }
+            }
+
+            function formatMilliseconds(value) {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric) || numeric <= 0) return '-';
+                if (numeric >= 1000) return `${(numeric / 1000).toFixed(2)} s`;
+                if (numeric >= 100) return `${Math.round(numeric)} ms`;
+                return `${numeric.toFixed(1)} ms`;
             }
 
             function setModalStats(modal, readings) {
@@ -1885,56 +2040,129 @@ internal class Assets {
                     });
             }
 
-            function setHttpStat(statKey, value, total) {
-                const totalElement = document.querySelector(`[data-http-total="${statKey}"]`);
-                const percentElement = document.querySelector(`[data-http-percent="${statKey}"]`);
-                const percent = total > 0 ? value * 100 / total : 0;
+            function renderHttpStats(http) {
+                const values = {
+                    requests: formatInteger(http.totals?.requests ?? 0),
+                    rpm: Number(http.requestsPerMinute ?? 0).toFixed(1),
+                    errorRate: `${Number(http.errorRate ?? 0).toFixed(2)}%`,
+                    inFlight: formatInteger(http.inFlight ?? 0),
+                    p50: formatMilliseconds(http.latency?.p50),
+                    p95: formatMilliseconds(http.latency?.p95),
+                    p99: formatMilliseconds(http.latency?.p99),
+                    max: formatMilliseconds(http.latency?.max)
+                };
 
-                if (totalElement) {
-                    totalElement.textContent = formatInteger(value);
-                }
-                if (percentElement) {
-                    percentElement.textContent = `${percent.toFixed(1)}%`;
-                }
+                document.querySelectorAll('[data-http-stat]').forEach(element => {
+                    element.textContent = values[element.getAttribute('data-http-stat')] ?? '-';
+                });
             }
 
-            function refreshDashboard() {
-                if (!httpResponsesEndpoint || !httpResponseChart) {
+            function renderHttpTable(key, routes, columns) {
+                const wrapper = document.querySelector(`[data-http-table="${key}"]`);
+                if (!wrapper) {
                     return;
                 }
 
-                fetchJson(httpResponsesEndpoint)
+                if (!routes.length) {
+                    wrapper.innerHTML = '<p class="http-table-empty">No requests recorded.</p>';
+                    return;
+                }
+
+                const header = columns.map(column => `<th>${column.label}</th>`).join('');
+                const rows = routes.map(route => `<tr>${columns.map(column => {
+                    const value = escapeHtml(column.value(route));
+                    return column.label === 'Route' ? `<td title="${value}">${value}</td>` : `<td>${value}</td>`;
+                }).join('')}</tr>`).join('');
+
+                wrapper.innerHTML = `<table class="http-table"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
+            }
+
+            function renderHttpTables(http) {
+                const routes = Array.isArray(http.routes) ? http.routes : [];
+                const routeColumn = { label: 'Route', value: route => route.route };
+                const requestsColumn = { label: 'Requests', value: route => formatInteger(route.totals.requests) };
+
+                renderHttpTable('slowest', [...routes]
+                    .sort((a, b) => b.latency.p95 - a.latency.p95)
+                    .slice(0, 10), [
+                    routeColumn,
+                    requestsColumn,
+                    { label: 'p50', value: route => formatMilliseconds(route.latency.p50) },
+                    { label: 'p95', value: route => formatMilliseconds(route.latency.p95) },
+                    { label: 'Max', value: route => formatMilliseconds(route.latency.max) }
+                ]);
+
+                renderHttpTable('errors', routes
+                    .filter(route => route.totals.clientError + route.totals.serverError > 0)
+                    .sort((a, b) => (b.totals.serverError - a.totals.serverError) || (b.totals.clientError - a.totals.clientError))
+                    .slice(0, 10), [
+                    routeColumn,
+                    requestsColumn,
+                    { label: '4xx', value: route => formatInteger(route.totals.clientError) },
+                    { label: '5xx', value: route => formatInteger(route.totals.serverError) },
+                    { label: '5xx %', value: route => `${(route.totals.serverError * 100 / route.totals.requests).toFixed(1)}%` }
+                ]);
+            }
+
+            function renderHttpExceptions(http) {
+                const list = document.querySelector('[data-http-exceptions]');
+                if (!list) {
+                    return;
+                }
+
+                const exceptions = Array.isArray(http.exceptions) ? http.exceptions : [];
+                if (!exceptions.length) {
+                    list.innerHTML = '<p class="http-table-empty">No exceptions recorded.</p>';
+                    return;
+                }
+
+                list.innerHTML = exceptions.map(item => `
+                    <div class="http-exception">
+                        <div class="http-exception-header">
+                            <span>${escapeHtml(item.route)}</span>
+                            <span>${escapeHtml(formatDate(item.timestamp))}</span>
+                        </div>
+                        <div class="http-exception-type">${escapeHtml(item.type)}</div>
+                        <div class="http-exception-message">${escapeHtml(item.message)}</div>
+                    </div>
+                `).join('');
+            }
+
+            function refreshDashboard() {
+                if (!httpEndpoint) {
+                    return;
+                }
+
+                const separator = httpEndpoint.includes('?') ? '&' : '?';
+                fetchJson(`${httpEndpoint}${separator}period=${encodeURIComponent(selectedHttpPeriod)}`)
                     .then(payload => {
                         if (!payload) {
                             return;
                         }
 
-                        const httpResponses = payload.httpResponses;
-                        if (httpResponses && Array.isArray(httpResponses.readings)) {
-                            const readingsJson = JSON.stringify(httpResponses.readings);
-                            httpResponseChart.setAttribute('data-http-responses-readings', readingsJson);
-                            renderHttpResponseChart(httpResponseChart, parseHttpResponseReadings(readingsJson));
-                        }
-
-                        const totals = httpResponses?.totals;
-                        if (totals) {
-                            const success = Number(totals.success ?? 0);
-                            const clientError = Number(totals.clientError ?? 0);
-                            const serverError = Number(totals.serverError ?? 0);
-                            const total = success + clientError + serverError;
-
-                            setHttpStat('success', success, total);
-                            setHttpStat('clientError', clientError, total);
-                            setHttpStat('serverError', serverError, total);
-
-                            document.querySelector('.http-response-chart')?.setAttribute(
-                                'aria-label',
-                                `HTTP responses: ${formatInteger(success)} successful, ${formatInteger(clientError)} client errors, ${formatInteger(serverError)} server errors`);
+                        if (payload.http) {
+                            httpPayload = payload.http;
+                            renderHttpStats(httpPayload);
+                            renderHttpCharts();
+                            renderHttpTables(httpPayload);
+                            renderHttpExceptions(httpPayload);
                         }
 
                         applyCounterValues(payload.counters);
                     });
             }
+
+            httpPeriodButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    selectedHttpPeriod = button.getAttribute('data-http-period') ?? '1h';
+                    httpPeriodButtons.forEach(item => {
+                        const selected = item === button;
+                        item.classList.toggle('active', selected);
+                        item.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                    });
+                    refreshDashboard();
+                });
+            });
 
             const logDateTokenRegex = /\b(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?(?:\s?(?:Z|[+-]\d{2}:?\d{2}|[+-]?\d{4}))?)?|\d{1,2}\/(?:\d{1,2}|[A-Za-z]{3,9})\/\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?(?:\s+[+-]?\d{4})?)\b/gi;
             const logDateTokenTestRegex = new RegExp(logDateTokenRegex.source, 'i');
@@ -2130,7 +2358,7 @@ internal class Assets {
                     return;
                 }
 
-                if (httpResponsesEndpoint) {
+                if (httpEndpoint) {
                     refreshDashboard();
                     refreshMeters();
                     return;
@@ -2294,8 +2522,8 @@ internal class Assets {
                     }
                 }
 
-                if (httpResponseChart) {
-                    renderHttpResponseChart(httpResponseChart, parseHttpResponseReadings(httpResponseChart.getAttribute('data-http-responses-readings') ?? '[]'));
+                if (httpEndpoint) {
+                    renderHttpCharts();
                 }
             });
 

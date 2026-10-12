@@ -19,11 +19,12 @@ public static class MonitoringBuilderExtensions {
             monitor.SetHealthSampling ( enabled: false );
         }
 
-        protected override void OnHttpRequestClose ( HttpServerExecutionResult result ) {
-            if (result.Response is not { Status.StatusCode: var statusCode })
-                return;
+        protected override void OnHttpRequestOpen ( HttpRequest request ) {
+            monitor.TrackHttpRequestOpen ( request );
+        }
 
-            monitor.RecordHttpResponse ( statusCode );
+        protected override void OnHttpRequestClose ( HttpServerExecutionResult result ) {
+            monitor.TrackHttpRequestClose ( result );
         }
     }
 

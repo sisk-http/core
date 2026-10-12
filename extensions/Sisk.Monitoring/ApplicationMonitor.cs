@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Sisk.Core.Helpers;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
@@ -14,11 +15,12 @@ namespace Sisk.Monitoring;
 /// </summary>
 public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
+    const string InFlightBagKey = "Sisk.Monitoring.InFlight";
+
     string? currentRoutePrefix = null;
-    long http2xxResponses;
-    long http4xxResponses;
-    long http5xxResponses;
-    long httpResponseMinuteStamp;
+    IRequestHandler []? routeHandlers;
+    long httpInFlight;
+    readonly HttpMetrics httpMetrics = new ();
 
     // arrow-left-s-line from Remix Icon
     const string ArrowLeftIcon = """
@@ -50,14 +52,27 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3C19.5376 3 22 5.5 22 9C22 16 14.5 20 12 21.5C9.5 20 2 16 2 9C2 5.5 4.5 3 7.5 3C9.36 3 11 4 12 5C13 4 14.64 3 16.5 3ZM12.9339 10.5H17V8.5H14.0654L12.9339 10.5ZM7 8.5V10.5H9.9346L11.0661 8.5H7ZM11.5 12L10 15H7V17H9.9346L12 13L14.0654 17H17V15H14L12.5 12H11.5Z"></path></svg>
         """;
 
+    // sun-line from Remix Icon
+    const string LightThemeIcon = """
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z"></path></svg>
+        """;
+
+    // moon-line from Remix Icon
+    const string DarkThemeIcon = """
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 7C10 10.866 13.134 14 17 14C18.9584 14 20.729 13.1957 21.9995 11.8995C22 11.933 22 11.9665 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C12.0335 2 12.067 2 12.1005 2.00049C10.8043 3.27098 10 5.04157 10 7ZM4 12C4 16.4183 7.58172 20 12 20C15.0583 20 17.7158 18.2839 19.062 15.7621C18.3945 15.9187 17.7035 16 17 16C12.0294 16 8 11.9706 8 7C8 6.29648 8.08133 5.60547 8.2379 4.938C5.71611 6.28423 4 8.9417 4 12Z"></path></svg>
+        """;
+
+    // computer-line from Remix Icon
+    const string SystemThemeIcon = """
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16H20V5H4V16ZM13 18V20H17V22H7V20H11V18H2.9918C2.44405 18 2 17.5511 2 16.9925V4.00748C2 3.45107 2.45531 3 2.9918 3H21.0082C21.556 3 22 3.44892 22 4.00748V16.9925C22 17.5489 21.5447 18 21.0082 18H13Z"></path></svg>
+        """;
+
     List<MonitoringDefinition<LogStream>> capturingLogStreams = new ();
     List<MonitoringDefinition<Counter>> counters = new ();
     List<MonitoringDefinition<Meter>> meters = new ();
     readonly Dictionary<string, int> logStreamBufferLineCounts = new ( StringComparer.OrdinalIgnoreCase );
     readonly List<HealthSnapshot> healthSnapshots = new ();
     readonly object healthSnapshotsSync = new ();
-    readonly List<HttpResponseSnapshot> httpResponseSnapshots = new ();
-    readonly object httpResponseSnapshotsSync = new ();
     CancellationTokenSource? storeFlushCancellation;
     Task? storeFlushTask;
     CancellationTokenSource? healthSamplingCancellation;
@@ -262,6 +277,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                 .WithAttribute ( "content", "light dark" )
                 .SelfClosed ();
             head += new HtmlElement ( "title", PageTitle );
+            head += new HtmlElement ( "script", RenderableText.Raw ( Assets.ThemeBootstrapScript ) );
             head += new HtmlElement ( "style", RenderableText.Raw ( Assets.DefaultStyles ) );
         } );
 
@@ -273,7 +289,29 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                     overlay.ClassList.Add ( "sidebar-overlay" );
                 } );
 
-                wrapper += WriteSidebar ( activeNavItem );
+                var sidebar = WriteSidebar ( activeNavItem );
+                sidebar += new HtmlElement ( "div", switcher => {
+                    switcher.ClassList.Add ( "theme-switcher" );
+                    switcher.Attributes [ "role" ] = "group";
+                    switcher.Attributes [ "aria-label" ] = "Color theme";
+
+                    foreach ((string value, string label, string icon) in new [] {
+                        ("light", "Light", LightThemeIcon),
+                        ("dark", "Dark", DarkThemeIcon),
+                        ("system", "System", SystemThemeIcon)
+                    }) {
+                        switcher += new HtmlElement ( "button", button => {
+                            button.ClassList.Add ( "theme-option" );
+                            button.Attributes [ "type" ] = "button";
+                            button.Attributes [ "data-theme-option" ] = value;
+                            button.Attributes [ "title" ] = label;
+                            button.Attributes [ "aria-label" ] = $"{label} theme";
+                            button.Attributes [ "aria-pressed" ] = "false";
+                            button += RenderableText.Raw ( icon );
+                        } );
+                    }
+                } );
+                wrapper += sidebar;
 
                 body += new HtmlElement ( "button", menuBtn => {
                     menuBtn.ClassList.Add ( "mobile-menu-btn" );
@@ -381,50 +419,94 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
             fragment += new HtmlElement ( "div", section => {
                 section.ClassList.Add ( "section" );
-                section += new HtmlElement ( "h2", "HTTP Responses" );
+                section.Attributes [ "data-http-endpoint" ] = PrefixPath ( "/data" );
 
-                section += new HtmlElement ( "div", chart => {
-                    chart.ClassList.Add ( "http-response-chart" );
-                    chart.Attributes [ "role" ] = "img";
-                    chart.Attributes [ "aria-label" ] = "HTTP responses chart";
+                section += new HtmlElement ( "div", header => {
+                    header.ClassList.Add ( "usage-history-header" );
+                    header += new HtmlElement ( "h2", "HTTP Traffic" );
+                    header += new HtmlElement ( "div", periods => {
+                        periods.ClassList.Add ( "usage-history-periods" );
+                        periods.Attributes [ "role" ] = "group";
+                        periods.Attributes [ "aria-label" ] = "HTTP traffic period";
 
-                    chart += new HtmlElement ( "div", chartReadings => {
-                        chartReadings.ClassList.Add ( "http-response-chart-container" );
-                        chartReadings.Attributes [ "data-http-responses-endpoint" ] = PrefixPath ( "/data" );
-                    } );
-
-                    chart += new HtmlElement ( "div", legend => {
-                        legend.ClassList.Add ( "http-response-chart-legend" );
-
-                        (string Status, string Description, string ClassName, string StatKey) [] responseGroups = [
-                            ("2xx", "Successful responses", "success", "success"),
-                            ("4xx", "Client errors", "client-error", "clientError"),
-                            ("5xx", "Server errors", "server-error", "serverError")
-                        ];
-
-                        foreach (var responseGroup in responseGroups) {
-                            legend += new HtmlElement ( "div", item => {
-                                item.ClassList.Add ( "http-response-chart-item" );
-                                item += new HtmlElement ( "span" ).WithClass ( $"http-response-chart-dot {responseGroup.ClassName}" );
-                                item += new HtmlElement ( "div", label => {
-                                    label.ClassList.Add ( "http-response-chart-label" );
-                                    label += new HtmlElement ( "strong", responseGroup.Status );
-                                    label += new HtmlElement ( "span", responseGroup.Description );
-                                } );
-                                item += new HtmlElement ( "div", value => {
-                                    value.ClassList.Add ( "http-response-chart-value" );
-
-                                    var totalElement = new HtmlElement ( "strong", "-" );
-                                    totalElement.Attributes [ "data-http-total" ] = responseGroup.StatKey;
-                                    value += totalElement;
-
-                                    var percentElement = new HtmlElement ( "span", "-" );
-                                    percentElement.ClassList.Add ( "http-response-chart-percentage" );
-                                    percentElement.Attributes [ "data-http-percent" ] = responseGroup.StatKey;
-                                    value += percentElement;
-                                } );
+                        foreach (string period in new [] { "1h", "1d", "7d" }) {
+                            periods += new HtmlElement ( "button", button => {
+                                button.ClassList.Add ( "toolbar-btn" );
+                                if (period == "1h")
+                                    button.ClassList.Add ( "active" );
+                                button.Attributes [ "type" ] = "button";
+                                button.Attributes [ "data-http-period" ] = period;
+                                button.Attributes [ "aria-pressed" ] = period == "1h" ? "true" : "false";
+                                button += period;
                             } );
                         }
+                    } );
+                } );
+
+                section += new HtmlElement ( "div", grid => {
+                    grid.ClassList.Add ( "http-stats-grid" );
+
+                    foreach ((string label, string key) in new [] {
+                        ("Requests", "requests"),
+                        ("Requests / min", "rpm"),
+                        ("Error rate (5xx)", "errorRate"),
+                        ("In flight", "inFlight"),
+                        ("Latency p50", "p50"),
+                        ("Latency p95", "p95"),
+                        ("Latency p99", "p99"),
+                        ("Latency max", "max")
+                    }) {
+                        grid += new HtmlElement ( "div", card => {
+                            card.ClassList.Add ( "card" );
+                            card.ClassList.Add ( "http-stat-card" );
+                            card += new HtmlElement ( "div", label ).WithClass ( "card-label" );
+                            card += new HtmlElement ( "div", "-" )
+                                .WithClass ( "card-value" )
+                                .WithAttribute ( "data-http-stat", key );
+                        } );
+                    }
+                } );
+
+                section += new HtmlElement ( "div", charts => {
+                    charts.ClassList.Add ( "http-charts" );
+
+                    foreach ((string title, string chartKey) in new [] { ("Responses", "responses"), ("Latency (ms)", "latency") }) {
+                        charts += new HtmlElement ( "div", block => {
+                            block.ClassList.Add ( "http-chart-block" );
+                            block += new HtmlElement ( "h3", title ).WithClass ( "group-title" );
+                            block += new HtmlElement ( "div", chart => {
+                                chart.ClassList.Add ( "health-chart-container" );
+                                chart.Attributes [ "data-http-chart" ] = chartKey;
+                                chart.Attributes [ "role" ] = "img";
+                                chart.Attributes [ "aria-label" ] = $"HTTP {chartKey} chart";
+                            } );
+                        } );
+                    }
+                } );
+
+                section += new HtmlElement ( "div", tables => {
+                    tables.ClassList.Add ( "http-tables" );
+
+                    foreach ((string title, string tableKey) in new [] { ("Slowest routes (p95)", "slowest"), ("Routes with most errors", "errors") }) {
+                        tables += new HtmlElement ( "div", block => {
+                            block.ClassList.Add ( "http-table-block" );
+                            block += new HtmlElement ( "h3", title ).WithClass ( "group-title" );
+                            block += new HtmlElement ( "div", wrapper => {
+                                wrapper.ClassList.Add ( "http-table-wrapper" );
+                                wrapper.Attributes [ "data-http-table" ] = tableKey;
+                                wrapper += new HtmlElement ( "p", "No requests recorded." ).WithClass ( "http-table-empty" );
+                            } );
+                        } );
+                    }
+                } );
+
+                section += new HtmlElement ( "div", block => {
+                    block.ClassList.Add ( "http-table-block" );
+                    block += new HtmlElement ( "h3", "Recent exceptions" ).WithClass ( "group-title" );
+                    block += new HtmlElement ( "div", list => {
+                        list.ClassList.Add ( "http-exceptions" );
+                        list.Attributes [ "data-http-exceptions" ] = "";
+                        list += new HtmlElement ( "p", "No exceptions recorded." ).WithClass ( "http-table-empty" );
                     } );
                 } );
             } );
@@ -669,21 +751,28 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     /// <summary>
-    /// Generates the JSON payload consumed by the dashboard page, containing HTTP response readings, totals and pinned counters.
+    /// Generates the JSON payload consumed by the dashboard page, containing HTTP traffic, latency, per-route statistics,
+    /// recent exceptions and pinned counters.
     /// </summary>
-    /// <param name="request">The incoming HTTP request.</param>
+    /// <param name="request">The incoming HTTP request. The <c>period</c> query parameter accepts <c>1h</c>, <c>1d</c> or <c>7d</c>.</param>
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with dashboard data in JSON format.</returns>
     protected virtual ValueTask<HttpResponse> GetDashboardDataAsync ( HttpRequest request ) {
-        long responses2xx = Interlocked.Read ( ref http2xxResponses );
-        long responses4xx = Interlocked.Read ( ref http4xxResponses );
-        long responses5xx = Interlocked.Read ( ref http5xxResponses );
+        (TimeSpan period, TimeSpan step) = request.Query [ "period" ].Value switch {
+            "1d" => (TimeSpan.FromDays ( 1 ), TimeSpan.FromMinutes ( 15 )),
+            "7d" => (TimeSpan.FromDays ( 7 ), TimeSpan.FromHours ( 2 )),
+            _ => (TimeSpan.FromHours ( 1 ), TimeSpan.FromMinutes ( 1 ))
+        };
 
-        string json = SerializeDashboardPayload (
-            SerializeHttpResponseReadingsPayload ( ReadHttpResponseSnapshots (), responses2xx, responses4xx, responses5xx ),
-            responses2xx,
-            responses4xx,
-            responses5xx,
-            counters.Where ( c => c.DashboardPinned ) );
+        long inFlightExcludingCurrent = Math.Max ( 0, Interlocked.Read ( ref httpInFlight ) - 1 );
+        HttpMetricsPayload metrics = httpMetrics.Read ( period, step, inFlightExcludingCurrent );
+
+        string json = new StringBuilder ()
+            .Append ( "{\"http\":" )
+            .Append ( JsonSerializer.Serialize ( metrics, HttpMetricsJsonContext.Default.HttpMetricsPayload ) )
+            .Append ( ",\"counters\":" )
+            .Append ( SerializeCountersPayload ( counters.Where ( c => c.DashboardPinned ) ) )
+            .Append ( '}' )
+            .ToString ();
 
         return new ValueTask<HttpResponse> (
             new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
@@ -1052,50 +1141,37 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         healthSamplingTask = null;
     }
 
-    internal void RecordHttpResponse ( int statusCode ) {
-        switch (statusCode) {
-            case >= 200 and < 300:
-                Interlocked.Increment ( ref http2xxResponses );
-                break;
-            case >= 400 and < 500:
-                Interlocked.Increment ( ref http4xxResponses );
-                break;
-            case >= 500 and < 600:
-                Interlocked.Increment ( ref http5xxResponses );
-                break;
-            default:
-                return;
-        }
-
-        TrackHttpResponseSnapshot ();
+    internal void TrackHttpRequestOpen ( HttpRequest request ) {
+        Interlocked.Increment ( ref httpInFlight );
+        request.Context.RequestBag [ InFlightBagKey ] = true;
     }
 
-    void TrackHttpResponseSnapshot () {
-        DateTime now = DateTime.Now;
-        long minuteStamp = now.Ticks / TimeSpan.TicksPerMinute;
+    internal void TrackHttpRequestClose ( HttpServerExecutionResult result ) {
+        HttpContext context = result.Context;
+        if (context.RequestBag.Remove ( InFlightBagKey ))
+            Interlocked.Decrement ( ref httpInFlight );
 
-        if (Volatile.Read ( ref httpResponseMinuteStamp ) == minuteStamp)
+        Route? route = context.MatchedRoute;
+        if (route is not null && ReferenceEquals ( route.RequestHandlers, routeHandlers ))
             return;
 
-        lock (httpResponseSnapshotsSync) {
-            if (Volatile.Read ( ref httpResponseMinuteStamp ) == minuteStamp)
-                return;
+        // unhandled exceptions carry an internal placeholder response whose public status is 200,
+        // so the execution status must be inspected before the response status code
+        int? statusCode = result.Status switch {
+            HttpServerExecutionStatus.ConnectionClosed or HttpServerExecutionStatus.RemoteRequestDropped => null,
+            HttpServerExecutionStatus.ExceptionThrown or HttpServerExecutionStatus.UncaughtExceptionThrown => 500,
+            HttpServerExecutionStatus.MalformedRequest or HttpServerExecutionStatus.DnsUnknownHost => 400,
+            HttpServerExecutionStatus.ContentTooLarge => 413,
+            HttpServerExecutionStatus.ListeningHostNotReady => 503,
+            HttpServerExecutionStatus.NoResponse => 204,
+            _ => result.Response?.Status.StatusCode
+        };
 
-            httpResponseSnapshots.Add ( new HttpResponseSnapshot (
-                now,
-                Interlocked.Read ( ref http2xxResponses ),
-                Interlocked.Read ( ref http4xxResponses ),
-                Interlocked.Read ( ref http5xxResponses ) ) );
+        if (statusCode is not { } code)
+            return;
 
-            httpResponseSnapshots.RemoveAll ( item => item.Timestamp < now - TimeSpan.FromDays ( 7 ) );
-            Volatile.Write ( ref httpResponseMinuteStamp, minuteStamp );
-        }
-    }
-
-    HttpResponseSnapshot [] ReadHttpResponseSnapshots () {
-        lock (httpResponseSnapshotsSync) {
-            return httpResponseSnapshots.ToArray ();
-        }
+        string routeKey = route is null ? "(unmatched)" : $"{context.Request.Method.Method} {route.Path}";
+        httpMetrics.Record ( routeKey, code, result.Elapsed.TotalMilliseconds, result.ServerException );
     }
 
     static string FormatUptime ( TimeSpan uptime ) {
@@ -1375,67 +1451,6 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         return builder.ToString ();
     }
 
-    static string SerializeHttpResponseReadingsPayload ( HttpResponseSnapshot [] history, long current2xx, long current4xx, long current5xx ) {
-        var builder = new StringBuilder ();
-        builder.Append ( '[' );
-
-        long previous2xx = 0;
-        long previous4xx = 0;
-        long previous5xx = 0;
-
-        void appendReading ( DateTime timestamp, long success, long clientError, long serverError ) {
-            if (builder.Length > 1)
-                builder.Append ( ',' );
-
-            builder.Append ( "{\"timestamp\":\"" )
-                .Append ( timestamp.ToString ( "O", CultureInfo.InvariantCulture ) )
-                .Append ( "\",\"success\":" )
-                .Append ( success.ToString ( CultureInfo.InvariantCulture ) )
-                .Append ( ",\"clientError\":" )
-                .Append ( clientError.ToString ( CultureInfo.InvariantCulture ) )
-                .Append ( ",\"serverError\":" )
-                .Append ( serverError.ToString ( CultureInfo.InvariantCulture ) )
-                .Append ( '}' );
-        }
-
-        foreach (HttpResponseSnapshot snapshot in history) {
-            appendReading (
-                snapshot.Timestamp,
-                snapshot.Responses2xx - previous2xx,
-                snapshot.Responses4xx - previous4xx,
-                snapshot.Responses5xx - previous5xx );
-            previous2xx = snapshot.Responses2xx;
-            previous4xx = snapshot.Responses4xx;
-            previous5xx = snapshot.Responses5xx;
-        }
-
-        appendReading (
-            DateTime.Now,
-            current2xx - previous2xx,
-            current4xx - previous4xx,
-            current5xx - previous5xx );
-
-        builder.Append ( ']' );
-        return builder.ToString ();
-    }
-
-    static string SerializeDashboardPayload ( string readingsJson, long responses2xx, long responses4xx, long responses5xx, IEnumerable<MonitoringDefinition<Counter>> dashboardCounters ) {
-        var builder = new StringBuilder ();
-        builder.Append ( "{\"httpResponses\":{\"readings\":" )
-            .Append ( readingsJson )
-            .Append ( ",\"totals\":{\"success\":" )
-            .Append ( responses2xx.ToString ( CultureInfo.InvariantCulture ) )
-            .Append ( ",\"clientError\":" )
-            .Append ( responses4xx.ToString ( CultureInfo.InvariantCulture ) )
-            .Append ( ",\"serverError\":" )
-            .Append ( responses5xx.ToString ( CultureInfo.InvariantCulture ) )
-            .Append ( "}},\"counters\":" )
-            .Append ( SerializeCountersPayload ( dashboardCounters ) )
-            .Append ( '}' );
-
-        return builder.ToString ();
-    }
-
     static string SerializeCountersPayload ( IEnumerable<MonitoringDefinition<Counter>> definitions ) {
         var builder = new StringBuilder ();
         builder.Append ( '[' );
@@ -1546,6 +1561,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         RestoreStoreState ();
         StartStoreFlushLoop ();
         IRequestHandler [] handlers = [ new AuthorizationRequestHandler ( this ) ];
+        routeHandlers = handlers;
 
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;
@@ -1725,5 +1741,4 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
     record struct HealthSnapshot ( DateTime Timestamp, double CpuPercent, double DiskPercent, double MemoryPercent, long AppMemoryBytes, long DiskTotalBytes, long DiskFreeBytes, string DriveRoot, DateTime ProcessStartTime );
 
-    record struct HttpResponseSnapshot ( DateTime Timestamp, long Responses2xx, long Responses4xx, long Responses5xx );
 }

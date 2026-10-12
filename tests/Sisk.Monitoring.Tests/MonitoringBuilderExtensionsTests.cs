@@ -37,7 +37,7 @@ public sealed class MonitoringBuilderExtensionsTests {
     [DataTestMethod]
     [DataRow ( false )]
     [DataRow ( true )]
-    public async Task UseMonitoring_ServesStaticDashboardAndCountsHttpResponsesByStatusClass ( bool useCustomMonitorFactory ) {
+    public async Task UseMonitoring_ServesStaticDashboardAndCollectsHttpMetrics ( bool useCustomMonitorFactory ) {
         int port = GetFreePort ();
         var builder = CreateBuilder ( port );
 
@@ -57,6 +57,11 @@ public sealed class MonitoringBuilderExtensionsTests {
                 router.MapGet ( "/success", _ => new HttpResponse ( 200 ) );
                 router.MapGet ( "/client-error", _ => new HttpResponse ( 404 ) );
                 router.MapGet ( "/server-error", _ => new HttpResponse ( 500 ) );
+                router.MapGet ( "/throws", HttpResponse ( HttpRequest _ ) => throw new InvalidOperationException ( "boom" ) );
+                router.MapGet ( "/slow", async () => {
+                    await Task.Delay ( 60 );
+                    return new HttpResponse ( 200 );
+                } );
             } )
             .Build ();
 
@@ -70,33 +75,59 @@ public sealed class MonitoringBuilderExtensionsTests {
         using HttpResponseMessage successResponse = await client.GetAsync ( "/success" );
         using HttpResponseMessage clientErrorResponse = await client.GetAsync ( "/client-error" );
         using HttpResponseMessage serverErrorResponse = await client.GetAsync ( "/server-error" );
+        using HttpResponseMessage throwsResponse = await client.GetAsync ( "/throws" );
+        using HttpResponseMessage slowResponse = await client.GetAsync ( "/slow" );
+        using HttpResponseMessage unmatchedResponse = await client.GetAsync ( "/missing" );
 
         Assert.AreEqual ( HttpStatusCode.OK, successResponse.StatusCode );
         Assert.AreEqual ( HttpStatusCode.NotFound, clientErrorResponse.StatusCode );
         Assert.AreEqual ( HttpStatusCode.InternalServerError, serverErrorResponse.StatusCode );
+        Assert.AreEqual ( HttpStatusCode.InternalServerError, throwsResponse.StatusCode );
+        Assert.AreEqual ( HttpStatusCode.NotFound, unmatchedResponse.StatusCode );
 
         using (HttpResponseMessage dashboardResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/" ) )) {
             string dashboard = await dashboardResponse.Content.ReadAsStringAsync ();
 
             Assert.AreEqual ( HttpStatusCode.OK, dashboardResponse.StatusCode );
-            StringAssert.Contains ( dashboard, "HTTP Responses" );
-            StringAssert.Contains ( dashboard, "class=\"http-response-chart\"" );
-            StringAssert.Contains ( dashboard, "class=\"http-response-chart-container\"" );
-            StringAssert.Contains ( dashboard, "data-http-responses-endpoint=\"/monitoring/data\"" );
-            StringAssert.Contains ( dashboard, "data-http-total=\"success\"" );
-            StringAssert.Contains ( dashboard, "data-http-percent=\"clientError\"" );
-            StringAssert.Contains ( dashboard, "aria-label=\"HTTP responses chart\"" );
-            Assert.IsFalse ( dashboard.Contains ( "data-http-responses-readings=\"" ), "Dashboard shell must not embed live readings." );
+            StringAssert.Contains ( dashboard, "HTTP Traffic" );
+            StringAssert.Contains ( dashboard, "data-http-endpoint=\"/monitoring/data\"" );
+            StringAssert.Contains ( dashboard, "data-http-stat=\"p95\"" );
+            StringAssert.Contains ( dashboard, "data-http-chart=\"latency\"" );
+            StringAssert.Contains ( dashboard, "data-http-table=\"slowest\"" );
+            StringAssert.Contains ( dashboard, "data-http-period=\"7d\"" );
+            StringAssert.Contains ( dashboard, "data-theme-option=\"system\"" );
         }
 
-        using (HttpResponseMessage dataResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/data" ) )) {
-            string dataJson = await dataResponse.Content.ReadAsStringAsync ();
-
+        using (HttpResponseMessage dataResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/data?period=1d" ) )) {
             Assert.AreEqual ( HttpStatusCode.OK, dataResponse.StatusCode );
             StringAssert.Contains ( dataResponse.Content.Headers.ContentType?.ToString (), "application/json" );
-            StringAssert.Contains ( dataJson, "\"totals\":{\"success\":2,\"clientError\":1,\"serverError\":1}" );
-            StringAssert.Contains ( dataJson, "\"readings\":" );
-            StringAssert.Contains ( dataJson, "\"counters\":[" );
+
+            using JsonDocument payload = JsonDocument.Parse ( await dataResponse.Content.ReadAsStringAsync () );
+            JsonElement http = payload.RootElement.GetProperty ( "http" );
+            JsonElement totals = http.GetProperty ( "totals" );
+
+            Assert.AreEqual ( 6, totals.GetProperty ( "requests" ).GetInt64 (), "Dashboard routes must not be counted." );
+            Assert.AreEqual ( 2, totals.GetProperty ( "success" ).GetInt64 () );
+            Assert.AreEqual ( 2, totals.GetProperty ( "clientError" ).GetInt64 () );
+            Assert.AreEqual ( 2, totals.GetProperty ( "serverError" ).GetInt64 () );
+            Assert.AreEqual ( 0, http.GetProperty ( "inFlight" ).GetInt64 () );
+            Assert.IsTrue ( http.GetProperty ( "latency" ).GetProperty ( "max" ).GetDouble () >= 50, "Latency must include the slow route." );
+            Assert.IsTrue ( http.GetProperty ( "readings" ).GetArrayLength () > 0 );
+            Assert.IsTrue ( payload.RootElement.GetProperty ( "counters" ).ValueKind == JsonValueKind.Array );
+
+            var routes = http.GetProperty ( "routes" ).EnumerateArray ()
+                .ToDictionary ( route => route.GetProperty ( "route" ).GetString ()!, route => route );
+
+            CollectionAssert.IsSubsetOf (
+                new [] { "GET /success", "GET /throws", "GET /slow", "(unmatched)" },
+                routes.Keys.ToArray () );
+            Assert.AreEqual ( 1, routes [ "GET /throws" ].GetProperty ( "totals" ).GetProperty ( "serverError" ).GetInt64 () );
+            Assert.IsTrue ( routes [ "GET /slow" ].GetProperty ( "latency" ).GetProperty ( "p95" ).GetDouble () >= 50 );
+
+            JsonElement exception = http.GetProperty ( "exceptions" ).EnumerateArray ().Single ();
+            Assert.AreEqual ( "GET /throws", exception.GetProperty ( "route" ).GetString () );
+            Assert.AreEqual ( "System.InvalidOperationException", exception.GetProperty ( "type" ).GetString () );
+            Assert.AreEqual ( "boom", exception.GetProperty ( "message" ).GetString () );
         }
     }
 
