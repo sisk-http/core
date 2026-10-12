@@ -20,7 +20,7 @@ internal class PrismJs {
 
 
     // forked from https://cdn.jsdelivr.net/gh/katorlys/prism-theme-github/themes/prism-theme-github-light.css
-    public const string Css = """
+    public const string Css = $$"""
         /**
          * Github Light theme for Prism.js
          * Based on Github: https://github.com
@@ -175,6 +175,17 @@ internal class PrismJs {
         }
 
         @media (prefers-color-scheme: dark) {
+          :root:not([data-theme="light"]) {
+            {{DarkCss}}
+          }
+        }
+
+        :root[data-theme="dark"] {
+          {{DarkCss}}
+        }
+        """;
+
+    const string DarkCss = """
 
           /**
          * Github Dark theme for Prism.js
@@ -329,6 +340,5 @@ internal class PrismJs {
           .token.entity {
             cursor: help;
           }
-        }
         """;
 }

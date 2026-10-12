@@ -43,6 +43,26 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"></path></svg>
             """;
 
+    // arrow-left-line from Remix Icon
+    const string BackArrowIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7.82843 10.9999H20V12.9999H7.82843L13.1924 18.3638L11.7782 19.778L4 11.9999L11.7782 4.22168L13.1924 5.63589L7.82843 10.9999Z"></path></svg>
+            """;
+
+    // computer-line from Remix Icon
+    const string SystemThemeIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16H20V5H4V16ZM13 18V20H17V22H7V20H11V18H2.9918C2.44405 18 2 17.5511 2 16.9925V4.00748C2 3.45107 2.45531 3 2.9918 3H21.0082C21.556 3 22 3.44892 22 4.00748V16.9925C22 17.5489 21.5447 18 21.0082 18H13Z"></path></svg>
+            """;
+
+    // sun-line from Remix Icon
+    const string LightThemeIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z"></path></svg>
+            """;
+
+    // moon-line from Remix Icon
+    const string DarkThemeIcon = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 7C10 10.866 13.134 14 17 14C18.9584 14 20.729 13.1957 21.9995 11.8995C22 11.933 22 11.9665 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C12.0335 2 12.067 2 12.1005 2.00049C10.8043 3.27098 10 5.04157 10 7ZM4 12C4 16.4183 7.58172 20 12 20C15.0583 20 17.7158 18.2839 19.062 15.7621C18.3945 15.9187 17.7035 16 17 16C12.0294 16 8 11.9706 8 7C8 6.29648 8.08133 5.60547 8.2379 4.938C5.71611 6.28423 4 8.9417 4 12Z"></path></svg>
+            """;
+
     /// <summary>
     /// Creates an new instance of the <see cref="HtmlDocumentationExporter"/> class.
     /// </summary>
@@ -148,6 +168,21 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     public string FormatTabSchema { get; set; } = "Schema";
 
     /// <summary>
+    /// Gets or sets the format string for the link that returns from an endpoint page to the endpoint listing.
+    /// </summary>
+    public string FormatBackToEndpoints { get; set; } = "All endpoints";
+
+    /// <summary>
+    /// Gets or sets the label of the button that expands a long request or response example description.
+    /// </summary>
+    public string FormatShowMore { get; set; } = "Show more";
+
+    /// <summary>
+    /// Gets or sets the label of the button that collapses an expanded request or response example description.
+    /// </summary>
+    public string FormatShowLess { get; set; } = "Show less";
+
+    /// <summary>
     /// Includes the Prism.js syntax-highlighter library by appending its JavaScript and CSS to the current
     /// <see cref="Script"/> and <see cref="Style"/> properties.
     /// </summary>
@@ -189,9 +224,17 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             nav += new HtmlElement ( "div", header => {
                 header.ClassList.Add ( "sidebar-header" );
 
-                header += new HtmlElement ( "h1", documentation.ApplicationName ?? "API" );
-                header += new HtmlElement ( "span", $"v{documentation.ApiVersion ?? "1.0"}" )
-                    .WithClass ( "version" );
+                header += new HtmlElement ( "div", title => {
+                    title.ClassList.Add ( "sidebar-title" );
+
+                    title += new HtmlElement ( "div", name => {
+                        name += new HtmlElement ( "h1", documentation.ApplicationName ?? "API" );
+                        name += new HtmlElement ( "span", $"v{documentation.ApiVersion ?? "1.0"}" )
+                            .WithClass ( "version" );
+                    } );
+
+                    title += WriteThemeSwitcher ();
+                } );
 
                 header += new HtmlElement ( "button", searchBtn => {
                     searchBtn.ClassList.Add ( "search-trigger" );
@@ -244,6 +287,32 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     }
 
     /// <summary>
+    /// Writes the color theme switcher, which lets the reader choose between the system, light and dark themes.
+    /// </summary>
+    /// <returns>The HTML element representing the theme switcher.</returns>
+    protected virtual HtmlElement? WriteThemeSwitcher () {
+        return new HtmlElement ( "div", switcher => {
+            switcher.ClassList.Add ( "theme-switcher" );
+            switcher.Attributes [ "role" ] = "group";
+            switcher.Attributes [ "aria-label" ] = "Color theme";
+
+            foreach (var (value, label, icon) in new [] {
+                ("system", "System theme", SystemThemeIcon),
+                ("light", "Light theme", LightThemeIcon),
+                ("dark", "Dark theme", DarkThemeIcon) }) {
+
+                switcher += new HtmlElement ( "button", btn => {
+                    btn.Attributes [ "type" ] = "button";
+                    btn.Attributes [ "data-theme-value" ] = value;
+                    btn.Attributes [ "aria-label" ] = label;
+                    btn.Attributes [ "title" ] = label;
+                    btn += RenderableText.Raw ( icon );
+                } );
+            }
+        } );
+    }
+
+    /// <summary>
     /// Writes the description of an API endpoint.
     /// </summary>
     /// <param name="endpoint">The API endpoint to write the description for.</param>
@@ -264,6 +333,22 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             details += new HtmlElement ( "div", content => {
                 content.ClassList.Add ( "endpoint-content" );
 
+                var mainColumn = new HtmlElement ( "div" ).WithClass ( "endpoint-main" );
+                var examplesColumn = new HtmlElement ( "aside" ).WithClass ( "endpoint-examples" );
+
+                content += new HtmlElement ( "div", breadcrumb => {
+                    breadcrumb.ClassList.Add ( "endpoint-breadcrumb" );
+
+                    breadcrumb += new HtmlElement ( "a", back => {
+                        back.ClassList.Add ( "endpoint-back" );
+                        back.Attributes [ "href" ] = "#";
+                        back += RenderableText.Raw ( BackArrowIcon );
+                        back += new HtmlElement ( "span", FormatBackToEndpoints );
+                    } );
+
+                    breadcrumb += new HtmlElement ( "span", endpoint.Group ?? "Requests" );
+                } );
+
                 content += new HtmlElement ( "div", header => {
                     header.ClassList.Add ( "endpoint-content-header" );
 
@@ -272,11 +357,11 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                     header += new HtmlElement ( "div", copyWrapper => {
                         copyWrapper.ClassList.Add ( "copy-button-wrapper" );
 
-                        var context = HttpContext.GetCurrentContext ();
-                        if (context?.Request.Query [ "embed" ] == "iframe") {
+                        var request = HttpContext.GetCurrentContext ()?.Request;
+                        if (request?.Query [ "embed-target" ].Value is { Length: > 0 }) {
                             copyWrapper += new HtmlElement ( "a", btn => {
                                 btn.ClassList.Add ( "open-ext-button" );
-                                btn.Attributes [ "href" ] = $"{context.Request.Path}#{TransformId ( endpoint.Name )}";
+                                btn.Attributes [ "href" ] = $"{GetDocumentationUrl ( request )}#{TransformId ( endpoint.Name )}";
                                 btn.Attributes [ "target" ] = "_blank";
                                 btn.Attributes [ "aria-label" ] = "Open in new tab";
                                 btn += RenderableText.Raw ( ExternalLinkIcon );
@@ -321,12 +406,19 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                     } );
                 } );
 
-                content += CreateParagraphs ( endpoint.Description );
+                mainColumn += CreateParagraphs ( endpoint.Description );
 
-                content += CreateCodeBlock ( $"{endpoint.RouteMethod.ToString ().ToUpper ()} {endpoint.Path}", null );
+                mainColumn += new HtmlElement ( "div", path => {
+                    path.ClassList.Add ( "endpoint-path" );
+
+                    path += new HtmlElement ( "span", endpoint.RouteMethod.ToString ().ToUpper () )
+                        .WithClass ( "method-badge" )
+                        .WithStyle ( new { backgroundColor = GetRouteMethodHexColor ( endpoint.RouteMethod ) + "35" } );
+                    path += new HtmlElement ( "code", endpoint.Path );
+                } );
 
                 if (endpoint.Headers.Length > 0) {
-                    content += new HtmlElement ( "div", div => {
+                    mainColumn += new HtmlElement ( "div", div => {
                         div.ClassList.Add ( "params-section" );
 
                         div += new HtmlElement ( "p", FormatEndpointHeaders );
@@ -356,7 +448,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 }
 
                 if (endpoint.PathParameters.Length > 0) {
-                    content += new HtmlElement ( "div", div => {
+                    mainColumn += new HtmlElement ( "div", div => {
                         div.ClassList.Add ( "params-section" );
 
                         div += new HtmlElement ( "p", FormatEndpointPathParameters );
@@ -384,7 +476,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 }
 
                 if (endpoint.QueryParameters.Length > 0) {
-                    content += new HtmlElement ( "div", div => {
+                    mainColumn += new HtmlElement ( "div", div => {
                         div.ClassList.Add ( "params-section" );
 
                         div += new HtmlElement ( "p", FormatEndpointQueryParameters );
@@ -415,7 +507,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 }
 
                 if (endpoint.Parameters.Length > 0) {
-                    content += new HtmlElement ( "div", div => {
+                    mainColumn += new HtmlElement ( "div", div => {
                         div.ClassList.Add ( "params-section" );
 
                         div += new HtmlElement ( "p", FormatEndpointParameters );
@@ -473,80 +565,165 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 }
 
                 if (endpoint.RequestExamples.Length > 0) {
-                    int reqIndex = 0;
-                    content += new HtmlElement ( "div", div => {
-                        div.ClassList.Add ( "params-section" );
-
-                        div += new HtmlElement ( "p", FormatEndpointRequestExamples );
-
-                        div += new HtmlElement ( "ul", ul => {
-                            ul.ClassList.Add ( "params-list" );
-
-                            foreach (var req in endpoint.RequestExamples) {
-                                int currentReqIndex = reqIndex++;
-                                ul += new HtmlElement ( "li", li => {
-                                    li.ClassList.Add ( "param-item" );
-
-                                    li += CreateParagraphs ( req.Description );
-
-                                    var tabControl = CreateExampleSchemaTabControl (
-                                        req.Example,
-                                        req.ExampleLanguage,
-                                        req.JsonSchema,
-                                        $"req-{TransformId ( endpoint.Name )}-{currentReqIndex}"
-                                    );
-                                    if (tabControl != null) {
-                                        li += tabControl;
-                                    }
-                                } );
-                            }
-                        } );
-                    } );
+                    examplesColumn += CreateExampleCard (
+                        FormatEndpointRequestExamples.TrimEnd ( ':' ),
+                        $"req-{TransformId ( endpoint.Name )}",
+                        showTabs: false,
+                        endpoint.RequestExamples
+                            .Select ( ( req, index ) => (
+                                Group: "request",
+                                GroupClass: (string?) null,
+                                Title: GetExampleTitle ( req.Description, $"{FormatTabExample} {index + 1}" ),
+                                Description: (string?) req.Description,
+                                Content: CreateExampleSchemaTabControl (
+                                    req.Example,
+                                    req.ExampleLanguage,
+                                    req.JsonSchema,
+                                    $"req-{TransformId ( endpoint.Name )}-{index}" ) ) )
+                            .ToArray () );
                 }
 
                 if (endpoint.Responses.Length > 0) {
-                    int resIndex = 0;
-                    content += new HtmlElement ( "div", div => {
-                        div.ClassList.Add ( "params-section" );
+                    examplesColumn += CreateExampleCard (
+                        FormatEndpointResponses.TrimEnd ( ':' ),
+                        $"res-{TransformId ( endpoint.Name )}",
+                        showTabs: true,
+                        endpoint.Responses
+                            .Select ( ( res, index ) => (
+                                Group: ((int) res.StatusCode).ToString (),
+                                GroupClass: (string?) ((int) res.StatusCode switch {
+                                    >= 200 and < 300 => "success",
+                                    >= 300 and < 400 => "redirect",
+                                    _ => "error"
+                                }),
+                                Title: GetExampleTitle ( res.Description, $"{FormatTabExample} {index + 1}" ),
+                                res.Description,
+                                Content: CreateExampleSchemaTabControl (
+                                    res.Example,
+                                    res.ExampleLanguage,
+                                    res.JsonSchema,
+                                    $"res-{TransformId ( endpoint.Name )}-{index}" ) ) )
+                            .ToArray () );
+                }
 
-                        div += new HtmlElement ( "p", FormatEndpointResponses );
+                bool hasExamples = endpoint.RequestExamples.Length > 0 || endpoint.Responses.Length > 0;
 
-                        div += new HtmlElement ( "ul", ul => {
-                            ul.ClassList.Add ( "params-list" );
+                content += new HtmlElement ( "div", layout => {
+                    layout.ClassList.Add ( "endpoint-layout" );
+                    layout += mainColumn;
 
-                            foreach (var res in endpoint.Responses) {
-                                int currentResIndex = resIndex++;
-                                ul += new HtmlElement ( "li", li => {
-                                    li.ClassList.Add ( "param-item" );
+                    if (hasExamples) {
+                        layout.ClassList.Add ( "has-examples" );
+                        layout += examplesColumn;
+                    }
+                } );
+            } );
+        } );
+    }
 
-                                    string statusClass = (int) res.StatusCode switch {
-                                        >= 200 and < 300 => "success",
-                                        >= 300 and < 400 => "redirect",
-                                        _ => "error"
-                                    };
+    HtmlElement CreateExampleCard ( string title, string tabId, bool showTabs,
+        (string Group, string? GroupClass, string Title, string? Description, HtmlElement? Content) [] items ) {
 
-                                    li += new HtmlElement ( "span", (int) res.StatusCode )
-                                        .WithClass ( "status-code", statusClass );
+        var groups = items.GroupBy ( item => item.Group ).ToArray ();
 
-                                    li += new HtmlElement ( "div", CreateParagraphs ( res.Description ) )
-                                        .WithClass ( "param-description" );
+        return new HtmlElement ( "div", card => {
+            card.ClassList.Add ( "tab-control" );
+            card.ClassList.Add ( "example-card" );
+            card.Attributes [ "data-tab-id" ] = tabId;
 
-                                    var tabControl = CreateExampleSchemaTabControl (
-                                        res.Example,
-                                        res.ExampleLanguage,
-                                        res.JsonSchema,
-                                        $"res-{TransformId ( endpoint.Name )}-{currentResIndex}"
-                                    );
-                                    if (tabControl != null) {
-                                        li += tabControl;
-                                    }
-                                } );
-                            }
-                        } );
+            card += new HtmlElement ( "div", header => {
+                header.ClassList.Add ( "tab-header" );
+                header.ClassList.Add ( "example-card-header" );
+
+                header += new HtmlElement ( "span", title ).WithClass ( "example-card-title" );
+
+                for (int i = 0; showTabs && i < groups.Length; i++) {
+                    var group = groups [ i ];
+                    var isFirst = i == 0;
+
+                    header += new HtmlElement ( "button", btn => {
+                        btn.ClassList.Add ( "tab-button" );
+                        if (group.First ().GroupClass is { } groupClass)
+                            btn.ClassList.Add ( groupClass );
+                        if (isFirst)
+                            btn.ClassList.Add ( "active" );
+
+                        btn.Attributes [ "type" ] = "button";
+                        btn.Attributes [ "data-tab" ] = group.Key;
+                        btn += group.Key;
                     } );
                 }
             } );
+
+            for (int i = 0; i < groups.Length; i++) {
+                var variants = groups [ i ].ToArray ();
+                var groupKey = groups [ i ].Key;
+                var isFirst = i == 0;
+
+                card += new HtmlElement ( "div", panel => {
+                    panel.ClassList.Add ( "tab-content" );
+                    if (isFirst)
+                        panel.ClassList.Add ( "active" );
+
+                    panel.Attributes [ "data-tab-content" ] = groupKey;
+                    panel.Attributes [ "data-label" ] = showTabs ? groupKey : null;
+
+                    if (variants.Length > 1) {
+                        panel += new HtmlElement ( "select", select => {
+                            select.ClassList.Add ( "example-variant-select" );
+                            select.Attributes [ "aria-label" ] = title;
+
+                            for (int v = 0; v < variants.Length; v++) {
+                                select += new HtmlElement ( "option", variants [ v ].Title )
+                                    .WithAttribute ( "value", v.ToString () );
+                            }
+                        } );
+                    }
+
+                    for (int v = 0; v < variants.Length; v++) {
+                        var variant = variants [ v ];
+                        var variantIndex = v;
+
+                        panel += new HtmlElement ( "div", variantPanel => {
+                            variantPanel.ClassList.Add ( "example-variant" );
+                            if (variantIndex == 0)
+                                variantPanel.ClassList.Add ( "active" );
+
+                            variantPanel.Attributes [ "data-variant" ] = variantIndex.ToString ();
+                            variantPanel.Attributes [ "data-title" ] = variants.Length > 1 ? variant.Title : null;
+
+                            if (variant.Description is { Length: > 0 }) {
+                                variantPanel += new HtmlElement ( "div", description => {
+                                    description.ClassList.Add ( "example-description" );
+                                    description += new HtmlElement ( "div", CreateParagraphs ( variant.Description ) )
+                                        .WithClass ( "example-description-text" );
+                                    description += new HtmlElement ( "button", FormatShowMore )
+                                        .WithClass ( "example-description-toggle" )
+                                        .WithAttribute ( "type", "button" )
+                                        .WithAttribute ( "data-less", FormatShowLess );
+                                } );
+                            }
+
+                            variantPanel += variant.Content;
+                        } );
+                    }
+                } );
+            }
         } );
+    }
+
+    static string GetExampleTitle ( string? description, string fallback ) {
+        if (string.IsNullOrWhiteSpace ( description ))
+            return fallback;
+
+        var firstLine = description.Trim ().Split ( '\n' ) [ 0 ];
+        var title = firstLine.IndexOf ( ". ", StringComparison.Ordinal ) switch {
+            > 0 and var sentenceEnd => firstLine [ ..sentenceEnd ],
+            _ => firstLine
+        };
+
+        title = title.Replace ( "`", "" ).Replace ( "*", "" ).Trim ().TrimEnd ( '.', ':' );
+        return title.Length > 70 ? title [ ..67 ].TrimEnd () + "..." : title;
     }
 
     /// <summary>
@@ -562,7 +739,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                     cblock.ClassList.Add ( $"language-{language}" );
                     cblock.ClassList.Add ( $"lang-{language}" );
                 }
-                cblock += code;
+                cblock += new RenderableText ( code );
             } );
         } );
     }
@@ -711,8 +888,6 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <returns>The exported HTML string.</returns>
     public string ExportHtml ( ApiDocumentation d ) {
 
-        var request = HttpContext.GetCurrentContext ()?.Request;
-
         HtmlElement html = new HtmlElement ( "html" );
         html.Attributes [ "lang" ] = "en";
 
@@ -726,6 +901,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 .SelfClosed ();
 
             head += new HtmlElement ( "title", PageTitle );
+            head += new HtmlElement ( "script", RenderableText.Raw ( Scripts.ThemeScript ) );
             head += new HtmlElement ( "style", RenderableText.Raw ( Style ) );
 
             if (Head != null) {
@@ -734,40 +910,6 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
         } );
 
         html += new HtmlElement ( "body", body => {
-
-            if (request?.Query [ "embed" ] == "iframe" &&
-                request.Query [ "embed-endpoint" ].Value is { Length: > 0 } requestingEndpoint) {
-
-                var endpoint = d.Endpoints.FirstOrDefault ( e =>
-                    string.Equals ( e.Name, requestingEndpoint, StringComparison.OrdinalIgnoreCase ) );
-
-                if (endpoint != null) {
-                    body.ClassList.Add ( "iframe-mode" );
-                    html.ClassList.Add ( "iframe-mode" );
-
-                    body += new HtmlElement ( "style", RenderableText.Raw ( Html.Style.EmbedStyles ) );
-
-                    body += new HtmlElement ( "div", container => {
-                        container.ClassList.Add ( "iframe-container" );
-
-                        container += new HtmlElement ( "section", section => {
-                            section.ClassList.Add ( "endpoint" );
-
-                            var endpointElement = WriteEndpointDescription ( endpoint );
-                            if (endpointElement != null) {
-                                endpointElement.Attributes [ "open" ] = "open";
-                                section += endpointElement;
-                            }
-                        } );
-                    } );
-
-                    if (!string.IsNullOrEmpty ( Script )) {
-                        body += new HtmlElement ( "script", RenderableText.Raw ( Script ) );
-                    }
-                    body += new HtmlElement ( "script", RenderableText.Raw ( Scripts.DefaultScript ) );
-                    return;
-                }
-            }
 
             body += new HtmlElement ( "div", wrapper => {
                 wrapper.ClassList.Add ( "page-wrapper" );
@@ -811,6 +953,10 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
 
                 wrapper += new HtmlElement ( "main", main => {
 
+                    if (!IncludeSidebar) {
+                        main += WriteThemeSwitcher ();
+                    }
+
                     main += WriteMainTitle ( d );
 
                     main += Header;
@@ -845,7 +991,8 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 body += new HtmlElement ( "script", RenderableText.Raw ( Script ) );
             }
 
-            body += new HtmlElement ( "script", RenderableText.Raw ( Scripts.DefaultScript ) );
+            body += new HtmlElement ( "script",
+                RenderableText.Raw ( $"({Scripts.DefaultScript})(document, location.href.split('#')[0]);" ) );
         } );
 
         return "<!DOCTYPE html>\n" + html.ToString ();
@@ -859,19 +1006,67 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     public HttpContent ExportDocumentationContent ( ApiDocumentation documentation ) {
 
         var request = HttpContext.GetCurrentContext ()?.Request;
-        if (request?.Query [ "embed-target" ].Value is { Length: > 0 } requestingIframe) {
+        if (request?.Query [ "embed-target" ].Value is { Length: > 0 } requestingEndpoint) {
 
-            var uri = new UrlBuilder ( request.Query [ "r" ].GetString () )
-                .ClearQuery ()
-                .AddQuery ( "embed", "iframe" )
-                .AddQuery ( "embed-endpoint", requestingIframe );
+            var endpoint = documentation.Endpoints.FirstOrDefault ( e =>
+                string.Equals ( e.Name, requestingEndpoint, StringComparison.OrdinalIgnoreCase ) );
 
-            return new StringContent ( $"""
-                document.write(`<style>{JavaScriptEncoder.Default.Encode ( Html.Style.EmbedTargetStyles )}</style>`);
-                document.write(`<iframe class="sisk-embed-target" src="{uri.Uri.ToString ()}"></iframe>`);
+            if (endpoint is null) {
+                return new StringContent ( "console.error('Sisk documentation: embedded endpoint not found.');",
+                    Encoding.UTF8, "text/javascript" );
+            }
+
+            var container = new HtmlElement ( "div", container => {
+                container.ClassList.Add ( "sisk-embed" );
+                container.Attributes [ "part" ] = "container";
+
+                container += new HtmlElement ( "section", section => {
+                    section.ClassList.Add ( "endpoint" );
+
+                    if (WriteEndpointDescription ( endpoint ) is { } endpointElement) {
+                        endpointElement.Attributes [ "open" ] = "open";
+                        section += endpointElement;
+                    }
+                } );
+            } );
+
+            var shadowStyle = Style
+                .Replace ( ":root:not([data-theme=\"light\"])", ":host(:not([data-theme=\"light\"]))" )
+                .Replace ( ":root[data-theme=\"dark\"]", ":host([data-theme=\"dark\"])" )
+                .Replace ( ":root", ":host" );
+
+            var shadowHtml = $"<style>{shadowStyle}\n{Html.Style.EmbedStyles}</style>{container}";
+
+            return new StringContent ( $$"""
+                (() => {
+                    const script = document.currentScript;
+                    const host = document.createElement('div');
+                    host.className = 'sisk-embed-target';
+                    if (script.dataset.theme) host.dataset.theme = script.dataset.theme;
+                    script.parentNode.insertBefore(host, script);
+
+                    const root = host.attachShadow({ mode: 'open' });
+                    root.innerHTML = "{{JavaScriptEncoder.Default.Encode ( shadowHtml )}}";
+
+                    // Prism.js highlights the whole host document and replaces window.Prism when loaded,
+                    // so it is forced into manual mode and the host page global is restored afterwards.
+                    const hostPrism = window.Prism;
+                    window.Prism = { manual: true };
+                    {{Script}}
+                    const prism = window.Prism;
+                    window.Prism = hostPrism;
+                    if (prism.highlightAllUnder) prism.highlightAllUnder(root);
+
+                    ({{Scripts.DefaultScript}})(root, "{{JavaScriptEncoder.Default.Encode ( GetDocumentationUrl ( request ) )}}");
+                })();
                 """, Encoding.UTF8, "text/javascript" );
         }
 
         return new HtmlContent ( ExportHtml ( documentation ), Encoding.UTF8 );
     }
+
+    static string GetDocumentationUrl ( HttpRequest request ) =>
+        Uri.TryCreate ( request.Query [ "r" ].Value, UriKind.Absolute, out var referer ) && referer is { Scheme: "http" or "https" }
+            ? referer.GetLeftPart ( UriPartial.Path )
+            : request.Uri.GetLeftPart ( UriPartial.Path );
 }
