@@ -35,6 +35,8 @@ static class HttpRequestReader {
 
     private static ReadOnlySpan<byte> TrimChars => " \t\r\n"u8;
 
+    private static readonly SearchValues<byte> MethodTokenChars = SearchValues.Create ( "!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8 );
+
     [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
     public static async ValueTask<(HttpRequestBase? Request, int BufferedLength)> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, int bufferedLength, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
@@ -55,6 +57,7 @@ static class HttpRequestReader {
 
                 if (totalRead >= bufferLength) {
                     Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
+                    await stream.WriteAsync ( "HTTP/1.1 431 Request Header Fields Too Large\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"u8.ToArray (), cancellationToken ).ConfigureAwait ( false );
                     return (null, totalRead);
                 }
 
@@ -146,6 +149,10 @@ static class HttpRequestReader {
         }
 
         ReadOnlyMemory<byte> method = buffer.Slice ( 0, methodEnd );
+        if (method.Span.ContainsAnyExcept ( MethodTokenChars )) {
+            Logger.LogInformation ( $"failed to parse HTTP request: request method is not a valid token" );
+            return null;
+        }
 
         int pathStart = methodEnd + 1;
         int pathEndRel = span.Slice ( pathStart ).IndexOf ( Space );
@@ -162,6 +169,10 @@ static class HttpRequestReader {
         }
         if (path.Span.Contains ( NumberSign )) {
             Logger.LogInformation ( $"failed to parse HTTP request: fragment is not allowed in request target" );
+            return null;
+        }
+        if (path.Span.IndexOfAnyExceptInRange ( (byte) 0x21, (byte) 0x7E ) >= 0) {
+            Logger.LogInformation ( $"failed to parse HTTP request: request target contains invalid bytes" );
             return null;
         }
 
