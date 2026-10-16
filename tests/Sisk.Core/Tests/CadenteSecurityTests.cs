@@ -132,6 +132,47 @@ public sealed class CadenteSecurityTests {
     }
 
     [TestMethod]
+    public async Task HttpsListener_OversizedPlainHttpRequest_RespondsWithSingle431 () {
+        int port = GetFreePort ();
+        using var certificate = CertificateHelper.CreateDevelopmentCertificate ( "localhost" );
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = new EmptyHandler (),
+            HttpsOptions = new HttpsOptions ( certificate )
+        };
+        host.TimeoutManager.SslHandshakeTimeout = CloseWaitTimeout;
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            "GET / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            $"X-Large: {new string ( 'a', 9000 )}\r\n" +
+            "\r\n" );
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        using var responseBuffer = new MemoryStream ();
+        byte [] buffer = new byte [ 1024 ];
+        try {
+            int read;
+            while ((read = await stream.ReadAsync ( buffer, ioCts.Token )) > 0) {
+                responseBuffer.Write ( buffer, 0, read );
+            }
+        }
+        catch (IOException) {
+        }
+
+        string response = Encoding.ASCII.GetString ( responseBuffer.ToArray () );
+
+        StringAssert.StartsWith ( response, "HTTP/1.1 431" );
+        Assert.AreEqual ( -1, response.IndexOf ( "HTTP/1.1 ", 1, StringComparison.Ordinal ), "Only one response must be written." );
+    }
+
+    [TestMethod]
     public async Task FixedLengthResponseStream_WithoutWrite_FlushesHeadersBeforeKeepAliveRead () {
         int port = GetFreePort ();
         using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
@@ -231,6 +272,101 @@ public sealed class CadenteSecurityTests {
             response.StartsWith ( "HTTP/1.1 4", StringComparison.Ordinal ) ||
             response.StartsWith ( "HTTP/1.1 5", StringComparison.Ordinal ),
             $"Unsupported Transfer-Encoding values must not produce a successful response. Response: {response}" );
+    }
+
+    [DataTestMethod]
+    [DataRow ( "GET", "/admin\u0080x" )]
+    [DataRow ( "GET", "/admin\u001bx" )]
+    [DataRow ( "GET", "/admin\nx" )]
+    [DataRow ( "GET", "/admin\0x" )]
+    [DataRow ( "GET", "/admin\u007fx" )]
+    [DataRow ( "G\u0001T", "/" )]
+    [DataRow ( "G@T", "/" )]
+    [DataRow ( "GET\u0080", "/" )]
+    public async Task InvalidRequestLineBytes_AreRejectedBeforeHandler ( string method, string target ) {
+        int port = GetFreePort ();
+        var handler = new ContextInvocationHandler ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = handler
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.Latin1.GetBytes (
+            $"{method} {target} HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        string response = await ReadHeadersAsync ( stream, ioCts.Token );
+
+        Assert.IsFalse ( handler.ContextCreated.Task.IsCompleted, "Invalid request lines must be rejected before user handlers run." );
+        Assert.IsFalse ( response.StartsWith ( "HTTP/1.1 2", StringComparison.Ordinal ), $"Invalid request lines must not produce a successful response. Response: {response}" );
+    }
+
+    [TestMethod]
+    public async Task OversizedHeaderBlock_RespondsWith431 () {
+        int port = GetFreePort ();
+        var handler = new ContextInvocationHandler ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = handler
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            "GET / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            $"X-Large: {new string ( 'a', 9000 )}\r\n" +
+            "\r\n" );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        string response = await ReadHeadersAsync ( stream, ioCts.Token );
+
+        Assert.IsFalse ( handler.ContextCreated.Task.IsCompleted, "Oversized header blocks must be rejected before user handlers run." );
+        StringAssert.StartsWith ( response, "HTTP/1.1 431" );
+    }
+
+    [DataTestMethod]
+    [DataRow ( "GET", "/a?b=c%20d" )]
+    [DataRow ( "get", "/" )]
+    [DataRow ( "M-SEARCH", "/" )]
+    public async Task ValidRequestLine_StillReachesHandler ( string method, string target ) {
+        int port = GetFreePort ();
+        var handler = new ContextInvocationHandler ();
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = handler
+        };
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            $"{method} {target} HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" );
+
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        await handler.ContextCreated.Task.WaitAsync ( CloseWaitTimeout );
     }
 
     [TestMethod]

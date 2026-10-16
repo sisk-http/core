@@ -62,7 +62,12 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
 
         while (!disposedValue) {
 
-            (HttpRequestBase? nextRequest, bufferedRequestLength) = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, bufferedRequestLength, networkStream, shutdownToken, headerParsingTimeout, headerReadTimeoutSource ).ConfigureAwait ( false );
+            (HttpRequestBase? nextRequest, bufferedRequestLength, bool headersTooLarge) = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, bufferedRequestLength, networkStream, shutdownToken, headerParsingTimeout, headerReadTimeoutSource ).ConfigureAwait ( false );
+
+            if (headersTooLarge) {
+                await networkStream.WriteAsync ( HttpResponseSerializer.GetRawMessage ( "Request header fields too large.", 431, "Request Header Fields Too Large" ), shutdownToken ).ConfigureAwait ( false );
+                await networkStream.FlushAsync ( shutdownToken ).ConfigureAwait ( false );
+            }
 
             if (nextRequest is null) {
                 Logger.LogInformation ( $"TryReadHttpRequestAsync returned no request" );

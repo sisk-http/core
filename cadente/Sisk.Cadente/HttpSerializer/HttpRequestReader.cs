@@ -35,9 +35,11 @@ static class HttpRequestReader {
 
     private static ReadOnlySpan<byte> TrimChars => " \t\r\n"u8;
 
+    private static readonly SearchValues<byte> MethodTokenChars = SearchValues.Create ( "!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8 );
+
     [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public static async ValueTask<(HttpRequestBase? Request, int BufferedLength)> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, int bufferedLength, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
+    public static async ValueTask<(HttpRequestBase? Request, int BufferedLength, bool HeadersTooLarge)> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, int bufferedLength, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
 
         int bufferLength = sharedBuffer.Length;
         int totalRead = bufferedLength;
@@ -50,18 +52,18 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> searchRegion = sharedBuffer.Span.Slice ( effectiveSearchStart, totalRead - effectiveSearchStart );
 
                 if (searchRegion.IndexOf ( HeaderTerminator ) >= 0) {
-                    return (ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) ), totalRead);
+                    return (ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) ), totalRead, false);
                 }
 
                 if (totalRead >= bufferLength) {
                     Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
-                    return (null, totalRead);
+                    return (null, totalRead, true);
                 }
 
                 long currentTicks = Environment.TickCount64;
                 if (currentTicks >= deadlineTicks) {
                     Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
-                    return (null, totalRead);
+                    return (null, totalRead, false);
                 }
 
                 int remainingMs = (int) (deadlineTicks - currentTicks);
@@ -78,7 +80,7 @@ static class HttpRequestReader {
 
                 if (bytesRead == 0) {
                     Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
-                    return (null, totalRead);
+                    return (null, totalRead, false);
                 }
 
                 totalRead += bytesRead;
@@ -86,19 +88,19 @@ static class HttpRequestReader {
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
             Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
         catch (OperationCanceledException) {
             Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
         catch (SocketException sex) {
             Logger.LogInformation ( $"failed to parse HTTP request: {sex.Message}" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
         catch (Exception ex) {
             Logger.LogInformation ( $"failed to parse HTTP request (exception): {ex.Message}" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
     }
 
@@ -146,6 +148,10 @@ static class HttpRequestReader {
         }
 
         ReadOnlyMemory<byte> method = buffer.Slice ( 0, methodEnd );
+        if (method.Span.ContainsAnyExcept ( MethodTokenChars )) {
+            Logger.LogInformation ( $"failed to parse HTTP request: request method is not a valid token" );
+            return null;
+        }
 
         int pathStart = methodEnd + 1;
         int pathEndRel = span.Slice ( pathStart ).IndexOf ( Space );
@@ -162,6 +168,10 @@ static class HttpRequestReader {
         }
         if (path.Span.Contains ( NumberSign )) {
             Logger.LogInformation ( $"failed to parse HTTP request: fragment is not allowed in request target" );
+            return null;
+        }
+        if (path.Span.IndexOfAnyExceptInRange ( (byte) 0x21, (byte) 0x7E ) >= 0) {
+            Logger.LogInformation ( $"failed to parse HTTP request: request target contains invalid bytes" );
             return null;
         }
 
