@@ -30,13 +30,14 @@ public sealed class CadenteExceptionPropagationTests {
 
         var exceptionHandler = new CapturingExceptionHandler ();
         using var errorWriter = new StringWriter ();
+        var errorLog = new LogStream ( errorWriter );
         using var server = HttpServer.CreateBuilder ()
             .UseEngine ( new CadenteHttpServerEngine () )
             .UseListeningPort ( $"http://127.0.0.1:{port}/" )
             .UseConfiguration ( configuration => {
                 configuration.ThrowExceptions = throwExceptions;
                 configuration.AccessLogsStream = null;
-                configuration.ErrorsLogsStream = new LogStream ( errorWriter );
+                configuration.ErrorsLogsStream = errorLog;
             } )
             .UseHandler ( exceptionHandler )
             .UseRouter ( router => {
@@ -60,7 +61,21 @@ public sealed class CadenteExceptionPropagationTests {
         Exception propagatedException = await exceptionHandler.ExceptionTask.WaitAsync ( TimeSpan.FromSeconds ( 3 ) );
         Assert.IsInstanceOfType<InvalidOperationException> ( propagatedException );
         Assert.AreEqual ( "Cadente probe exception.", propagatedException.Message );
-        StringAssert.Contains ( errorWriter.ToString (), "Cadente probe exception." );
+
+        string errorOutput;
+        var deadline = DateTime.UtcNow.AddSeconds ( 3 );
+        while (true) {
+            await errorLog.FlushAsync ();
+            errorOutput = errorWriter.ToString ();
+
+            if (errorOutput.Contains ( "Cadente probe exception." ) || DateTime.UtcNow >= deadline) {
+                break;
+            }
+
+            await Task.Delay ( 10 );
+        }
+
+        StringAssert.Contains ( errorOutput, "Cadente probe exception." );
 
         using HttpResponseMessage aliveResponse = await client.GetAsync ( $"http://127.0.0.1:{port}/alive" );
         Assert.AreEqual ( HttpStatusCode.OK, aliveResponse.StatusCode );
