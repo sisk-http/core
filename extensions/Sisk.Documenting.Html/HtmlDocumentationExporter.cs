@@ -859,7 +859,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <param name="unsafeId">The ID to transform, which may contain invalid characters.</param>
     /// <returns>The transformed ID, which is safe for use in HTML.</returns>
     protected string TransformId ( string unsafeId ) {
-        string hash = Convert.ToHexString ( SHA256.HashData ( Encoding.UTF8.GetBytes ( unsafeId ) ) ) [..8].ToLowerInvariant ();
+        string hash = Convert.ToHexString ( SHA256.HashData ( Encoding.UTF8.GetBytes ( unsafeId ) ) ) [..16].ToLowerInvariant ();
         return $"{new string ( unsafeId.Where ( char.IsLetterOrDigit ).ToArray () )}-{hash}";
     }
 
