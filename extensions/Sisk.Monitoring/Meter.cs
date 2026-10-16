@@ -9,6 +9,7 @@ public sealed class Meter {
     private readonly TimeSpan _slidingWindowDuration;
     private readonly Dictionary<long, double> _buckets = new ();
     private readonly object _sync = new ();
+    private long _prunedThreshold = long.MinValue;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Meter"/> class with a default 24-hour sliding window.
@@ -126,9 +127,15 @@ public sealed class Meter {
 
     void PruneExpiredBuckets ( DateTime now ) {
         long threshold = ToBucketKey ( now - _slidingWindowDuration );
+        if (threshold == _prunedThreshold) {
+            return;
+        }
 
-        foreach (long key in _buckets.Keys.Where ( k => k < threshold ).ToArray ()) {
-            _buckets.Remove ( key );
+        _prunedThreshold = threshold;
+        foreach (long key in _buckets.Keys) {
+            if (key < threshold) {
+                _buckets.Remove ( key );
+            }
         }
     }
 
