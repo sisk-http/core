@@ -5,7 +5,7 @@ namespace Sisk.Monitoring;
 /// </summary>
 public sealed class Counter {
 
-    private readonly List<CounterEntry> _counts;
+    private readonly PriorityQueue<double, DateTime> _counts;
     private readonly object _sync = new ();
 
     /// <summary>
@@ -21,11 +21,9 @@ public sealed class Counter {
     /// <param name="initialValue">The initial value of the counter.</param>
     /// <param name="initialDuration">The duration for which the initial value remains valid.</param>
     public Counter ( double initialValue, TimeSpan initialDuration ) {
-        if (initialValue == 0) {
-            _counts = new ();
-        }
-        else {
-            _counts = new () { new CounterEntry ( initialValue, DateTime.Now + initialDuration ) };
+        _counts = new ();
+        if (initialValue != 0) {
+            _counts.Enqueue ( initialValue, DateTime.Now + initialDuration );
         }
         DefaultDuration = initialDuration;
     }
@@ -44,7 +42,7 @@ public sealed class Counter {
         get {
             lock (_sync) {
                 PruneExpiredEntries ();
-                return _counts.Sum ( c => c.Value );
+                return _counts.UnorderedItems.Sum ( c => c.Element );
             }
         }
     }
@@ -57,7 +55,7 @@ public sealed class Counter {
     public void Increment ( double by, TimeSpan duration ) {
         lock (_sync) {
             PruneExpiredEntries ();
-            _counts.Add ( new CounterEntry ( by, DateTime.Now + duration ) );
+            _counts.Enqueue ( by, DateTime.Now + duration );
         }
     }
 
@@ -88,8 +86,8 @@ public sealed class Counter {
     internal CounterIncrementSnapshot [] ExportState () {
         lock (_sync) {
             PruneExpiredEntries ();
-            return _counts
-                .Select ( entry => new CounterIncrementSnapshot ( entry.Value, entry.ExpiresAt ) )
+            return _counts.UnorderedItems
+                .Select ( entry => new CounterIncrementSnapshot ( entry.Element, entry.Priority ) )
                 .ToArray ();
         }
     }
@@ -99,16 +97,17 @@ public sealed class Counter {
 
         lock (_sync) {
             _counts.Clear ();
-            _counts.AddRange ( increments
+            _counts.EnqueueRange ( increments
                 .Where ( increment => increment.ExpiresAt > now )
-                .Select ( increment => new CounterEntry ( increment.Value, increment.ExpiresAt ) ) );
+                .Select ( increment => (increment.Value, increment.ExpiresAt) ) );
         }
     }
 
     void PruneExpiredEntries () {
         DateTime now = DateTime.Now;
-        _counts.RemoveAll ( entry => entry.ExpiresAt <= now );
-    }
 
-    record struct CounterEntry ( double Value, DateTime ExpiresAt );
+        while (_counts.TryPeek ( out _, out DateTime expiresAt ) && expiresAt <= now) {
+            _counts.Dequeue ();
+        }
+    }
 }
