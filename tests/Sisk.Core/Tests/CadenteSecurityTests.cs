@@ -132,6 +132,47 @@ public sealed class CadenteSecurityTests {
     }
 
     [TestMethod]
+    public async Task HttpsListener_OversizedPlainHttpRequest_RespondsWithSingle431 () {
+        int port = GetFreePort ();
+        using var certificate = CertificateHelper.CreateDevelopmentCertificate ( "localhost" );
+        using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {
+            Handler = new EmptyHandler (),
+            HttpsOptions = new HttpsOptions ( certificate )
+        };
+        host.TimeoutManager.SslHandshakeTimeout = CloseWaitTimeout;
+        host.Start ();
+
+        using var client = new TcpClient ();
+        using var ioCts = new CancellationTokenSource ( CloseWaitTimeout );
+        await client.ConnectAsync ( IPAddress.Loopback, port, ioCts.Token );
+
+        await using var stream = client.GetStream ();
+        byte [] requestBytes = Encoding.ASCII.GetBytes (
+            "GET / HTTP/1.1\r\n" +
+            $"Host: localhost:{port}\r\n" +
+            $"X-Large: {new string ( 'a', 9000 )}\r\n" +
+            "\r\n" );
+        await stream.WriteAsync ( requestBytes, ioCts.Token );
+        await stream.FlushAsync ( ioCts.Token );
+
+        using var responseBuffer = new MemoryStream ();
+        byte [] buffer = new byte [ 1024 ];
+        try {
+            int read;
+            while ((read = await stream.ReadAsync ( buffer, ioCts.Token )) > 0) {
+                responseBuffer.Write ( buffer, 0, read );
+            }
+        }
+        catch (IOException) {
+        }
+
+        string response = Encoding.ASCII.GetString ( responseBuffer.ToArray () );
+
+        StringAssert.StartsWith ( response, "HTTP/1.1 431" );
+        Assert.AreEqual ( -1, response.IndexOf ( "HTTP/1.1 ", 1, StringComparison.Ordinal ), "Only one response must be written." );
+    }
+
+    [TestMethod]
     public async Task FixedLengthResponseStream_WithoutWrite_FlushesHeadersBeforeKeepAliveRead () {
         int port = GetFreePort ();
         using var host = new HttpHost ( new IPEndPoint ( IPAddress.Loopback, port ) ) {

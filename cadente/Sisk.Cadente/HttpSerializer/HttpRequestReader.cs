@@ -39,7 +39,7 @@ static class HttpRequestReader {
 
     [SkipLocalsInit]
     [MethodImpl ( MethodImplOptions.AggressiveOptimization )]
-    public static async ValueTask<(HttpRequestBase? Request, int BufferedLength)> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, int bufferedLength, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
+    public static async ValueTask<(HttpRequestBase? Request, int BufferedLength, bool HeadersTooLarge)> TryReadHttpRequestAsync ( Memory<byte> sharedBuffer, int bufferedLength, Stream stream, CancellationToken cancellationToken = default, int headerReadTimeoutMs = DefaultHeaderReadTimeoutMs, CancellationTokenSource? timeoutSource = null ) {
 
         int bufferLength = sharedBuffer.Length;
         int totalRead = bufferedLength;
@@ -52,19 +52,18 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> searchRegion = sharedBuffer.Span.Slice ( effectiveSearchStart, totalRead - effectiveSearchStart );
 
                 if (searchRegion.IndexOf ( HeaderTerminator ) >= 0) {
-                    return (ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) ), totalRead);
+                    return (ParseHttpRequest ( sharedBuffer.Slice ( 0, totalRead ) ), totalRead, false);
                 }
 
                 if (totalRead >= bufferLength) {
                     Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
-                    await stream.WriteAsync ( "HTTP/1.1 431 Request Header Fields Too Large\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"u8.ToArray (), cancellationToken ).ConfigureAwait ( false );
-                    return (null, totalRead);
+                    return (null, totalRead, true);
                 }
 
                 long currentTicks = Environment.TickCount64;
                 if (currentTicks >= deadlineTicks) {
                     Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
-                    return (null, totalRead);
+                    return (null, totalRead, false);
                 }
 
                 int remainingMs = (int) (deadlineTicks - currentTicks);
@@ -81,7 +80,7 @@ static class HttpRequestReader {
 
                 if (bytesRead == 0) {
                     Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
-                    return (null, totalRead);
+                    return (null, totalRead, false);
                 }
 
                 totalRead += bytesRead;
@@ -89,19 +88,19 @@ static class HttpRequestReader {
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
             Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
         catch (OperationCanceledException) {
             Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
         catch (SocketException sex) {
             Logger.LogInformation ( $"failed to parse HTTP request: {sex.Message}" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
         catch (Exception ex) {
             Logger.LogInformation ( $"failed to parse HTTP request (exception): {ex.Message}" );
-            return (null, totalRead);
+            return (null, totalRead, false);
         }
     }
 
