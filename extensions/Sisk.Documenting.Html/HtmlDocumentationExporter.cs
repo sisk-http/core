@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using Sisk.Core.Helpers;
@@ -251,7 +252,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 section += new HtmlElement ( "div", FormatNavApiReference )
                     .WithClass ( "nav-section-title" );
 
-                var groups = documentation.Endpoints.DistinctBy ( e => $"{e.RouteMethod} {e.Name}" ).GroupBy ( e => e.Group );
+                var groups = documentation.Endpoints.DistinctBy ( e => $"{e.RouteMethod} {e.Path}" ).GroupBy ( e => e.Group );
                 foreach (var group in groups) {
                     section += new HtmlElement ( "div", navGroup => {
                         navGroup.ClassList.Add ( "nav-group" );
@@ -270,7 +271,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                             foreach (var endpoint in group.OrderBy ( i => i.Path.Length )) {
                                 navItems += new HtmlElement ( "a", navItem => {
                                     navItem.ClassList.Add ( "nav-item" );
-                                    navItem.Attributes [ "href" ] = $"#{TransformId ( endpoint.Name )}";
+                                    navItem.Attributes [ "href" ] = $"#{GetEndpointId ( endpoint )}";
 
                                     navItem += new HtmlElement ( "span", endpoint.RouteMethod.ToString ().ToUpper () )
                                         .WithClass ( "method-badge" )
@@ -322,7 +323,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
             details.ClassList.Add ( "endpoint-description" );
 
             details += new HtmlElement ( "summary", summary => {
-                summary.Id = TransformId ( endpoint.Name );
+                summary.Id = GetEndpointId ( endpoint );
 
                 summary += new HtmlElement ( "span", endpoint.RouteMethod )
                     .WithStyle ( new { backgroundColor = GetRouteMethodHexColor ( endpoint.RouteMethod ) + "35" } );
@@ -361,7 +362,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                         if (request?.Query [ "embed-target" ].Value is { Length: > 0 }) {
                             copyWrapper += new HtmlElement ( "a", btn => {
                                 btn.ClassList.Add ( "open-ext-button" );
-                                btn.Attributes [ "href" ] = $"{GetDocumentationUrl ( request )}#{TransformId ( endpoint.Name )}";
+                                btn.Attributes [ "href" ] = $"{GetDocumentationUrl ( request )}#{GetEndpointId ( endpoint )}";
                                 btn.Attributes [ "target" ] = "_blank";
                                 btn.Attributes [ "aria-label" ] = "Open in new tab";
                                 btn += RenderableText.Raw ( ExternalLinkIcon );
@@ -381,7 +382,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                             dropdown += new HtmlElement ( "button", item => {
                                 item.ClassList.Add ( "dropdown-item" );
                                 item.Attributes [ "data-action" ] = "copy-link";
-                                item.Attributes [ "data-target-id" ] = TransformId ( endpoint.Name );
+                                item.Attributes [ "data-target-id" ] = GetEndpointId ( endpoint );
                                 item.Attributes [ "type" ] = "button";
                                 item += "Copy link";
                             } );
@@ -390,7 +391,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                                 item.ClassList.Add ( "dropdown-item" );
                                 item.Attributes [ "data-action" ] = "copy-markdown";
                                 item.Attributes [ "data-name" ] = endpoint.Name;
-                                item.Attributes [ "data-target-id" ] = TransformId ( endpoint.Name );
+                                item.Attributes [ "data-target-id" ] = GetEndpointId ( endpoint );
                                 item.Attributes [ "type" ] = "button";
                                 item += "Copy markdown";
                             } );
@@ -398,7 +399,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                             dropdown += new HtmlElement ( "button", item => {
                                 item.ClassList.Add ( "dropdown-item" );
                                 item.Attributes [ "data-action" ] = "copy-embed";
-                                item.Attributes [ "data-endpoint-name" ] = endpoint.Name;
+                                item.Attributes [ "data-endpoint-id" ] = GetEndpointId ( endpoint );
                                 item.Attributes [ "type" ] = "button";
                                 item += "Copy embed";
                             } );
@@ -567,7 +568,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 if (endpoint.RequestExamples.Length > 0) {
                     examplesColumn += CreateExampleCard (
                         FormatEndpointRequestExamples.TrimEnd ( ':' ),
-                        $"req-{TransformId ( endpoint.Name )}",
+                        $"req-{GetEndpointId ( endpoint )}",
                         showTabs: false,
                         endpoint.RequestExamples
                             .Select ( ( req, index ) => (
@@ -579,14 +580,14 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                                     req.Example,
                                     req.ExampleLanguage,
                                     req.JsonSchema,
-                                    $"req-{TransformId ( endpoint.Name )}-{index}" ) ) )
+                                    $"req-{GetEndpointId ( endpoint )}-{index}" ) ) )
                             .ToArray () );
                 }
 
                 if (endpoint.Responses.Length > 0) {
                     examplesColumn += CreateExampleCard (
                         FormatEndpointResponses.TrimEnd ( ':' ),
-                        $"res-{TransformId ( endpoint.Name )}",
+                        $"res-{GetEndpointId ( endpoint )}",
                         showTabs: true,
                         endpoint.Responses
                             .Select ( ( res, index ) => (
@@ -602,7 +603,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                                     res.Example,
                                     res.ExampleLanguage,
                                     res.JsonSchema,
-                                    $"res-{TransformId ( endpoint.Name )}-{index}" ) ) )
+                                    $"res-{GetEndpointId ( endpoint )}-{index}" ) ) )
                             .ToArray () );
                 }
 
@@ -858,7 +859,17 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
     /// <param name="unsafeId">The ID to transform, which may contain invalid characters.</param>
     /// <returns>The transformed ID, which is safe for use in HTML.</returns>
     protected string TransformId ( string unsafeId ) {
-        return new string ( unsafeId.Where ( char.IsLetterOrDigit ).ToArray () );
+        string hash = Convert.ToHexString ( SHA256.HashData ( Encoding.UTF8.GetBytes ( unsafeId ) ) ) [..16].ToLowerInvariant ();
+        return $"{new string ( unsafeId.Where ( char.IsLetterOrDigit ).ToArray () )}-{hash}";
+    }
+
+    /// <summary>
+    /// Gets the unique HTML ID of an API endpoint, derived from its method and route path.
+    /// </summary>
+    /// <param name="endpoint">The API endpoint.</param>
+    /// <returns>The endpoint ID, which is safe for use in HTML and CSS selectors.</returns>
+    protected string GetEndpointId ( ApiEndpoint endpoint ) {
+        return "ep-" + TransformId ( $"{endpoint.RouteMethod} {endpoint.Path}" );
     }
 
     /// <summary>
@@ -962,14 +973,14 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                     main += Header;
 
                     var groups = d.Endpoints
-                        .DistinctBy ( e => $"{e.RouteMethod} {e.Name}" )
+                        .DistinctBy ( e => $"{e.RouteMethod} {e.Path}" )
                         .GroupBy ( e => e.Group );
 
                     foreach (var item in groups) {
 
                         main += new HtmlElement ( "div", groupSection => {
                             groupSection.ClassList.Add ( "group-section" );
-                            groupSection.Id = TransformId ( item.Key ?? "Requests" );
+                            groupSection.Id = "grp-" + TransformId ( item.Key ?? "Requests" );
 
                             groupSection += new HtmlElement ( "h2", $"{item.Key ?? "Requests"}" );
 
@@ -1008,8 +1019,9 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
         var request = HttpContext.GetCurrentContext ()?.Request;
         if (request?.Query [ "embed-target" ].Value is { Length: > 0 } requestingEndpoint) {
 
-            var endpoint = documentation.Endpoints.FirstOrDefault ( e =>
-                string.Equals ( e.Name, requestingEndpoint, StringComparison.OrdinalIgnoreCase ) );
+            var endpoint = documentation.Endpoints.FirstOrDefault ( e => GetEndpointId ( e ) == requestingEndpoint )
+                ?? documentation.Endpoints.FirstOrDefault ( e =>
+                    string.Equals ( e.Name, requestingEndpoint, StringComparison.OrdinalIgnoreCase ) );
 
             if (endpoint is null) {
                 return new StringContent ( "console.error('Sisk documentation: embedded endpoint not found.');",

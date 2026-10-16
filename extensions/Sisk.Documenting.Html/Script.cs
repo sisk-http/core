@@ -158,8 +158,8 @@ internal class Scripts {
                     navigator.clipboard.writeText(md);
                     showToast('Markdown copied!');
                 } else if (action === 'copy-embed') {
-                    const endpointName = item.getAttribute('data-endpoint-name');
-                    const embedUrl = `${docsUrl.split('?')[0]}?embed-target=${encodeURIComponent(endpointName)}&r=${encodeURIComponent(docsUrl)}`;
+                    const endpointId = item.getAttribute('data-endpoint-id');
+                    const embedUrl = `${docsUrl.split('?')[0]}?embed-target=${encodeURIComponent(endpointId)}&r=${encodeURIComponent(docsUrl)}`;
                     navigator.clipboard.writeText(`<script src="${embedUrl}"></` + `script>`);
                     showToast('Embed copied!');
                 }
@@ -419,8 +419,12 @@ internal class Scripts {
             return { score: totalScore, matches: [...new Set(allMatches)].sort((a, b) => a - b) };
         }
 
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+        }
+
         function highlightMatches(text, indices) {
-            if (!indices || indices.length === 0) return text;
+            if (!indices || indices.length === 0) return escapeHtml(text);
             
             let result = '';
             let lastIdx = 0;
@@ -434,12 +438,12 @@ internal class Scripts {
                     i++;
                 }
                 
-                result += text.slice(lastIdx, start);
-                result += '<mark>' + text.slice(start, end + 1) + '</mark>';
+                result += escapeHtml(text.slice(lastIdx, start));
+                result += '<mark>' + escapeHtml(text.slice(start, end + 1)) + '</mark>';
                 lastIdx = end + 1;
             }
             
-            result += text.slice(lastIdx);
+            result += escapeHtml(text.slice(lastIdx));
             return result;
         }
 
@@ -488,13 +492,13 @@ internal class Scripts {
             }
             
             searchResults.innerHTML = results.map((item, index) => `
-                <a href="#${item.id}" class="search-result-item${index === selectedIndex ? ' selected' : ''}" data-index="${index}">
-                    <span class="method-badge" style="display:inline-block;padding:4px 8px;border-radius:4px;font-size:0.75em;font-weight:700;text-transform:uppercase;min-width:50px;text-align:center;background:${item.color}">${item.method}</span>
+                <a href="#${escapeHtml(item.id)}" class="search-result-item${index === selectedIndex ? ' selected' : ''}" data-index="${index}">
+                    <span class="method-badge" style="display:inline-block;padding:4px 8px;border-radius:4px;font-size:0.75em;font-weight:700;text-transform:uppercase;min-width:50px;text-align:center;background:${escapeHtml(item.color)}">${escapeHtml(item.method)}</span>
                     <div class="search-result-info">
                         <div class="search-result-name">${highlightMatches(item.name, item.nameMatches)}</div>
                         <div class="search-result-path">${highlightMatches(item.path, item.pathMatches)}</div>
                     </div>
-                    <span class="search-result-group">${item.group}</span>
+                    <span class="search-result-group">${escapeHtml(item.group)}</span>
                 </a>
             `).join('');
         }
@@ -591,7 +595,7 @@ internal class Scripts {
         root.querySelectorAll('.nav-item').forEach(item => {
             const href = item.getAttribute('href');
             if (href && href.startsWith('#')) {
-                const element = root.querySelector(href);
+                const element = root.getElementById(href.slice(1));
                 if (element) {
                     spySections.push({ item, element });
                 }
