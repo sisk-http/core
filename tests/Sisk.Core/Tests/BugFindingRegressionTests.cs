@@ -9,6 +9,7 @@
 
 using System.Net;
 using System.Text;
+using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using Sisk.Core.Http.FileSystem;
@@ -136,5 +137,36 @@ public sealed class BugFindingRegressionTests {
 
         Assert.AreEqual ( "plus", await client.GetStringAsync ( "static/a+b.txt" ) );
         Assert.AreEqual ( "space", await client.GetStringAsync ( "static/a%20b.txt" ) );
+    }
+
+    [TestMethod]
+    [DataRow ( false, true )]
+    [DataRow ( false, false )]
+    [DataRow ( true, true )]
+    [DataRow ( true, false )]
+    public async Task ThrowingForwardingResolverReturns500AndKeepsServing ( bool cadente, bool asyncProcessing ) {
+        using var host = TestHost.Start (
+            r => r.MapGet ( "/", ( HttpRequest req ) => new HttpResponse ( "ok" ) ),
+            config => {
+                config.ForwardingResolver = new ThrowingForwardingResolver ();
+                config.AsyncRequestProcessing = asyncProcessing;
+                if (cadente)
+                    config.Engine = new CadenteHttpServerEngine ();
+            } );
+        using var client = TestHost.CreateClient ( host );
+
+        using var bad = new HttpRequestMessage ( HttpMethod.Get, "" );
+        bad.Headers.Add ( "X-Throw", "1" );
+        var badResponse = await client.SendAsync ( bad );
+        Assert.AreEqual ( HttpStatusCode.InternalServerError, badResponse.StatusCode );
+
+        Assert.AreEqual ( "ok", await client.GetStringAsync ( "" ) );
+    }
+
+    private sealed class ThrowingForwardingResolver : ForwardingResolver {
+        public override IPAddress OnResolveClientAddress ( HttpRequest request, IPEndPoint connectingEndpoint ) =>
+            request.Headers [ "X-Throw" ] is null
+                ? connectingEndpoint.Address
+                : throw new FormatException ( "Invalid forwarded address." );
     }
 }

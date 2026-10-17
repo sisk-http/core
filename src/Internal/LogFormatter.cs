@@ -115,7 +115,7 @@ static class LogFormatter {
             "tm" => executionResult.Request.RequestedAt.Millisecond.ToString ( "D3", provider: null ),
             "tz" => $"{HttpServer.environmentUtcOffset.TotalHours:00}00",
 
-            "ri" => executionResult.Request.RemoteAddress.ToString (),
+            "ri" => executionResult.Request.remoteAddr?.ToString (),
             "rm" => executionResult.Request.Method.Method.ToUpperInvariant (),
             "rs" => executionResult.Request.Uri.Scheme,
             "ra" => executionResult.Request.Authority,

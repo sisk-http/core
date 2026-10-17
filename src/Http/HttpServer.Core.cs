@@ -504,48 +504,56 @@ finishSending:
             }
 
             executionResult.Elapsed = sw.Elapsed;
-            handler.HttpRequestClose ( executionResult );
 
-            if (executionResult.ServerException is not null) {
-                handler.Exception ( executionResult.ServerException );
+            try {
+                handler.HttpRequestClose ( executionResult );
+
+                if (executionResult.ServerException is not null) {
+                    handler.Exception ( executionResult.ServerException );
+                }
+
+                LogOutput logMode;
+
+                #region Logging
+                if (routerResult?.Result == RouteMatchResult.OptionsMatched) {
+                    logMode = currentConfig.OptionsLogMode;
+                }
+                else {
+                    logMode =
+                        srContext.LogMode ??
+                        srContext?.MatchedRoute?.LogMode ??
+                        LogOutput.Both;
+                }
+
+                bool canAccessLog = logMode.HasFlag ( LogOutput.AccessLog );
+                bool canErrorLog = logMode.HasFlag ( LogOutput.ErrorLog );
+
+                if (executionResult.ServerException is not null && canErrorLog) {
+                    string entry = LogFormatter.FormatExceptionEntr ( executionResult );
+                    errorLogStream?.WriteLine ( entry );
+                }
+
+                if (canAccessLog) {
+                    string line = LogFormatter.FormatAccessLogEntry ( currentConfig.AccessLogsFormat, executionResult );
+                    accessLogStream?.WriteLine ( line );
+                }
+                #endregion
             }
-
-            LogOutput logMode;
-
-            #region Logging
-            if (routerResult?.Result == RouteMatchResult.OptionsMatched) {
-                logMode = currentConfig.OptionsLogMode;
+            catch (Exception) {
+                // handlers and log formatting must never escape HandleContext: the engine
+                // callback would crash the process or leave the connection and the lock held
             }
-            else {
-                logMode =
-                    srContext.LogMode ??
-                    srContext?.MatchedRoute?.LogMode ??
-                    LogOutput.Both;
+            finally {
+                if (syncCompletionSources.TryPop ( out var pendingSyncCompletionSource )) {
+                    pendingSyncCompletionSource.TrySetResult ( executionResult );
+                }
+
+                if (!currentConfig.AsyncRequestProcessing) {
+                    Monitor.Exit ( this );
+                }
+
+                (request as IDisposable)?.Dispose ();
             }
-
-            bool canAccessLog = logMode.HasFlag ( LogOutput.AccessLog );
-            bool canErrorLog = logMode.HasFlag ( LogOutput.ErrorLog );
-
-            if (executionResult.ServerException is not null && canErrorLog) {
-                string entry = LogFormatter.FormatExceptionEntr ( executionResult );
-                errorLogStream?.WriteLine ( entry );
-            }
-
-            if (canAccessLog) {
-                string line = LogFormatter.FormatAccessLogEntry ( currentConfig.AccessLogsFormat, executionResult );
-                accessLogStream?.WriteLine ( line );
-            }
-
-            if (syncCompletionSources.TryPop ( out var pendingSyncCompletionSource )) {
-                pendingSyncCompletionSource.TrySetResult ( executionResult );
-            }
-
-            if (!currentConfig.AsyncRequestProcessing) {
-                Monitor.Exit ( this );
-            }
-
-            (request as IDisposable)?.Dispose ();
-            #endregion
         }
     }
 }
