@@ -48,18 +48,18 @@ In this repository, you have the source code of:
   
 - [Sisk.HttpServer](src): the Sisk Framework mainframe and core functions.
 - [Sisk.IniConfiguration](extensions/Sisk.IniConfiguration): an INI-document configuration provider for Sisk.
-- [Sisk.BasicAuth](extensions/Sisk.BasicAuth): lightweight HTTP Basic Authentication helpers, including request handlers and credential primitives for protected endpoints.
 - [Sisk.Documenting](extensions/Sisk.Documenting): API documentation generation tools for Sisk applications, with OpenAPI export and extensibility points for examples and content schemas.
 - [Sisk.ModelContextProtocol](extensions/Sisk.ModelContextProtocol): integration components to expose Sisk services through the Model Context Protocol (MCP), helping AI clients discover and use tools/resources from your app.
 - [Sisk.Monitoring](extensions/Sisk.Monitoring): runtime monitoring utilities for inspecting server behavior, observing request flow, and improving diagnostics in production-like environments.
 - [Sisk.Cadente](cadente/Sisk.Cadente): an experimental "ultrafast" implementation of the HTTP/1.1 protocol in pure C#.
 
-### Legacy projects
+### Discontinued packages
 
-The following packages are currently kept for compatibility and migration scenarios:
+The following packages are no longer maintained and are marked as deprecated on NuGet. Their source code is kept in this repository for historical reference only:
 
-- [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider) (**legacy**): superseded by the core package (`Sisk.HttpServer` / `Sisk.Core`) features.
-- [Sisk.SslProxy](extensions/Sisk.SslProxy) (**legacy**): superseded by [Sisk.Cadente](cadente/Sisk.Cadente).
+- [Sisk.BasicAuth](extensions/Sisk.BasicAuth)
+- [Sisk.ServiceProvider](extensions/Sisk.ServiceProvider)
+- [Sisk.SslProxy](extensions/Sisk.SslProxy)
 
 ### Screenshots
 

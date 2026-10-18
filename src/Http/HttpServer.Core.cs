@@ -539,9 +539,10 @@ finishSending:
                 }
                 #endregion
             }
-            catch (Exception) {
+            catch (Exception ex) {
                 // handlers and log formatting must never escape HandleContext: the engine
                 // callback would crash the process or leave the connection and the lock held
+                errorLogStream?.WriteException ( ex, "Raised within HttpRequestClose handling" );
             }
             finally {
                 if (syncCompletionSources.TryPop ( out var pendingSyncCompletionSource )) {
