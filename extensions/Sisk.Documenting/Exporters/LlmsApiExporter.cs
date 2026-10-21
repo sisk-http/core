@@ -65,6 +65,10 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
         return new string ( unsafeId.Where ( c => char.IsLetterOrDigit ( c ) || c == '_' || c == '-' ).ToArray () );
     }
 
+    static string GetEndpointId ( ApiEndpoint endpoint ) {
+        return $"{endpoint.RouteMethod.ToString ().ToUpperInvariant ()} {endpoint.Path}";
+    }
+
     [return: NotNullIfNotNull ( nameof ( description ) )]
     static string? TruncateDescription ( string? description, int maxLength = 140 ) {
         if (description == null) {
@@ -85,11 +89,11 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
         sb.AppendLine ();
 
         var currentRequest = HttpContext.GetCurrentContext ()?.Request;
-        var currentUrl = currentRequest?.FullUrl ?? "/";
 
         if (currentRequest?.Query [ "endpoint" ].MaybeNullOrEmpty () is { } requestedEndpoint) {
 
-            var endpoint = documentation.Endpoints.FirstOrDefault ( e => TransformId ( e.Name ) == requestedEndpoint );
+            var endpoint = documentation.Endpoints.FirstOrDefault ( e => GetEndpointId ( e ) == requestedEndpoint )
+                ?? documentation.Endpoints.FirstOrDefault ( e => TransformId ( e.Name ) == requestedEndpoint );
             if (endpoint != null) {
                 sb.AppendLine ( $"# {endpoint.Name}" );
                 sb.AppendLine ( $"{endpoint.Description ?? "(no description available)"}" );
@@ -242,23 +246,21 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
             sb.AppendLine ();
         }
 
-        var groups = documentation.Endpoints.DistinctBy ( e => $"{e.RouteMethod} {e.Name}" ).GroupBy ( e => e.Group );
+        var groups = documentation.Endpoints.DistinctBy ( GetEndpointId ).GroupBy ( e => e.Group );
         foreach (var group in groups) {
 
             sb.AppendLine ( $"## {group.Key ?? "Ungrouped endpoints"}" );
             foreach (var endpoint in group.OrderBy ( i => i.Order )) {
 
-                var endpointId = TransformId ( $"{endpoint.Name}" );
-                var endpointPath = new UrlBuilder ( currentUrl )
-                    .ClearQuery ()
-                    .SetQuery ( "endpoint", endpointId );
-
-                if (Hostname != null)
-                    endpointPath.SetAuthority ( Hostname );
-                else if (currentRequest?.Headers.Origin is { } _origin)
-                    endpointPath.SetAuthority ( _origin );
-                else if (currentRequest?.Host is { } _host)
-                    endpointPath.SetAuthority ( _host );
+                var endpointId = GetEndpointId ( endpoint );
+                var endpointPath = currentRequest switch {
+                    null => $"?endpoint={Uri.EscapeDataString ( endpointId )}",
+                    _ => new UrlBuilder ( currentRequest.FullUrl )
+                        .ClearQuery ()
+                        .SetQuery ( "endpoint", endpointId )
+                        .SetAuthority ( Hostname ?? currentRequest.Authority )
+                        .Url
+                };
 
                 sb.AppendLine ( $"- [{endpoint.Name}]({endpointPath}): {TruncateDescription ( endpoint.Description ) ?? "(no description available)"}" );
             }

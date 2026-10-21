@@ -264,9 +264,14 @@ public sealed class OpenApiExporter : IApiDocumentationExporter {
                 var required = new JsonArray ();
 
                 foreach (var param in endpoint.Parameters) {
+                    var propertyType = MapTypeToOpenApi ( param.TypeName );
                     var propertySchema = new JsonObject {
-                        [ "type" ] = MapTypeToOpenApi ( param.TypeName )
+                        [ "type" ] = propertyType
                     };
+
+                    if (propertyType == "array") {
+                        propertySchema [ "items" ] = new JsonObject ();
+                    }
 
                     if (!string.IsNullOrEmpty ( param.Description )) {
                         propertySchema [ "description" ] = param.Description;
@@ -377,12 +382,14 @@ public sealed class OpenApiExporter : IApiDocumentationExporter {
             return "string";
         }
 
-        return typeName.ToLowerInvariant () switch {
+        return typeName.TrimEnd ( '?' ).ToLowerInvariant () switch {
             "int" or "int32" or "integer" => "integer",
             "long" or "int64" => "integer",
             "float" or "single" => "number",
-            "double" or "decimal" => "number",
+            "double" or "decimal" or "number" => "number",
             "bool" or "boolean" => "boolean",
+            "array" => "array",
+            "object" => "object",
             "string" => "string",
             "datetime" or "date" => "string",
             "guid" or "uuid" => "string",

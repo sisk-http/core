@@ -10,6 +10,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using LightJson;
@@ -290,7 +291,7 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
                 }
 
                 AppendIndent ();
-                AppendText ( $"\"{prop.Key}\": " );
+                AppendText ( $"\"{JsonEncodedText.Encode ( prop.Key, JavaScriptEncoder.UnsafeRelaxedJsonEscaping )}\": " );
                 AppendSchema ( prop.Value, isRequired, isNullable );
 
                 if (propIndex < propCount - 1) {
