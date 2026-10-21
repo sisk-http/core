@@ -84,6 +84,7 @@ public partial class Router {
         }
 
         HttpResponse? result = null;
+        exception = null;
         try {
             result = handler.Execute ( request, context );
         }
@@ -96,7 +97,6 @@ public partial class Router {
                 throw;
         }
 
-        exception = null;
         return result;
     }
 

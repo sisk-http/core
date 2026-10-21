@@ -13,6 +13,7 @@ using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Entity;
 using Sisk.Core.Http;
 using Sisk.Core.Http.FileSystem;
+using Sisk.Core.Http.Handlers;
 using Sisk.Core.Routing;
 using tests.TestUtils;
 
@@ -161,6 +162,48 @@ public sealed class BugFindingRegressionTests {
         Assert.AreEqual ( HttpStatusCode.InternalServerError, badResponse.StatusCode );
 
         Assert.AreEqual ( "ok", await client.GetStringAsync ( "" ) );
+    }
+
+    [TestMethod]
+    [DataRow ( false )]
+    [DataRow ( true )]
+    public async Task RequestHandlerExceptionHandledByCallbackKeepsServerException ( bool cadente ) {
+        var closeHandler = new CapturingRequestCloseHandler ();
+        using var host = TestHost.Start (
+            r => {
+                r.GlobalRequestHandlers = [ new ThrowingRequestHandler () ];
+                r.CallbackErrorHandler = ( ex, context ) => new HttpResponse ( HttpStatusCode.InternalServerError );
+                r.MapGet ( "/", ( HttpRequest req ) => new HttpResponse ( "action-ok" ) );
+            },
+            config => {
+                config.ErrorsLogsStream = null;
+                if (cadente)
+                    config.Engine = new CadenteHttpServerEngine ();
+            } );
+        host.HttpServer.RegisterHandler ( closeHandler );
+        using var client = TestHost.CreateClient ( host );
+
+        var response = await client.GetAsync ( "" );
+        Assert.AreEqual ( HttpStatusCode.InternalServerError, response.StatusCode );
+
+        var result = await closeHandler.ResultTask.WaitAsync ( TimeSpan.FromSeconds ( 5 ) );
+        Assert.IsInstanceOfType<InvalidOperationException> ( result.ServerException );
+        Assert.AreEqual ( "handler-boom", result.ServerException!.Message );
+    }
+
+    private sealed class ThrowingRequestHandler : RequestHandler {
+        public override HttpResponse? Execute ( HttpRequest request, HttpContext context ) =>
+            throw new InvalidOperationException ( "handler-boom" );
+    }
+
+    private sealed class CapturingRequestCloseHandler : HttpServerHandler {
+        private readonly TaskCompletionSource<HttpServerExecutionResult> resultSource = new ( TaskCreationOptions.RunContinuationsAsynchronously );
+
+        public Task<HttpServerExecutionResult> ResultTask => resultSource.Task;
+
+        protected override void OnHttpRequestClose ( HttpServerExecutionResult result ) {
+            resultSource.TrySetResult ( result );
+        }
     }
 
     private sealed class ThrowingForwardingResolver : ForwardingResolver {
