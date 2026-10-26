@@ -8,6 +8,9 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Http;
 using Sisk.Core.Routing;
 using tests.TestUtils;
@@ -343,6 +346,48 @@ public sealed class RouteMatchingTests {
 
         var prefixResponse = await client.GetAsync ( "prefix" );
         Assert.AreEqual ( HttpStatusCode.OK, prefixResponse.StatusCode );
+    }
+
+    [TestMethod]
+    [DataRow ( false )]
+    [DataRow ( true )]
+    public async Task ForceTrailingSlashRedirectDoesNotReturnProtocolRelativeLocation ( bool cadente ) {
+        using var host = TestHost.Start (
+            r => r.MapGet ( "/<name>", ( HttpRequest req ) => new HttpResponse ( "ok" ) ),
+            config => {
+                config.ForceTrailingSlash = true;
+                if (cadente)
+                    config.Engine = new CadenteHttpServerEngine ();
+            } );
+        var uri = new Uri ( host.HttpServer.ListeningPrefixes [ 0 ] );
+
+        (string Target, string Location) [] cases = [
+            ("/static", "/static/"),
+            ("//evil.example.com", "/evil.example.com/"),
+            ("///evil.example.com", "/evil.example.com/"),
+            ("/\\evil.example.com", "/evil.example.com/"),
+            ("//evil.example.com?a=1", "/evil.example.com/?a=1")
+        ];
+
+        foreach (var (target, expectedLocation) in cases) {
+            using var cts = new CancellationTokenSource ( TimeSpan.FromSeconds ( 5 ) );
+            using var tcp = new TcpClient ();
+            await tcp.ConnectAsync ( uri.Host, uri.Port, cts.Token );
+
+            await using var stream = tcp.GetStream ();
+            await stream.WriteAsync ( Encoding.ASCII.GetBytes (
+                $"GET {target} HTTP/1.1\r\nHost: {uri.Authority}\r\nConnection: close\r\n\r\n" ), cts.Token );
+
+            using var reader = new StreamReader ( stream, Encoding.ASCII );
+            string [] lines = ( await reader.ReadToEndAsync ( cts.Token ) ).Split ( "\r\n" );
+            string? location = lines
+                .FirstOrDefault ( line => line.StartsWith ( "Location:", StringComparison.OrdinalIgnoreCase ) )?
+                [ "Location:".Length.. ]
+                .Trim ();
+
+            StringAssert.StartsWith ( lines [ 0 ], "HTTP/1.1 307", target );
+            Assert.AreEqual ( expectedLocation, location, target );
+        }
     }
 
     sealed class DelegateRoute : Route {

@@ -195,7 +195,7 @@ public partial class Router {
                 HttpResponse res = new HttpResponse () {
                     Status = HttpStatusInformation.TemporaryRedirect,
                     Headers = new () {
-                        Location = $"{request.Path}/{request.QueryString}"
+                        Location = $"/{request.Path.TrimStart ( '/' )}/{request.QueryString}"
                     }
                 };
 
