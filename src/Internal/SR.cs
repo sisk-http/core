@@ -46,7 +46,7 @@ static partial class SR {
     public const string Httpserver_Warning_NoRoutes = "no routes has been defined in this router.";
 
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";
-    public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters.";
+    public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters and must not contain control characters.";
 
     public const string ManualHttpContent_ClosedException = "This ManualHttpContent instance is closed.";
     public const string ManualHttpContent_WriteFailed = "Failed to write to the underlying ManualHttpContent instance.";

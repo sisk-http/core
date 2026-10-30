@@ -191,6 +191,40 @@ public sealed class BugFindingRegressionTests {
         Assert.AreEqual ( "handler-boom", result.ServerException!.Message );
     }
 
+    [TestMethod]
+    [DataRow ( "x\r\nX-Injected: yes" )]
+    [DataRow ( "x\nX-Injected: yes" )]
+    [DataRow ( "x\rX-Injected: yes" )]
+    [DataRow ( "x\0y" )]
+    [DataRow ( "x\u007Fy" )]
+    public void StatusDescriptionRejectsControlCharacters ( string description ) {
+        Assert.ThrowsException<ProtocolViolationException> ( () => new HttpStatusInformation ( 499, description ) );
+    }
+
+    [TestMethod]
+    public void StatusDescriptionAcceptsPrintableText () {
+        Assert.AreEqual ( "Custom\tReason", new HttpStatusInformation ( 499, "Custom\tReason" ).Description );
+    }
+
+    [TestMethod]
+    [DataRow ( false )]
+    [DataRow ( true )]
+    public async Task StatusDescriptionCannotInjectResponseHeaders ( bool cadente ) {
+        using var host = TestHost.Start (
+            r => r.MapGet ( "/", ( HttpRequest req ) => new HttpResponse ( new HttpStatusInformation ( 499, "x\r\nX-Injected: yes" ) ) ),
+            config => {
+                config.ErrorsLogsStream = null;
+                if (cadente)
+                    config.Engine = new CadenteHttpServerEngine ();
+            } );
+        using var client = TestHost.CreateClient ( host );
+
+        var response = await client.GetAsync ( "" );
+
+        Assert.AreEqual ( HttpStatusCode.InternalServerError, response.StatusCode );
+        Assert.IsFalse ( response.Headers.Contains ( "X-Injected" ) );
+    }
+
     private sealed class ThrowingRequestHandler : RequestHandler {
         public override HttpResponse? Execute ( HttpRequest request, HttpContext context ) =>
             throw new InvalidOperationException ( "handler-boom" );

@@ -92,6 +92,11 @@ namespace Sisk.Core.Http {
         private static void ValidateDescription ( string s ) {
             if (s.Length > 8192)
                 throw new ProtocolViolationException ( SR.HttpStatusCode_IllegalStatusReason );
+
+            foreach (char c in s) {
+                if (c is (< ' ' and not '\t') or '\u007F')
+                    throw new ProtocolViolationException ( SR.HttpStatusCode_IllegalStatusReason );
+            }
         }
 
         /// <summary>
