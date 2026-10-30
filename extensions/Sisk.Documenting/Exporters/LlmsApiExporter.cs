@@ -29,6 +29,9 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
     /// </summary>
     public string? HeaderText { get; set; }
 
+    /// <summary>
+    /// Gets or sets the footer text to be displayed at the end of the exported documentation.
+    /// </summary>
     public string? FooterText { get; set; }
 
     /// <summary>
@@ -55,6 +58,12 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
         HeaderText = headerText;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LlmsApiExporter"/> class with the specified hostname, header and footer text.
+    /// </summary>
+    /// <param name="hostname">The hostname of the API endpoint to connect to. Can be null to use the default configuration.</param>
+    /// <param name="headerText">The text to display at the beginning of the exported documentation. Can be null.</param>
+    /// <param name="footerText">The text to display at the end of the exported documentation. Can be null.</param>
     public LlmsApiExporter ( string? hostname, string? headerText, string? footerText ) {
         Hostname = hostname;
         HeaderText = headerText;
