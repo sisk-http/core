@@ -9,12 +9,14 @@
 
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using LightJson;
 using LightJson.Schema;
+using Namotion.Reflection;
 
 namespace Sisk.Documenting.Content;
 
@@ -26,6 +28,8 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
 #pragma warning disable IL3050, IL2026
     static Lazy<JsonContentTypeHandler> shared = new Lazy<JsonContentTypeHandler> ( () => new JsonContentTypeHandler () );
 #pragma warning restore IL3050, IL2026
+
+    static readonly Func<MemberInfo, string?> XmlDocumentationProvider = member => member.GetXmlDocsSummary ();
 
     /// <summary>
     /// Gets the shared singleton instance of <see cref="JsonContentTypeHandler"/>.
@@ -60,7 +64,8 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         _typeResolver = typeResolver;
         _serializerOptions = serializerOptions;
         _jsoptions = new JsonOptions () {
-            SerializerContext = serializerOptions
+            SerializerContext = serializerOptions,
+            DocumentationProvider = XmlDocumentationProvider
         };
     }
 
@@ -74,7 +79,8 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
         _typeResolver = new DefaultJsonTypeInfoResolver ();
         _serializerOptions = serializerOptions;
         _jsoptions = new JsonOptions () {
-            SerializerContext = serializerOptions
+            SerializerContext = serializerOptions,
+            DocumentationProvider = XmlDocumentationProvider
         };
     }
 
@@ -86,7 +92,9 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     public JsonContentTypeHandler () {
         _typeResolver = new DefaultJsonTypeInfoResolver ();
         _serializerOptions = JsonSerializerOptions.Default;
-        _jsoptions = JsonOptions.Default;
+        _jsoptions = new JsonOptions () {
+            DocumentationProvider = XmlDocumentationProvider
+        };
     }
 
     /// <summary>
