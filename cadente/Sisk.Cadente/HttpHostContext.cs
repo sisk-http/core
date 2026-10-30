@@ -188,7 +188,7 @@ public sealed class HttpHostContext {
                 wasExpectationSent = HttpResponseSerializer.WriteExpectationContinue ( _requestStream );
 
                 if (!wasExpectationSent)
-                    throw new InvalidOperationException ( "Unable to obtain the input stream for the request." );
+                    throw new InvalidOperationException ( SR.HttpHostContext_InputStreamUnavailable );
             }
 
             _requestStream ??= new HttpRequestStream ( _networkStream, _baseRequest );
@@ -339,7 +339,7 @@ public sealed class HttpHostContext {
 
         private void PrepareResponseStream ( bool chunked ) {
             if (headersSent) {
-                throw new InvalidOperationException ( "Headers already sent for this HTTP response." );
+                throw new InvalidOperationException ( SR.HttpHostContext_HeadersAlreadySent );
             }
 
             if (chunked) {
@@ -350,7 +350,7 @@ public sealed class HttpHostContext {
                 if (!Headers.Contains ( HttpHeaderName.ContentLength ) &&
                     !Headers.Get ( HttpHeaderName.Upgrade ).Contains ( "websocket" )) {
 
-                    throw new InvalidOperationException ( "Content-Length header must be set for non-chunked responses." );
+                    throw new InvalidOperationException ( SR.HttpHostContext_ContentLengthRequired );
                 }
             }
         }

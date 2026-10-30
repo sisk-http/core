@@ -99,14 +99,14 @@ public readonly struct HttpHeader : IEquatable<HttpHeader> {
     void ValidateHeaderBytes ( bool validateName = true ) {
         if (validateName) {
             if (NameBytes.IsEmpty) {
-                throw new ArgumentException ( "Header name cannot be empty.", nameof ( NameBytes ) );
+                throw new ArgumentException ( SR.HttpHeader_NameEmpty, nameof ( NameBytes ) );
             }
             if (ContainsInvalidNameBytes ( NameBytes.Span )) {
-                throw new ArgumentException ( "Header name contains not allowed characters.", nameof ( NameBytes ) );
+                throw new ArgumentException ( SR.HttpHeader_NameNotAllowedCharacters, nameof ( NameBytes ) );
             }
         }
         if (ContainsInvalidValueBytes ( ValueBytes.Span )) {
-            throw new ArgumentException ( "Header value contains not allowed characters.", nameof ( ValueBytes ) );
+            throw new ArgumentException ( SR.HttpHeader_ValueNotAllowedCharacters, nameof ( ValueBytes ) );
         }
     }
 

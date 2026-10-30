@@ -43,16 +43,16 @@ sealed class HttpChunkedReadStream2 : EndableStream {
 
             sbyte digit = _hexLookup [ b ];
             if (digit < 0)
-                throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_MalformedChunkSize );
 
             hasDigit = true;
             result = (result << 4) | (byte) digit;
             if (result > int.MaxValue)
-                throw new ChunkParseException ( $"Invalid chunked transfer encoding: chunk size is too large." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_ChunkSizeTooLarge );
         }
 
         if (!hasDigit)
-            throw new ChunkParseException ( $"Invalid chunked transfer encoding: empty chunk size." );
+            throw new ChunkParseException ( SR.HttpChunkedReadStream_EmptyChunkSize );
 
         return (int) result;
     }
@@ -91,7 +91,7 @@ sealed class HttpChunkedReadStream2 : EndableStream {
             ReadOnlySpan<byte> headerBytes = _buffer.AsSpan ( 0, headerLength );
 
             if (headerBytes.IsEmpty)
-                throw new ChunkParseException ( "Invalid chunked transfer encoding: empty chunk size." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_EmptyChunkSize );
 
             int parsedSize;
             try {
@@ -101,7 +101,7 @@ sealed class HttpChunkedReadStream2 : EndableStream {
                 throw;
             }
             catch (Exception ex) {
-                throw new ChunkParseException ( $"Invalid chunked transfer encoding: malformed chunk size.", ex );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_MalformedChunkSize, ex );
             }
 
             if (parsedSize == 0) {
@@ -112,7 +112,7 @@ sealed class HttpChunkedReadStream2 : EndableStream {
             }
 
             if (parsedSize < 0)
-                throw new ChunkParseException ( $"Invalid chunked transfer encoding: negative chunk size {parsedSize}." );
+                throw new ChunkParseException ( SR.Format ( SR.HttpChunkedReadStream_NegativeChunkSize, parsedSize ) );
 
             currentBlockSize = parsedSize;
             currentBlockRead = 0;
@@ -138,11 +138,11 @@ sealed class HttpChunkedReadStream2 : EndableStream {
         while (true) {
             int b = _s.ReadByte ();
             if (b == -1) {
-                throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete chunk metadata." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_IncompleteChunkMetadata );
             }
 
             if (ptr >= _buffer.Length)
-                throw new ChunkParseException ( "Chunk metadata line too long." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_ChunkMetadataTooLong );
 
             _buffer [ ptr++ ] = (byte) b;
 
@@ -150,7 +150,7 @@ sealed class HttpChunkedReadStream2 : EndableStream {
                 return ptr - 2;
 
             if (b == '\n')
-                throw new ChunkParseException ( "Invalid chunked transfer encoding: expected CRLF." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_ExpectedCrlf );
         }
     }
 
@@ -160,20 +160,20 @@ sealed class HttpChunkedReadStream2 : EndableStream {
         while (read < 2) {
             int count = _s.Read ( _buffer, read, 2 - read );
             if (count == 0)
-                throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete chunk terminator." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_IncompleteChunkTerminator );
 
             read += count;
         }
 
         if (_buffer [ 0 ] != '\r' || _buffer [ 1 ] != '\n')
-            throw new ChunkParseException ( "Invalid chunked transfer encoding: expected CRLF after chunk data." );
+            throw new ChunkParseException ( SR.HttpChunkedReadStream_ExpectedCrlfAfterChunkData );
     }
 
     private void ConsumeTrailerSection () {
         while (true) {
             int trailerLineLength = ReadMetadataLine ();
             if (trailerLineLength < 0)
-                throw new ChunkParseException ( "Invalid chunked transfer encoding: incomplete trailer section." );
+                throw new ChunkParseException ( SR.HttpChunkedReadStream_IncompleteTrailerSection );
 
             if (trailerLineLength == 0)
                 return;

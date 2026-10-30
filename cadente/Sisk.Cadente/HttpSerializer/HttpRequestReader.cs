@@ -56,13 +56,13 @@ static class HttpRequestReader {
                 }
 
                 if (totalRead >= bufferLength) {
-                    Logger.LogInformation ( $"failed to parse HTTP request: headers too large" );
+                    Logger.LogInformation ( $"{SR.HttpRequestReader_HeadersTooLarge}" );
                     return (null, totalRead, true);
                 }
 
                 long currentTicks = Environment.TickCount64;
                 if (currentTicks >= deadlineTicks) {
-                    Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
+                    Logger.LogInformation ( $"{SR.HttpRequestReader_HeaderReadTimeout}" );
                     return (null, totalRead, false);
                 }
 
@@ -79,7 +79,7 @@ static class HttpRequestReader {
                 ).ConfigureAwait ( false );
 
                 if (bytesRead == 0) {
-                    Logger.LogInformation ( $"failed to parse HTTP request: connection closed" );
+                    Logger.LogInformation ( $"{SR.HttpRequestReader_ConnectionClosed}" );
                     return (null, totalRead, false);
                 }
 
@@ -87,19 +87,19 @@ static class HttpRequestReader {
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
-            Logger.LogInformation ( $"failed to parse HTTP request: header read timeout" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_HeaderReadTimeout}" );
             return (null, totalRead, false);
         }
         catch (OperationCanceledException) {
-            Logger.LogInformation ( $"failed to parse HTTP request: operation cancelled" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_OperationCancelled}" );
             return (null, totalRead, false);
         }
         catch (SocketException sex) {
-            Logger.LogInformation ( $"failed to parse HTTP request: {sex.Message}" );
+            Logger.LogInformation ( $"{SR.Format ( SR.HttpRequestReader_ParseFailed, sex.Message )}" );
             return (null, totalRead, false);
         }
         catch (Exception ex) {
-            Logger.LogInformation ( $"failed to parse HTTP request (exception): {ex.Message}" );
+            Logger.LogInformation ( $"{SR.Format ( SR.HttpRequestReader_ParseExceptionFailed, ex.Message )}" );
             return (null, totalRead, false);
         }
     }
@@ -143,42 +143,42 @@ static class HttpRequestReader {
         // Request line: METHOD SP PATH SP PROTOCOL CRLF
         int methodEnd = span.IndexOf ( Space );
         if (methodEnd <= 0) {
-            Logger.LogInformation ( $"failed to parse HTTP request: missing or empty request method in request line" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_MissingMethod}" );
             return null;
         }
 
         ReadOnlyMemory<byte> method = buffer.Slice ( 0, methodEnd );
         if (method.Span.ContainsAnyExcept ( MethodTokenChars )) {
-            Logger.LogInformation ( $"failed to parse HTTP request: request method is not a valid token" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_InvalidMethod}" );
             return null;
         }
 
         int pathStart = methodEnd + 1;
         int pathEndRel = span.Slice ( pathStart ).IndexOf ( Space );
         if (pathEndRel < 0) {
-            Logger.LogInformation ( $"failed to parse HTTP request: missing request path in request line" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_MissingPath}" );
             return null;
         }
 
         int pathEnd = pathStart + pathEndRel;
         ReadOnlyMemory<byte> path = buffer.Slice ( pathStart, pathEndRel );
         if (pathEndRel == 0) {
-            Logger.LogInformation ( $"failed to parse HTTP request: missing request target in request line" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_MissingTarget}" );
             return null;
         }
         if (path.Span.Contains ( NumberSign )) {
-            Logger.LogInformation ( $"failed to parse HTTP request: fragment is not allowed in request target" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_FragmentNotAllowed}" );
             return null;
         }
         if (path.Span.IndexOfAnyExceptInRange ( (byte) 0x21, (byte) 0x7E ) >= 0) {
-            Logger.LogInformation ( $"failed to parse HTTP request: request target contains invalid bytes" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_InvalidTargetBytes}" );
             return null;
         }
 
         int protocolStart = pathEnd + 1;
         int protocolLineEndRel = span.Slice ( protocolStart ).IndexOf ( LineFeed );
         if (protocolLineEndRel < 0) {
-            Logger.LogInformation ( $"failed to parse HTTP request: missing HTTP protocol version in request line" );
+            Logger.LogInformation ( $"{SR.HttpRequestReader_MissingProtocolVersion}" );
             return null;
         }
 
@@ -193,7 +193,7 @@ static class HttpRequestReader {
 
         ReadOnlyMemory<byte> protocol = buffer.Slice ( protocolStart, protocolEndExclusive - protocolStart );
         if (!IsSupportedHttpProtocol ( protocol.Span )) {
-            Logger.LogInformation ( $"failed to parse HTTP request: unsupported HTTP protocol version '{Encoding.ASCII.GetString ( protocol.Span )}'" );
+            Logger.LogInformation ( $"{SR.Format ( SR.HttpRequestReader_UnsupportedProtocolVersion, Encoding.ASCII.GetString ( protocol.Span ) )}" );
             return null;
         }
 
@@ -226,7 +226,7 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> remaining = span.Slice ( cursor );
                 int lfRel = remaining.IndexOf ( LineFeed );
                 if (lfRel < 0) {
-                    failReason = "incomplete header line: no LF found";
+                    failReason = SR.HttpRequestReader_IncompleteHeaderLine;
                     goto ParseFailed;
                 }
 
@@ -239,7 +239,7 @@ static class HttpRequestReader {
                 }
                 else {
                     // Bare LF without preceding CR violates RFC 9112 §2.2 and enables header injection
-                    failReason = "bare LF without preceding CR in header line violates RFC 9112 §2.2";
+                    failReason = SR.HttpRequestReader_BareLineFeed;
                     goto ParseFailed;
                 }
 
@@ -253,17 +253,17 @@ static class HttpRequestReader {
                 cursor = lineEnd + 1;
 
                 if (headerLine [ 0 ] == Space || headerLine [ 0 ] == HorizontalTab) {
-                    failReason = "obs-fold header line violates RFC 9112 §5.2";
+                    failReason = SR.HttpRequestReader_ObsFold;
                     goto ParseFailed;
                 }
 
                 int colonIndex = headerLine.IndexOf ( Colon );
                 if (colonIndex < 0) {
-                    failReason = "header line without colon violates RFC 9112 §5";
+                    failReason = SR.HttpRequestReader_HeaderWithoutColon;
                     goto ParseFailed;
                 }
                 if (colonIndex == 0) {
-                    failReason = "empty header name violates RFC 9110 §5.1";
+                    failReason = SR.HttpRequestReader_EmptyHeaderName;
                     goto ParseFailed; // empty header name (RFC 9110 §5.1)
                 }
 
@@ -273,11 +273,11 @@ static class HttpRequestReader {
                 ReadOnlySpan<byte> valueSpan = rawValue.Trim ( TrimChars );
 
                 if (HttpHeader.ContainsInvalidNameBytes ( nameSpan )) {
-                    failReason = "header name contains not allowed characters";
+                    failReason = SR.HttpRequestReader_HeaderNameNotAllowed;
                     goto ParseFailed;
                 }
                 if (HttpHeader.ContainsInvalidValueBytes ( valueSpan )) {
-                    failReason = "header value contains not allowed characters";
+                    failReason = SR.HttpRequestReader_HeaderValueNotAllowed;
                     goto ParseFailed;
                 }
 
@@ -286,7 +286,7 @@ static class HttpRequestReader {
                     case 0: // Content-Length
                         if (IsAsciiDigits ( valueSpan ) && Utf8Parser.TryParse ( valueSpan, out long parsed, out int consumed ) && consumed == valueSpan.Length) {
                             if (contentLengthExplicit && contentLength != parsed) {
-                                failReason = "conflicting duplicate Content-Length headers violate RFC 9112 §6.3.3";
+                                failReason = SR.HttpRequestReader_ConflictingContentLength;
                                 goto ParseFailed;
                             }
 
@@ -295,7 +295,7 @@ static class HttpRequestReader {
                         }
                         else {
                             // Invalid Content-Length value (non-numeric, negative, overflow) — RFC 9110 §8.6
-                            failReason = $"invalid Content-Length value '{Encoding.ASCII.GetString ( valueSpan )}' (RFC 9110 §8.6)";
+                            failReason = $"{SR.Format ( SR.HttpRequestReader_InvalidContentLength, Encoding.ASCII.GetString ( valueSpan ) )}";
                             goto ParseFailed;
                         }
                         break;
@@ -307,12 +307,12 @@ static class HttpRequestReader {
                         break;
                     case 3: // Transfer-Encoding
                         if (seenTransferEncoding) {
-                            failReason = "duplicate Transfer-Encoding header is a request-smuggling vector (RFC 9112 §6.3.3)";
+                            failReason = SR.HttpRequestReader_DuplicateTransferEncoding;
                             goto ParseFailed; // duplicate TE = request-smuggling vector (RFC 9112 §6.3.3)
                         }
                         seenTransferEncoding = true;
                         if (!TokenListEqualsSingle ( valueSpan, ChunkedValue )) {
-                            failReason = $"unsupported Transfer-Encoding value '{Encoding.ASCII.GetString ( valueSpan )}' (only chunked is supported)";
+                            failReason = $"{SR.Format ( SR.HttpRequestReader_UnsupportedTransferEncoding, Encoding.ASCII.GetString ( valueSpan ) )}";
                             goto ParseFailed;
                         }
                         isChunked = true;
@@ -320,12 +320,12 @@ static class HttpRequestReader {
                         break;
                     case 4: // Host
                         if (seenHost) {
-                            failReason = "duplicate Host header violates RFC 9112 §3.2";
+                            failReason = SR.HttpRequestReader_DuplicateHost;
                             goto ParseFailed;
                         }
                         seenHost = true;
                         if (valueSpan.IsEmpty) {
-                            failReason = "empty Host header violates RFC 9112 §3.2";
+                            failReason = SR.HttpRequestReader_EmptyHost;
                             goto ParseFailed;
                         }
                         break;
@@ -337,12 +337,12 @@ static class HttpRequestReader {
 HeadersComplete:
             // RFC 9112 §6.3.3: presence of both TE and CL is a request-smuggling vector
             if (isChunked && contentLengthExplicit) {
-                Logger.LogInformation ( $"failed to parse HTTP request: both Transfer-Encoding and Content-Length present, request-smuggling vector (RFC 9112 §6.3.3)" );
+                Logger.LogInformation ( $"{SR.HttpRequestReader_TransferEncodingAndContentLength}" );
                 return null;
             }
 
             if (protocol.Span.SequenceEqual ( Http11 ) && !seenHost) {
-                Logger.LogInformation ( $"failed to parse HTTP request: missing Host header violates RFC 9112 §3.2" );
+                Logger.LogInformation ( $"{SR.HttpRequestReader_MissingHost}" );
                 return null;
             }
 
@@ -359,7 +359,7 @@ HeadersComplete:
             };
 
 ParseFailed:
-        Logger.LogInformation ( $"failed to parse HTTP request: {failReason ?? "malformed request"}" );
+        Logger.LogInformation ( $"{SR.Format ( SR.HttpRequestReader_ParseFailed, failReason ?? SR.HttpRequestReader_MalformedRequest )}" );
         return null;
     }
 

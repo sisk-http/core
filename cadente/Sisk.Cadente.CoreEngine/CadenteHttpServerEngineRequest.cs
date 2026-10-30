@@ -152,11 +152,11 @@ namespace Sisk.Cadente.CoreEngine {
             string authority = GetRequestAuthority ();
 
             if (!IsValidAuthority ( scheme, authority )) {
-                throw new Sisk.Core.Http.HttpRequestException ( "Invalid Host header." );
+                throw new Sisk.Core.Http.HttpRequestException ( SR.CadenteHttpServerEngineRequest_InvalidHostHeader );
             }
 
             if (!_request.Path.StartsWith ( "/", StringComparison.Ordinal )) {
-                throw new Sisk.Core.Http.HttpRequestException ( "Invalid request target." );
+                throw new Sisk.Core.Http.HttpRequestException ( SR.CadenteHttpServerEngineRequest_InvalidRequestTarget );
             }
 
             return new Uri ( $"{scheme}://{authority}{_request.Path}" );

@@ -212,7 +212,7 @@ public sealed class HttpHeaderList : IList<HttpHeader> {
 
     void ThrowIfReadOnly () {
         if (isReadOnly) {
-            throw new InvalidOperationException ( "The HttpHeaderList is read-only and cannot be modified." );
+            throw new InvalidOperationException ( SR.HttpHeaderList_ReadOnly );
         }
     }
 

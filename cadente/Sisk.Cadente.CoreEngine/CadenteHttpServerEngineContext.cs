@@ -51,7 +51,7 @@ namespace Sisk.Cadente.CoreEngine {
 
             try {
                 string? wsKey = _request._context.Request.Headers.Get ( "Sec-WebSocket-Key" ).FirstOrDefault ()
-                ?? throw new InvalidOperationException ( "Missing 'Sec-WebSocket-Key' header in WebSocket upgrade request." );
+                ?? throw new InvalidOperationException ( SR.CadenteHttpServerEngineContext_MissingWebSocketKey );
 
                 byte [] wsAcceptToken = SHA1.HashData ( Encoding.UTF8.GetBytes ( $"{wsKey}258EAFA5-E914-47DA-95CA-C5AB0DC85B11" ) );
 
@@ -77,7 +77,7 @@ namespace Sisk.Cadente.CoreEngine {
                         underlyingResponse.StatusCode = 426;
                         underlyingResponse.StatusDescription = "Upgrade Required";
 
-                        throw new InvalidOperationException ( $"The requested sub-protocol '{subProtocol}' is not supported by the client." );
+                        throw new InvalidOperationException ( SR.Format ( SR.CadenteHttpServerEngineContext_SubProtocolNotSupported, subProtocol ) );
                     }
 
                     underlyingResponse.Headers.Set ( new HttpHeader ( "Sec-WebSocket-Protocol", subProtocol ) );
@@ -94,7 +94,7 @@ namespace Sisk.Cadente.CoreEngine {
                 return HttpServerEngineWebSocket.CreateFromWebSocket ( ws );
             }
             catch (Exception ex) {
-                throw new Sisk.Core.Http.HttpRequestException ( "Failed to enter WebSocket context. See inner exception.", ex );
+                throw new Sisk.Core.Http.HttpRequestException ( SR.CadenteHttpServerEngineContext_WebSocketEnterFailed, ex );
             }
         }
     }

@@ -9,8 +9,20 @@
 
 namespace Sisk.Cadente.Streams;
 
-#pragma warning disable CS1591
+/// <summary>
+/// The exception that is thrown when a chunked transfer encoding stream contains malformed data.
+/// </summary>
 public sealed class ChunkParseException : IOException {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChunkParseException"/> class with a specified error message.
+    /// </summary>
+    /// <param name="message">The message that describes the parsing error.</param>
     public ChunkParseException ( string message ) : base ( message ) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChunkParseException"/> class with a specified error message and a reference to the inner exception that caused it.
+    /// </summary>
+    /// <param name="message">The message that describes the parsing error.</param>
+    /// <param name="inner">The exception that is the cause of the current exception.</param>
     public ChunkParseException ( string message, Exception inner ) : base ( message, inner ) { }
 }

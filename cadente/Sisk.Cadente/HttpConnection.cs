@@ -65,7 +65,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
             (HttpRequestBase? nextRequest, bufferedRequestLength, bool headersTooLarge) = await HttpRequestReader.TryReadHttpRequestAsync ( requestPool.Memory, bufferedRequestLength, networkStream, shutdownToken, headerParsingTimeout, headerReadTimeoutSource ).ConfigureAwait ( false );
 
             if (headersTooLarge) {
-                await networkStream.WriteAsync ( HttpResponseSerializer.GetRawMessage ( "Request header fields too large.", 431, "Request Header Fields Too Large" ), shutdownToken ).ConfigureAwait ( false );
+                await networkStream.WriteAsync ( HttpResponseSerializer.GetRawMessage ( SR.HttpConnection_RequestHeaderFieldsTooLarge, 431, "Request Header Fields Too Large" ), shutdownToken ).ConfigureAwait ( false );
                 await networkStream.FlushAsync ( shutdownToken ).ConfigureAwait ( false );
             }
 
@@ -114,7 +114,7 @@ sealed class HttpConnection : IDisposable, IAsyncDisposable {
                 }
                 if (requestStream is null) {
                     // couldn't get request stream, already drained. This should not occur; treat as error.
-                    Logger.LogInformation ( $"Unexpected: request body already drained and stream is null." );
+                    Logger.LogInformation ( $"{SR.HttpConnection_UnexpectedDrainedBody}" );
                     return HttpConnectionState.ConnectionClosed;
                 }
                 else if (!requestStream.IsEnded) {

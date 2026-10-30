@@ -392,7 +392,7 @@ public sealed class HttpHost : IDisposable {
                 }
                 catch (Exception ex) {
                     // Responder erro no stream não-SSL
-                    Logger.LogInformation ( $"Failed SSL handshake: {ex.Message}" );
+                    Logger.LogInformation ( $"{SR.Format ( SR.HttpHost_FailedSslHandshake, ex.Message )}" );
                     using var shutdownToken = new CancellationTokenSource ( TimeSpan.FromSeconds ( 15 ) );
                     await WriteHandshakeErrorAsync ( clientStream, shutdownToken.Token ).ConfigureAwait ( false );
                     return;
@@ -424,7 +424,7 @@ public sealed class HttpHost : IDisposable {
                 await connection.HandleConnectionEventsAsync ( default ).ConfigureAwait ( false );
             }
             catch (Exception ex) {
-                Logger.LogInformation ( $"HandleConnectionEventsAsync/exception: {ex}" );
+                Logger.LogInformation ( $"{SR.Format ( SR.HttpHost_ConnectionEventsException, ex )}" );
             }
             finally {
                 Logger.LogInformation ( $"call OnClientDisconnectedAsync" );
@@ -433,13 +433,13 @@ public sealed class HttpHost : IDisposable {
             }
         }
         catch (SocketException sex) {
-            Logger.LogInformation ( $"SocketException: {sex.Message}" );
+            Logger.LogInformation ( $"{SR.Format ( SR.HttpHost_SocketException, sex.Message )}" );
         }
         catch (IOException iox) {
-            Logger.LogInformation ( $"IOException: {iox.Message}" );
+            Logger.LogInformation ( $"{SR.Format ( SR.HttpHost_IOException, iox.Message )}" );
         }
         catch (Exception ex) {
-            Logger.LogInformation ( $"Exception: {ex.Message}" );
+            Logger.LogInformation ( $"{SR.Format ( SR.HttpHost_Exception, ex.Message )}" );
         }
         finally {
             // Cleanup garantido
@@ -454,7 +454,7 @@ public sealed class HttpHost : IDisposable {
     }
 
     private static async Task WriteHandshakeErrorAsync ( Stream stream, CancellationToken cancellationToken ) {
-        byte [] message = HttpResponseSerializer.GetRawMessage ( "SSL/TLS Handshake failed.", 400, "Bad Request" );
+        byte [] message = HttpResponseSerializer.GetRawMessage ( SR.HttpHost_TlsHandshakeFailed, 400, "Bad Request" );
         try {
             await stream.WriteAsync ( message, cancellationToken ).ConfigureAwait ( false );
         }
@@ -470,7 +470,7 @@ public sealed class HttpHost : IDisposable {
 
         if (headersTooLarge) {
             try {
-                await stream.WriteAsync ( HttpResponseSerializer.GetRawMessage ( "Request header fields too large.", 431, "Request Header Fields Too Large" ), shutdownToken.Token ).ConfigureAwait ( false );
+                await stream.WriteAsync ( HttpResponseSerializer.GetRawMessage ( SR.HttpConnection_RequestHeaderFieldsTooLarge, 431, "Request Header Fields Too Large" ), shutdownToken.Token ).ConfigureAwait ( false );
             }
             catch { }
             return;

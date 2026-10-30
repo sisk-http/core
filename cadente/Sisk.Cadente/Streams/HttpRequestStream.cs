@@ -60,7 +60,7 @@ internal sealed class HttpRequestStream : EndableStream {
 
             int streamRead = s.Read ( buffer, offset, count );
             if (streamRead == 0 && baseRequest.ContentLength > 0 && read < baseRequest.ContentLength)
-                throw new EndOfStreamException ( "Request body ended before the declared Content-Length was fully read." );
+                throw new EndOfStreamException ( SR.HttpRequestStream_UnexpectedEndOfBody );
             read += streamRead;
             return streamRead;
         }

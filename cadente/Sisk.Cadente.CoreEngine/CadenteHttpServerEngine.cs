@@ -112,7 +112,7 @@ namespace Sisk.Cadente.CoreEngine {
                     else {
                         var dnsHost = Dns.GetHostEntry ( uri.Host );
                         if (dnsHost.AddressList.Length < 1)
-                            throw new ArgumentException ( $"Failed to resolve DNS for host {uri.Host}." );
+                            throw new ArgumentException ( SR.Format ( SR.CadenteHttpServerEngine_DnsResolveFailed, uri.Host ) );
 
                         foreach (var address in dnsHost.AddressList) {
 
@@ -160,13 +160,13 @@ namespace Sisk.Cadente.CoreEngine {
 
         internal void EnqueueContext ( CadenteHttpServerEngineContext context ) {
             if (!_pendingContexts.Writer.TryWrite ( context )) {
-                throw new InvalidOperationException ( "Failed to enqueue HTTP context." );
+                throw new InvalidOperationException ( SR.CadenteHttpServerEngine_FailedToEnqueueContext );
             }
         }
 
         internal void ProcessContext ( CadenteHttpServerEngineContext context ) {
             if (server is null) {
-                throw new InvalidOperationException ( "The Cadente engine has not been configured." );
+                throw new InvalidOperationException ( SR.CadenteHttpServerEngine_NotConfigured );
             }
 
             server.HandleContext ( context );
