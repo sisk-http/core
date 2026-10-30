@@ -48,7 +48,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
     /// <inheritdoc/>
     public override void SetListeningHosts ( IEnumerable<ListeningHost> hosts ) {
         if (hosts.Any ( h => h.SslOptions != null ))
-            throw new NotSupportedException ( "The native .NET HttpListener does not support SSL." );
+            throw new NotSupportedException ( SR.HttpListenerEngine_SslNotSupported );
 
         this._listeningHosts = new List<ListeningHost> ( hosts );
     }
@@ -103,7 +103,7 @@ public sealed class HttpListenerAbstractEngine : HttpServerEngine {
 
     /// <inheritdoc/>
     public override Task<HttpServerEngineContext> GetContextAsync ( CancellationToken cancellationToken = default ) {
-        throw new NotImplementedException ();
+        throw new NotImplementedException ( SR.HttpListenerEngine_GetContextAsyncNotImplemented );
     }
 
     sealed class HttpListenerContextAbstraction ( HttpListenerContext context ) : HttpServerEngineContext {

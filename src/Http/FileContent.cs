@@ -62,7 +62,7 @@ public sealed class FileContent : HttpContent {
 
     void ThrowIfFileNotFound () {
         if (!File.Exists)
-            throw new FileNotFoundException ( "The specified file was not found.", File.FullName );
+            throw new FileNotFoundException ( SR.Format ( SR.FileContent_FileNotFound, File.FullName ), File.FullName );
     }
 
     /// <inheritdoc/>

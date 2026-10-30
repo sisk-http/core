@@ -78,38 +78,76 @@ public sealed class HttpServerHostContextBuilder {
         return _context;
     }
 
-    /// <summary>
-    /// Adds an function that will be executed immediately before starting the HTTP server.
-    /// </summary>
-    /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
-    public HttpServerHostContextBuilder UseBootstraper ( Action bootstrapAction ) => UseBootstraper ( "Bootstrap action", bootstrapAction );
+    static string UniqueBootstrapGroupKey () => Guid.NewGuid ().ToString ( "N" );
 
     /// <summary>
-    /// Adds an function that will be executed immediately before starting the HTTP server.
+    /// Adds an function that will be executed immediately before starting the HTTP server, in its own
+    /// queue and in parallel with the other bootstrapping queues.
+    /// </summary>
+    /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
+    /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseBootstraper ( Action bootstrapAction ) => UseBootstraper ( UniqueBootstrapGroupKey (), null, bootstrapAction );
+
+    /// <summary>
+    /// Adds an function that will be executed immediately before starting the HTTP server, in its own
+    /// queue and in parallel with the other bootstrapping queues.
     /// </summary>
     /// <param name="name">Defines an custom label for the bootstraping action name.</param>
     /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
-    public HttpServerHostContextBuilder UseBootstraper ( string name, Action bootstrapAction ) {
-        _context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( (bootstrapAction, name) );
-        return this;
+    /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseBootstraper ( string? name, Action bootstrapAction ) => UseBootstraper ( UniqueBootstrapGroupKey (), name, bootstrapAction );
+
+    /// <summary>
+    /// Adds an function to the bootstrapping queue identified by <paramref name="groupKey"/>, which will be executed
+    /// immediately before starting the HTTP server.
+    /// </summary>
+    /// <remarks>
+    /// Actions sharing the same group key run sequentially, in the order they were added. Distinct groups run in parallel.
+    /// When an action fails, the remaining actions of its group are not executed, while other groups keep running.
+    /// </remarks>
+    /// <param name="groupKey">The case-sensitive key of the bootstrapping queue.</param>
+    /// <param name="name">Defines an custom label for the bootstraping action name.</param>
+    /// <param name="bootstrapAction">The action which will be executed before the HTTP server start.</param>
+    /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseBootstraper ( string groupKey, string? name, Action bootstrapAction ) {
+        return UseBootstraper ( groupKey, name, asyncBootstrapAction: delegate {
+            bootstrapAction ();
+            return Task.CompletedTask;
+        } );
     }
 
     /// <summary>
-    /// Adds an asynchronous function that will be executed immediately before starting the HTTP server.
+    /// Adds an asynchronous function that will be executed immediately before starting the HTTP server, in its own
+    /// queue and in parallel with the other bootstrapping queues.
     /// </summary>
     /// <param name="asyncBootstrapAction">The asynchronous action which will be executed before the HTTP server start.</param>
-    public HttpServerHostContextBuilder UseBootstraper ( Func<Task> asyncBootstrapAction ) => UseBootstraper ( "Bootstrap action", asyncBootstrapAction );
+    /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseBootstraper ( Func<Task> asyncBootstrapAction ) => UseBootstraper ( UniqueBootstrapGroupKey (), null, asyncBootstrapAction );
 
     /// <summary>
-    /// Adds an asynchronous function that will be executed immediately before starting the HTTP server.
+    /// Adds an asynchronous function that will be executed immediately before starting the HTTP server, in its own
+    /// queue and in parallel with the other bootstrapping queues.
     /// </summary>
     /// <param name="name">Defines an custom label for the bootstraping action name.</param>
     /// <param name="asyncBootstrapAction">The asynchronous action which will be executed before the HTTP server start.</param>
     /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
-    public HttpServerHostContextBuilder UseBootstraper ( string name, Func<Task> asyncBootstrapAction ) {
-        _context.HttpServer.handler._default._serverBootstrapingFunctions.Add ( (delegate {
-            asyncBootstrapAction ().GetAwaiter ().GetResult ();
-        }, name) );
+    public HttpServerHostContextBuilder UseBootstraper ( string? name, Func<Task> asyncBootstrapAction ) => UseBootstraper ( UniqueBootstrapGroupKey (), name, asyncBootstrapAction );
+
+    /// <summary>
+    /// Adds an asynchronous function to the bootstrapping queue identified by <paramref name="groupKey"/>, which will be
+    /// executed immediately before starting the HTTP server.
+    /// </summary>
+    /// <remarks>
+    /// Actions sharing the same group key run sequentially, in the order they were added. Distinct groups run in parallel.
+    /// When an action fails, the remaining actions of its group are not executed, while other groups keep running.
+    /// </remarks>
+    /// <param name="groupKey">The case-sensitive key of the bootstrapping queue.</param>
+    /// <param name="name">Defines an custom label for the bootstraping action name.</param>
+    /// <param name="asyncBootstrapAction">The asynchronous action which will be executed before the HTTP server start.</param>
+    /// <returns>The <see cref="HttpServerHostContextBuilder"/> instance.</returns>
+    public HttpServerHostContextBuilder UseBootstraper ( string groupKey, string? name, Func<Task> asyncBootstrapAction ) {
+        _context.HttpServer.handler._default._serverBootstrapingFunctions.Add (
+            new DefaultHttpServerHandler.ServerBoostrapAction ( asyncBootstrapAction, name, groupKey ) );
         return this;
     }
 

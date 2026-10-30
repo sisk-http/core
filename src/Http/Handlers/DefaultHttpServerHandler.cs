@@ -13,32 +13,67 @@ using Sisk.Core.Routing;
 
 namespace Sisk.Core.Http.Handlers;
 
-internal sealed class DefaultHttpServerHandler : HttpServerHandler {
+internal sealed class DefaultHttpServerHandler : AsyncHttpServerHandler {
 
     public override int Priority => -1;
 
+    public record struct ServerBoostrapAction ( Func<Task> Action, string? Label, string GroupKey );
+
     internal HttpServerHostContext? hostContext;
     internal Action<Router>? _routerSetup;
-    internal List<(Action, string)> _serverBootstrapingFunctions = new ();
+    internal List<ServerBoostrapAction> _serverBootstrapingFunctions = new ();
 
-    protected override void OnServerStarting ( HttpServer server ) {
-        for (int i = 0; i < _serverBootstrapingFunctions.Count; i++) {
-            var func = _serverBootstrapingFunctions [ i ];
+    protected override async Task OnServerStartingAsync ( HttpServer server ) {
 
-            Stopwatch sw = Stopwatch.StartNew ();
-            if (hostContext?.verbose == true) {
-                Console.Write ( $"Running server boostrapper <{func.Item2}>... " );
+        List<Exception> raisedExceptions = new ();
+        object syncLock = new ();
+        void WriteIfVerbose ( string text ) {
+
+            if (hostContext?.verbose != true)
+                return;
+
+            lock (syncLock) {
+                Console.Out.WriteLine ( text );
             }
+        }
 
-            func.Item1 ();
+        var queues = _serverBootstrapingFunctions
+            .GroupBy ( fn => fn.GroupKey, StringComparer.Ordinal )
+            .Select ( queue => Task.Run ( async delegate {
 
-            if (hostContext?.verbose == true) {
-                Console.WriteLine ( $"OK! ({sw.ElapsedMilliseconds} ms)" );
-            }
+                foreach (var fn in queue) {
+                    string label = string.IsNullOrEmpty ( fn.Label ) switch {
+                        true => $"<action#{fn.GetHashCode ()}>",
+                        false => $"<{fn.Label}>"
+                    };
+
+                    Stopwatch sw = Stopwatch.StartNew ();
+                    WriteIfVerbose ( $"Running server boostrapper {label}... " );
+
+                    try {
+                        await fn.Action ().ConfigureAwait ( false );
+                        WriteIfVerbose ( $"Running server boostrapper {label}... OK in {sw.ElapsedMilliseconds:N0}ms" );
+                    }
+                    catch (Exception ex) {
+                        WriteIfVerbose ( $"Running server boostrapper {label}... Failed with {ex.GetType ().Name} in {sw.ElapsedMilliseconds:N0}ms" );
+
+                        lock (syncLock) {
+                            raisedExceptions.Add ( new InvalidOperationException ( SR.Format ( SR.HttpServerHandler_BootstrapperFailed, label ), ex ) );
+                        }
+                        return;
+                    }
+                }
+            } ) );
+
+        await Task.WhenAll ( queues ).ConfigureAwait ( false );
+
+        if (raisedExceptions.Count > 0) {
+            throw new AggregateException ( SR.HttpServerHandler_BootstrappersFailed, raisedExceptions );
         }
     }
 
-    protected override void OnSetupRouter ( Router router ) {
+    protected override Task OnSetupRouterAsync ( Router router ) {
         _routerSetup?.Invoke ( router );
+        return Task.CompletedTask;
     }
 }

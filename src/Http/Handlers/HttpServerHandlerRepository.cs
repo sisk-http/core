@@ -59,7 +59,7 @@ internal sealed class HttpServerHandlerRepository {
                     parent.ServerConfiguration.ErrorsLogsStream?.WriteException ( ex );
                 }
                 else
-                    throw new InvalidOperationException ( $"A HTTP handler raised an uncaught exception. Check the internal exception for details.", ex );
+                    throw new InvalidOperationException ( SR.HttpServerHandler_UncaughtException, ex );
             }
         }
     }

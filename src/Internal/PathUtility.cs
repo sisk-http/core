@@ -52,7 +52,7 @@ internal static class PathUtility {
 
         for (int ip = 0; ip < paths.Length; ip++) {
             string path = paths [ ip ]
-                ?? throw new ArgumentNullException ( $"The path string at index {ip} is null." );
+                ?? throw new ArgumentNullException ( nameof ( paths ), SR.Format ( SR.PathUtility_NullPathAtIndex, ip ) );
 
             string normalizedPath = path
                 .Replace ( '/', environmentPathChar )

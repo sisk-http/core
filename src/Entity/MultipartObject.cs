@@ -50,7 +50,7 @@ namespace Sisk.Core.Entity {
                         return name.Trim ( '"' );
                     }
                 }
-                throw new Sisk.Core.Http.HttpRequestException ( SR.Format ( SR.MultipartFormReader_InvalidData, "part must have a name." ) );
+                throw new Sisk.Core.Http.HttpRequestException ( SR.Format ( SR.MultipartFormReader_InvalidData, SR.MultipartObject_MissingName ) );
             }
         }
 

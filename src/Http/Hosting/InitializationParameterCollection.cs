@@ -205,7 +205,7 @@ public sealed class InitializationParameterCollection : IDictionary<string, stri
 
     void ThrowIfReadonly () {
         if (_isReadonly) {
-            throw new InvalidOperationException ( "Cannot modify this collection: it is read-only." );
+            throw new InvalidOperationException ( SR.InitializationParameterCollection_ReadOnly );
         }
     }
 

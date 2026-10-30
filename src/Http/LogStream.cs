@@ -973,7 +973,7 @@ namespace Sisk.Core.Http {
 
             if (exp.InnerException != null) {
                 if (currentDepth <= 3) {
-                    exceptionSbuilder.AppendLine ( "+++ inner exception +++" );
+                    exceptionSbuilder.AppendLine ( SR.LogStream_ExceptionDump_InnerSeparator );
                     WriteExceptionInternal ( exceptionSbuilder, exp.InnerException, null, currentDepth + 1 );
                 }
                 else {
@@ -1006,7 +1006,7 @@ namespace Sisk.Core.Http {
             catch (OperationCanceledException) {
             }
             catch (Exception ex) {
-                Console.Error.WriteLine ( GetExceptionEntry ( ex, "Unhandled exception in LogStream consumer task." ) );
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, SR.LogStream_ConsumerTaskException ) );
             }
         }
 
@@ -1015,7 +1015,7 @@ namespace Sisk.Core.Http {
                 TextWriter?.WriteLine ( dataStr );
             }
             catch (Exception ex) {
-                Console.Error.WriteLine ( GetExceptionEntry ( ex, "Exception from LogStream TextWriter" ) );
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, SR.LogStream_TextWriterException ) );
             }
 
             try {
@@ -1023,14 +1023,14 @@ namespace Sisk.Core.Http {
                     File.AppendAllText ( _filePath, dataStr + Environment.NewLine, Encoding );
             }
             catch (Exception ex) {
-                Console.Error.WriteLine ( GetExceptionEntry ( ex, $"Exception writing to LogStream file: {_filePath}" ) );
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, SR.Format ( SR.LogStream_FileWriteException, _filePath ) ) );
             }
 
             try {
                 _bufferingContent?.Add ( dataStr );
             }
             catch (Exception ex) {
-                Console.Error.WriteLine ( GetExceptionEntry ( ex, "Exception from LogStream internal buffer" ) );
+                Console.Error.WriteLine ( GetExceptionEntry ( ex, SR.LogStream_BufferException ) );
             }
         }
 

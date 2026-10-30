@@ -113,7 +113,7 @@ namespace Sisk.Core.Http {
                         }
                     }
                     catch (Exception ex) {
-                        _logStream.WriteException ( ex, $"Raised from RotatingLogPolicy while compressing log file '{fileInfo.FullName}'." );
+                        _logStream.WriteException ( ex, SR.Format ( SR.LogStream_RotatingLogPolicy_CompressException, fileInfo.FullName ) );
                     }
                     finally {
                         _logStream.rotatingPolicyLocker.Release ();

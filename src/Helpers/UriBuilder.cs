@@ -156,7 +156,7 @@ public sealed class UrlBuilder {
             }
         }
         else {
-            throw new ArgumentException ( "The provided string is not a valid absolute URI.", nameof ( uri ) );
+            throw new ArgumentException ( SR.UriBuilder_InvalidAbsoluteUri, nameof ( uri ) );
         }
     }
 
@@ -237,7 +237,7 @@ public sealed class UrlBuilder {
                     }
                 }
                 else {
-                    throw new InvalidOperationException ( "Relative path returns are not allowed." );
+                    throw new InvalidOperationException ( SR.UriBuilder_RelativePathReturnNotAllowed );
                 }
             }
             else if (segment == ".") {

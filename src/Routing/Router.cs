@@ -295,7 +295,7 @@ namespace Sisk.Core.Routing {
                 .Select ( s => s.Key );
 
             if (names.Any ()) {
-                throw new ArgumentException ( SR.Format ( SR.Rotuer_Set_Name_Duplicates, string.Join ( ", ", names.Take ( 3 ) ) ) );
+                throw new ArgumentException ( SR.Format ( SR.Router_Set_DuplicateNames, string.Join ( ", ", names.Take ( 3 ) ) ) );
             }
         }
 

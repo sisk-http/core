@@ -67,7 +67,7 @@ public sealed class MultipartFormCollection : IReadOnlyList<MultipartObject>, IR
 
     /// <exclude/>
     /// <inheritdoc/>
-    public MultipartObject this [ string name ] => GetItem ( name ) ?? throw new KeyNotFoundException ();
+    public MultipartObject this [ string name ] => GetItem ( name ) ?? throw new KeyNotFoundException ( SR.Format ( SR.MultipartFormCollection_KeyNotFound, name ) );
 
     /// <inheritdoc/>
     public int Count => _items.Count;

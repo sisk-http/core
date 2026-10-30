@@ -13,6 +13,8 @@ static partial class SR {
     public const string MultipartObject_ContentTypeMissing = "Content-Type header cannot be null when retriving a multipart form content";
     public const string MultipartObject_BoundaryMissing = "No boundary was specified for this multipart form content.";
     public const string MultipartObject_EmptyFieldName = "Content-part object position {0} cannot have an empty field name.";
+    public const string MultipartObject_MissingName = "part must have a name.";
+    public const string MultipartFormCollection_KeyNotFound = "No multipart form field named \"{0}\" was found.";
     public const string MultipartFormReader_InvalidData = "Cannot read the specified multipart-form data request: {0}";
     public const string MultipartFormReader_Exception = "Caught an exception while trying to read the multipart form request: {0}";
 
@@ -36,6 +38,8 @@ static partial class SR {
     public const string HttpResponse_Redirect_NotMatchGet = "The specified method does not handle GET requests.";
 
     public const string Httpengine_Default = "An exception was thrown by the linked HTTP engine on this server. See the inner exception for more details.";
+    public const string HttpListenerEngine_SslNotSupported = "The native .NET HttpListener does not support SSL.";
+    public const string HttpListenerEngine_GetContextAsyncNotImplemented = "The native .NET HttpListener engine does not support GetContextAsync. Use BeginGetContext and EndGetContext instead.";
 
     public const string Httpserver_NoListeningHost = "Cannot start the HTTP server with no listening hosts.";
     public const string Httpserver_NoEngine = "Cannot start the HTTP server with no engine.";
@@ -44,6 +48,11 @@ static partial class SR {
     public const string Httpserver_Commons_RouterTimeout = "Request maximum execution time exceeded it's limit.";
     public const string Httpserver_WaitNext_Race_Condition = "This HTTP server is already waiting for the next request in another call of this method.";
     public const string Httpserver_Warning_NoRoutes = "no routes has been defined in this router.";
+    public const string Httpserver_RequestCloseHandlingException = "Raised within HttpRequestClose handling";
+
+    public const string HttpServerHandler_UncaughtException = "A HTTP handler raised an uncaught exception. Check the internal exception for details.";
+    public const string HttpServerHandler_BootstrapperFailed = "Server bootstrapper {0} failed to run. See inner exception for details.";
+    public const string HttpServerHandler_BootstrappersFailed = "One or more bootstrappers failed to initialize. See the aggregated exceptions for details.";
 
     public const string HttpStatusCode_IllegalStatusCode = "The HTTP status code must be three-digits long.";
     public const string HttpStatusCode_IllegalStatusReason = "The HTTP reason phrase must be equal or smaller than 8192 characters and must not contain control characters.";
@@ -65,17 +74,26 @@ static partial class SR {
     public const string LogStream_FailedWrite = "Failed to write to the LogStream writer channel.";
     public const string LogStream_ExceptionDump_Header = "Exception thrown at {0}";
     public const string LogStream_ExceptionDump_TrimmedFooter = " + ... other trimmed inner exceptions";
+    public const string LogStream_ExceptionDump_InnerSeparator = "+++ inner exception +++";
+    public const string LogStream_ConsumerTaskException = "Unhandled exception in LogStream consumer task.";
+    public const string LogStream_TextWriterException = "Exception from LogStream TextWriter";
+    public const string LogStream_FileWriteException = "Exception writing to LogStream file: {0}";
+    public const string LogStream_BufferException = "Exception from LogStream internal buffer";
     public const string LogStream_NoFormat = "No format is defined in this LogStream.";
     public const string LogStream_RotatingLogPolicy_NotLocalFile = "Cannot link an rotaging log policy to an log stream which ins't pointing to an local file.";
     public const string LogStream_RotatingLogPolicy_AlreadyBind = "The specified LogStream is already binded to another RotatingLogPolicy.";
     public const string LogStream_RotatingLogPolicy_IntervalZero = "The RotatingLogPolicy interval must be greater than zero.";
     public const string LogStream_InvalidFilePath = "Invalid file path specified for the LogStream: '{0}'";
+    public const string LogStream_RotatingLogPolicy_CompressException = "Raised from RotatingLogPolicy while compressing log file '{0}'.";
+
+    public const string LogFormatter_UnavailableRequest = "[unavailable request]";
+    public const string LogFormatter_InnerException = "[inner exception]";
 
     public const string HttpRequestEventSource_KeepAliveDisposed = "Cannot keep alive an instance that has it's connection disposed.";
 
     public const string Router_AutoScanModules_TModuleSameAssembly = "The TModule generic type must be a type that implements RouterModule and not RouterModule itself.";
     public const string Router_Set_Collision = "A possible route collision could happen between route {0} and route {1}. Please review the methods and paths of these routes.";
-    public const string Rotuer_Set_Name_Duplicates = "Existem uma ou mais rotas com nomes duplicados neste roteador. Alguns nomes duplicados são {0}. Revise as rotas e remova as duplicatas.";
+    public const string Router_Set_DuplicateNames = "There are one or more routes with duplicate names in this router. Some of the duplicate names are {0}. Review the routes and remove the duplicates.";
     public const string Router_Set_Exception = "Couldn't set method {0}.{1} as an route. See inner exception.";
     public const string Router_Set_InvalidType = "The specified method doens't has any compatible signature with RouteAction or ParameterlessRouteAction.";
     public const string Router_Set_InvalidRouteStart = "Route path expressions must start with '/' and cannot be an empty string.";
@@ -111,6 +129,7 @@ static partial class SR {
     public const string InitializationParameterCollection_NullOrEmptyParameter = "The required parameter \"{0}\" is either empty or not present in the configuration file.";
     public const string InitializationParameterCollection_NullParameter = "The required parameter \"{0}\" is not present in the configuration file.";
     public const string InitializationParameterCollection_MapCastException = "Cannot cast the value \"{0}\" into an {1}.";
+    public const string InitializationParameterCollection_ReadOnly = "Cannot modify this collection: it is read-only.";
 
     public const string ValueItem_ValueNull = "The {1} \"{0}\" cannot be null or undefined.";
     public const string ValueItem_CastException = "Cannot cast the value \"{0}\" at parameter {1} into an {2}.";
@@ -119,6 +138,10 @@ static partial class SR {
 
     public const string StreamUtil_CopyOverflow = "The source content larger than the maximum allowed.";
     public const string SizeHelper_InvalidParsingString = "The argument does not match any supported format.";
+    public const string PathUtility_NullPathAtIndex = "The path string at index {0} is null.";
+    public const string UriBuilder_InvalidAbsoluteUri = "The provided string is not a valid absolute URI.";
+    public const string UriBuilder_RelativePathReturnNotAllowed = "Relative path returns are not allowed.";
+    public const string CertificateHelper_NoDnsNames = "At least one DNS name must be specified.";
 
     public const string RequiresUnreferencedCode = "This method requires access to unreferenced code, which may break AOT compilation and trimming.";
     public const string RequiresUnreferencedCode__RouterSetObject = "This method requires access to unreferenced code, which may break AOT compilation and trimming. Use the SetObject(Type, Object) or SetObject<TObject>(TObject) overloads instead.";

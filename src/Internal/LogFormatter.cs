@@ -32,12 +32,12 @@ static class LogFormatter {
             errLineBuilder.AppendLine ();
         }
         else {
-            errLineBuilder.AppendLine ( "[unavailable request]" );
+            errLineBuilder.AppendLine ( SR.LogFormatter_UnavailableRequest );
         }
 
         errLineBuilder.AppendLine ( executionResult.ServerException?.ToString () );
         if (executionResult.ServerException?.InnerException is { } iex) {
-            errLineBuilder.AppendLine ( "[inner exception]" );
+            errLineBuilder.AppendLine ( SR.LogFormatter_InnerException );
             errLineBuilder.AppendLine ( iex.ToString () );
         }
 
