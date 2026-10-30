@@ -16,7 +16,7 @@
   <a href="">[![Nuget](https://img.shields.io/nuget/dt/Sisk.HttpServer?logo=nuget)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
   <a href="">[![Nuget](https://img.shields.io/nuget/v/Sisk.HttpServer?label=last%20version)](https://www.nuget.org/packages/Sisk.HttpServer/)</a>
   <a href="">[![Nuget](https://img.shields.io/github/license/sisk-http/core)](https://github.com/sisk-http/core/blob/master/LICENSE.txt)</a>
-  <a href="">[![Nuget](https://img.shields.io/badge/.net_version-8_|_9-purple?logo=dotnet)](#)</a>
+  <a href="">[![Nuget](https://img.shields.io/badge/.net_version-8_|_9_|_10-purple?logo=dotnet)](#)</a>
   <a href="">[![Nuget](https://img.shields.io/badge/platform-win%20|%20unix%20|%20osx-orange.svg)](#)</a>
   
   </div>
@@ -33,6 +33,11 @@
 You can get started with Sisk [here](https://docs.sisk-framework.org/) or build the documentation repository [here](https://github.com/sisk-http/docs).
 
 For information about release notes, changelogs and API breaking changes, please refer to [changelogs archive](https://github.com/sisk-http/archive/tree/master/changelogs).
+
+### For AI agents and LLMs
+
+- [Sisk Agent Skills](https://github.com/sisk-http/skills): a catalog of agent skills for building and operating applications with Sisk. Install it with `npx skills add sisk-http/skills`.
+- [llms.txt](https://docs.sisk-framework.org/llms.txt): the Sisk documentation in an LLM-friendly format for agents.
 
 ### Installing
 
@@ -109,10 +114,6 @@ Sisk can do web development the way you want. Create MVC, MVVC, SOLID applicatio
 - **Lightweight:** robust projects can be runned in small, low-cost environments and provide a nice performance. The Sisk core server also uses zero dependencies on it's core library. 
 - **Open-source:** the entire Sisk ecosystem is open source, and all the libraries and technologies we use must be open source as well. Sisk is entirely distributed under the MIT License, which allows the commercial development.
 - **Sustainable:** the project adapts to the pattern you want. Write MVC, MVVM, Clean-Architecture, OOP, Functional applications... you are in control.
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/sisk-http/core.svg?variant=light)](https://starchart.cc/sisk-http/core)
 
 ## License
 
