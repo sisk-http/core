@@ -57,7 +57,7 @@ public static class McpProviderExtensions {
     /// <exception cref="InvalidOperationException">Thrown if the MCP provider has not been configured.</exception>
     public static Task<HttpResponse> HandleMcpRequestAsync ( this HttpRequest request, CancellationToken cancellation = default ) {
         if (singleton == null)
-            throw new InvalidOperationException ( "MCP provider is not configured. Please call UseMcp() on the HttpServerHost builder first." );
+            throw new InvalidOperationException ( SR.McpProviderExtensions_NotConfigured );
         return singleton.HandleRequestAsync ( request, cancellation );
     }
 }

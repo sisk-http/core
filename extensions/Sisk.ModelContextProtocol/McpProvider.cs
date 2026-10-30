@@ -258,7 +258,7 @@ public sealed class McpProvider {
         }
         catch (Exception) {
             return new McpJsonResponse (
-                new JsonRpcErrorResponse ( -32700, "Parse error", id: null ),
+                new JsonRpcErrorResponse ( -32700, SR.McpProvider_ParseError, id: null ),
                 sessionId: null ) {
                 Status = HttpStatusInformation.BadRequest
             };
@@ -266,7 +266,7 @@ public sealed class McpProvider {
 
         if (requestValue.Type != JsonValueType.Object) {
             return new McpJsonResponse (
-                new JsonRpcErrorResponse ( -32600, "Invalid Request", id: null ),
+                new JsonRpcErrorResponse ( -32600, SR.McpProvider_InvalidRequest, id: null ),
                 sessionId: null ) {
                 Status = HttpStatusInformation.BadRequest
             };
@@ -284,7 +284,7 @@ public sealed class McpProvider {
             || methodValue.Type != JsonValueType.String
             || idValue.Type is not JsonValueType.String and not JsonValueType.Number and not JsonValueType.Undefined) {
             return new McpJsonResponse (
-                new JsonRpcErrorResponse ( -32600, "Invalid Request", errorId ),
+                new JsonRpcErrorResponse ( -32600, SR.McpProvider_InvalidRequest, errorId ),
                 sessionId: null ) {
                 Status = HttpStatusInformation.BadRequest
             };
@@ -294,7 +294,7 @@ public sealed class McpProvider {
         JsonValue parametersValue = requestObject [ "params" ];
         if (parametersValue.Type is not JsonValueType.Object and not JsonValueType.Null and not JsonValueType.Undefined) {
             return new McpJsonResponse (
-                new JsonRpcErrorResponse ( -32602, "Invalid params", errorId ),
+                new JsonRpcErrorResponse ( -32602, SR.McpProvider_InvalidParams, errorId ),
                 sessionId: null ) {
                 Status = HttpStatusInformation.BadRequest
             };
@@ -304,7 +304,7 @@ public sealed class McpProvider {
         JsonValue metadataValue = parameters [ "_meta" ];
         if (metadataValue.Type is not JsonValueType.Object and not JsonValueType.Null and not JsonValueType.Undefined) {
             return new McpJsonResponse (
-                new JsonRpcErrorResponse ( -32602, "Invalid params: _meta must be an object", errorId ),
+                new JsonRpcErrorResponse ( -32602, SR.McpProvider_MetaNotObject, errorId ),
                 sessionId: null ) {
                 Status = HttpStatusInformation.BadRequest
             };
@@ -339,7 +339,7 @@ public sealed class McpProvider {
         if (modern) {
             if (metadataVersion is null || metadata [ "io.modelcontextprotocol/clientCapabilities" ].Type != JsonValueType.Object) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( -32602, "Invalid params: required request metadata is missing", errorId ),
+                    new JsonRpcErrorResponse ( -32602, SR.McpProvider_RequestMetadataMissing, errorId ),
                     sessionId: null ) {
                     Status = HttpStatusInformation.BadRequest
                 };
@@ -364,7 +364,7 @@ public sealed class McpProvider {
                 || methodHeader != method
                 || (method == "tools/call" && (nameHeader is null || nameHeader != bodyName))) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( HEADER_MISMATCH_ERROR, "Required HTTP headers are missing or do not match the request body", errorId ),
+                    new JsonRpcErrorResponse ( HEADER_MISMATCH_ERROR, SR.McpProvider_HeaderMismatch, errorId ),
                     sessionId: null ) {
                     Status = HttpStatusInformation.BadRequest
                 };
@@ -372,7 +372,7 @@ public sealed class McpProvider {
 
             if (metadataVersion != PROTOCOL_VERSION) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( UNSUPPORTED_PROTOCOL_VERSION_ERROR, "Unsupported protocol version", errorId, new JsonObject () {
+                    new JsonRpcErrorResponse ( UNSUPPORTED_PROTOCOL_VERSION_ERROR, SR.McpProvider_UnsupportedProtocolVersion, errorId, new JsonObject () {
                         [ "supported" ] = new JsonArray ( [.. SupportedProtocolVersions] ),
                         [ "requested" ] = metadataVersion
                     } ),
@@ -402,7 +402,7 @@ public sealed class McpProvider {
             if ((listing && cursorValue.Type != JsonValueType.Undefined)
                 || (!listing && uriValue.Type != JsonValueType.String)) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( -32602, "Invalid params", id ),
+                    new JsonRpcErrorResponse ( -32602, SR.McpProvider_InvalidParams, id ),
                     sessionId: null );
             }
 
@@ -417,7 +417,7 @@ public sealed class McpProvider {
                     && !skill.Contents.ContainsKey ( file.Key ) ) );
             if (invalidCatalog) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( -32603, "Invalid skill catalog: duplicate skills, conflicting files or incomplete nested manifests", id ),
+                    new JsonRpcErrorResponse ( -32603, SR.McpProvider_InvalidSkillCatalog, id ),
                     sessionId: null );
             }
 
@@ -455,7 +455,7 @@ public sealed class McpProvider {
             }
             else {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( -32602, "Unknown skill or resource URI", id ),
+                    new JsonRpcErrorResponse ( -32602, SR.McpProvider_UnknownSkillUri, id ),
                     sessionId: null );
             }
             return new McpJsonResponse ( new JsonRpcResponse ( result, id ), sessionId: null );
@@ -466,7 +466,7 @@ public sealed class McpProvider {
             if (toolNameValue.Type != JsonValueType.String
                 || toolInputValue.Type is not JsonValueType.Object and not JsonValueType.Null and not JsonValueType.Undefined) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( -32602, "Invalid params", errorId ),
+                    new JsonRpcErrorResponse ( -32602, SR.McpProvider_InvalidParams, errorId ),
                     modern ? null : sessionId );
             }
 
@@ -476,7 +476,7 @@ public sealed class McpProvider {
 
             if (tool is null) {
                 return new McpJsonResponse (
-                    new JsonRpcErrorResponse ( -32602, $"Unknown tool: {toolName}", id ),
+                    new JsonRpcErrorResponse ( -32602, SR.Format ( SR.McpProvider_UnknownTool, toolName ), id ),
                     modern ? null : sessionId );
             }
 
@@ -484,7 +484,7 @@ public sealed class McpProvider {
             if (tool.Schema.Validate ( toolInput ) is { IsValid: false } validationError) {
                 result [ "content" ] = new JsonArray ( [new JsonObject () {
                     [ "type" ] = "text",
-                    [ "text" ] = "Error executing tool: failed to validate the JSON schema of the function call. See errors below.\r\n"
+                    [ "text" ] = SR.McpProvider_ToolSchemaValidationFailed
                         + string.Join ( "\r\n", validationError.Errors.Select ( e => $"- [{e.Path}] {e.Message}" ) )
                 }] );
                 result [ "isError" ] = true;
@@ -507,7 +507,7 @@ public sealed class McpProvider {
                             || outputSchema.Validate ( structuredContent ) is { IsValid: false })) {
                         result [ "content" ] = new JsonArray ( [new JsonObject () {
                             [ "type" ] = "text",
-                            [ "text" ] = "Error executing tool: structured content does not conform to the output schema"
+                            [ "text" ] = SR.McpProvider_ToolOutputSchemaMismatch
                         }] );
                         result [ "isError" ] = true;
                     }
@@ -525,10 +525,10 @@ public sealed class McpProvider {
                         throw;
 
                     request.Context.HttpServer.ServerConfiguration.ErrorsLogsStream?.WriteException ( ex,
-                        $"Exception raised within MCP tool execution. MCP Provider={ToString ()} ToolName={toolName} Content={toolInput} Meta={context?.Metadata}" );
+                        SR.Format ( SR.McpProvider_ToolExceptionLog, ToString (), toolName, toolInput, context?.Metadata ) );
                     result [ "content" ] = new JsonArray ( [new JsonObject () {
                         [ "type" ] = "text",
-                        [ "text" ] = "Error executing tool"
+                        [ "text" ] = SR.McpProvider_ToolExecutionFailed
                     }] );
                     result [ "isError" ] = true;
                 }
@@ -550,7 +550,7 @@ public sealed class McpProvider {
                 sessionId );
         }
         return new McpJsonResponse (
-            new JsonRpcErrorResponse ( -32601, "Method not found", id ),
+            new JsonRpcErrorResponse ( -32601, SR.McpProvider_MethodNotFound, id ),
             modern ? null : sessionId ) {
             Status = modern ? HttpStatusInformation.NotFound : HttpStatusInformation.Ok
         };

@@ -24,7 +24,7 @@ static class DnsUtil {
         var hostEntry = Dns.GetHostEntry ( port.Hostname );
 
         if (hostEntry.AddressList.Length == 0)
-            throw new InvalidOperationException ( $"Couldn't resolve any IP addresses for {port}." );
+            throw new InvalidOperationException ( SR.Format ( SR.DnsUtil_NoAddresses, port ) );
 
         IPAddress? resolvedAddress;
 
@@ -40,7 +40,7 @@ static class DnsUtil {
         }
 
         if (resolvedAddress is null)
-            throw new InvalidOperationException ( $"Couldn't resolve any IP addresses for {port}." );
+            throw new InvalidOperationException ( SR.Format ( SR.DnsUtil_NoAddresses, port ) );
 
         return new IPEndPoint ( resolvedAddress, port.Port );
     }

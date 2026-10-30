@@ -35,7 +35,7 @@ public readonly struct JsonRpcError {
     /// </summary>
     public JsonRpcError () {
         Code = -32603;
-        Message = "An exception was thrown.";
+        Message = SR.JsonRpcError_DefaultMessage;
         Data = JsonValue.Null;
     }
 

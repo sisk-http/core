@@ -42,10 +42,10 @@ public sealed class JsonRpcRequest {
         Id = id;
 
         if (string.IsNullOrEmpty ( Method ))
-            throw new JsonRpcException ( "The JSON-RPC request Method cannot be null or an empty string." );
+            throw new JsonRpcException ( SR.JsonRpcRequest_MethodEmpty );
         if (Parameters.Type is not JsonValueType.Array &&
             Parameters.Type is not JsonValueType.Object) {
-            throw new JsonRpcException ( "The JSON-RPC request parameters must be an array or an object." );
+            throw new JsonRpcException ( SR.JsonRpcRequest_ParametersInvalid );
         }
     }
 
@@ -56,16 +56,16 @@ public sealed class JsonRpcRequest {
         Id = rpcMessage [ "id" ];
 
         if (Id.Type != JsonValueType.String && Id.Type != JsonValueType.Number && Id.Type != JsonValueType.Null && Id.Type != JsonValueType.Undefined) {
-            throw new JsonRpcException ( "The JSON-RPC request id must be an string, number or null." );
+            throw new JsonRpcException ( SR.JsonRpcRequest_IdInvalid );
         }
 
         if (Version != "2.0")
-            throw new JsonRpcException ( "The JSON-RPC request version must be \"2.0\"." );
+            throw new JsonRpcException ( SR.JsonRpcRequest_VersionInvalid );
         if (string.IsNullOrEmpty ( Method ))
-            throw new JsonRpcException ( "The JSON-RPC request Method cannot be null or an empty string." );
+            throw new JsonRpcException ( SR.JsonRpcRequest_MethodEmpty );
         if (Parameters.Type is not JsonValueType.Array &&
             Parameters.Type is not JsonValueType.Object) {
-            throw new JsonRpcException ( "The JSON-RPC request parameters must be an array or an object." );
+            throw new JsonRpcException ( SR.JsonRpcRequest_ParametersInvalid );
         }
     }
 }

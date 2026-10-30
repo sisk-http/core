@@ -37,13 +37,13 @@ public sealed class McpSkill {
             || descriptionValue.Type != JsonValueType.String
             || string.IsNullOrWhiteSpace ( descriptionValue.GetString () )
             || descriptionValue.GetString ().Length > 1024)
-            throw new ArgumentException ( "Frontmatter requires a valid skill name and a description of 1 to 1024 characters.", nameof ( frontmatter ) );
+            throw new ArgumentException ( SR.McpSkill_InvalidFrontmatter, nameof ( frontmatter ) );
 
         if (path.Split ( '/' ).Any ( segment => string.IsNullOrEmpty ( segment )
             || segment is "." or ".."
             || !Regex.IsMatch ( segment, @"\A[a-zA-Z0-9._~-]+\z" ) )
             || path.Split ( '/' ) [ ^1 ] != nameValue.GetString ())
-            throw new ArgumentException ( "The skill path must contain URI-safe segments and end in the skill name.", nameof ( path ) );
+            throw new ArgumentException ( SR.McpSkill_InvalidPath, nameof ( path ) );
 
         Uri = $"skill://{path}/SKILL.md";
         string frontmatterJson = Encoding.UTF8.GetString ( McpProvider.Json.SerializeUtf8Bytes ( frontmatter ) );
@@ -61,11 +61,11 @@ public sealed class McpSkill {
                         || segment.Any ( c => char.IsControl ( c ) || c is '\\' or ':' ) )
                     || file.Value is null
                     || !allFiles.TryAdd ( file.Key, file.Value.ToArray () ))
-                    throw new ArgumentException ( "Supporting files must have unique relative paths and cannot replace SKILL.md.", nameof ( files ) );
+                    throw new ArgumentException ( SR.McpSkill_InvalidSupportingFiles, nameof ( files ) );
             }
         }
         if (allFiles.Count > 512 || allFiles.Sum ( file => (long) file.Value.Length ) > 16_777_216)
-            throw new ArgumentException ( "A skill cannot exceed 512 files or 16 MiB.", nameof ( files ) );
+            throw new ArgumentException ( SR.McpSkill_LimitExceeded, nameof ( files ) );
 
         foreach (var file in allFiles) {
             string uri = $"skill://{path}/{string.Join ( '/', file.Key.Split ( '/' ).Select ( System.Uri.EscapeDataString ) )}";

@@ -22,7 +22,7 @@ namespace Sisk.Ssl;
 class SslProxyContextHandler : HttpHostHandler {
     // Helpers
     private static readonly FieldInfo ConnectionStreamField = typeof ( HttpHostContext ).GetField ( "_connectionStream", BindingFlags.Instance | BindingFlags.NonPublic )
-        ?? throw new InvalidOperationException ( "Unable to access the underlying client stream." );
+        ?? throw new InvalidOperationException ( SR.SslProxyContextHandler_NoClientStream );
     private static readonly byte [] HeaderTerminator = new byte [] { (byte) '\r', (byte) '\n', (byte) '\r', (byte) '\n' };
     private static readonly byte [] CRLF = Encoding.ASCII.GetBytes ( "\r\n" );
     private static readonly HashSet<string> HopByHopRequestHeaders = new ( StringComparer.OrdinalIgnoreCase )
@@ -210,11 +210,11 @@ class SslProxyContextHandler : HttpHostHandler {
             return true;
         }
         catch (OperationCanceledException) when (gatewayCancellation.IsCancellationRequested || context.Client.DisconnectToken.IsCancellationRequested) {
-            PrepareErrorResponse ( context, 504, "Gateway Timeout", "WebSocket handshake timed out." );
+            PrepareErrorResponse ( context, 504, "Gateway Timeout", SR.SslProxyContextHandler_WebSocketHandshakeTimeout );
             return true;
         }
         catch (Exception ex) {
-            PrepareErrorResponse ( context, 502, "Bad Gateway", $"WebSocket proxy error: {ex.Message}" );
+            PrepareErrorResponse ( context, 502, "Bad Gateway", SR.Format ( SR.SslProxyContextHandler_WebSocketProxyError, ex.Message ) );
             return true;
         }
         finally {
@@ -297,7 +297,7 @@ class SslProxyContextHandler : HttpHostHandler {
             while (true) {
                 int read = await upstreamStream.ReadAsync ( buffer.AsMemory ( 0, buffer.Length ), cancellationToken ).ConfigureAwait ( false );
                 if (read <= 0) {
-                    throw new IOException ( "Unexpected end of stream while reading handshake response." );
+                    throw new IOException ( SR.SslProxyContextHandler_UnexpectedHandshakeEnd );
                 }
 
                 headerBuffer.Write ( buffer, 0, read );
@@ -309,13 +309,13 @@ class SslProxyContextHandler : HttpHostHandler {
 
                     string [] lines = headerText.Split ( new [] { "\r\n" }, StringSplitOptions.None );
                     if (lines.Length == 0 || string.IsNullOrWhiteSpace ( lines [ 0 ] )) {
-                        throw new InvalidOperationException ( "Invalid handshake response from upstream server." );
+                        throw new InvalidOperationException ( SR.SslProxyContextHandler_InvalidHandshakeResponse );
                     }
 
                     string statusLine = lines [ 0 ];
                     string [] statusParts = statusLine.Split ( ' ', 3, StringSplitOptions.RemoveEmptyEntries );
                     if (statusParts.Length < 2 || !int.TryParse ( statusParts [ 1 ], out int statusCode )) {
-                        throw new InvalidOperationException ( "Unable to parse status code from upstream handshake." );
+                        throw new InvalidOperationException ( SR.SslProxyContextHandler_InvalidHandshakeStatusCode );
                     }
 
                     string reasonPhrase = statusParts.Length >= 3

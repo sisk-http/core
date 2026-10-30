@@ -108,7 +108,7 @@ public sealed class IniConfigurationReader : IConfigurationReader {
             }
         }
         catch (Exception ex) {
-            throw new Exception ( $"Caught exception while trying to read the property {parsingNode}: {ex.Message}", ex );
+            throw new Exception ( SR.Format ( SR.IniConfigurationReader_ReadPropertyFailed, parsingNode, ex.Message ), ex );
         }
     }
 }

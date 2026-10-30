@@ -1555,7 +1555,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     internal IEnumerable<Route> GetRoutes ( string prefix = "/" ) {
 
         if (currentRoutePrefix is not null)
-            throw new InvalidOperationException ( $"Route prefix cannot be changed once set. Current prefix: '{currentRoutePrefix}', attempted new prefix: '{prefix}'. Please, use a new instance of the ApplicationMonitor class for multiple servers." );
+            throw new InvalidOperationException ( SR.Format ( SR.ApplicationMonitor_RoutePrefixChanged, currentRoutePrefix, prefix ) );
 
         currentRoutePrefix = prefix;
         RestoreStoreState ();
@@ -1701,7 +1701,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         public RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeResponse;
 
         static HttpResponse UnauthorizedResponse => new HttpResponse ( HttpStatusInformation.Unauthorized ) {
-            Content = new HtmlContent ( DefaultMessagePage.Instance.CreateMessageHtml ( "Unauthorized", "Authenticate using your credentials to access this page." ) ),
+            Content = new HtmlContent ( DefaultMessagePage.Instance.CreateMessageHtml ( "Unauthorized", SR.ApplicationMonitor_AuthenticationRequired ) ),
             Headers = new () {
                 WWWAuthenticate = "Basic realm=\"Credentials required to access this page.\""
             }

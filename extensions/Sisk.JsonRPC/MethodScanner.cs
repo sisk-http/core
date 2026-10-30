@@ -46,7 +46,7 @@ internal static class MethodScanner {
         bool _isAsyncTask = false, _isAsyncEnumerable = false;
         var retType = method.ReturnType;
         if (retType.IsValueType) {
-            throw new NotSupportedException ( "Defining web methods which their return type is an value type is not supported. Encapsulate it with ValueResult<T>." );
+            throw new NotSupportedException ( SR.MethodScanner_ValueTypeReturn );
         }
         else if (retType.IsAssignableTo ( typeof ( Task ) )) {
             _isAsyncTask = true;
@@ -74,7 +74,7 @@ internal static class MethodScanner {
     static void CheckIfMethodIsEligible ( MethodInfo method ) {
         var retType = method.ReturnType;
         if (retType.IsValueType) {
-            throw new NotSupportedException ( "Defining web methods which their return type is an value type is not supported. Encapsulate it with ValueResult<T>." );
+            throw new NotSupportedException ( SR.MethodScanner_ValueTypeReturn );
         }
         else if (retType.IsAssignableTo ( typeof ( Task ) )) {
             if (CheckAsyncReturnParameters ( retType, method ) is Exception rex) {
@@ -92,7 +92,7 @@ internal static class MethodScanner {
         if (asyncOutType.GenericTypeArguments.Length == 1) {
             Type genericAssignType = asyncOutType.GenericTypeArguments [ 0 ];
             if (genericAssignType.IsValueType) {
-                return new NotSupportedException ( "Defining web methods which their return type is an value type is not supported. Encapsulate it with ValueResult<T>." );
+                return new NotSupportedException ( SR.MethodScanner_ValueTypeReturn );
             }
         }
         return null;

@@ -60,7 +60,7 @@ public sealed class JsonRpcTransportLayer {
                 await message.Sender.SendAsync ( responseJson );
             }
             else {
-                response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, "Invalid JSON-RPC message received." ) );
+                response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, SR.JsonRpcTransportLayer_InvalidMessage ) );
 
                 string responseJson = _handler._jsonOptions.SerializeJson ( response );
                 await message.Sender.SendAsync ( responseJson );
@@ -103,7 +103,7 @@ public sealed class JsonRpcTransportLayer {
         JsonRpcResponse response;
 
         if (request.Headers.ContentType?.Contains ( "application/json" ) == false) {
-            response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, "The Content-Type must be 'application/json'." ) );
+            response = JsonRpcResponse.CreateErrorResponse ( JsonValue.Null, new JsonRpcError ( JsonErrorCode.InvalidRequest, SR.JsonRpcTransportLayer_InvalidContentType ) );
             goto sendResponse;
         }
 
@@ -166,7 +166,7 @@ sendResponse:
 
                     if (jsonValueList.Count < requiredParameterCount || jsonValueList.Count > totalParameterCount) {
                         response = new JsonRpcResponse ( null,
-                            new JsonRpcError ( JsonErrorCode.InvalidParams, $"Parameter count mismatch. The Method \"{rpcMethod}\" requires at least {requiredParameterCount} parameters, but we received {jsonValueList.Count}.", JsonValue.Null ), request.Id );
+                            new JsonRpcError ( JsonErrorCode.InvalidParams, SR.Format ( SR.JsonRpcTransportLayer_ParameterCountMismatch, rpcMethod, requiredParameterCount, jsonValueList.Count ), JsonValue.Null ), request.Id );
 
                         return response;
                     }
@@ -179,7 +179,7 @@ sendResponse:
                     var jsonValueObject = request.Parameters.GetJsonObject ();
                     if (jsonValueObject.Count < requiredParameterCount || jsonValueObject.Count > totalParameterCount) {
                         response = new JsonRpcResponse ( null,
-                            new JsonRpcError ( JsonErrorCode.InvalidParams, $"Parameter count mismatch. The Method \"{rpcMethod}\" requires at least {requiredParameterCount} parameters, but we received {jsonValueObject.Count}.", JsonValue.Null ), request.Id );
+                            new JsonRpcError ( JsonErrorCode.InvalidParams, SR.Format ( SR.JsonRpcTransportLayer_ParameterCountMismatch, rpcMethod, requiredParameterCount, jsonValueObject.Count ), JsonValue.Null ), request.Id );
 
                         return response;
                     }
@@ -194,7 +194,7 @@ sendResponse:
 
                         if (jsonParameter.IsNull && !param.IsOptional && Nullable.GetUnderlyingType ( param.ParameterType ) == null) {
                             response = new JsonRpcResponse ( null,
-                                new JsonRpcError ( JsonErrorCode.InvalidParams, $"Parameter \"{paramName}\" is required.", JsonValue.Null ), request.Id );
+                                new JsonRpcError ( JsonErrorCode.InvalidParams, SR.Format ( SR.JsonRpcTransportLayer_ParameterRequired, paramName ), JsonValue.Null ), request.Id );
                             return response;
                         }
 
@@ -220,7 +220,7 @@ sendResponse:
             }
             else {
                 response = new JsonRpcResponse ( null,
-                    new JsonRpcError ( JsonErrorCode.MethodNotFound, $"Method not found.", JsonValue.Null ), request.Id );
+                    new JsonRpcError ( JsonErrorCode.MethodNotFound, SR.JsonRpcTransportLayer_MethodNotFound, JsonValue.Null ), request.Id );
             }
         }
         catch (JsonRpcException jex) {
