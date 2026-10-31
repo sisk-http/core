@@ -20,7 +20,7 @@ namespace Sisk.Documenting.Exporters;
 public sealed class LlmsApiExporter : IApiDocumentationExporter {
 
     /// <summary>
-    /// Gets or sets the hostname to be used in generated endpoint URLs. If not set, the exporter will attempt to use the Host header from the current HTTP request, or fall back to relative URLs if no Host information is available.
+    /// Gets or sets the hostname used to build absolute endpoint URLs. When not set, endpoint URLs are relative to the documentation URL and the request Host header is never used.
     /// </summary>
     public string? Hostname { get; set; }
 
@@ -262,13 +262,13 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
             foreach (var endpoint in group.OrderBy ( i => i.Order )) {
 
                 var endpointId = GetEndpointId ( endpoint );
-                var endpointPath = currentRequest switch {
-                    null => $"?endpoint={Uri.EscapeDataString ( endpointId )}",
-                    _ => new UrlBuilder ( currentRequest.FullUrl )
+                var endpointPath = (currentRequest, Hostname) switch {
+                    ({ } request, { } hostname) => new UrlBuilder ( request.FullUrl )
                         .ClearQuery ()
                         .SetQuery ( "endpoint", endpointId )
-                        .SetAuthority ( Hostname ?? currentRequest.Authority )
-                        .Url
+                        .SetAuthority ( hostname )
+                        .Url,
+                    _ => $"?endpoint={Uri.EscapeDataString ( endpointId )}"
                 };
 
                 sb.AppendLine ( $"- [{endpoint.Name}]({endpointPath}): {TruncateDescription ( endpoint.Description ) ?? "(no description available)"}" );
