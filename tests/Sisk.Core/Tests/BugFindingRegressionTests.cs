@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using Sisk.Cadente.CoreEngine;
 using Sisk.Core.Entity;
@@ -138,6 +139,45 @@ public sealed class BugFindingRegressionTests {
 
         Assert.AreEqual ( "plus", await client.GetStringAsync ( "static/a+b.txt" ) );
         Assert.AreEqual ( "space", await client.GetStringAsync ( "static/a%20b.txt" ) );
+    }
+
+    [TestMethod]
+    [DataRow ( false )]
+    [DataRow ( true )]
+    public async Task FileServerHeadOnMediaFileDoesNotWriteBody ( bool cadente ) {
+        string root = Directory.CreateTempSubdirectory ( "sisk-file-head-" ).FullName;
+        File.WriteAllBytes ( Path.Combine ( root, "v.mp4" ), new byte [ 300_000 ] );
+        File.WriteAllText ( Path.Combine ( root, "after.txt" ), "after" );
+
+        using var host = TestHost.Start (
+            r => r.Map ( HttpFileServer.CreateServingRoute ( "/static", root ) ),
+            config => {
+                if (cadente)
+                    config.Engine = new CadenteHttpServerEngine ();
+            } );
+
+        var baseUri = new Uri ( host.HttpServer.ListeningPrefixes [ 0 ] );
+        using var cts = new CancellationTokenSource ( TimeSpan.FromSeconds ( 10 ) );
+        using var tcp = new TcpClient ();
+        await tcp.ConnectAsync ( IPAddress.Loopback, baseUri.Port, cts.Token );
+        await using var stream = tcp.GetStream ();
+
+        await stream.WriteAsync ( Encoding.ASCII.GetBytes (
+            $"HEAD /static/v.mp4 HTTP/1.1\r\nHost: {baseUri.Authority}\r\n\r\n" +
+            $"GET /static/after.txt HTTP/1.1\r\nHost: {baseUri.Authority}\r\nConnection: close\r\n\r\n" ), cts.Token );
+
+        using var received = new MemoryStream ();
+        await stream.CopyToAsync ( received, cts.Token );
+        string raw = Encoding.Latin1.GetString ( received.ToArray () );
+
+        int headEnd = raw.IndexOf ( "\r\n\r\n", StringComparison.Ordinal );
+        Assert.IsTrue ( headEnd > 0, raw );
+
+        string headHeaders = raw [ ..headEnd ];
+        StringAssert.StartsWith ( headHeaders, "HTTP/1.1 200" );
+        StringAssert.Contains ( headHeaders.ToLowerInvariant (), "content-length: 300000" );
+        StringAssert.StartsWith ( raw [ (headEnd + 4).. ], "HTTP/1.1 200" );
+        StringAssert.EndsWith ( raw, "after" );
     }
 
     [TestMethod]
