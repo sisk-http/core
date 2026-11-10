@@ -368,8 +368,12 @@ public partial class HttpServer {
                 if (string.IsNullOrEmpty ( incameHeader.Item1 ))
                     continue;
 
-                for (int j = 0; j < incameHeader.Item2.Count; j++)
-                    baseResponse.Headers.AppendHeader ( incameHeader.Item1, incameHeader.Item2 [ j ] );
+                for (int j = 0; j < incameHeader.Item2.Count; j++) {
+                    if (j == 0 && srContext.OverrideHeaders.ContainsKey ( incameHeader.Item1 ))
+                        baseResponse.Headers.SetHeader ( incameHeader.Item1, incameHeader.Item2 [ j ] );
+                    else
+                        baseResponse.Headers.AppendHeader ( incameHeader.Item1, incameHeader.Item2 [ j ] );
+                }
             }
 
             if (currentConfig.EnableAutomaticResponseCompression

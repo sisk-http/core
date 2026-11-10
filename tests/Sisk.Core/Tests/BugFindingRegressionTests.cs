@@ -225,6 +225,37 @@ public sealed class BugFindingRegressionTests {
         Assert.IsFalse ( response.Headers.Contains ( "X-Injected" ) );
     }
 
+    [TestMethod]
+    [DataRow ( false )]
+    [DataRow ( true )]
+    public async Task OverrideHeadersReplaceCorsAndServerHeaders ( bool cadente ) {
+        using var host = TestHost.Start (
+            r => r.MapGet ( "/", ( HttpRequest req ) => {
+                req.Context.OverrideHeaders.AccessControlAllowOrigin = "https://override.example";
+                req.Context.OverrideHeaders.Add ( "X-Powered-By", "override" );
+                req.Context.OverrideHeaders.Add ( "X-Test", "from-override" );
+                req.Context.ExtraHeaders.Add ( "X-Extra", "from-extra" );
+                return new HttpResponse ( "ok" )
+                    .WithHeader ( "X-Test", "from-response" )
+                    .WithHeader ( "X-Extra", "from-response" );
+            } ),
+            config => {
+                if (cadente)
+                    config.Engine = new CadenteHttpServerEngine ();
+            },
+            cors: new CrossOriginResourceSharingHeaders ( allowOrigins: [ "https://good.example" ], allowMethods: [ "GET" ] ) );
+        using var client = TestHost.CreateClient ( host );
+
+        var request = new HttpRequestMessage ( HttpMethod.Get, "" );
+        request.Headers.Add ( "Origin", "https://good.example" );
+        var response = await client.SendAsync ( request );
+
+        Assert.AreEqual ( "https://override.example", response.Headers.GetValues ( "Access-Control-Allow-Origin" ).Single () );
+        Assert.AreEqual ( "override", response.Headers.GetValues ( "X-Powered-By" ).Single () );
+        Assert.AreEqual ( "from-override", response.Headers.GetValues ( "X-Test" ).Single () );
+        Assert.AreEqual ( "from-response,from-extra", string.Join ( ",", response.Headers.GetValues ( "X-Extra" ) ).Replace ( " ", "" ) );
+    }
+
     private sealed class ThrowingRequestHandler : RequestHandler {
         public override HttpResponse? Execute ( HttpRequest request, HttpContext context ) =>
             throw new InvalidOperationException ( "handler-boom" );
