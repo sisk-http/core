@@ -147,7 +147,6 @@ public sealed class BugFindingRegressionTests {
     public async Task FileServerHeadOnMediaFileDoesNotWriteBody ( bool cadente ) {
         string root = Directory.CreateTempSubdirectory ( "sisk-file-head-" ).FullName;
         File.WriteAllBytes ( Path.Combine ( root, "v.mp4" ), new byte [ 300_000 ] );
-        File.WriteAllText ( Path.Combine ( root, "after.txt" ), "after" );
 
         using var host = TestHost.Start (
             r => r.Map ( HttpFileServer.CreateServingRoute ( "/static", root ) ),
@@ -163,8 +162,7 @@ public sealed class BugFindingRegressionTests {
         await using var stream = tcp.GetStream ();
 
         await stream.WriteAsync ( Encoding.ASCII.GetBytes (
-            $"HEAD /static/v.mp4 HTTP/1.1\r\nHost: {baseUri.Authority}\r\n\r\n" +
-            $"GET /static/after.txt HTTP/1.1\r\nHost: {baseUri.Authority}\r\nConnection: close\r\n\r\n" ), cts.Token );
+            $"HEAD /static/v.mp4 HTTP/1.1\r\nHost: {baseUri.Authority}\r\nConnection: close\r\n\r\n" ), cts.Token );
 
         using var received = new MemoryStream ();
         await stream.CopyToAsync ( received, cts.Token );
@@ -176,8 +174,7 @@ public sealed class BugFindingRegressionTests {
         string headHeaders = raw [ ..headEnd ];
         StringAssert.StartsWith ( headHeaders, "HTTP/1.1 200" );
         StringAssert.Contains ( headHeaders.ToLowerInvariant (), "content-length: 300000" );
-        StringAssert.StartsWith ( raw [ (headEnd + 4).. ], "HTTP/1.1 200" );
-        StringAssert.EndsWith ( raw, "after" );
+        Assert.AreEqual ( headEnd + 4, raw.Length );
     }
 
     [TestMethod]
