@@ -48,6 +48,9 @@ abstract class HttpFileRangedContentStream : HttpFileServerFileConverter {
             resStream.SetHeader ( HttpKnownHeaderNames.ContentType, MimeHelper.GetMimeType ( file.Extension ) );
             resStream.SetContentLength ( length );
 
+            if (request.Method == HttpMethod.Head)
+                return resStream.Close ();
+
             var buffer = ArrayPool<byte>.Shared.Rent ( ChunkSize );
             try {
                 int read;
