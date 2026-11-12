@@ -159,7 +159,7 @@ public sealed class BugFindingRegressionTests {
         var baseUri = new Uri ( host.HttpServer.ListeningPrefixes [ 0 ] );
         using var cts = new CancellationTokenSource ( TimeSpan.FromSeconds ( 10 ) );
         using var tcp = new TcpClient ();
-        await tcp.ConnectAsync ( IPAddress.Loopback, baseUri.Port, cts.Token );
+        await tcp.ConnectAsync ( baseUri.Host, baseUri.Port, cts.Token );
         await using var stream = tcp.GetStream ();
 
         await stream.WriteAsync ( Encoding.ASCII.GetBytes (
