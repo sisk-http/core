@@ -1170,7 +1170,11 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         if (statusCode is not { } code)
             return;
 
-        string routeKey = route is null ? "(unmatched)" : $"{context.Request.Method.Method} {route.Path}";
+        string routeKey = (route, context.Request.Method.Method) switch {
+            (null, _) => "(unmatched)",
+            ({ } matched, "GET" or "POST" or "PUT" or "PATCH" or "DELETE" or "HEAD" or "OPTIONS" or "QUERY") => $"{context.Request.Method.Method} {matched.Path}",
+            ({ } matched, _) => $"OTHER {matched.Path}"
+        };
         httpMetrics.Record ( routeKey, code, result.Elapsed.TotalMilliseconds, result.ServerException );
     }
 

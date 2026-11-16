@@ -132,6 +132,47 @@ public sealed class MonitoringBuilderExtensionsTests {
     }
 
     [TestMethod]
+    public async Task UseMonitoring_DoesNotTrackClientMethodTokensAsRoutes () {
+        int port = GetFreePort ();
+
+        using var server = CreateBuilder ( port )
+            .UseMonitoring ( "/monitoring", monitor => {
+                monitor.CredentialValidator = _ => ValueTask.FromResult ( true );
+            } )
+            .UseRouter ( router => {
+                router.MapAny ( "/any", _ => new HttpResponse ( 200 ) );
+                router.MapGet ( "/late", _ => new HttpResponse ( 200 ) );
+            } )
+            .Build ();
+
+        server.Start ( verbose: false, preventHault: false );
+
+        using var client = new HttpClient {
+            BaseAddress = new Uri ( $"http://127.0.0.1:{port}/" ),
+            Timeout = TimeSpan.FromSeconds ( 3 )
+        };
+
+        for (int i = 0; i < 230; i++) {
+            using HttpResponseMessage anyResponse = await client.SendAsync ( new HttpRequestMessage ( new HttpMethod ( $"X{i}" ), "/any" ) );
+            Assert.AreEqual ( HttpStatusCode.OK, anyResponse.StatusCode );
+        }
+
+        using HttpResponseMessage lateResponse = await client.GetAsync ( "/late" );
+        Assert.AreEqual ( HttpStatusCode.OK, lateResponse.StatusCode );
+
+        using HttpResponseMessage dataResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/data" ) );
+        using JsonDocument payload = JsonDocument.Parse ( await dataResponse.Content.ReadAsStringAsync () );
+
+        string [] routes = payload.RootElement.GetProperty ( "http" ).GetProperty ( "routes" ).EnumerateArray ()
+            .Select ( route => route.GetProperty ( "route" ).GetString ()! )
+            .ToArray ();
+
+        CollectionAssert.Contains ( routes, "GET /late" );
+        CollectionAssert.Contains ( routes, "OTHER /any" );
+        Assert.IsFalse ( routes.Any ( route => route.StartsWith ( 'X' ) ), "Client method tokens must not become route keys." );
+    }
+
+    [TestMethod]
     public async Task UseMonitoring_ServesCounterAndLogStreamDataEndpoints () {
         int port = GetFreePort ();
         var counter = new Counter ();
