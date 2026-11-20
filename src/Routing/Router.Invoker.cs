@@ -54,7 +54,7 @@ public partial class Router {
         }
     }
 
-    internal bool InvokeRequestHandlerGroup ( RequestHandlerExecutionMode mode, Span<IRequestHandler> baseLists, Span<IRequestHandler> bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception ) {
+    internal bool InvokeRequestHandlerGroup ( RequestHandlerExecutionMode mode, ReadOnlySpan<IRequestHandler> baseLists, ReadOnlySpan<IRequestHandler> bypassList, HttpRequest request, HttpContext context, out HttpResponse? result, out Exception? exception ) {
         for (int i = 0; i < baseLists.Length; i++) {
             var rh = baseLists [ i ];
 
@@ -75,7 +75,7 @@ public partial class Router {
         return false;
     }
 
-    internal HttpResponse? InvokeHandler ( IRequestHandler handler, HttpRequest request, HttpContext context, Span<IRequestHandler> bypass, out Exception? exception ) {
+    internal HttpResponse? InvokeHandler ( IRequestHandler handler, HttpRequest request, HttpContext context, ReadOnlySpan<IRequestHandler> bypass, out Exception? exception ) {
         for (int i = 0; i < bypass.Length; i++) {
             if (ReferenceEquals ( handler, bypass [ i ] )) {
                 exception = null;
@@ -234,7 +234,10 @@ public partial class Router {
                         throw new ArgumentException ( SR.Router_Handler_ActionNullValue );
                     }
 
-                    ref Task<object> actionTask = ref Unsafe.As<object, Task<object>> ( ref actionResult );
+                    Task<object> actionTask = actionResult is RouteTask routeTask
+                        ? routeTask.Inner
+                        : Unsafe.As<Task<object>> ( actionResult );
+
                     actionResult = actionTask.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
                 }
                 else if (matchedRoute._isAsyncEnumerable) {

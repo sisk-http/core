@@ -160,6 +160,9 @@ namespace Sisk.Core.Routing {
                 ex = new NotSupportedException ( SR.Route_Action_ValueTypeSet );
                 return false;
             }
+            else if (retType.IsAssignableTo ( typeof ( RouteTask ) )) {
+                _isAsyncTask = true;
+            }
             else if (retType.IsAssignableTo ( typeof ( Task ) )) {
                 _isAsyncTask = true;
                 if (CheckAsyncReturnParameters ( retType ) is Exception rex) {

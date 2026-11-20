@@ -41,6 +41,29 @@ public sealed class RouteMatchingTests {
     }
 
     [TestMethod]
+    public async Task RouteTaskActionsResolveValueAndReferenceResults () {
+        using var client = Server.GetHttpClient ();
+
+        var valueResponse = await client.GetAsync ( "tests/routing/routetask/value" );
+        Assert.AreEqual ( HttpStatusCode.OK, valueResponse.StatusCode );
+        Assert.AreEqual ( "int:42", await valueResponse.Content.ReadAsStringAsync () );
+
+        var referenceResponse = await client.GetAsync ( "tests/routing/routetask/response" );
+        Assert.AreEqual ( HttpStatusCode.OK, referenceResponse.StatusCode );
+        Assert.AreEqual ( "routetask", await referenceResponse.Content.ReadAsStringAsync () );
+    }
+
+    [TestMethod]
+    public void RouteTaskActionIsMarkedAsAsync () {
+        var route = new Route ( RouteMethod.Get, "/routetask", async RouteTask<int> () => {
+            await Task.Yield ();
+            return 1;
+        } );
+
+        Assert.IsTrue ( route.IsAsync );
+    }
+
+    [TestMethod]
     public async Task RegexRouteMatchesMethodAndCapturesGroups () {
         using var client = Server.GetHttpClient ();
 

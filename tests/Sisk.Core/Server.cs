@@ -65,6 +65,16 @@ public sealed class Server {
                 File.WriteAllText ( Path.Combine ( fileServerRoot, "sample.txt" ), "prefix" );
                 router.Map ( HttpFileServer.CreateServingRoute ( "/tests/routing/files", fileServerRoot ) );
                 router.MapGet ( "/tests/routing/files/static", ( HttpRequest request ) => new HttpResponse ( "static" ) );
+
+                router.RegisterValueHandler<int> ( value => new HttpResponse ( $"int:{value}" ) );
+                router.MapGet ( "/tests/routing/routetask/value", async RouteTask<int> ( HttpRequest request ) => {
+                    await Task.Yield ();
+                    return 42;
+                } );
+                router.MapGet ( "/tests/routing/routetask/response", async RouteTask<HttpResponse> () => {
+                    await Task.Yield ();
+                    return new HttpResponse ( "routetask" );
+                } );
                 router.MapGet ( "/tests/plaintext/chunked", delegate ( HttpRequest request ) {
                     return new HttpResponse () {
                         Content = new StringContent ( "Hello, world!", Encoding.UTF8, "text/plain" ),
