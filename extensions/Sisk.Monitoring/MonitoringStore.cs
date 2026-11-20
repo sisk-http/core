@@ -21,6 +21,11 @@ public interface IMonitoringStore {
     /// </summary>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The loaded snapshot, or <see langword="null"/> when no snapshot is available.</returns>
+    /// <remarks>
+    /// Throw when an existing snapshot is temporarily unreadable. The monitor then skips saving for the current run,
+    /// so the stored state is not replaced by an empty one. Return <see langword="null"/> when the snapshot is missing
+    /// or permanently invalid, which lets the monitor replace it.
+    /// </remarks>
     Task<MonitoringSnapshot?> LoadAsync ( CancellationToken cancellationToken = default );
 }
 
@@ -46,16 +51,24 @@ public sealed class FileMonitoringStore : IMonitoringStore {
     public async Task SaveAsync ( MonitoringSnapshot snapshot, CancellationToken cancellationToken = default ) {
         PathHelper.EnsureFileDirectoryExistance ( FilePath );
 
-        string temporaryFile = FilePath + $".tmp_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds ()}";
-        await using (var stream = File.Create ( temporaryFile )) {
-            await JsonSerializer.SerializeAsync ( stream, snapshot, MonitoringStoreJsonContext.Default.MonitoringSnapshot, cancellationToken ).ConfigureAwait ( false );
-        }
+        string temporaryFile = $"{FilePath}.{Guid.NewGuid ():N}.tmp";
+        try {
+            await using (var stream = File.Create ( temporaryFile )) {
+                await JsonSerializer.SerializeAsync ( stream, snapshot, MonitoringStoreJsonContext.Default.MonitoringSnapshot, cancellationToken ).ConfigureAwait ( false );
+            }
 
-        if (File.Exists ( FilePath )) {
-            File.Delete ( FilePath );
+            File.Move ( temporaryFile, FilePath, overwrite: true );
         }
-
-        File.Move ( temporaryFile, FilePath );
+        catch {
+            try {
+                File.Delete ( temporaryFile );
+            }
+            catch (IOException) {
+            }
+            catch (UnauthorizedAccessException) {
+            }
+            throw;
+        }
     }
 
     /// <inheritdoc/>
@@ -67,7 +80,7 @@ public sealed class FileMonitoringStore : IMonitoringStore {
             await using var stream = File.OpenRead ( FilePath );
             return await JsonSerializer.DeserializeAsync ( stream, MonitoringStoreJsonContext.Default.MonitoringSnapshot, cancellationToken ).ConfigureAwait ( false );
         }
-        catch (IOException) {
+        catch (FileNotFoundException) {
             return null;
         }
         catch (JsonException) {

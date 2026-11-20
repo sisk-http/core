@@ -10,6 +10,7 @@ public sealed class Meter {
     private readonly Dictionary<long, double> _buckets = new ();
     private readonly object _sync = new ();
     private long _prunedThreshold = long.MinValue;
+    private long _version;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Meter"/> class with a default 24-hour sliding window.
@@ -38,6 +39,15 @@ public sealed class Meter {
             PruneExpiredBuckets ( now );
             _buckets.TryGetValue ( key, out double existing );
             _buckets[key] = existing + by;
+            _version++;
+        }
+    }
+
+    internal long Version {
+        get {
+            lock (_sync) {
+                return _version;
+            }
         }
     }
 
@@ -54,6 +64,7 @@ public sealed class Meter {
     public void Reset () {
         lock (_sync) {
             _buckets.Clear ();
+            _version++;
         }
     }
 
@@ -77,6 +88,7 @@ public sealed class Meter {
             foreach (var bucket in buckets.Where ( item => item.BucketKey >= threshold )) {
                 _buckets [ bucket.BucketKey ] = bucket.Value;
             }
+            _version++;
         }
     }
 
@@ -98,30 +110,29 @@ public sealed class Meter {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( tick.TotalSeconds, nameof ( tick ) );
 
         DateTime now = DateTime.Now;
-        DateTime initial = now - _slidingWindowDuration;
+        long initialTicks = (now - _slidingWindowDuration).Ticks;
+        long readingCount = (_slidingWindowDuration.Ticks + tick.Ticks - 1) / tick.Ticks;
 
-        Dictionary<long, double> snapshot;
+        KeyValuePair<long, double> [] snapshot;
         lock (_sync) {
             PruneExpiredBuckets ( now );
-            snapshot = new ( _buckets );
+            snapshot = _buckets.ToArray ();
         }
 
-        DateTime cursor = initial;
-        while (cursor < now) {
-            DateTime slidingStart = cursor;
-            DateTime slidingEnd = cursor + tick;
+        Array.Sort ( snapshot, ( left, right ) => left.Key.CompareTo ( right.Key ) );
 
-            long startBucket = ToBucketKey ( slidingStart );
-            long endBucket = ToBucketKey ( slidingEnd.AddTicks ( -1 ) );
+        int position = 0;
+        for (long index = 0; index < readingCount; index++) {
+            long endTicks = initialTicks + (tick.Ticks * (index + 1));
+            bool isLastReading = index == readingCount - 1;
 
             double sum = 0;
-            for (long bucket = startBucket; bucket <= endBucket; bucket++) {
-                snapshot.TryGetValue ( bucket, out double value );
-                sum += value;
+            while (position < snapshot.Length && (isLastReading || snapshot [ position ].Key * BucketDuration.Ticks < endTicks)) {
+                sum += snapshot [ position ].Value;
+                position++;
             }
 
-            cursor += tick;
-            yield return new MeterReading ( sum, slidingEnd );
+            yield return new MeterReading ( sum, new DateTime ( endTicks, DateTimeKind.Local ) );
         }
     }
 

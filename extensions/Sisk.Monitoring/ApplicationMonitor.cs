@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Sisk.Core.Helpers;
@@ -73,13 +75,19 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     readonly Dictionary<string, int> logStreamBufferLineCounts = new ( StringComparer.OrdinalIgnoreCase );
     readonly List<HealthSnapshot> healthSnapshots = new ();
     readonly object healthSnapshotsSync = new ();
+    readonly SemaphoreSlim storeFlushLock = new ( 1, 1 );
     CancellationTokenSource? storeFlushCancellation;
     Task? storeFlushTask;
     CancellationTokenSource? healthSamplingCancellation;
     Task? healthSamplingTask;
-    int storeFlushRunning;
+    long healthVersion;
+    long lastSavedStoreVersion = -1;
+    bool storeFailing;
     bool storeStateLoaded;
+    bool storeRestoreFailed;
     bool disposed;
+
+    internal LogStream? StoreErrorLog;
 
     /// <summary>
     /// Gets or sets the title displayed in the dashboard header and browser tab.
@@ -132,7 +140,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// <summary>
     /// Flushes the current monitoring state to <see cref="Store"/>.
     /// </summary>
-    /// <returns><see langword="true"/> when a store exists and the state was saved; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> when a store exists and the state was saved or was already up to date; otherwise, <see langword="false"/>.</returns>
     public bool FlushStore () {
         return FlushStoreAsync ().GetAwaiter ().GetResult ();
     }
@@ -140,71 +148,156 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// <summary>
     /// Flushes the current monitoring state to <see cref="Store"/> asynchronously.
     /// </summary>
+    /// <remarks>
+    /// When the stored state has not been restored yet, it is restored into the captured resources before saving,
+    /// replacing their current values, so a flush never overwrites persisted data that was not loaded.
+    /// </remarks>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
-    /// <returns><see langword="true"/> when a store exists and the state was saved; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> when a store exists and the state was saved or was already up to date; otherwise, <see langword="false"/>.</returns>
     public async Task<bool> FlushStoreAsync ( CancellationToken cancellationToken = default ) {
-        if (Store is null || disposed)
-            return false;
-
-        if (Interlocked.Exchange ( ref storeFlushRunning, 1 ) == 1)
+        if (Store is not { } store || disposed)
             return false;
 
         try {
-            await Store.SaveAsync ( CreateMonitoringSnapshot (), cancellationToken ).ConfigureAwait ( false );
+            await storeFlushLock.WaitAsync ( cancellationToken ).ConfigureAwait ( false );
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            return false;
+        }
+        catch (ObjectDisposedException) {
+            return false;
+        }
+
+        try {
+            RestoreStoreState ();
+            if (storeRestoreFailed)
+                return false;
+
+            long version = GetStoreVersion ();
+            if (version == lastSavedStoreVersion)
+                return true;
+
+            await store.SaveAsync ( CreateMonitoringSnapshot (), cancellationToken ).ConfigureAwait ( false );
+            lastSavedStoreVersion = version;
+            storeFailing = false;
             return true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             return false;
         }
-        catch {
+        catch (Exception ex) {
+            if (!storeFailing) {
+                storeFailing = true;
+                StoreErrorLog?.WriteException ( ex, SR.ApplicationMonitor_StoreSaveFailed );
+            }
             return false;
         }
         finally {
-            Volatile.Write ( ref storeFlushRunning, 0 );
+            storeFlushLock.Release ();
         }
+    }
+
+    long GetStoreVersion () {
+        long version = Interlocked.Read ( ref healthVersion ) + counters.Count + meters.Count;
+
+        foreach (var counter in counters)
+            version += counter.Instance.Version;
+
+        foreach (var meter in meters)
+            version += meter.Instance.Version;
+
+        return version;
     }
 
     void RestoreStoreState () {
-        if (storeStateLoaded || Store is null)
+        if (storeStateLoaded || Store is not { } store)
             return;
 
         storeStateLoaded = true;
-        MonitoringSnapshot? snapshot = Store.LoadAsync ().ConfigureAwait ( false ).GetAwaiter ().GetResult ();
-        if (snapshot is null)
-            return;
 
-        var counterSnapshots = (snapshot.Counters ?? []).ToDictionary ( item => item.Key, StringComparer.OrdinalIgnoreCase );
-        foreach (var counter in counters) {
-            if (counterSnapshots.TryGetValue ( counter.StorageKey, out var counterSnapshot )) {
-                counter.Instance.DefaultDuration = counterSnapshot.DefaultDuration;
-                counter.Instance.ImportState ( counterSnapshot.Increments );
+        try {
+            MonitoringSnapshot? snapshot = store.LoadAsync ().ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+            if (snapshot is null)
+                return;
+
+            RestoreDefinitions ( counters, snapshot.Counters, item => item.Key, ( counter, item ) => {
+                counter.Instance.DefaultDuration = item.DefaultDuration;
+                counter.Instance.ImportState ( item.Increments ?? [] );
+            } );
+
+            RestoreDefinitions ( meters, snapshot.Meters, item => item.Key, ( meter, item ) =>
+                meter.Instance.ImportState ( item.Buckets ?? [] ) );
+
+            DateTime threshold = DateTime.Now - TimeSpan.FromDays ( 30 );
+            lock (healthSnapshotsSync) {
+                healthSnapshots.Clear ();
+                healthSnapshots.AddRange ( (snapshot.Health ?? [])
+                    .Where ( item => item is not null && item.Timestamp >= threshold )
+                    .Select ( item => new HealthSnapshot ( item.Timestamp, item.CpuPercent, item.DiskPercent, item.MemoryPercent, 0, 0, 0, string.Empty, DateTime.MinValue ) ) );
             }
-        }
 
-        var meterSnapshots = (snapshot.Meters ?? []).ToDictionary ( item => item.Key, StringComparer.OrdinalIgnoreCase );
-        foreach (var meter in meters) {
-            if (meterSnapshots.TryGetValue ( meter.StorageKey, out var meterSnapshot )) {
-                meter.Instance.ImportState ( meterSnapshot.Buckets );
-            }
+            lastSavedStoreVersion = GetStoreVersion ();
         }
-
-        DateTime threshold = DateTime.Now - TimeSpan.FromDays ( 30 );
-        lock (healthSnapshotsSync) {
-            healthSnapshots.Clear ();
-            healthSnapshots.AddRange ( (snapshot.Health ?? [])
-                .Where ( item => item.Timestamp >= threshold )
-                .Select ( item => new HealthSnapshot ( item.Timestamp, item.CpuPercent, item.DiskPercent, item.MemoryPercent, 0, 0, 0, string.Empty, DateTime.MinValue ) ) );
+        catch (Exception ex) {
+            storeRestoreFailed = true;
+            StoreErrorLog?.WriteException ( ex, SR.ApplicationMonitor_StoreRestoreFailed );
         }
     }
 
-    void StartStoreFlushLoop () {
+    static void RestoreDefinitions<TInstance, TSnapshot> (
+        List<MonitoringDefinition<TInstance>> definitions,
+        TSnapshot []? snapshots,
+        Func<TSnapshot, string?> keySelector,
+        Action<MonitoringDefinition<TInstance>, TSnapshot> import ) where TInstance : notnull {
+
+        var pending = new Dictionary<string, Queue<TSnapshot>> ( StringComparer.OrdinalIgnoreCase );
+        foreach (var snapshot in snapshots ?? []) {
+            if (snapshot is null || keySelector ( snapshot ) is not { } key)
+                continue;
+
+            ref var queue = ref CollectionsMarshal.GetValueRefOrAddDefault ( pending, key, out _ );
+            (queue ??= new ()).Enqueue ( snapshot );
+        }
+
+        foreach (var definition in definitions) {
+            if (pending.TryGetValue ( definition.StorageKey, out var queue ) && queue.TryDequeue ( out var snapshot ))
+                import ( definition, snapshot );
+        }
+    }
+
+    internal void StartStoreFlushing () {
         if (Store is null || storeFlushTask is not null)
             return;
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero ( StoreFlushInterval.TotalMilliseconds, nameof ( StoreFlushInterval ) );
 
-        storeFlushCancellation = new CancellationTokenSource ();
-        storeFlushTask = RunStoreFlushLoopAsync ( storeFlushCancellation.Token );
+        var cancellation = new CancellationTokenSource ();
+        storeFlushTask = RunStoreFlushLoopAsync ( cancellation.Token );
+        storeFlushCancellation = cancellation;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+    }
+
+    internal async Task StopStoreFlushingAsync () {
+        AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+
+        if (Interlocked.Exchange ( ref storeFlushCancellation, null ) is { } cancellation) {
+            await cancellation.CancelAsync ().ConfigureAwait ( false );
+
+            try {
+                if (storeFlushTask is { } task)
+                    await task.ConfigureAwait ( false );
+            }
+            finally {
+                storeFlushTask = null;
+                cancellation.Dispose ();
+            }
+        }
+
+        await FlushStoreAsync ().ConfigureAwait ( false );
+    }
+
+    void OnProcessExit ( object? sender, EventArgs e ) {
+        StopStoreFlushingAsync ().GetAwaiter ().GetResult ();
     }
 
     async Task RunStoreFlushLoopAsync ( CancellationToken cancellationToken ) {
@@ -802,7 +895,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         string [] logContent = logStream.Instance.PeekEntries ();
         if (logContent.Length == 0 && logStream.Instance.FilePath is { } filePath) {
             logStreamBufferLineCounts.TryGetValue ( logStream.StorageKey, out int lineCount );
-            logContent = ReadLogFileTail ( filePath, lineCount > 0 ? lineCount : 500 );
+            logContent = ReadLogFileTail ( filePath, lineCount > 0 ? lineCount : 500, logStream.Instance.Encoding );
         }
 
         string json = SerializeLogStreamPayload ( logContent );
@@ -899,11 +992,29 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with the file content, or 404 if no file is linked.</returns>
     protected virtual ValueTask<HttpResponse> GetLogStreamFileDownloadAsync ( HttpRequest request, MonitoringDefinition<LogStream> logStream ) {
         string? filePath = logStream.Instance.FilePath;
-        if (filePath is null || !File.Exists ( filePath ))
+        FileStream stream;
+        try {
+            if (filePath is null)
+                return new ValueTask<HttpResponse> ( new HttpResponse ( 404 ) );
+
+            stream = OpenSharedRead ( filePath );
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return new ValueTask<HttpResponse> ( new HttpResponse ( 404 ) );
+        }
+
+        string mimeType = MimeHelper.GetMimeType ( filePath, "application/octet-stream" );
+        var content = new StreamContent ( stream );
+        content.Headers.ContentType = MimeHelper.IsPlainTextMimeType ( mimeType )
+            ? new MediaTypeHeaderValue ( mimeType, logStream.Instance.Encoding.WebName )
+            : new MediaTypeHeaderValue ( mimeType );
+        content.Headers.ContentDisposition = new ContentDispositionHeaderValue ( "attachment" ) {
+            FileName = Path.GetFileName ( filePath )
+        };
 
         return new ValueTask<HttpResponse> ( new HttpResponse ( 200 ) {
-            Content = new FileContent ( filePath )
+            Content = content,
+            SendChunked = true
         } );
     }
 
@@ -1087,12 +1198,17 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
             healthSnapshots.RemoveAll ( item => item.Timestamp < threshold );
         }
+
+        Interlocked.Increment ( ref healthVersion );
     }
 
     HealthSnapshot ReadCurrentHealthSnapshot () {
         lock (healthSnapshotsSync) {
-            return healthSnapshots.Count > 0 ? healthSnapshots [ ^1 ] : CreateHealthSnapshot ();
+            if (healthSnapshots.Count > 0)
+                return healthSnapshots [ ^1 ];
         }
+
+        return CreateHealthSnapshot ();
     }
 
     HealthSnapshot [] ReadHealthSnapshots ( TimeSpan period, TimeSpan bucket ) {
@@ -1199,14 +1315,44 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         return 0;
     }
 
-    static string [] ReadLogFileTail ( string filePath, int lineCount ) {
-        try {
-            if (!File.Exists ( filePath ))
-                return [];
+    static FileStream OpenSharedRead ( string filePath ) {
+        return new FileStream ( filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete );
+    }
 
-            return File.ReadLines ( filePath )
-                .TakeLast ( lineCount )
-                .ToArray ();
+    static string [] ReadLogFileTail ( string filePath, int lineCount, Encoding encoding ) {
+        const int ChunkSize = 64 * 1024;
+
+        try {
+            using var stream = OpenSharedRead ( filePath );
+
+            long start = stream.Length;
+            if (encoding.GetByteCount ( "\n" ) == 1) {
+                byte [] buffer = new byte [ ChunkSize ];
+                int lineBreaks = 0;
+
+                while (start > 0 && lineBreaks <= lineCount) {
+                    int read = (int) Math.Min ( ChunkSize, start );
+                    start -= read;
+                    stream.Position = start;
+                    stream.ReadExactly ( buffer, 0, read );
+                    lineBreaks += buffer.AsSpan ( 0, read ).Count ( (byte) '\n' );
+                }
+            }
+            else {
+                start = 0;
+            }
+
+            stream.Position = start;
+            using var reader = new StreamReader ( stream, encoding, detectEncodingFromByteOrderMarks: start == 0 );
+
+            var lines = new Queue<string> ( lineCount + 1 );
+            while (reader.ReadLine () is { } line) {
+                lines.Enqueue ( line );
+                if (lines.Count > lineCount)
+                    lines.Dequeue ();
+            }
+
+            return lines.ToArray ();
         }
         catch {
             return [];
@@ -1563,7 +1709,6 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
         currentRoutePrefix = prefix;
         RestoreStoreState ();
-        StartStoreFlushLoop ();
         IRequestHandler [] handlers = [ new AuthorizationRequestHandler ( this ) ];
         routeHandlers = handlers;
 
@@ -1642,15 +1787,14 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         if (disposed)
             return;
 
-        disposed = true;
-        storeFlushCancellation?.Cancel ();
         SetHealthSampling ( enabled: false );
 
         try {
-            storeFlushTask?.ConfigureAwait ( false ).GetAwaiter ().GetResult ();
+            StopStoreFlushingAsync ().GetAwaiter ().GetResult ();
         }
         finally {
-            storeFlushCancellation?.Dispose ();
+            disposed = true;
+            storeFlushLock.Dispose ();
 
             if (Store is IAsyncDisposable asyncDisposableStore) {
                 ValueTask disposeTask = asyncDisposableStore.DisposeAsync ();
@@ -1674,18 +1818,14 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         if (disposed)
             return;
 
-        disposed = true;
-
-        if (storeFlushCancellation is not null)
-            await storeFlushCancellation.CancelAsync ().ConfigureAwait ( false );
         SetHealthSampling ( enabled: false );
 
         try {
-            if (storeFlushTask is not null)
-                await storeFlushTask.ConfigureAwait ( false );
+            await StopStoreFlushingAsync ().ConfigureAwait ( false );
         }
         finally {
-            storeFlushCancellation?.Dispose ();
+            disposed = true;
+            storeFlushLock.Dispose ();
 
             if (Store is IAsyncDisposable asyncDisposableStore) {
                 await asyncDisposableStore.DisposeAsync ().ConfigureAwait ( false );

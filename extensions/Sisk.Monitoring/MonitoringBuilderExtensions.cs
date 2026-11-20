@@ -11,12 +11,18 @@ public static class MonitoringBuilderExtensions {
 
     sealed class MonitoringHttpServerHandler ( ApplicationMonitor monitor ) : HttpServerHandler {
 
+        protected override void OnServerStarting ( HttpServer server ) {
+            monitor.StoreErrorLog = server.ServerConfiguration.ErrorsLogsStream;
+        }
+
         protected override void OnServerStarted ( HttpServer server ) {
             monitor.SetHealthSampling ( enabled: true );
+            monitor.StartStoreFlushing ();
         }
 
         protected override void OnServerStopping ( HttpServer server ) {
             monitor.SetHealthSampling ( enabled: false );
+            monitor.StopStoreFlushingAsync ().GetAwaiter ().GetResult ();
         }
 
         protected override void OnHttpRequestOpen ( HttpRequest request ) {
