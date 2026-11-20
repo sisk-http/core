@@ -463,7 +463,7 @@ public partial class Router {
         // get caller prefix from RoutePrefix first, or router module
         object [] callerTypeLevelHandlers = callerType.GetCustomAttributes ( true );
         List<IRequestHandler> callerAttrReqHandlers = new List<IRequestHandler> ( callerTypeLevelHandlers.Length );
-        Dictionary<string, object?> callerMetadata = new Dictionary<string, object?> ();
+        Dictionary<string, object?> callerMetadata = new Dictionary<string, object?> ( StringComparer.OrdinalIgnoreCase );
         string? prefix = rmodule?.Prefix;
 
         // search for an RoutePrefix handler
@@ -477,7 +477,7 @@ public partial class Router {
                 callerAttrReqHandlers.Add ( rhattr.Activate () );
             }
             else if (attr is RouteMetadataAttribute rmattr) {
-                callerMetadata.Add ( rmattr.Key, rmattr.Value );
+                callerMetadata [ rmattr.Key ] = rmattr.Value;
             }
         }
 
@@ -492,7 +492,7 @@ public partial class Router {
             object [] methodAttributes = method.GetCustomAttributes ( true );
 
             List<IRequestHandler> methodAttrReqHandlers = new List<IRequestHandler> ( methodAttributes.Length );
-            Dictionary<string, object?> routeMetadata = new Dictionary<string, object?> ();
+            Dictionary<string, object?> routeMetadata = new Dictionary<string, object?> ( callerMetadata, StringComparer.OrdinalIgnoreCase );
 
             methodAttrReqHandlers.AddRange ( callerAttrReqHandlers );
             if (rmodule is not null)
@@ -508,7 +508,7 @@ public partial class Router {
                     routeAttributes.Add ( routeAttributeItem );
                 }
                 else if (attrInstance is RouteMetadataAttribute routeMetadataItem) {
-                    routeMetadata.Add ( routeMetadataItem.Key, routeMetadataItem.Value );
+                    routeMetadata [ routeMetadataItem.Key ] = routeMetadataItem.Value;
                 }
             }
 
@@ -531,7 +531,10 @@ public partial class Router {
                     route.RequestHandlers = methodAttrReqHandlers.ToArray ();
                     route.LogMode = routeAttribute.LogMode;
                     route.UseCors = routeAttribute.UseCors;
-                    route.Bag = [ .. callerMetadata, .. routeMetadata ];
+
+                    foreach (var (key, value) in routeMetadata) {
+                        route.Bag [ key ] = value;
+                    }
 
                     if (!route.TrySetRouteAction ( method, instance, out Exception? ex )) {
                         throw ex;
