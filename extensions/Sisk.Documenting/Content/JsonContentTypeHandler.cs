@@ -51,9 +51,23 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     /// </summary>
     public bool IncludeDescriptionAnnotations { get; set; } = true;
 
-    private IJsonTypeInfoResolver _typeResolver;
-    private JsonSerializerOptions _serializerOptions;
     private JsonOptions _jsoptions;
+
+    private JsonOptions SchemaOptions => _jsoptions.DocumentationProvider is null
+        ? new JsonOptions ( _jsoptions ) { DocumentationProvider = XmlDocumentationProvider }
+        : _jsoptions;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonContentTypeHandler"/> class with the specified LightJson options.
+    /// </summary>
+    /// <param name="options">
+    /// The <see cref="JsonOptions"/> used to generate schemas and examples, such as its naming policy and serializer context.
+    /// The instance is read on each generation, so later changes to it are reflected in the documentation. When it has no
+    /// <see cref="JsonOptions.DocumentationProvider"/>, XML documentation comments are used as descriptions.
+    /// </param>
+    public JsonContentTypeHandler ( JsonOptions options ) {
+        _jsoptions = options;
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonContentTypeHandler"/> class with the specified type resolver and serializer options.
@@ -61,8 +75,6 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     /// <param name="typeResolver">The JSON type info resolver.</param>
     /// <param name="serializerOptions">The JSON serializer options.</param>
     public JsonContentTypeHandler ( IJsonTypeInfoResolver typeResolver, JsonSerializerOptions serializerOptions ) {
-        _typeResolver = typeResolver;
-        _serializerOptions = serializerOptions;
         _jsoptions = new JsonOptions () {
             SerializerContext = serializerOptions,
             DocumentationProvider = XmlDocumentationProvider
@@ -76,8 +88,6 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     [RequiresDynamicCode ( "This method calls the JsonSerializerOptions.Default, which requires dynamic code." )]
     [RequiresUnreferencedCode ( "This method calls the JsonSerializerOptions.Default, which requires unreferenced code." )]
     public JsonContentTypeHandler ( JsonSerializerOptions serializerOptions ) {
-        _typeResolver = new DefaultJsonTypeInfoResolver ();
-        _serializerOptions = serializerOptions;
         _jsoptions = new JsonOptions () {
             SerializerContext = serializerOptions,
             DocumentationProvider = XmlDocumentationProvider
@@ -90,8 +100,6 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     [RequiresDynamicCode ( "This method calls the JsonSerializerOptions.Default, which requires dynamic code." )]
     [RequiresUnreferencedCode ( "This method calls the JsonSerializerOptions.Default, which requires unreferenced code." )]
     public JsonContentTypeHandler () {
-        _typeResolver = new DefaultJsonTypeInfoResolver ();
-        _serializerOptions = JsonSerializerOptions.Default;
         _jsoptions = new JsonOptions () {
             DocumentationProvider = XmlDocumentationProvider
         };
@@ -315,7 +323,7 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
             AppendText ( "}" );
         }
 
-        var jsonSchema = JsonSchema.CreateFromType ( type, _jsoptions );
+        var jsonSchema = JsonSchema.CreateFromType ( type, SchemaOptions );
         AppendSchema ( jsonSchema.AsJsonValue () );
 
         string result = sb.ToString ();
@@ -420,7 +428,7 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
             return "any";
         }
 
-        var jsonSchema = JsonSchema.CreateFromType ( type, _jsoptions );
+        var jsonSchema = JsonSchema.CreateFromType ( type, SchemaOptions );
         AppendSchema ( jsonSchema.AsJsonValue (), [ "$" ] );
         return parameters.ToArray ();
     }
@@ -428,7 +436,7 @@ public class JsonContentTypeHandler : IExampleBodyTypeHandler, IExampleParameter
     /// <inheritdoc/>
     public virtual JsonSchema GetJsonSchemaForType ( Type type ) {
 
-        return JsonSchema.CreateFromType ( type, _jsoptions );
+        return JsonSchema.CreateFromType ( type, SchemaOptions );
     }
 
     class JsonPropertyNameComparer : IEqualityComparer<string> {
