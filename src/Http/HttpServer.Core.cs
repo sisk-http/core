@@ -381,7 +381,14 @@ public partial class HttpServer {
                 && servedContent is not CompressedContent
                 && request.Headers.AcceptEncoding is { } acceptedEncodings) {
 
+#if NET11_0_OR_GREATER
+                if (acceptedEncodings.Contains ( "zstd" )) {
+                    servedContent = new ZstandardContent ( servedContent );
+                }
+                else if (acceptedEncodings.Contains ( "br" )) {
+#else
                 if (acceptedEncodings.Contains ( "br" )) {
+#endif
                     servedContent = new BrotliContent ( servedContent );
                 }
                 else if (acceptedEncodings.Contains ( "gzip" )) {
