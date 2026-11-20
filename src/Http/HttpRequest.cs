@@ -83,6 +83,7 @@ namespace Sisk.Core.Http {
             listenerResponse = context.Response;
             listenerRequest = context.Request;
             RequestedAt = DateTime.UtcNow.Add ( HttpServer.environmentUtcOffset );
+            RequestTimestamp = Stopwatch.GetTimestamp ();
 
             requestUri = context.Request.Url ?? throw new HttpRequestException ( SR.HttpRequest_Error );
             ContentLength = listenerRequest.ContentLength64;
@@ -450,6 +451,11 @@ namespace Sisk.Core.Http {
         /// Gets the moment which the request was received by the server.
         /// </summary>
         public DateTime RequestedAt { get; private init; }
+
+        /// <summary>
+        /// Gets the timestamp in ticks of when the request was received by the server.
+        /// </summary>
+        public long RequestTimestamp { get; private init; }
 
         /// <summary>
         /// Gets the <see cref="HttpContext"/> for this request.
