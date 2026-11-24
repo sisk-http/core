@@ -8,6 +8,7 @@
 // Repository:  https://github.com/sisk-http/core
 
 using System.Reflection;
+using Sisk.Core.Http;
 using Sisk.Core.Routing;
 using Sisk.Documenting.Annotations;
 
@@ -152,10 +153,10 @@ internal class ApiDocumentationReader {
     static MethodInfo? ExtractRhExecute ( IRequestHandler rh ) {
         var rhType = rh.GetType ();
         if (rh is AsyncRequestHandler) {
-            return rhType.GetMethod ( "ExecuteAsync", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
+            return rhType.GetMethod ( "ExecuteAsync", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, [ typeof ( HttpRequest ), typeof ( HttpContext ) ] );
         }
         else {
-            return rhType.GetMethod ( "Execute", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
+            return rhType.GetMethod ( "Execute", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, [ typeof ( HttpRequest ), typeof ( HttpContext ) ] );
         }
     }
 }
