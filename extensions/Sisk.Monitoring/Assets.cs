@@ -752,8 +752,7 @@ internal class Assets {
             min-width: 0;
         }
 
-        .http-table-wrapper,
-        .http-exceptions {
+        .http-table-wrapper {
             border: 1px solid var(--border);
             border-radius: 8px;
             background: var(--surface);
@@ -805,37 +804,86 @@ internal class Assets {
             color: var(--text-muted);
         }
 
-        .http-exception {
-            padding: 0.6rem 0.9rem;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.8rem;
+        .issues-table td {
+            white-space: normal;
+            vertical-align: middle;
         }
 
-        .http-exception:last-child {
-            border-bottom: none;
+        .issues-table th:first-child,
+        .issues-table td:first-child {
+            max-width: none;
+            font-family: var(--font-sans);
         }
 
-        .http-exception-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            color: var(--text-muted);
-            font-size: 0.72rem;
-        }
-
-        .http-exception-type {
-            color: var(--danger);
-            font-family: var(--font-mono);
-            font-weight: 600;
-            word-break: break-all;
-        }
-
-        .http-exception-message {
+        .issue-title {
             color: var(--text-primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
             word-break: break-word;
         }
 
+        .issue-title:hover {
+            color: var(--accent);
+        }
+
+        .issue-meta {
+            margin-top: 0.15rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 400;
+            word-break: break-word;
+        }
+
+        .issue-location {
+            font-family: var(--font-mono);
+        }
+
+        .issue-trend {
+            display: block;
+            width: 120px;
+            height: 28px;
+            margin-left: auto;
+        }
+
+        .card-value .issue-trend {
+            margin-left: 0;
+        }
+
+        .issue-trend rect {
+            fill: var(--danger);
+        }
+
+        .issue-trend rect.empty {
+            fill: var(--border);
+        }
+
+        .issue-occurrence {
+            margin-bottom: 0.75rem;
+        }
+
+        .issue-occurrence summary {
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .issue-occurrence summary .issue-meta {
+            margin-left: 0.6rem;
+        }
+
+        .issue-stack {
+            margin: 0.75rem 0;
+            padding: 0.75rem 1rem;
+            max-height: 40vh;
+        }
+
+        .issue-section {
+            margin-bottom: 0.75rem;
+        }
+
         .meters-grid {
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             margin-bottom: 0;
         }
 
@@ -848,6 +896,7 @@ internal class Assets {
 
         .meter-card-header {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
             gap: 0.6rem;
@@ -863,80 +912,72 @@ internal class Assets {
         }
 
         .meter-expand-btn {
+            display: inline-flex;
             flex-shrink: 0;
+            padding: 0.3rem;
+            border-color: transparent;
+            background: transparent;
+        }
+
+        .meter-expand-btn svg {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .meter-card-actions {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+            gap: 0.25rem;
+        }
+
+        .meter-card-actions .usage-history-periods {
+            width: auto;
+            gap: 0;
+            padding: 2px;
+            border-radius: 6px;
+            background: var(--surface-secondary);
+        }
+
+        .meter-card-actions .usage-history-periods .toolbar-btn {
+            flex: none;
+            padding: 0.15rem 0.5rem;
+            border-color: transparent;
+            border-radius: 4px;
+            background: transparent;
+            font-size: 0.75rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .meter-card-actions .usage-history-periods .toolbar-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .meter-card-actions .usage-history-periods .toolbar-btn.active {
+            background: var(--surface);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        .meter-summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 0.3rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .meter-summary strong {
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
         }
 
         .meter-chart-container {
             position: relative;
-            height: 124px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--surface-secondary);
+            height: 200px;
             overflow: hidden;
-        }
-
-        .meter-chart-svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        .meter-chart-axis {
-            stroke: var(--border);
-            stroke-width: 1;
-            vector-effect: non-scaling-stroke;
-        }
-
-        .meter-chart-area {
-            fill: var(--accent-surface);
-        }
-
-        .meter-chart-line {
-            fill: none;
-            stroke: var(--accent);
-            stroke-width: 2;
-            stroke-linejoin: round;
-            stroke-linecap: round;
-            vector-effect: non-scaling-stroke;
-        }
-
-        .meter-chart-crosshair {
-            stroke: var(--accent);
-            stroke-width: 1;
-            stroke-dasharray: 3 3;
-            opacity: 0;
-            vector-effect: non-scaling-stroke;
-        }
-
-        .meter-chart-point {
-            fill: var(--accent);
-            stroke: var(--surface);
-            stroke-width: 2;
-            opacity: 0;
-            vector-effect: non-scaling-stroke;
-        }
-
-        .meter-chart-label {
-            fill: var(--text-muted);
-            font-size: 10px;
-            font-family: var(--font-sans);
-        }
-
-        .meter-chart-tooltip {
-            position: absolute;
-            background: var(--surface);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            border-radius: 6px;
-            font-size: 0.75rem;
-            line-height: 1.3;
-            white-space: nowrap;
-            padding: 0.25rem 0.45rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.12s;
-            z-index: 2;
         }
 
         .meter-chart-empty {
@@ -968,6 +1009,8 @@ internal class Assets {
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
         }
 
         .meter-modal-header {
@@ -982,35 +1025,6 @@ internal class Assets {
             font-weight: 700;
         }
 
-        .meter-modal-stats {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.65rem;
-        }
-
-        .meter-stat {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--surface-secondary);
-            padding: 0.6rem 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.15rem;
-        }
-
-        .meter-stat-label {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .meter-stat-value {
-            font-size: 1rem;
-            color: var(--text-primary);
-        }
-
         .meter-modal-chart {
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -1018,8 +1032,6 @@ internal class Assets {
         }
 
         .meter-modal-chart .meter-chart-container {
-            border: none;
-            border-radius: 0;
             height: 320px;
         }
 
@@ -1237,15 +1249,6 @@ internal class Assets {
                 flex: 1;
             }
 
-            .meter-modal-stats {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .meter-modal {
-                max-height: calc(100vh - 2rem);
-                overflow-y: auto;
-            }
-
             .meter-modal-chart .meter-chart-container {
                 height: 250px;
             }
@@ -1299,6 +1302,7 @@ internal class Assets {
             let selectedHealthPeriod = '1h';
             let selectedHttpPeriod = '1h';
             let httpPayload = null;
+            const meterPayloads = new Map();
             let renderedLogLineCount = 0;
             let renderedLogLastLine = null;
 
@@ -1313,30 +1317,6 @@ internal class Assets {
                 const date = value instanceof Date ? value : new Date(value);
                 if (Number.isNaN(date.getTime())) return '-';
                 return dateFormatter.format(date);
-            }
-
-            function parseReadings(raw) {
-                let parsed = raw;
-                if (typeof raw === 'string') {
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch {
-                        parsed = [];
-                    }
-                }
-                if (!Array.isArray(parsed)) {
-                    return [];
-                }
-                return parsed
-                    .map(item => {
-                        const timestamp = new Date(item?.timestamp);
-                        const value = Number(item?.value ?? 0);
-                        if (Number.isNaN(timestamp.getTime())) {
-                            return null;
-                        }
-                        return { timestamp, value: Number.isFinite(value) ? value : 0 };
-                    })
-                    .filter(item => item !== null);
             }
 
             function parseHealthReadings(raw) {
@@ -1373,211 +1353,34 @@ internal class Assets {
                     }));
             }
 
-            function calculateStats(readings) {
-                const values = readings.map(r => r.value);
-                const total = values.reduce((sum, value) => sum + value, 0);
-                return {
-                    min: values.length ? Math.min(...values) : 0,
-                    max: values.length ? Math.max(...values) : 0,
-                    avg: values.length ? total / values.length : 0,
-                    total
-                };
-            }
-
             function createSvgElement(tag) {
                 return document.createElementNS('http://www.w3.org/2000/svg', tag);
-            }
-
-            function getMeterFromCard(card) {
-                const chartContainer = card.querySelector('.meter-chart-container');
-                return {
-                    id: card.getAttribute('data-meter-id') ?? chartContainer?.getAttribute('data-meter-id') ?? '',
-                    label: card.getAttribute('data-meter-label') ?? 'Meter',
-                    readings: parseReadings(chartContainer?.getAttribute('data-readings') ?? '[]')
-                };
-            }
-
-            function renderMeterChart(container, readings, options = {}) {
-                const chartHeight = Number(options.height ?? 112);
-                const showAxes = options.showAxes === true;
-                const interactive = options.interactive !== false;
-                const width = Math.max(220, container.clientWidth || 220);
-                const padding = {
-                    top: 10,
-                    right: 10,
-                    bottom: showAxes ? 28 : 10,
-                    left: showAxes ? 34 : 10
-                };
-                const plotWidth = Math.max(1, width - padding.left - padding.right);
-                const plotHeight = Math.max(1, chartHeight - padding.top - padding.bottom);
-                const valueTarget = container.closest('.meter-card')?.querySelector('.meter-current-value');
-
-                container.innerHTML = '';
-
-                if (!readings.length) {
-                    container.classList.add('meter-chart-empty');
-                    container.textContent = 'No data';
-                    if (valueTarget) {
-                        valueTarget.dataset.defaultValue = '-';
-                        valueTarget.textContent = '-';
-                    }
-                    return;
-                }
-
-                container.classList.remove('meter-chart-empty');
-
-                const values = readings.map(reading => reading.value);
-                const minValue = Math.min(0, ...values);
-                let maxValue = Math.max(...values);
-                if (maxValue <= minValue) {
-                    maxValue = minValue + 1;
-                }
-
-                const points = readings.map((reading, index) => {
-                    const x = padding.left + ((readings.length <= 1 ? 0 : index / (readings.length - 1)) * plotWidth);
-                    const yFactor = (reading.value - minValue) / (maxValue - minValue);
-                    const y = padding.top + ((1 - yFactor) * plotHeight);
-                    return { x, y, reading };
-                });
-
-                const totalValue = values.reduce((sum, value) => sum + value, 0);
-                const defaultValue = formatNumber(totalValue);
-                if (valueTarget) {
-                    valueTarget.dataset.defaultValue = defaultValue;
-                    valueTarget.textContent = defaultValue;
-                }
-
-                const svg = createSvgElement('svg');
-                svg.setAttribute('class', 'meter-chart-svg');
-                svg.setAttribute('viewBox', `0 0 ${width} ${chartHeight}`);
-                svg.setAttribute('preserveAspectRatio', 'none');
-
-                if (showAxes) {
-                    const horizontalAxis = createSvgElement('line');
-                    horizontalAxis.setAttribute('class', 'meter-chart-axis');
-                    horizontalAxis.setAttribute('x1', String(padding.left));
-                    horizontalAxis.setAttribute('x2', String(width - padding.right));
-                    horizontalAxis.setAttribute('y1', String(chartHeight - padding.bottom));
-                    horizontalAxis.setAttribute('y2', String(chartHeight - padding.bottom));
-                    svg.appendChild(horizontalAxis);
-
-                    const leftLabel = createSvgElement('text');
-                    leftLabel.setAttribute('class', 'meter-chart-label');
-                    leftLabel.setAttribute('x', String(padding.left));
-                    leftLabel.setAttribute('y', String(chartHeight - 8));
-                    leftLabel.textContent = formatDate(readings[0].timestamp);
-                    svg.appendChild(leftLabel);
-
-                    const rightLabel = createSvgElement('text');
-                    rightLabel.setAttribute('class', 'meter-chart-label');
-                    rightLabel.setAttribute('x', String(width - padding.right));
-                    rightLabel.setAttribute('y', String(chartHeight - 8));
-                    rightLabel.setAttribute('text-anchor', 'end');
-                    rightLabel.textContent = formatDate(readings[readings.length - 1].timestamp);
-                    svg.appendChild(rightLabel);
-                }
-
-                const area = createSvgElement('polygon');
-                const areaPoints = [
-                    `${padding.left},${padding.top + plotHeight}`,
-                    ...points.map(point => `${point.x},${point.y}`),
-                    `${padding.left + plotWidth},${padding.top + plotHeight}`
-                ];
-                area.setAttribute('class', 'meter-chart-area');
-                area.setAttribute('points', areaPoints.join(' '));
-                svg.appendChild(area);
-
-                const line = createSvgElement('polyline');
-                line.setAttribute('class', 'meter-chart-line');
-                line.setAttribute('points', points.map(point => `${point.x},${point.y}`).join(' '));
-                svg.appendChild(line);
-
-                const crosshair = createSvgElement('line');
-                crosshair.setAttribute('class', 'meter-chart-crosshair');
-                svg.appendChild(crosshair);
-
-                const marker = createSvgElement('circle');
-                marker.setAttribute('class', 'meter-chart-point');
-                marker.setAttribute('r', '4');
-                svg.appendChild(marker);
-
-                const tooltip = document.createElement('div');
-                tooltip.className = 'meter-chart-tooltip';
-                container.appendChild(svg);
-                container.appendChild(tooltip);
-
-                if (!interactive) {
-                    return;
-                }
-
-                function hideHover() {
-                    crosshair.style.opacity = '0';
-                    marker.style.opacity = '0';
-                    tooltip.style.opacity = '0';
-                    if (valueTarget) {
-                        valueTarget.textContent = valueTarget.dataset.defaultValue ?? '-';
-                    }
-                }
-
-                svg.addEventListener('mousemove', event => {
-                    const bounds = svg.getBoundingClientRect();
-                    const relativeX = ((event.clientX - bounds.left) / bounds.width) * width;
-                    const normalized = (relativeX - padding.left) / plotWidth;
-                    const index = Math.max(0, Math.min(points.length - 1, Math.round(normalized * (points.length - 1))));
-                    const point = points[index];
-
-                    crosshair.setAttribute('x1', String(point.x));
-                    crosshair.setAttribute('x2', String(point.x));
-                    crosshair.setAttribute('y1', String(padding.top));
-                    crosshair.setAttribute('y2', String(padding.top + plotHeight));
-                    crosshair.style.opacity = '1';
-
-                    marker.setAttribute('cx', String(point.x));
-                    marker.setAttribute('cy', String(point.y));
-                    marker.style.opacity = '1';
-
-                    tooltip.textContent = `${formatDate(point.reading.timestamp)} · ${formatNumber(point.reading.value)}`;
-                    tooltip.style.opacity = '1';
-
-                    const tooltipMargin = 8;
-                    const tooltipWidth = tooltip.offsetWidth;
-                    const tooltipHeight = tooltip.offsetHeight;
-
-                    let tooltipLeft = point.x - (tooltipWidth / 2);
-                    tooltipLeft = Math.max(tooltipMargin, Math.min(width - tooltipWidth - tooltipMargin, tooltipLeft));
-
-                    let tooltipTop = point.y - tooltipHeight - 10;
-                    if (tooltipTop < tooltipMargin)
-                    {
-                        tooltipTop = point.y + 10;
-                    }
-                    tooltipTop = Math.max(tooltipMargin, Math.min(chartHeight - tooltipHeight - tooltipMargin, tooltipTop));
-
-                    tooltip.style.left = `${tooltipLeft}px`;
-                    tooltip.style.top = `${tooltipTop}px`;
-
-                    if (valueTarget) {
-                        valueTarget.textContent = formatNumber(point.reading.value);
-                    }
-                });
-
-                svg.addEventListener('mouseleave', hideHover);
             }
 
             function renderHealthChart(container, readings, options = {}) {
                 const chartHeight = options.height ?? 320;
                 const width = Math.max(320, container.clientWidth || 320);
-                const padding = { top: 26, right: 18, bottom: 30, left: 42 };
-                const plotWidth = Math.max(1, width - padding.left - padding.right);
-                const plotHeight = Math.max(1, chartHeight - padding.top - padding.bottom);
                 const series = options.series ?? [
                     { key: 'cpu', label: 'CPU', color: 'var(--chart-cpu)' },
                     { key: 'memory', label: 'RAM', color: 'var(--chart-memory)' },
                     { key: 'disk', label: 'Disk', color: 'var(--chart-disk)' }
                 ];
+                const scaleMin = options.scaleMin ?? 0;
                 const scaleMax = options.scaleMax ?? 100;
                 const formatValue = options.formatValue ?? (value => `${formatNumber(value)}%`);
                 const formatAxisValue = options.formatAxisValue ?? (value => `${value}%`);
+                const axisTicks = [0, 0.25, 0.5, 0.75, 1].map(fraction => ({
+                    fraction,
+                    text: formatAxisValue(scaleMin + (fraction * (scaleMax - scaleMin)))
+                }));
+                const padding = {
+                    top: 26,
+                    right: 18,
+                    bottom: 30,
+                    left: Math.max(42, 14 + (6 * Math.max(...axisTicks.map(tick => tick.text.length))))
+                };
+                const plotWidth = Math.max(1, width - padding.left - padding.right);
+                const plotHeight = Math.max(1, chartHeight - padding.top - padding.bottom);
                 const firstTimestamp = readings[0]?.timestamp.getTime() ?? 0;
                 const lastTimestamp = readings[readings.length - 1]?.timestamp.getTime() ?? firstTimestamp;
                 const timestampRange = Math.max(1, lastTimestamp - firstTimestamp);
@@ -1597,7 +1400,7 @@ internal class Assets {
                 svg.setAttribute('viewBox', `0 0 ${width} ${chartHeight}`);
                 svg.setAttribute('preserveAspectRatio', 'none');
 
-                [0, 0.25, 0.5, 0.75, 1].forEach(fraction => {
+                axisTicks.forEach(({ fraction, text }) => {
                     const y = padding.top + ((1 - fraction) * plotHeight);
 
                     const grid = createSvgElement('line');
@@ -1613,7 +1416,7 @@ internal class Assets {
                     label.setAttribute('x', String(padding.left - 8));
                     label.setAttribute('y', String(y + 3));
                     label.setAttribute('text-anchor', 'end');
-                    label.textContent = formatAxisValue(Math.round(fraction * scaleMax));
+                    label.textContent = text;
                     svg.appendChild(label);
                 });
 
@@ -1636,8 +1439,9 @@ internal class Assets {
                     ...item,
                     points: readings.map(reading => {
                         const x = padding.left + ((reading.timestamp.getTime() - firstTimestamp) / timestampRange * plotWidth);
-                        const value = Math.max(0, Math.min(scaleMax, Number(reading[item.key] ?? 0)));
-                        const y = padding.top + ((scaleMax - value) / scaleMax * plotHeight);
+                        const raw = reading[item.key];
+                        const value = raw === null || raw === undefined ? null : Math.max(scaleMin, Math.min(scaleMax, Number(raw)));
+                        const y = padding.top + ((scaleMax - (value ?? scaleMin)) / (scaleMax - scaleMin) * plotHeight);
                         return { x, y, value, reading };
                     })
                 }));
@@ -1646,7 +1450,10 @@ internal class Assets {
                     const line = createSvgElement('polyline');
                     line.setAttribute('class', 'health-chart-line');
                     line.setAttribute('stroke', item.color);
-                    line.setAttribute('points', item.points.map(point => `${point.x},${point.y}`).join(' '));
+                    line.setAttribute('points', item.points
+                        .filter(point => point.value !== null)
+                        .map(point => `${point.x},${point.y}`)
+                        .join(' '));
                     svg.appendChild(line);
                 });
 
@@ -1679,7 +1486,9 @@ internal class Assets {
                 });
 
                 container.appendChild(svg);
-                container.appendChild(legend);
+                if (options.legend !== false) {
+                    container.appendChild(legend);
+                }
 
                 const tooltip = document.createElement('div');
                 tooltip.className = 'health-chart-tooltip';
@@ -1711,12 +1520,12 @@ internal class Assets {
                         const point = item.points[index];
                         item.marker.setAttribute('cx', String(point.x));
                         item.marker.setAttribute('cy', String(point.y));
-                        item.marker.style.opacity = '1';
+                        item.marker.style.opacity = point.value === null ? '0' : '1';
                     });
 
                     tooltip.innerHTML = [
                         `<strong>${formatDate(reading.timestamp)}</strong>`,
-                        ...series.map(item => `${item.label}: ${formatValue(reading[item.key])}`)
+                        ...series.map(item => `${escapeHtml(item.label)}: ${escapeHtml(formatValue(reading[item.key]))}`)
                     ].join('<br>');
                     tooltip.style.opacity = '1';
 
@@ -1765,17 +1574,21 @@ internal class Assets {
                     .filter(item => item !== null);
             }
 
+            function niceScaleMax(rawMax) {
+                const magnitude = 10 ** Math.floor(Math.log10(rawMax));
+                return Math.ceil(rawMax / (magnitude / 2)) * (magnitude / 2);
+            }
+
             function renderHttpChart(container, readings, series, formatValue) {
                 const rawMax = Math.max(1, ...readings.flatMap(reading => series.map(item => Number(reading[item.key] ?? 0))));
-                const magnitude = 10 ** Math.floor(Math.log10(rawMax));
-                const scaleMax = Math.max(4, Math.ceil(rawMax / (magnitude / 2)) * (magnitude / 2));
+                const scaleMax = Math.max(4, niceScaleMax(rawMax));
 
                 renderHealthChart(container, readings, {
                     series,
                     scaleMax,
                     height: 240,
                     formatValue,
-                    formatAxisValue: value => String(value)
+                    formatAxisValue: value => String(Math.round(value))
                 });
             }
 
@@ -1810,14 +1623,6 @@ internal class Assets {
                 return `${numeric.toFixed(1)} ms`;
             }
 
-            function setModalStats(modal, readings) {
-                const stats = calculateStats(readings);
-                modal.querySelector('[data-stat="min"]').textContent = formatNumber(stats.min);
-                modal.querySelector('[data-stat="max"]').textContent = formatNumber(stats.max);
-                modal.querySelector('[data-stat="avg"]').textContent = formatNumber(stats.avg);
-                modal.querySelector('[data-stat="total"]').textContent = formatNumber(stats.total);
-            }
-
             function closeMeterModal() {
                 document.querySelector('.meter-modal-overlay')?.remove();
             }
@@ -1831,87 +1636,116 @@ internal class Assets {
                     .replaceAll("'", '&#039;');
             }
 
-            function openMeterModal(meter) {
+            function openMeterModal(card) {
                 closeMeterModal();
 
+                const label = escapeHtml(card.getAttribute('data-meter-label') ?? 'Meter');
                 const overlay = document.createElement('div');
                 overlay.className = 'meter-modal-overlay';
-                overlay.setAttribute('data-meter-id', meter.id);
+                overlay.setAttribute('data-meter-id', card.getAttribute('data-meter-id') ?? '');
                 overlay.innerHTML = `
-                    <div class="meter-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(meter.label)}">
+                    <div class="meter-modal" role="dialog" aria-modal="true" aria-label="${label}">
                         <div class="meter-modal-header">
-                            <h2>${escapeHtml(meter.label)}</h2>
-                            <button type="button" class="toolbar-btn meter-modal-close-btn">Close</button>
+                            <h2>${label}</h2>
+                            <div class="meter-card-actions">
+                                ${card.querySelector('.usage-history-periods')?.outerHTML ?? ''}
+                                <button type="button" class="toolbar-btn meter-modal-close-btn">Close</button>
+                            </div>
                         </div>
-                        <div class="meter-modal-stats">
-                            <div class="meter-stat"><span class="meter-stat-label">Min</span><strong class="meter-stat-value" data-stat="min"></strong></div>
-                            <div class="meter-stat"><span class="meter-stat-label">Max</span><strong class="meter-stat-value" data-stat="max"></strong></div>
-                            <div class="meter-stat"><span class="meter-stat-label">Avg</span><strong class="meter-stat-value" data-stat="avg"></strong></div>
-                            <div class="meter-stat"><span class="meter-stat-label">Total</span><strong class="meter-stat-value" data-stat="total"></strong></div>
-                        </div>
+                        <div class="meter-summary"></div>
                         <div class="meter-modal-chart">
-                            <div class="meter-chart-container" data-meter-id="${escapeHtml(meter.id)}"></div>
+                            <div class="meter-chart-container"></div>
                         </div>
+                        <div class="http-table-wrapper" data-meter-stats></div>
                     </div>
                 `;
 
                 document.body.appendChild(overlay);
+                renderMeter(card);
 
-                const modal = overlay.querySelector('.meter-modal');
-                const modalChart = overlay.querySelector('.meter-modal-chart .meter-chart-container');
-
-                setModalStats(overlay, meter.readings);
-                renderMeterChart(modalChart, meter.readings, {
-                    height: 320,
-                    showAxes: true,
-                    interactive: true
+                overlay.addEventListener('click', event => {
+                    if (event.target === overlay) {
+                        closeMeterModal();
+                    }
                 });
-
-                overlay.addEventListener('click', () => closeMeterModal());
-                modal.addEventListener('click', event => event.stopPropagation());
                 overlay.querySelector('.meter-modal-close-btn')?.addEventListener('click', () => closeMeterModal());
             }
 
-            function renderMeterCards() {
-                document.querySelectorAll('.meter-card').forEach(card => {
-                    const meter = getMeterFromCard(card);
-                    const chartContainer = card.querySelector('.meter-chart-container');
-                    if (!chartContainer) {
-                        return;
-                    }
-                    renderMeterChart(chartContainer, meter.readings, {
-                        height: 112,
-                        showAxes: false,
-                        interactive: true
+            function renderMeter(card) {
+                const payload = meterPayloads.get(card.getAttribute('data-meter-id'));
+                if (!payload) {
+                    return;
+                }
+
+                const { minimum: scaleMin, maximum: scaleMax, ticks } = payload.axis;
+                const texts = new Map(ticks.map((text, index) => [scaleMin + ((index / 4) * (scaleMax - scaleMin)), text]));
+                payload.series.forEach(item => texts.set(item.summary, item.summaryText));
+                payload.readings.forEach(reading => reading.values.forEach((value, index) => texts.set(value, reading.texts[index])));
+
+                const formatValue = value => texts.get(value) ?? '-';
+
+                const series = payload.series.map((item, index) => ({
+                    key: `s${index}`,
+                    label: item.name || payload.label,
+                    color: `var(--log-token-${index % 8}-text)`,
+                    summary: item.summary
+                }));
+                const readings = payload.readings.map(reading => ({
+                    timestamp: new Date(reading.timestamp),
+                    ...Object.fromEntries(reading.values.map((value, index) => [`s${index}`, value]))
+                }));
+
+                const summary = series.length <= 1
+                    ? `<span class="card-value meter-current-value">${escapeHtml(formatValue(series[0]?.summary))}</span>`
+                    : series.map(item => `
+                        <span class="health-chart-legend-item">
+                            <span class="health-chart-swatch" style="background: ${item.color}"></span>
+                            <span>${escapeHtml(item.label)}</span>
+                            <strong>${escapeHtml(formatValue(item.summary))}</strong>
+                        </span>`).join('');
+
+                const overlay = document.querySelector('.meter-modal-overlay');
+                const targets = overlay?.getAttribute('data-meter-id') === payload.id ? [card, overlay] : [card];
+                const selectedPeriod = card.getAttribute('data-selected-period');
+
+                targets.forEach(target => {
+                    const chart = target.querySelector('.meter-chart-container');
+
+                    target.querySelectorAll('[data-meter-period]').forEach(button => {
+                        const selected = button.getAttribute('data-meter-period') === selectedPeriod;
+                        button.classList.toggle('active', selected);
+                        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                    });
+
+                    target.querySelector('.meter-summary').innerHTML = summary;
+                    renderHealthChart(chart, readings, {
+                        series,
+                        scaleMin,
+                        scaleMax,
+                        height: chart.clientHeight,
+                        legend: false,
+                        formatValue,
+                        formatAxisValue: formatValue
                     });
                 });
-            }
 
-            function getOpenModalId() {
-                return document.querySelector('.meter-modal-overlay')?.getAttribute('data-meter-id') ?? null;
-            }
+                if (targets.length > 1) {
+                    const summaryLabel = { Sum: 'Total', Average: 'Average', Maximum: 'Peak', Last: 'Latest' }[payload.aggregation];
+                    const rows = series.map(item => {
+                        const seriesValues = readings.map(reading => reading[item.key]).filter(value => value !== null);
+                        const cells = [
+                            item.label,
+                            formatValue(item.summary),
+                            formatValue(seriesValues.length ? Math.min(...seriesValues) : null),
+                            formatValue(seriesValues.length ? Math.max(...seriesValues) : null)
+                        ];
 
-            function refreshOpenModal(payloadById) {
-                const openModalId = getOpenModalId();
-                if (!openModalId || !payloadById.has(openModalId)) {
-                    return;
+                        return `<tr>${cells.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`;
+                    }).join('');
+
+                    overlay.querySelector('[data-meter-stats]').innerHTML =
+                        `<table class="http-table"><thead><tr><th>Series</th><th>${summaryLabel}</th><th>Min</th><th>Max</th></tr></thead><tbody>${rows}</tbody></table>`;
                 }
-
-                const meterPayload = payloadById.get(openModalId);
-                const readings = parseReadings(meterPayload.readings ?? []);
-                const overlay = document.querySelector('.meter-modal-overlay');
-                const modalChart = overlay?.querySelector('.meter-modal-chart .meter-chart-container');
-
-                if (!overlay || !modalChart) {
-                    return;
-                }
-
-                setModalStats(overlay, readings);
-                renderMeterChart(modalChart, readings, {
-                    height: 320,
-                    showAxes: true,
-                    interactive: true
-                });
             }
 
             function refreshMeters() {
@@ -1919,40 +1753,28 @@ internal class Assets {
                     return;
                 }
 
-                fetchJson(metersEndpoint)
-                    .then(payload => {
-                        if (!Array.isArray(payload)) {
-                            return;
-                        }
+                const cards = Array.from(document.querySelectorAll('.meter-card'));
+                const separator = metersEndpoint.includes('?') ? '&' : '?';
 
-                        const payloadById = new Map(payload
-                            .filter(item => item && typeof item.id === 'string')
-                            .map(item => [item.id, item]));
-
-                        document.querySelectorAll('.meter-card').forEach(card => {
-                            const meterId = card.getAttribute('data-meter-id');
-                            if (!meterId || !payloadById.has(meterId)) {
+                new Set(cards.map(card => card.getAttribute('data-selected-period'))).forEach(period => {
+                    fetchJson(`${metersEndpoint}${separator}period=${encodeURIComponent(period)}`)
+                        .then(payload => {
+                            if (!Array.isArray(payload)) {
                                 return;
                             }
 
-                            const meterPayload = payloadById.get(meterId);
-                            const chartContainer = card.querySelector('.meter-chart-container');
-                            const readings = parseReadings(meterPayload.readings ?? []);
+                            payload.forEach(item => {
+                                const card = cards.find(candidate =>
+                                    candidate.getAttribute('data-meter-id') === item.id
+                                    && candidate.getAttribute('data-selected-period') === item.period);
 
-                            if (chartContainer) {
-                                chartContainer.setAttribute('data-readings', JSON.stringify(meterPayload.readings ?? []));
-                                renderMeterChart(chartContainer, readings, {
-                                    height: 112,
-                                    showAxes: false,
-                                    interactive: true
-                                });
-                            }
+                                if (card) {
+                                    meterPayloads.set(item.id, item);
+                                    renderMeter(card);
+                                }
+                            });
                         });
-
-                        refreshOpenModal(payloadById);
-                    })
-                    .catch(() => {
-                    });
+                });
             }
 
             function refreshHealth() {
@@ -2104,30 +1926,6 @@ internal class Assets {
                 ]);
             }
 
-            function renderHttpExceptions(http) {
-                const list = document.querySelector('[data-http-exceptions]');
-                if (!list) {
-                    return;
-                }
-
-                const exceptions = Array.isArray(http.exceptions) ? http.exceptions : [];
-                if (!exceptions.length) {
-                    list.innerHTML = '<p class="http-table-empty">No exceptions recorded.</p>';
-                    return;
-                }
-
-                list.innerHTML = exceptions.map(item => `
-                    <div class="http-exception">
-                        <div class="http-exception-header">
-                            <span>${escapeHtml(item.route)}</span>
-                            <span>${escapeHtml(formatDate(item.timestamp))}</span>
-                        </div>
-                        <div class="http-exception-type">${escapeHtml(item.type)}</div>
-                        <div class="http-exception-message">${escapeHtml(item.message)}</div>
-                    </div>
-                `).join('');
-            }
-
             function refreshDashboard() {
                 if (!httpEndpoint) {
                     return;
@@ -2145,7 +1943,12 @@ internal class Assets {
                             renderHttpStats(httpPayload);
                             renderHttpCharts();
                             renderHttpTables(httpPayload);
-                            renderHttpExceptions(httpPayload);
+                        }
+
+                        const recentIssues = document.querySelector('[data-recent-issues]');
+                        if (recentIssues) {
+                            recentIssues.innerHTML = payload.issues
+                                || '<div class="http-table-wrapper"><p class="http-table-empty">No unresolved issues.</p></div>';
                         }
 
                         applyCounterValues(payload.counters);
@@ -2484,6 +2287,20 @@ internal class Assets {
                     return;
                 }
 
+                const periodButton = event.target.closest('[data-meter-period]');
+                if (periodButton) {
+                    const meterId = periodButton.closest('[data-meter-id]')?.getAttribute('data-meter-id');
+                    const periodCard = Array.from(document.querySelectorAll('.meter-card'))
+                        .find(item => item.getAttribute('data-meter-id') === meterId);
+
+                    if (periodCard) {
+                        periodCard.setAttribute('data-selected-period', periodButton.getAttribute('data-meter-period'));
+                        renderMeter(periodCard);
+                        refreshMeters();
+                    }
+                    return;
+                }
+
                 const expandButton = event.target.closest('.meter-expand-btn');
                 if (!expandButton) {
                     return;
@@ -2494,40 +2311,17 @@ internal class Assets {
                     return;
                 }
 
-                const meter = getMeterFromCard(card);
-                openMeterModal(meter);
+                openMeterModal(card);
             });
 
             window.addEventListener('resize', () => {
                 applyExpandedSizing();
-                renderMeterCards();
-
-                const overlay = document.querySelector('.meter-modal-overlay');
-                if (overlay) {
-                    const openModalId = overlay.getAttribute('data-meter-id');
-                    if (openModalId) {
-                        const sourceCard = document.querySelector(`.meter-card[data-meter-id="${openModalId}"]`);
-                        if (sourceCard) {
-                            const meter = getMeterFromCard(sourceCard);
-                            const modalChart = overlay.querySelector('.meter-modal-chart .meter-chart-container');
-                            if (modalChart) {
-                                renderMeterChart(modalChart, meter.readings, {
-                                    height: 320,
-                                    showAxes: true,
-                                    interactive: true
-                                });
-                            }
-                            setModalStats(overlay, meter.readings);
-                        }
-                    }
-                }
+                document.querySelectorAll('.meter-card').forEach(renderMeter);
 
                 if (httpEndpoint) {
                     renderHttpCharts();
                 }
             });
-
-            renderMeterCards();
 
             if (healthChart) {
                 renderHealthChart(healthChart, parseHealthReadings(healthChart.getAttribute('data-health-readings') ?? '[]'));

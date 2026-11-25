@@ -18,6 +18,11 @@ namespace Sisk.Monitoring;
 public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
     const string InFlightBagKey = "Sisk.Monitoring.InFlight";
+    const int DashboardIssueCount = 5;
+
+    static readonly TimeSpan [] MeterTicks = new [] { 1, 5, 10, 15, 30, 60, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 }
+        .Select ( seconds => TimeSpan.FromSeconds ( seconds ) )
+        .ToArray ();
 
     string? currentRoutePrefix = null;
     IRequestHandler []? routeHandlers;
@@ -69,6 +74,16 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16H20V5H4V16ZM13 18V20H17V22H7V20H11V18H2.9918C2.44405 18 2 17.5511 2 16.9925V4.00748C2 3.45107 2.45531 3 2.9918 3H21.0082C21.556 3 22 3.44892 22 4.00748V16.9925C22 17.5489 21.5447 18 21.0082 18H13Z"></path></svg>
         """;
 
+    // expand-diagonal-line from Remix Icon
+    const string ExpandIcon = """
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5858 5H14V3H21V10H19V6.41421L14.7071 10.7071L13.2929 9.29289L17.5858 5ZM3 14H5V17.5858L9.29289 13.2929L10.7071 14.7071L6.41421 19H10V21H3V14Z"></path></svg>
+        """;
+
+    // error-warning-line from Remix Icon
+    const string ErrorIcon = """
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
+        """;
+
     List<MonitoringDefinition<LogStream>> capturingLogStreams = new ();
     List<MonitoringDefinition<Counter>> counters = new ();
     List<MonitoringDefinition<Meter>> meters = new ();
@@ -100,6 +115,13 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     public Func<NetworkCredential, ValueTask<bool>>? CredentialValidator { get; set; } = null;
 
     /// <summary>
+    /// Gets or sets the request handler that authenticates every dashboard route in place of the default HTTP Basic authentication.
+    /// When <see langword="null"/>, the dashboard uses HTTP Basic authentication validated by <see cref="CredentialValidator"/>, which is ignored otherwise.
+    /// The handler must be set before the monitoring routes are registered and must return a response for requests it does not authorize.
+    /// </summary>
+    public IRequestHandler? AuthenticationHandler { get; set; }
+
+    /// <summary>
     /// Gets or sets the optional store used to persist and restore monitoring state.
     /// </summary>
     public IMonitoringStore? Store { get; set; }
@@ -108,6 +130,18 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     /// Gets or sets the interval used to flush monitoring state to <see cref="Store"/>.
     /// </summary>
     public TimeSpan StoreFlushInterval { get; set; } = TimeSpan.FromSeconds ( 10 );
+
+    /// <summary>
+    /// Gets or sets the console that collects the exceptions shown in the errors page. Set to <see langword="null"/>
+    /// to disable the errors page.
+    /// </summary>
+    public MonitoringErrorConsole? ErrorConsole { get; set; } = new DefaultMonitoringErrorConsole ();
+
+    /// <summary>
+    /// Gets the request handlers that run on every monitoring endpoint, after the dashboard authentication.
+    /// Handlers must be added before the monitoring routes are registered in the router.
+    /// </summary>
+    public IList<IRequestHandler> RequestHandlers { get; } = new List<IRequestHandler> ();
 
     /// <summary>
     /// Registers a counter for monitoring within the dashboard.
@@ -198,7 +232,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     long GetStoreVersion () {
-        long version = Interlocked.Read ( ref healthVersion ) + counters.Count + meters.Count;
+        long version = Interlocked.Read ( ref healthVersion ) + counters.Count + meters.Count + (ErrorConsole?.Version ?? 0);
 
         foreach (var counter in counters)
             version += counter.Instance.Version;
@@ -227,6 +261,8 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
             RestoreDefinitions ( meters, snapshot.Meters, item => item.Key, ( meter, item ) =>
                 meter.Instance.ImportState ( item.Buckets ?? [] ) );
+
+            ErrorConsole?.ImportState ( snapshot.Issues ?? [] );
 
             DateTime threshold = DateTime.Now - TimeSpan.FromDays ( 30 );
             lock (healthSnapshotsSync) {
@@ -333,7 +369,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                 .ToArray ();
         }
 
-        return new MonitoringSnapshot ( DateTime.Now, countersSnapshot, metersSnapshot, healthSnapshot );
+        return new MonitoringSnapshot ( DateTime.Now, countersSnapshot, metersSnapshot, healthSnapshot, ErrorConsole?.ExportState () ?? [] );
     }
 
     /// <summary>
@@ -439,6 +475,8 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
                 section += WriteNavItem ( PrefixPath ( "/" ), "Dashboard", DashboardIcon, activeNavItem == "dashboard" );
                 section += WriteNavItem ( PrefixPath ( "/health" ), "Server Health", HealthIcon, activeNavItem == "health" );
+                if (ErrorConsole is not null)
+                    section += WriteNavItem ( PrefixPath ( "/errors" ), "Errors", ErrorIcon, activeNavItem == "errors" );
                 if (counters.Count > 0)
                     section += WriteNavItem ( PrefixPath ( "/counters" ), "Counters", CounterIcon, activeNavItem == "counters" );
                 if (meters.Count > 0)
@@ -593,15 +631,19 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                     }
                 } );
 
-                section += new HtmlElement ( "div", block => {
-                    block.ClassList.Add ( "http-table-block" );
-                    block += new HtmlElement ( "h3", "Recent exceptions" ).WithClass ( "group-title" );
-                    block += new HtmlElement ( "div", list => {
-                        list.ClassList.Add ( "http-exceptions" );
-                        list.Attributes [ "data-http-exceptions" ] = "";
-                        list += new HtmlElement ( "p", "No exceptions recorded." ).WithClass ( "http-table-empty" );
+                if (ErrorConsole is not null) {
+                    section += new HtmlElement ( "div", block => {
+                        block.ClassList.Add ( "http-table-block" );
+                        block += new HtmlElement ( "h3", "Recent exceptions" ).WithClass ( "group-title" );
+                        block += new HtmlElement ( "div", list => {
+                            list.Attributes [ "data-recent-issues" ] = "";
+                            list += new HtmlElement ( "div", wrapper => {
+                                wrapper.ClassList.Add ( "http-table-wrapper" );
+                                wrapper += new HtmlElement ( "p", "No unresolved issues." ).WithClass ( "http-table-empty" );
+                            } );
+                        } );
                     } );
-                } );
+                }
             } );
 
             var pinnedCounters = counters.Where ( c => c.DashboardPinned ).ToArray ();
@@ -799,21 +841,84 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     /// <summary>
-    /// Generates the JSON payload containing all meter points and computed statistics.
+    /// Generates the JSON payload containing the series, the vertical axis and the readings of the meters.
     /// </summary>
-    /// <param name="request">The incoming HTTP request.</param>
+    /// <param name="request">
+    /// The incoming HTTP request. The <c>name</c> query parameter selects a single meter. The <c>period</c> query
+    /// parameter, such as <c>1h</c> or <c>7d</c>, selects the meters that offer that period; when omitted, each meter
+    /// is read with its first period.
+    /// </param>
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with meter data in JSON format.</returns>
     protected virtual ValueTask<HttpResponse> GetMetersDataAsync ( HttpRequest request ) {
         string? requestedName = request.Query [ "name" ].Value;
+        string? requestedPeriod = request.Query [ "period" ].Value;
 
-        var selectedMeters = meters.AsEnumerable ();
-        if (!string.IsNullOrWhiteSpace ( requestedName )) {
-            selectedMeters = selectedMeters.Where ( m =>
-                m.Label.Equals ( requestedName, StringComparison.OrdinalIgnoreCase )
-                || m.SanitizedLabel.Equals ( requestedName, StringComparison.OrdinalIgnoreCase ) );
+        var payload = new List<MeterPayload> ();
+
+        foreach (var definition in meters) {
+            if (!string.IsNullOrWhiteSpace ( requestedName )
+                && !definition.Label.Equals ( requestedName, StringComparison.OrdinalIgnoreCase )
+                && !definition.SanitizedLabel.Equals ( requestedName, StringComparison.OrdinalIgnoreCase ))
+                continue;
+
+            Meter meter = definition.Instance;
+            TimeSpan period = string.IsNullOrWhiteSpace ( requestedPeriod )
+                ? meter.Periods [ 0 ]
+                : meter.Periods.FirstOrDefault ( item => FormatMeterPeriod ( item ) == requestedPeriod );
+
+            if (period == TimeSpan.Zero)
+                continue;
+
+            TimeSpan tick = MeterTicks.FirstOrDefault ( item => item >= meter.BucketDuration && period / item <= 120, period / 120 );
+            string [] series = meter.Series.ToArray ();
+            MeterReading [] [] readings = series
+                .Select ( name => meter.Read ( name, period, tick ).ToArray () )
+                .ToArray ();
+
+            double [] values = readings
+                .SelectMany ( item => item )
+                .Select ( reading => reading.Value )
+                .Where ( double.IsFinite )
+                .ToArray ();
+            double minimum = meter.Axis.Minimum ?? Math.Min ( 0, values.DefaultIfEmpty ().Min () );
+            double highest = Math.Max ( minimum, values.DefaultIfEmpty ( minimum ).Max () );
+            double span = highest > minimum ? highest - minimum : 1;
+            double step = Math.Pow ( 10, Math.Floor ( Math.Log10 ( span ) ) ) / 2;
+            double maximum = meter.Axis.Maximum ?? minimum + (Math.Ceiling ( span / step ) * step);
+
+            payload.Add ( new MeterPayload (
+                Id: definition.SanitizedLabel,
+                Label: definition.Label,
+                Group: definition.Group,
+                DashboardPinned: definition.DashboardPinned,
+                Aggregation: meter.Aggregation,
+                Period: FormatMeterPeriod ( period ),
+                Axis: new MeterAxisPayload (
+                    minimum,
+                    maximum,
+                    new [] { 0, 0.25, 0.5, 0.75, 1 }
+                        .Select ( fraction => meter.Axis.Format ( minimum + (fraction * (maximum - minimum)) ) )
+                        .ToArray () ),
+                Series: series
+                    .Select ( name => {
+                        double? summary = FiniteOrNull ( meter.Read ( name, period, period ).Single ().Value );
+
+                        return new MeterSeriesPayload ( name, summary, summary is { } value ? meter.Axis.Format ( value ) : null );
+                    } )
+                    .ToArray (),
+                Readings: (readings.FirstOrDefault () ?? [])
+                    .Select ( ( reading, index ) => {
+                        double? [] row = readings.Select ( item => FiniteOrNull ( item [ index ].Value ) ).ToArray ();
+
+                        return new MeterReadingPayload (
+                            reading.Timestamp,
+                            row,
+                            row.Select ( item => item is { } value ? meter.Axis.Format ( value ) : null ).ToArray () );
+                    } )
+                    .ToArray () ) );
         }
 
-        string json = SerializeMetersPayload ( selectedMeters );
+        string json = JsonSerializer.Serialize ( payload.ToArray (), MeterJsonContext.Default.MeterPayloadArray );
 
         return new ValueTask<HttpResponse> (
             new HttpResponse ( new StringContent ( json, Encoding.UTF8, "application/json" ) )
@@ -845,7 +950,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
     /// <summary>
     /// Generates the JSON payload consumed by the dashboard page, containing HTTP traffic, latency, per-route statistics,
-    /// recent exceptions and pinned counters.
+    /// the most recent unresolved issues and pinned counters.
     /// </summary>
     /// <param name="request">The incoming HTTP request. The <c>period</c> query parameter accepts <c>1h</c>, <c>1d</c> or <c>7d</c>.</param>
     /// <returns>A <see cref="ValueTask{TResult}"/> yielding an HTTP response with dashboard data in JSON format.</returns>
@@ -858,13 +963,20 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
         long inFlightExcludingCurrent = Math.Max ( 0, Interlocked.Read ( ref httpInFlight ) - 1 );
         HttpMetricsPayload metrics = httpMetrics.Read ( period, step, inFlightExcludingCurrent );
+        MonitoringIssueSnapshot [] issues = (ErrorConsole?.ExportState () ?? [])
+            .Where ( issue => !issue.Resolved )
+            .OrderByDescending ( issue => issue.LastSeen )
+            .Take ( DashboardIssueCount )
+            .ToArray ();
 
         string json = new StringBuilder ()
             .Append ( "{\"http\":" )
             .Append ( JsonSerializer.Serialize ( metrics, HttpMetricsJsonContext.Default.HttpMetricsPayload ) )
             .Append ( ",\"counters\":" )
             .Append ( SerializeCountersPayload ( counters.Where ( c => c.DashboardPinned ) ) )
-            .Append ( '}' )
+            .Append ( ",\"issues\":\"" )
+            .Append ( issues.Length > 0 ? EscapeJsonString ( WriteIssuesTable ( issues ).ToString () ?? string.Empty ) : string.Empty )
+            .Append ( "\"}" )
             .ToString ();
 
         return new ValueTask<HttpResponse> (
@@ -1267,6 +1379,9 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
         if (context.RequestBag.Remove ( InFlightBagKey ))
             Interlocked.Decrement ( ref httpInFlight );
 
+        if (result is { ServerException: { } exception, Status: HttpServerExecutionStatus.ExceptionThrown or HttpServerExecutionStatus.UncaughtExceptionThrown })
+            ErrorConsole?.TryInformException ( exception, context );
+
         Route? route = context.MatchedRoute;
         if (route is not null && ReferenceEquals ( route.RequestHandlers, routeHandlers ))
             return;
@@ -1291,7 +1406,245 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             ({ } matched, "GET" or "POST" or "PUT" or "PATCH" or "DELETE" or "HEAD" or "OPTIONS" or "QUERY") => $"{context.Request.Method.Method} {matched.Path}",
             ({ } matched, _) => $"OTHER {matched.Path}"
         };
-        httpMetrics.Record ( routeKey, code, result.Elapsed.TotalMilliseconds, result.ServerException );
+        httpMetrics.Record ( routeKey, code, result.Elapsed.TotalMilliseconds );
+    }
+
+    /// <summary>
+    /// Generates the HTML for the errors page, which lists the issues collected by <see cref="ErrorConsole"/>.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request. The <c>status</c> query parameter accepts <c>resolved</c> to list the resolved issues.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with errors HTML.</returns>
+    protected virtual ValueTask<HttpResponse> GetErrorsPageHtmlAsync ( HttpRequest request ) {
+        bool showResolved = request.Query [ "status" ].Value == "resolved";
+        MonitoringIssueSnapshot [] issues = (ErrorConsole?.ExportState () ?? [])
+            .Where ( issue => issue.Resolved == showResolved )
+            .OrderByDescending ( issue => issue.LastSeen )
+            .ToArray ();
+
+        var content = new HtmlElement ( "", fragment => {
+
+            fragment += new HtmlElement ( "div", header => {
+                header.ClassList.Add ( "content-header" );
+                header += new HtmlElement ( "h1", "Errors" );
+                header += new HtmlElement ( "p", "Exceptions captured by the server, grouped by type and location." ).WithClass ( "description" );
+            } );
+
+            fragment += new HtmlElement ( "div", toolbar => {
+                toolbar.ClassList.Add ( "page-toolbar" );
+
+                toolbar += new HtmlElement ( "div", filters => {
+                    filters.ClassList.Add ( "usage-history-periods" );
+
+                    foreach ((string label, string query, bool active) in new [] { ("Unresolved", "", !showResolved), ("Resolved", "?status=resolved", showResolved) }) {
+                        filters += new HtmlElement ( "a", link => {
+                            link.ClassList.Add ( "toolbar-btn" );
+                            if (active)
+                                link.ClassList.Add ( "active" );
+                            link.Attributes [ "href" ] = PrefixPath ( "/errors" ) + query;
+                            link += label;
+                        } );
+                    }
+                } );
+            } );
+
+            if (issues.Length == 0) {
+                fragment += new HtmlElement ( "div", empty => {
+                    empty.ClassList.Add ( "empty-state" );
+                    empty += new HtmlElement ( "p", showResolved ? "No resolved issues." : "No unresolved issues." );
+                } );
+                return;
+            }
+
+            fragment += WriteIssuesTable ( issues );
+        } );
+
+        string html = BuildPageHtml ( content, "errors" );
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( 200 ) {
+                Content = new HtmlContent ( html )
+            }
+        );
+    }
+
+    HtmlElement WriteIssuesTable ( MonitoringIssueSnapshot [] issues ) {
+        return new HtmlElement ( "div", wrapper => {
+            wrapper.ClassList.Add ( "http-table-wrapper" );
+
+            wrapper += new HtmlElement ( "table", table => {
+                table.ClassList.Add ( "http-table" );
+                table.ClassList.Add ( "issues-table" );
+
+                table += new HtmlElement ( "thead", head => {
+                    head += new HtmlElement ( "tr", row => {
+                        row += new HtmlElement ( "th", "Issue" );
+                        row += new HtmlElement ( "th", "Trend (24h)" );
+                        row += new HtmlElement ( "th", "Incidents" );
+                    } );
+                } );
+
+                table += new HtmlElement ( "tbody", body => {
+                    foreach (var issue in issues) {
+                        body += new HtmlElement ( "tr", row => {
+                            row += new HtmlElement ( "td", cell => {
+                                cell += new HtmlElement ( "a", issue.Type )
+                                    .WithClass ( "issue-title" )
+                                    .WithAttribute ( "href", PrefixPath ( $"/errors/{issue.Id}" ) );
+                                cell += new HtmlElement ( "div", issue.Occurrences.FirstOrDefault ()?.Message ?? string.Empty ).WithClass ( "issue-meta" );
+                                cell += new HtmlElement ( "div", meta => {
+                                    meta.ClassList.Add ( "issue-meta" );
+                                    meta += new HtmlElement ( "span", issue.Location ).WithClass ( "issue-location" );
+                                    meta += " \u00b7 ";
+                                    meta += new HtmlElement ( "span", FormatRelativeTime ( issue.LastSeen ) )
+                                        .WithAttribute ( "title", issue.LastSeen.ToString ( "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture ) );
+                                } );
+                            } );
+                            row += new HtmlElement ( "td", cell => {
+                                cell += WriteIssueTrend ( issue );
+                            } );
+                            row += new HtmlElement ( "td", issue.Count.ToString ( "N0", CultureInfo.InvariantCulture ) );
+                        } );
+                    }
+                } );
+            } );
+        } );
+    }
+
+    /// <summary>
+    /// Generates the HTML for the page of a single issue, with its most recent incidents and their custom sections.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <param name="issue">The issue to display.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> yielding the HTTP response with the issue HTML.</returns>
+    protected virtual ValueTask<HttpResponse> GetErrorPageHtmlAsync ( HttpRequest request, MonitoringIssueSnapshot issue ) {
+        var content = new HtmlElement ( "", fragment => {
+
+            fragment += new HtmlElement ( "a", back => {
+                back.ClassList.Add ( "back-link" );
+                back.Attributes [ "href" ] = PrefixPath ( "/errors" );
+                back += RenderableText.Raw ( ArrowLeftIcon );
+                back += "Errors";
+            } );
+
+            fragment += new HtmlElement ( "div", header => {
+                header.ClassList.Add ( "content-header" );
+                header += new HtmlElement ( "h1", issue.Type );
+                header += new HtmlElement ( "p", issue.Location ).WithClass ( "description issue-location" );
+            } );
+
+            fragment += new HtmlElement ( "div", toolbar => {
+                toolbar.ClassList.Add ( "page-toolbar" );
+
+                if (issue.Resolved) {
+                    toolbar += new HtmlElement ( "span", "Resolved" ).WithClass ( "issue-meta" );
+                    return;
+                }
+
+                toolbar += new HtmlElement ( "form", form => {
+                    form.Attributes [ "method" ] = "post";
+                    form.Attributes [ "action" ] = PrefixPath ( $"/errors/{issue.Id}/resolve" );
+
+                    form += new HtmlElement ( "button", "Resolve" )
+                        .WithClass ( "toolbar-btn" )
+                        .WithAttribute ( "type", "submit" );
+                } );
+            } );
+
+            fragment += new HtmlElement ( "div", grid => {
+                grid.ClassList.Add ( "http-stats-grid" );
+
+                foreach ((string label, object value) in new (string, object) [] {
+                    ("Incidents", issue.Count.ToString ( "N0", CultureInfo.InvariantCulture )),
+                    ("Last seen", FormatRelativeTime ( issue.LastSeen )),
+                    ("First seen", FormatRelativeTime ( issue.FirstSeen )),
+                    ("Trend (24h)", WriteIssueTrend ( issue ))
+                }) {
+                    grid += new HtmlElement ( "div", card => {
+                        card.ClassList.Add ( "card" );
+                        card.ClassList.Add ( "http-stat-card" );
+                        card += new HtmlElement ( "div", label ).WithClass ( "card-label" );
+                        card += new HtmlElement ( "div", value ).WithClass ( "card-value" );
+                    } );
+                }
+            } );
+
+            fragment += new HtmlElement ( "div", section => {
+                section.ClassList.Add ( "section" );
+                section += new HtmlElement ( "h2", "Latest incidents" );
+
+                foreach (var occurrence in issue.Occurrences) {
+                    section += new HtmlElement ( "details", details => {
+                        details.ClassList.Add ( "card" );
+                        details.ClassList.Add ( "issue-occurrence" );
+                        if (occurrence == issue.Occurrences [ 0 ])
+                            details.Attributes [ "open" ] = "";
+
+                        details += new HtmlElement ( "summary", summary => {
+                            summary += occurrence.Timestamp.ToString ( "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture );
+                            summary += new HtmlElement ( "span", occurrence.Message ).WithClass ( "issue-meta" );
+                        } );
+
+                        if (occurrence.Request is not null)
+                            details += new HtmlElement ( "p", occurrence.Request ).WithClass ( "issue-meta issue-location" );
+
+                        details += new HtmlElement ( "pre", occurrence.Details ).WithClass ( "log-content issue-stack" );
+
+                        foreach (var customSection in occurrence.Sections ?? []) {
+                            details += new HtmlElement ( "h3", customSection.Title ).WithClass ( "group-title" );
+                            details += new HtmlElement ( "div", RenderableText.Raw ( customSection.Html ) ).WithClass ( "issue-section" );
+                        }
+                    } );
+                }
+            } );
+        } );
+
+        string html = BuildPageHtml ( content, "errors" );
+        return new ValueTask<HttpResponse> (
+            new HttpResponse ( 200 ) {
+                Content = new HtmlContent ( html )
+            }
+        );
+    }
+
+    static HtmlElement WriteIssueTrend ( MonitoringIssueSnapshot issue ) {
+        long currentHour = DateTime.Now.Ticks / TimeSpan.TicksPerHour;
+        long [] counts = new long [ 24 ];
+
+        foreach (var reading in issue.Trend ?? []) {
+            long age = currentHour - (reading.Hour.Ticks / TimeSpan.TicksPerHour);
+            if (age is >= 0 and < 24)
+                counts [ 23 - age ] = reading.Count;
+        }
+
+        long peak = Math.Max ( 1, counts.Max () );
+        var bars = new StringBuilder ();
+
+        for (int index = 0; index < counts.Length; index++) {
+            bool empty = counts [ index ] == 0;
+            double height = empty ? 1 : Math.Max ( 2, 24d * counts [ index ] / peak );
+            string barClass = empty ? " class=\"empty\"" : string.Empty;
+
+            bars.Append ( CultureInfo.InvariantCulture, $"<rect{barClass} x=\"{index * 4}\" y=\"{24 - height:0.##}\" width=\"3\" height=\"{height:0.##}\"></rect>" );
+        }
+
+        return new HtmlElement ( "svg", svg => {
+            svg.ClassList.Add ( "issue-trend" );
+            svg.Attributes [ "viewBox" ] = "0 0 95 24";
+            svg.Attributes [ "preserveAspectRatio" ] = "none";
+            svg.Attributes [ "role" ] = "img";
+            svg.Attributes [ "aria-label" ] = $"{counts.Sum ()} incidents in the last 24 hours";
+            svg += RenderableText.Raw ( bars.ToString () );
+        } );
+    }
+
+    static string FormatRelativeTime ( DateTime moment ) {
+        TimeSpan elapsed = DateTime.Now - moment;
+
+        return elapsed switch {
+            { TotalMinutes: < 1 } => "just now",
+            { TotalHours: < 1 } => $"{(int) elapsed.TotalMinutes} min ago",
+            { TotalDays: < 1 } => $"{(int) elapsed.TotalHours} h ago",
+            _ => $"{(int) elapsed.TotalDays} d ago"
+        };
     }
 
     static string FormatUptime ( TimeSpan uptime ) {
@@ -1377,12 +1730,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
     }
 
     HtmlElement WriteMeterCard ( MonitoringDefinition<Meter> meter ) {
-        var readings = meter.Instance.Read ().ToArray ();
-        var values = readings.Select ( r => r.Value ).ToArray ();
-
-        double total = values.Sum ();
-        string currentText = FormatMeasuredValue ( total );
-        string readingsJson = SerializeReadingsPayload ( readings );
+        string [] periods = meter.Instance.Periods.Select ( FormatMeterPeriod ).ToArray ();
 
         return new HtmlElement ( "div", card => {
             card.ClassList.Add ( "card" );
@@ -1390,37 +1738,73 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             card.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
             card.Attributes [ "data-meter-label" ] = meter.Label;
             card.Attributes [ "data-meter-group" ] = meter.Group ?? string.Empty;
+            card.Attributes [ "data-selected-period" ] = periods [ 0 ];
 
             card += new HtmlElement ( "div", header => {
                 header.ClassList.Add ( "meter-card-header" );
                 header += new HtmlElement ( "div", meter.Label ).WithClass ( "card-label" );
 
-                header += new HtmlElement ( "button", btn => {
-                    btn.ClassList.Add ( "toolbar-btn" );
-                    btn.ClassList.Add ( "meter-expand-btn" );
-                    btn.Attributes [ "type" ] = "button";
-                    btn.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
-                    btn += "Expand";
+                header += new HtmlElement ( "div", actions => {
+                    actions.ClassList.Add ( "meter-card-actions" );
+
+                    if (periods.Length > 1) {
+                        actions += new HtmlElement ( "div", group => {
+                            group.ClassList.Add ( "usage-history-periods" );
+                            group.Attributes [ "role" ] = "group";
+                            group.Attributes [ "aria-label" ] = $"{meter.Label} period";
+
+                            foreach (string period in periods) {
+                                group += new HtmlElement ( "button", button => {
+                                    button.ClassList.Add ( "toolbar-btn" );
+                                    if (period == periods [ 0 ])
+                                        button.ClassList.Add ( "active" );
+                                    button.Attributes [ "type" ] = "button";
+                                    button.Attributes [ "data-meter-period" ] = period;
+                                    button.Attributes [ "aria-pressed" ] = period == periods [ 0 ] ? "true" : "false";
+                                    button += period;
+                                } );
+                            }
+                        } );
+                    }
+
+                    actions += new HtmlElement ( "button", btn => {
+                        btn.ClassList.Add ( "toolbar-btn" );
+                        btn.ClassList.Add ( "meter-expand-btn" );
+                        btn.Attributes [ "type" ] = "button";
+                        btn.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
+                        btn.Attributes [ "aria-label" ] = $"Expand {meter.Label}";
+                        btn.Attributes [ "title" ] = "Expand";
+                        btn += RenderableText.Raw ( ExpandIcon );
+                    } );
                 } );
             } );
 
-            card += new HtmlElement ( "div", currentText ).WithClass ( "card-value meter-current-value" );
+            card += new HtmlElement ( "div", summary => {
+                summary.ClassList.Add ( "meter-summary" );
+                summary += new HtmlElement ( "span", "-" ).WithClass ( "card-value meter-current-value" );
+            } );
 
             card += new HtmlElement ( "div", chart => {
                 chart.ClassList.Add ( "meter-chart-container" );
-                chart.Attributes [ "data-meter-id" ] = meter.SanitizedLabel;
-                chart.Attributes [ "data-readings" ] = readingsJson;
+                chart.Attributes [ "role" ] = "img";
+                chart.Attributes [ "aria-label" ] = $"{meter.Label} chart";
             } );
         } );
     }
 
-    static string FormatMeasuredValue ( double value ) {
-        if (value == 0)
-            return "-";
-        if (value > 0 && value < 0.01)
-            return "~ 0.01";
+    static string FormatMeterPeriod ( TimeSpan period ) {
+        (long unit, string suffix) = period.Ticks switch {
+            var ticks when ticks % TimeSpan.TicksPerDay == 0 => (TimeSpan.TicksPerDay, "d"),
+            var ticks when ticks % TimeSpan.TicksPerHour == 0 => (TimeSpan.TicksPerHour, "h"),
+            var ticks when ticks % TimeSpan.TicksPerMinute == 0 => (TimeSpan.TicksPerMinute, "m"),
+            _ => (TimeSpan.TicksPerSecond, "s")
+        };
 
-        return Math.Round ( value, 2 ).ToString ( "N2", CultureInfo.InvariantCulture );
+        return ((double) period.Ticks / unit).ToString ( "0.###", CultureInfo.InvariantCulture ) + suffix;
+    }
+
+    static double? FiniteOrNull ( double value ) {
+        return double.IsFinite ( value ) ? value : null;
     }
 
     static IEnumerable<IGrouping<string, MonitoringDefinition<T>>> GroupDefinitionsByGroup<T> ( IEnumerable<MonitoringDefinition<T>> definitions ) where T : notnull {
@@ -1447,99 +1831,6 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
             } );
             bar += new HtmlElement ( "span", $"{clamped:n1}%" ).WithClass ( "progress-label" );
         } );
-    }
-
-    static string SerializeMetersPayload ( IEnumerable<MonitoringDefinition<Meter>> definitions ) {
-        var builder = new StringBuilder ();
-        builder.Append ( '[' );
-
-        bool isFirstMeter = true;
-        foreach (var definition in definitions) {
-            if (!isFirstMeter)
-                builder.Append ( ',' );
-            isFirstMeter = false;
-
-            var readings = definition.Instance.Read ().ToArray ();
-            var values = readings.Select ( r => r.Value ).ToArray ();
-            double current = values.LastOrDefault ();
-            double min = values.Length > 0 ? values.Min () : 0;
-            double max = values.Length > 0 ? values.Max () : 0;
-            double avg = values.Length > 0 ? values.Average () : 0;
-            double total = values.Sum ();
-
-            builder.Append ( '{' );
-
-            builder.Append ( "\"id\":\"" );
-            builder.Append ( EscapeJsonString ( definition.SanitizedLabel ) );
-            builder.Append ( "\"," );
-
-            builder.Append ( "\"label\":\"" );
-            builder.Append ( EscapeJsonString ( definition.Label ) );
-            builder.Append ( "\"," );
-
-            builder.Append ( "\"group\":" );
-            if (definition.Group is null) {
-                builder.Append ( "null" );
-            }
-            else {
-                builder.Append ( '"' );
-                builder.Append ( EscapeJsonString ( definition.Group ) );
-                builder.Append ( '"' );
-            }
-            builder.Append ( ',' );
-
-            builder.Append ( "\"dashboardPinned\":" );
-            builder.Append ( definition.DashboardPinned ? "true" : "false" );
-            builder.Append ( ',' );
-
-            builder.Append ( "\"current\":" );
-            builder.Append ( JsonNumber ( current ) );
-            builder.Append ( ',' );
-
-            builder.Append ( "\"min\":" );
-            builder.Append ( JsonNumber ( min ) );
-            builder.Append ( ',' );
-
-            builder.Append ( "\"max\":" );
-            builder.Append ( JsonNumber ( max ) );
-            builder.Append ( ',' );
-
-            builder.Append ( "\"avg\":" );
-            builder.Append ( JsonNumber ( avg ) );
-            builder.Append ( ',' );
-
-            builder.Append ( "\"total\":" );
-            builder.Append ( JsonNumber ( total ) );
-            builder.Append ( ',' );
-
-            builder.Append ( "\"readings\":" );
-            builder.Append ( SerializeReadingsPayload ( readings ) );
-
-            builder.Append ( '}' );
-        }
-
-        builder.Append ( ']' );
-        return builder.ToString ();
-    }
-
-    static string SerializeReadingsPayload ( MeterReading [] readings ) {
-        var builder = new StringBuilder ();
-        builder.Append ( '[' );
-
-        for (int index = 0; index < readings.Length; index++) {
-            if (index > 0)
-                builder.Append ( ',' );
-
-            MeterReading reading = readings [ index ];
-            builder.Append ( "{\"timestamp\":\"" );
-            builder.Append ( reading.Timestamp.ToString ( "O", CultureInfo.InvariantCulture ) );
-            builder.Append ( "\",\"value\":" );
-            builder.Append ( JsonNumber ( reading.Value ) );
-            builder.Append ( '}' );
-        }
-
-        builder.Append ( ']' );
-        return builder.ToString ();
     }
 
     static string SerializeHealthPayload ( HealthSnapshot snapshot, HealthSnapshot [] history ) {
@@ -1709,7 +2000,7 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
 
         currentRoutePrefix = prefix;
         RestoreStoreState ();
-        IRequestHandler [] handlers = [ new AuthorizationRequestHandler ( this ) ];
+        IRequestHandler [] handlers = [ AuthenticationHandler ?? new AuthorizationRequestHandler ( this ), .. RequestHandlers ];
         routeHandlers = handlers;
 
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/" ), null, async ( HttpRequest request ) => {
@@ -1775,6 +2066,35 @@ public class ApplicationMonitor : IDisposable, IAsyncDisposable {
                 return new HttpResponse ( 404 );
 
             return await GetLogStreamFileDownloadAsync ( request, matchedLogStream );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/errors" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+
+            if (ErrorConsole is null)
+                return new HttpResponse ( 404 );
+
+            return await GetErrorsPageHtmlAsync ( request );
+        }, handlers );
+        yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/errors/<id>" ), null, async ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+
+            string issueId = request.RouteParameters [ "id" ].GetString ();
+            var matchedIssue = ErrorConsole?.ExportState ().FirstOrDefault ( issue => issue.Id == issueId );
+
+            if (matchedIssue is null)
+                return new HttpResponse ( 404 );
+
+            return await GetErrorPageHtmlAsync ( request, matchedIssue );
+        }, handlers );
+        yield return new Route ( RouteMethod.Post, PathHelper.CombinePaths ( prefix, "/errors/<id>/resolve" ), null, ( HttpRequest request ) => {
+            request.Context.LogMode = LogOutput.ErrorLog;
+            ErrorConsole?.Resolve ( request.RouteParameters [ "id" ].GetString () );
+
+            return new HttpResponse ( 303 ) {
+                Headers = new () {
+                    Location = PrefixPath ( "/errors" )
+                }
+            };
         }, handlers );
         yield return new Route ( RouteMethod.Get, PathHelper.CombinePaths ( prefix, "/health" ), null, async ( HttpRequest request ) => {
             request.Context.LogMode = LogOutput.ErrorLog;

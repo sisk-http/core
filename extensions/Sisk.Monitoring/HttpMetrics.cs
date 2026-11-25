@@ -6,7 +6,6 @@ namespace Sisk.Monitoring;
 internal sealed class HttpMetrics {
 
     const int MaxTrackedRoutes = 200;
-    const int MaxRecentExceptions = 20;
     const string OtherRoutesKey = "(other routes)";
 
     static readonly TimeSpan Retention = TimeSpan.FromDays ( 7 );
@@ -18,10 +17,9 @@ internal sealed class HttpMetrics {
     readonly DateTime startedAt = DateTime.Now;
     readonly Dictionary<long, HttpMetricsBucket> globalBuckets = new ();
     readonly Dictionary<string, Dictionary<long, HttpMetricsBucket>> routeBuckets = new ( StringComparer.Ordinal );
-    readonly Queue<HttpExceptionPayload> recentExceptions = new ();
     long lastPruneMinute;
 
-    public void Record ( string routeKey, int statusCode, double elapsedMs, Exception? exception ) {
+    public void Record ( string routeKey, int statusCode, double elapsedMs ) {
         DateTime now = DateTime.Now;
         long minute = now.Ticks / GlobalBucketDuration.Ticks;
 
@@ -57,17 +55,6 @@ internal sealed class HttpMetrics {
 
             ref var routeBucket = ref CollectionsMarshal.GetValueRefOrAddDefault ( buckets, now.Ticks / RouteBucketDuration.Ticks, out _ );
             (routeBucket ??= new ()).Add ( statusCode, elapsedMs );
-
-            if (exception is not null) {
-                recentExceptions.Enqueue ( new HttpExceptionPayload (
-                    now,
-                    routeKey,
-                    exception.GetType ().FullName ?? exception.GetType ().Name,
-                    exception.Message ) );
-
-                if (recentExceptions.Count > MaxRecentExceptions)
-                    recentExceptions.Dequeue ();
-            }
         }
     }
 
@@ -80,7 +67,6 @@ internal sealed class HttpMetrics {
         var total = new HttpMetricsBucket ();
         var steps = new Dictionary<long, HttpMetricsBucket> ();
         HttpRoutePayload [] routes;
-        HttpExceptionPayload [] exceptions;
 
         lock (sync) {
             foreach (var (key, bucket) in globalBuckets) {
@@ -102,8 +88,6 @@ internal sealed class HttpMetrics {
                 .Where ( route => route.Bucket.Requests > 0 )
                 .Select ( route => new HttpRoutePayload ( route.Route, route.Bucket.ToTotals (), route.Bucket.ToLatency () ) )
                 .ToArray ();
-
-            exceptions = recentExceptions.Reverse ().ToArray ();
         }
 
         var readings = new List<HttpReadingPayload> ();
@@ -125,8 +109,7 @@ internal sealed class HttpMetrics {
             totals,
             total.ToLatency (),
             readings.ToArray (),
-            routes,
-            exceptions );
+            routes );
     }
 }
 
@@ -232,8 +215,7 @@ internal sealed record HttpMetricsPayload (
     HttpTotalsPayload Totals,
     HttpLatencyPayload Latency,
     HttpReadingPayload [] Readings,
-    HttpRoutePayload [] Routes,
-    HttpExceptionPayload [] Exceptions );
+    HttpRoutePayload [] Routes );
 
 internal sealed record HttpTotalsPayload ( long Requests, long Success, long Redirect, long ClientError, long ServerError );
 
@@ -242,8 +224,6 @@ internal sealed record HttpLatencyPayload ( double Avg, double P50, double P95, 
 internal sealed record HttpReadingPayload ( DateTime Timestamp, HttpTotalsPayload Totals, HttpLatencyPayload? Latency );
 
 internal sealed record HttpRoutePayload ( string Route, HttpTotalsPayload Totals, HttpLatencyPayload Latency );
-
-internal sealed record HttpExceptionPayload ( DateTime Timestamp, string Route, string Type, string Message );
 
 [JsonSourceGenerationOptions ( PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase )]
 [JsonSerializable ( typeof ( HttpMetricsPayload ) )]

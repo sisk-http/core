@@ -16,6 +16,7 @@ internal static class SR {
     public const string ApplicationMonitor_AuthenticationRequired = "Authenticate using your credentials to access this page.";
     public const string ApplicationMonitor_StoreSaveFailed = "Failed to save the monitoring state to the configured store. Further failures are suppressed until a save succeeds.";
     public const string ApplicationMonitor_StoreRestoreFailed = "Failed to restore the monitoring state from the configured store. The monitor started with an empty state and will not save to the store during this run, preserving the stored state.";
+    public const string Meter_InvalidPeriods = "A meter requires at least one period, and every period must be greater than zero.";
 
     [MethodImpl ( MethodImplOptions.AggressiveInlining )]
     public static string Format ( string format, params object? [] items ) {

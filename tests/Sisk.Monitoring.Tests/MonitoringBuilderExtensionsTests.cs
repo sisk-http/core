@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Sisk.Core.Http;
 using Sisk.Core.Http.Hosting;
+using Sisk.Core.Routing;
 
 namespace Sisk.Monitoring.Tests;
 
@@ -124,10 +125,11 @@ public sealed class MonitoringBuilderExtensionsTests {
             Assert.AreEqual ( 1, routes [ "GET /throws" ].GetProperty ( "totals" ).GetProperty ( "serverError" ).GetInt64 () );
             Assert.IsTrue ( routes [ "GET /slow" ].GetProperty ( "latency" ).GetProperty ( "p95" ).GetDouble () >= 50 );
 
-            JsonElement exception = http.GetProperty ( "exceptions" ).EnumerateArray ().Single ();
-            Assert.AreEqual ( "GET /throws", exception.GetProperty ( "route" ).GetString () );
-            Assert.AreEqual ( "System.InvalidOperationException", exception.GetProperty ( "type" ).GetString () );
-            Assert.AreEqual ( "boom", exception.GetProperty ( "message" ).GetString () );
+            string issuesHtml = payload.RootElement.GetProperty ( "issues" ).GetString ()!;
+            StringAssert.Contains ( issuesHtml, "System.InvalidOperationException" );
+            StringAssert.Contains ( issuesHtml, "GET /throws" );
+            StringAssert.Contains ( issuesHtml, "boom" );
+            StringAssert.Contains ( issuesHtml, "href=\"/monitoring/errors/", "Recent exceptions must link to the issue page." );
         }
     }
 
@@ -277,6 +279,147 @@ public sealed class MonitoringBuilderExtensionsTests {
         }
     }
 
+    [TestMethod]
+    public async Task UseMonitoring_ServesMeterSeriesForTheSelectedPeriod () {
+        int port = GetFreePort ();
+        var responses = new Meter {
+            Series = [ "2xx", "5xx" ],
+            Axis = new MeterAxis { Format = value => FormattableString.Invariant ( $"{value:0.##} req" ) }
+        };
+        var latency = new Meter {
+            Aggregation = MeterAggregation.Average,
+            Periods = [ TimeSpan.FromMinutes ( 15 ), TimeSpan.FromHours ( 6 ) ],
+            Axis = new MeterAxis { Maximum = 500 }
+        };
+
+        responses.Increment ( "2xx", 5 );
+        latency.Increment ( "p50", 10 );
+        latency.Increment ( "p50", 30 );
+
+        using var server = CreateBuilder ( port )
+            .UseMonitoring ( "/monitoring", monitor => {
+                monitor.CredentialValidator = _ => ValueTask.FromResult ( true );
+                monitor.CaptureMeter ( new MonitoringDefinition<Meter> ( "Responses", responses ) );
+                monitor.CaptureMeter ( new MonitoringDefinition<Meter> ( "Latency", latency ) );
+            } )
+            .Build ();
+
+        server.Start ( verbose: false, preventHault: false );
+
+        using var client = new HttpClient {
+            BaseAddress = new Uri ( $"http://127.0.0.1:{port}/" ),
+            Timeout = TimeSpan.FromSeconds ( 3 )
+        };
+
+        using (HttpResponseMessage pageResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/meters" ) )) {
+            string pageHtml = await pageResponse.Content.ReadAsStringAsync ();
+
+            Assert.AreEqual ( HttpStatusCode.OK, pageResponse.StatusCode );
+            foreach (string period in new [] { "1h", "1d", "7d", "30d", "15m", "6h" })
+                StringAssert.Contains ( pageHtml, $"data-meter-period=\"{period}\"" );
+        }
+
+        using (HttpResponseMessage dataResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/meters/data" ) )) {
+            using JsonDocument payload = JsonDocument.Parse ( await dataResponse.Content.ReadAsStringAsync () );
+            var periods = payload.RootElement.EnumerateArray ()
+                .ToDictionary ( meter => meter.GetProperty ( "label" ).GetString ()!, meter => meter.GetProperty ( "period" ).GetString () );
+
+            Assert.AreEqual ( HttpStatusCode.OK, dataResponse.StatusCode );
+            Assert.AreEqual ( "1h", periods [ "Responses" ], "Without a period, each meter is read with its first period." );
+            Assert.AreEqual ( "15m", periods [ "Latency" ] );
+        }
+
+        using (HttpResponseMessage dataResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/meters/data?period=7d" ) )) {
+            using JsonDocument payload = JsonDocument.Parse ( await dataResponse.Content.ReadAsStringAsync () );
+            JsonElement meter = payload.RootElement.EnumerateArray ().Single ();
+            JsonElement [] series = meter.GetProperty ( "series" ).EnumerateArray ().ToArray ();
+            JsonElement [] readings = meter.GetProperty ( "readings" ).EnumerateArray ().ToArray ();
+
+            Assert.AreEqual ( "Responses", meter.GetProperty ( "label" ).GetString (), "Meters that do not offer the period are left out." );
+            Assert.AreEqual ( "Sum", meter.GetProperty ( "aggregation" ).GetString () );
+            CollectionAssert.AreEqual (
+                new [] { "0 req", "1.25 req", "2.5 req", "3.75 req", "5 req" },
+                meter.GetProperty ( "axis" ).GetProperty ( "ticks" ).EnumerateArray ().Select ( item => item.GetString () ).ToArray (),
+                "The axis labels must be written with the meter format." );
+            Assert.AreEqual ( "5 req", series [ 0 ].GetProperty ( "summaryText" ).GetString () );
+            Assert.AreEqual ( "5 req", readings [ ^1 ].GetProperty ( "texts" ) [ 0 ].GetString () );
+            CollectionAssert.AreEqual ( new [] { "2xx", "5xx" }, series.Select ( item => item.GetProperty ( "name" ).GetString () ).ToArray () );
+            Assert.AreEqual ( 5, series [ 0 ].GetProperty ( "summary" ).GetDouble () );
+            Assert.AreEqual ( 0, series [ 1 ].GetProperty ( "summary" ).GetDouble () );
+            Assert.IsTrue ( readings.Length is > 1 and <= 120, "The period must be downsampled." );
+            Assert.AreEqual ( 5, readings [ ^1 ].GetProperty ( "values" ) [ 0 ].GetDouble () );
+        }
+
+        using (HttpResponseMessage dataResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/meters/data?period=6h&name=Latency" ) )) {
+            using JsonDocument payload = JsonDocument.Parse ( await dataResponse.Content.ReadAsStringAsync () );
+            JsonElement meter = payload.RootElement.EnumerateArray ().Single ();
+            JsonElement [] readings = meter.GetProperty ( "readings" ).EnumerateArray ().ToArray ();
+
+            Assert.AreEqual ( "Average", meter.GetProperty ( "aggregation" ).GetString () );
+            Assert.AreEqual ( 500, meter.GetProperty ( "axis" ).GetProperty ( "maximum" ).GetDouble () );
+            Assert.AreEqual ( "20", meter.GetProperty ( "series" ) [ 0 ].GetProperty ( "summaryText" ).GetString (), "Without a format, values are written as plain numbers." );
+            Assert.AreEqual ( JsonValueKind.Null, readings [ 0 ].GetProperty ( "texts" ) [ 0 ].ValueKind );
+            Assert.AreEqual ( 20, meter.GetProperty ( "series" ) [ 0 ].GetProperty ( "summary" ).GetDouble () );
+            Assert.AreEqual ( 20, readings [ ^1 ].GetProperty ( "values" ) [ 0 ].GetDouble () );
+            Assert.AreEqual ( JsonValueKind.Null, readings [ 0 ].GetProperty ( "values" ) [ 0 ].ValueKind, "A reading without values has no average." );
+        }
+    }
+
+    [TestMethod]
+    public async Task UseMonitoring_RunsRequestHandlersOnMonitoringEndpointsAfterAuthentication () {
+        int port = GetFreePort ();
+        var handler = new RecordingRequestHandler ();
+
+        using var server = CreateBuilder ( port )
+            .UseMonitoring ( "/monitoring", monitor => {
+                monitor.CredentialValidator = _ => ValueTask.FromResult ( true );
+                monitor.RequestHandlers.Add ( handler );
+            } )
+            .UseRouter ( router => router.MapGet ( "/success", _ => new HttpResponse ( 200 ) ) )
+            .Build ();
+
+        server.Start ( verbose: false, preventHault: false );
+
+        using var client = new HttpClient {
+            BaseAddress = new Uri ( $"http://127.0.0.1:{port}/" ),
+            Timeout = TimeSpan.FromSeconds ( 3 )
+        };
+
+        using (HttpResponseMessage unauthorizedResponse = await client.GetAsync ( "/monitoring/" ))
+            Assert.AreEqual ( HttpStatusCode.Unauthorized, unauthorizedResponse.StatusCode );
+
+        using (HttpResponseMessage applicationResponse = await client.GetAsync ( "/success" ))
+            Assert.AreEqual ( HttpStatusCode.OK, applicationResponse.StatusCode );
+
+        Assert.AreEqual ( 0, handler.Paths.Count, "Handlers must not run for unauthenticated requests or application routes." );
+
+        foreach (string path in new [] { "/monitoring/", "/monitoring/health/data", "/monitoring/errors" }) {
+            using HttpResponseMessage response = await client.SendAsync ( CreateAuthorizedRequest ( path ) );
+            Assert.AreEqual ( HttpStatusCode.OK, response.StatusCode );
+        }
+
+        CollectionAssert.AreEqual ( new [] { "/monitoring/", "/monitoring/health/data", "/monitoring/errors" }, handler.Paths );
+
+        handler.Response = new HttpResponse ( 403 );
+
+        using (HttpResponseMessage blockedResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/meters" ) ))
+            Assert.AreEqual ( HttpStatusCode.Forbidden, blockedResponse.StatusCode );
+    }
+
+    sealed class RecordingRequestHandler : IRequestHandler {
+
+        public List<string> Paths { get; } = new ();
+
+        public HttpResponse? Response { get; set; }
+
+        public RequestHandlerExecutionMode ExecutionMode { get; init; } = RequestHandlerExecutionMode.BeforeResponse;
+
+        public HttpResponse? Execute ( HttpRequest request, HttpContext context ) {
+            Paths.Add ( request.Path );
+            return Response;
+        }
+    }
+
     sealed class MemoryMonitoringStore ( MonitoringSnapshot snapshot ) : IMonitoringStore {
 
         MonitoringSnapshot snapshot = snapshot;
@@ -288,6 +431,39 @@ public sealed class MonitoringBuilderExtensionsTests {
 
         public Task<MonitoringSnapshot?> LoadAsync ( CancellationToken cancellationToken = default ) {
             return Task.FromResult<MonitoringSnapshot?> ( snapshot );
+        }
+    }
+
+    [TestMethod]
+    public async Task UseMonitoring_AuthenticationHandlerReplacesBasicAuthentication () {
+        int port = GetFreePort ();
+
+        using var server = CreateBuilder ( port )
+            .UseMonitoring ( "/monitoring", monitor => {
+                monitor.CredentialValidator = _ => ValueTask.FromResult ( true );
+                monitor.AuthenticationHandler = RequestHandler.Create ( ( request, _ ) =>
+                    request.Headers [ "X-Monitoring-Session" ] == "ok"
+                        ? null
+                        : new HttpResponse ( 303 ) { Headers = new () { Location = "/login" } } );
+            } )
+            .Build ();
+
+        server.Start ( verbose: false, preventHault: false );
+
+        using var client = new HttpClient ( new HttpClientHandler { AllowAutoRedirect = false } ) {
+            BaseAddress = new Uri ( $"http://127.0.0.1:{port}/" ),
+            Timeout = TimeSpan.FromSeconds ( 3 )
+        };
+
+        using (HttpResponseMessage deniedResponse = await client.SendAsync ( CreateAuthorizedRequest ( "/monitoring/" ) )) {
+            Assert.AreEqual ( HttpStatusCode.SeeOther, deniedResponse.StatusCode, "Basic credentials must not satisfy a custom handler." );
+            Assert.AreEqual ( "/login", deniedResponse.Headers.Location?.OriginalString );
+        }
+
+        using var allowedRequest = new HttpRequestMessage ( HttpMethod.Get, "/monitoring/" );
+        allowedRequest.Headers.Add ( "X-Monitoring-Session", "ok" );
+        using (HttpResponseMessage allowedResponse = await client.SendAsync ( allowedRequest )) {
+            Assert.AreEqual ( HttpStatusCode.OK, allowedResponse.StatusCode );
         }
     }
 

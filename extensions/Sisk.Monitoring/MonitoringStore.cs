@@ -101,11 +101,65 @@ internal sealed partial class MonitoringStoreJsonContext : JsonSerializerContext
 /// <param name="Counters">The persisted counter states.</param>
 /// <param name="Meters">The persisted meter states.</param>
 /// <param name="Health">The persisted server health history.</param>
+/// <param name="Issues">The persisted issues of the error console.</param>
 public sealed record MonitoringSnapshot (
     DateTime SavedAt,
     CounterSnapshot [] Counters,
     MeterSnapshot [] Meters,
-    MonitoringHealthSnapshot [] Health );
+    MonitoringHealthSnapshot [] Health,
+    MonitoringIssueSnapshot []? Issues = null );
+
+/// <summary>
+/// Represents a persisted issue, which groups the incidents of an exception type raised at a location.
+/// </summary>
+/// <param name="Id">The identifier derived from the exception type and the location.</param>
+/// <param name="Type">The full name of the exception type.</param>
+/// <param name="Location">Where the exception was raised.</param>
+/// <param name="FirstSeen">The local date and time of the first incident.</param>
+/// <param name="LastSeen">The local date and time of the most recent incident.</param>
+/// <param name="Count">The number of incidents.</param>
+/// <param name="Resolved">Whether the issue was resolved by the user or archived automatically.</param>
+/// <param name="Trend">The number of incidents per hour over the last 24 hours.</param>
+/// <param name="Occurrences">The most recent incidents, newest first.</param>
+public sealed record MonitoringIssueSnapshot (
+    string Id,
+    string Type,
+    string Location,
+    DateTime FirstSeen,
+    DateTime LastSeen,
+    long Count,
+    bool Resolved,
+    MonitoringIssueTrendSnapshot [] Trend,
+    MonitoringIssueOccurrenceSnapshot [] Occurrences );
+
+/// <summary>
+/// Represents the number of incidents of an issue within one hour.
+/// </summary>
+/// <param name="Hour">The local date and time when the hour starts.</param>
+/// <param name="Count">The number of incidents.</param>
+public sealed record MonitoringIssueTrendSnapshot ( DateTime Hour, long Count );
+
+/// <summary>
+/// Represents a persisted incident of an issue.
+/// </summary>
+/// <param name="Timestamp">The local date and time of the incident.</param>
+/// <param name="Message">The exception message.</param>
+/// <param name="Details">The exception text, including inner exceptions and stack traces.</param>
+/// <param name="Request">The HTTP method and route of the related request, if any.</param>
+/// <param name="Sections">The custom sections recorded with the incident.</param>
+public sealed record MonitoringIssueOccurrenceSnapshot (
+    DateTime Timestamp,
+    string Message,
+    string Details,
+    string? Request,
+    MonitoringIssueSectionSnapshot [] Sections );
+
+/// <summary>
+/// Represents a persisted custom section of an incident.
+/// </summary>
+/// <param name="Title">The title of the section.</param>
+/// <param name="Html">The rendered HTML of the section.</param>
+public sealed record MonitoringIssueSectionSnapshot ( string Title, string Html );
 
 /// <summary>
 /// Represents a persisted counter state.
@@ -132,9 +186,11 @@ public sealed record MeterSnapshot ( string Key, MeterBucketSnapshot [] Buckets 
 /// <summary>
 /// Represents a persisted meter bucket.
 /// </summary>
-/// <param name="BucketKey">The internal bucket timestamp key.</param>
+/// <param name="BucketKey">The bucket start, in seconds elapsed since <see cref="DateTime.MinValue"/> in local time.</param>
 /// <param name="Value">The aggregated bucket value.</param>
-public sealed record MeterBucketSnapshot ( long BucketKey, double Value );
+/// <param name="Series">The series the bucket belongs to, or <see langword="null"/> for the unnamed series.</param>
+/// <param name="Count">The number of values aggregated into the bucket.</param>
+public sealed record MeterBucketSnapshot ( long BucketKey, double Value, string? Series = null, long Count = 1 );
 
 /// <summary>
 /// Represents a persisted server health reading.

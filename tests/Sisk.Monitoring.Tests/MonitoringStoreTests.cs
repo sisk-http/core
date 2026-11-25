@@ -233,6 +233,50 @@ public sealed class MonitoringStoreTests {
     }
 
     [TestMethod]
+    public void FlushStore_RoundTripsMeterSeries () {
+        var store = new MemoryMonitoringStore ( null );
+        var meter = new Meter { Aggregation = MeterAggregation.Average };
+        meter.Increment ( "p50", 10 );
+        meter.Increment ( "p50", 30 );
+        meter.Increment ( "p99", 80 );
+
+        using (var monitor = new ApplicationMonitor { Store = store }) {
+            monitor.CaptureMeter ( new MonitoringDefinition<Meter> ( "Latency", meter ) );
+            Assert.IsTrue ( monitor.FlushStore () );
+        }
+
+        var restoredMeter = new Meter { Aggregation = MeterAggregation.Average };
+        using var restoredMonitor = new ApplicationMonitor { Store = store };
+        restoredMonitor.CaptureMeter ( new MonitoringDefinition<Meter> ( "Latency", restoredMeter ) );
+        Assert.IsTrue ( restoredMonitor.FlushStore () );
+
+        CollectionAssert.AreEqual ( new [] { "p50", "p99" }, restoredMeter.Series.ToArray () );
+        Assert.AreEqual ( 20, restoredMeter.Read ( "p50", TimeSpan.FromHours ( 1 ), TimeSpan.FromHours ( 1 ) ).Single ().Value );
+        Assert.AreEqual ( 80, restoredMeter.Read ( "p99", TimeSpan.FromHours ( 1 ), TimeSpan.FromHours ( 1 ) ).Single ().Value );
+    }
+
+    [TestMethod]
+    public void FlushStore_RestoresMeterSnapshotSavedBeforeSeriesExisted () {
+        string directory = CreateTemporaryDirectory ();
+        try {
+            string path = Path.Combine ( directory, "state.json" );
+            long legacyBucketKey = DateTime.Now.Ticks / TimeSpan.TicksPerSecond;
+            File.WriteAllText ( path, $$"""{"SavedAt":"2026-01-01T00:00:00","Counters":[],"Meters":[{"Key":"Bytes","Buckets":[{"BucketKey":{{legacyBucketKey}},"Value":9}]}],"Health":[]}""" );
+
+            var meter = new Meter ();
+            using var monitor = new ApplicationMonitor { Store = new FileMonitoringStore ( path ) };
+            monitor.CaptureMeter ( new MonitoringDefinition<Meter> ( "Bytes", meter ) );
+            Assert.IsTrue ( monitor.FlushStore () );
+
+            Assert.AreEqual ( 9, meter.Read ().Sum ( reading => reading.Value ) );
+            CollectionAssert.AreEqual ( new [] { string.Empty }, meter.Series.ToArray () );
+        }
+        finally {
+            Directory.Delete ( directory, recursive: true );
+        }
+    }
+
+    [TestMethod]
     public void Counter_GroupsIncrementsWithoutLosingValue () {
         var counter = new Counter ();
 
@@ -305,6 +349,135 @@ public sealed class MonitoringStoreTests {
         }
         finally {
             Directory.Delete ( directory, recursive: true );
+        }
+    }
+
+    [TestMethod]
+    public void ErrorConsole_GroupsIncidentsArchivesAndReopensIssuesAcrossRestarts () {
+        static Exception Catch ( Action action ) {
+            try {
+                action ();
+            }
+            catch (Exception ex) {
+                return ex;
+            }
+            throw new InvalidOperationException ( "The action must throw." );
+        }
+
+        Action invalidOperation = () => throw new InvalidOperationException ( "boom" );
+        Action invalidArgument = () => throw new ArgumentException ( "bad" );
+
+        var store = new MemoryMonitoringStore ( null );
+        var console = new SectionErrorConsole ();
+
+        using (var monitor = new ApplicationMonitor { Store = store, ErrorConsole = console }) {
+            for (int i = 0; i < 3; i++)
+                Assert.IsTrue ( console.TryInformException ( Catch ( invalidOperation ) ) );
+            Assert.IsTrue ( console.TryInformException ( Catch ( invalidArgument ) ) );
+            Assert.IsFalse ( console.TryInformException ( null! ) );
+            Assert.IsTrue ( monitor.FlushStore () );
+
+            MonitoringIssueSnapshot [] issues = store.Saved!.Issues!;
+            MonitoringIssueSnapshot issue = issues.Single ( item => item.Type == "System.InvalidOperationException" );
+
+            Assert.AreEqual ( 2, issues.Length, "Incidents are grouped by exception type and location." );
+            Assert.AreEqual ( 3, issue.Count );
+            Assert.AreEqual ( 3, issue.Trend.Sum ( reading => reading.Count ) );
+            Assert.IsFalse ( issue.Resolved );
+            Assert.AreEqual ( "boom", issue.Occurrences [ 0 ].Message );
+            Assert.AreEqual ( "Tenant", issue.Occurrences [ 0 ].Sections.Single ().Title );
+            StringAssert.Contains ( issue.Occurrences [ 0 ].Sections.Single ().Html, "acme &amp; co" );
+
+            console.ArchiveIssuesAfter = TimeSpan.Zero;
+            Assert.IsTrue ( console.TryInformException ( Catch ( invalidArgument ) ) );
+            Assert.IsTrue ( monitor.FlushStore () );
+            Assert.IsTrue ( store.Saved!.Issues!.All ( item => item.Resolved ), "Issues without new incidents are archived." );
+        }
+
+        var restoredConsole = new SectionErrorConsole ();
+        using var restoredMonitor = new ApplicationMonitor { Store = store, ErrorConsole = restoredConsole };
+        Assert.IsTrue ( restoredMonitor.FlushStore () );
+
+        Assert.IsTrue ( restoredConsole.TryInformException ( Catch ( invalidOperation ) ) );
+        Assert.IsTrue ( restoredMonitor.FlushStore () );
+
+        MonitoringIssueSnapshot reopened = store.Saved!.Issues!.Single ( item => item.Type == "System.InvalidOperationException" );
+        Assert.AreEqual ( 4, reopened.Count );
+        Assert.IsFalse ( reopened.Resolved, "A new incident reopens a resolved issue." );
+    }
+
+    [TestMethod]
+    public async Task ErrorsPage_ListsCapturedExceptionsAndResolvesThem () {
+        int port = GetFreePort ();
+
+        using var server = HttpServer.CreateBuilder ()
+            .UseListeningPort ( $"http://127.0.0.1:{port}/" )
+            .UseConfiguration ( configuration => {
+                configuration.AccessLogsStream = null;
+                configuration.ErrorsLogsStream = null;
+            } )
+            .UseMonitoring ( "/monitoring", monitor => {
+                monitor.CredentialValidator = _ => ValueTask.FromResult ( true );
+                monitor.ErrorConsole = new SectionErrorConsole ();
+            } )
+            .UseRouter ( router => router.MapGet ( "/throws", HttpResponse ( HttpRequest _ ) => throw new InvalidOperationException ( "boom" ) ) )
+            .Build ();
+
+        server.Start ( verbose: false, preventHault: false );
+
+        using var client = new HttpClient ( new HttpClientHandler { AllowAutoRedirect = false } ) {
+            BaseAddress = new Uri ( $"http://127.0.0.1:{port}/" ),
+            Timeout = TimeSpan.FromSeconds ( 3 )
+        };
+
+        using (await client.GetAsync ( "/throws" )) {
+        }
+
+        string page = string.Empty;
+        for (int attempt = 0; attempt < 40 && !page.Contains ( "System.InvalidOperationException" ); attempt++) {
+            await Task.Delay ( 50 );
+            using HttpResponseMessage pageResponse = await GetAuthorizedAsync ( client, "/monitoring/errors" );
+            page = await pageResponse.Content.ReadAsStringAsync ();
+        }
+
+        StringAssert.Contains ( page, "System.InvalidOperationException" );
+        StringAssert.Contains ( page, "href=\"/monitoring/errors\"", "The sidebar links to the errors page." );
+        string issuePath = System.Text.RegularExpressions.Regex.Match ( page, "href=\"(/monitoring/errors/[0-9a-f]{16})\"" ).Groups [ 1 ].Value;
+
+        using (HttpResponseMessage issueResponse = await GetAuthorizedAsync ( client, issuePath )) {
+            string issuePage = await issueResponse.Content.ReadAsStringAsync ();
+
+            Assert.AreEqual ( HttpStatusCode.OK, issueResponse.StatusCode );
+            StringAssert.Contains ( issuePage, "boom" );
+            StringAssert.Contains ( issuePage, "GET /throws" );
+            StringAssert.Contains ( issuePage, "acme &amp; co" );
+            StringAssert.Contains ( issuePage, $"action=\"{issuePath}/resolve\"" );
+        }
+
+        var resolveRequest = new HttpRequestMessage ( HttpMethod.Post, $"{issuePath}/resolve" );
+        resolveRequest.Headers.Authorization = new AuthenticationHeaderValue ( "Basic", Convert.ToBase64String ( Encoding.UTF8.GetBytes ( "test:test" ) ) );
+        using (HttpResponseMessage resolveResponse = await client.SendAsync ( resolveRequest )) {
+            Assert.AreEqual ( HttpStatusCode.SeeOther, resolveResponse.StatusCode );
+            Assert.AreEqual ( "/monitoring/errors", resolveResponse.Headers.Location?.OriginalString );
+        }
+
+        using (HttpResponseMessage unresolvedResponse = await GetAuthorizedAsync ( client, "/monitoring/errors" ))
+            StringAssert.Contains ( await unresolvedResponse.Content.ReadAsStringAsync (), "No unresolved issues." );
+
+        using (HttpResponseMessage resolvedResponse = await GetAuthorizedAsync ( client, "/monitoring/errors?status=resolved" ))
+            StringAssert.Contains ( await resolvedResponse.Content.ReadAsStringAsync (), "System.InvalidOperationException" );
+
+        using (HttpResponseMessage missingResponse = await GetAuthorizedAsync ( client, "/monitoring/errors/0000000000000000" ))
+            Assert.AreEqual ( HttpStatusCode.NotFound, missingResponse.StatusCode );
+
+        server.HttpServer.Stop ();
+    }
+
+    sealed class SectionErrorConsole : MonitoringErrorConsole {
+
+        public override void OnException ( Exception exception, HttpContext? context ) {
+            WriteException ( new MonitoringIssueContext ( exception, context,
+                MonitoringErrorSection.Create ( "Tenant", [ new KeyValuePair<string, string?> ( "Name", "acme & co" ) ] ) ) );
         }
     }
 

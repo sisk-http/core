@@ -32,6 +32,10 @@ public static class MonitoringBuilderExtensions {
         protected override void OnHttpRequestClose ( HttpServerExecutionResult result ) {
             monitor.TrackHttpRequestClose ( result );
         }
+
+        protected override void OnException ( Exception exception ) {
+            monitor.ErrorConsole?.TryInformException ( exception, HttpContext.GetCurrentContext () );
+        }
     }
 
     /// <summary>
