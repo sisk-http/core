@@ -506,7 +506,23 @@ namespace Sisk.Core.Http {
         /// Gets an boolean indicating if this <see cref="LogStream"/> is buffering output messages
         /// to their internal message buffer.
         /// </summary>
-        public bool IsBuffering => _bufferingContent is not null;
+        public bool IsBuffering => BufferOwner._bufferingContent is not null;
+
+        /// <summary>
+        /// Gets the <see cref="LogStream"/> that owns the in-memory buffer used by <see cref="StartBuffering(int)"/>,
+        /// <see cref="StopBuffering"/> and <see cref="PeekEntries"/>. Decorators that forward their writes to
+        /// another <see cref="LogStream"/> should return that instance. Defaults to this instance.
+        /// </summary>
+        protected virtual LogStream BufferingTarget => this;
+
+        LogStream BufferOwner {
+            get {
+                LogStream owner = this;
+                while (owner.BufferingTarget is var target && !ReferenceEquals ( target, owner ))
+                    owner = target;
+                return owner;
+            }
+        }
 
         /// <summary>
         /// Gets an boolean indicating if this <see cref="LogStream"/> was disposed.
@@ -626,12 +642,11 @@ namespace Sisk.Core.Http {
         /// <returns>An array of log entries, with the most recent entry first.</returns>
         /// <exception cref="InvalidOperationException">Thrown when this LogStream is not buffering.</exception>
         public string [] PeekEntries () {
-            if (_bufferingContent is null) {
-                throw new InvalidOperationException ( SR.LogStream_NotBuffering );
-            }
+            var bufferingContent = BufferOwner._bufferingContent
+                ?? throw new InvalidOperationException ( SR.LogStream_NotBuffering );
 
-            lock (_bufferingContent) {
-                string [] lines = _bufferingContent.ToArray ();
+            lock (bufferingContent) {
+                string [] lines = bufferingContent.ToArray ();
                 Array.Reverse ( lines );
                 return lines;
             }
@@ -642,19 +657,20 @@ namespace Sisk.Core.Http {
         /// </summary>
         /// <param name="lines">The amount of lines to store in the buffer.</param>
         public void StartBuffering ( int lines ) {
-            if (_bufferingContent is not null) {
-                _bufferingContent.Resize ( lines );
+            LogStream owner = BufferOwner;
+            if (owner._bufferingContent is not null) {
+                owner._bufferingContent.Resize ( lines );
                 return;
             }
 
-            _bufferingContent = new CircularBuffer<string> ( lines );
+            owner._bufferingContent = new CircularBuffer<string> ( lines );
         }
 
         /// <summary>
         /// Stops buffering output.
         /// </summary>
         public void StopBuffering () {
-            _bufferingContent = null;
+            BufferOwner._bufferingContent = null;
         }
 
         /// <summary>
@@ -1043,7 +1059,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Asynchronously writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        public async ValueTask DisposeAsync () {
+        public virtual async ValueTask DisposeAsync () {
             if (_isDisposed) {
                 return;
             }
@@ -1068,7 +1084,7 @@ namespace Sisk.Core.Http {
         /// <summary>
         /// Writes all pending logs from the queue and closes all resources used by this object.
         /// </summary>
-        public void Dispose () {
+        public virtual void Dispose () {
             if (_isDisposed) {
                 return;
             }
