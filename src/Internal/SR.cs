@@ -30,6 +30,7 @@ static partial class SR {
     public const string HttpRequest_SendTo_MaxRedirects = "Too many internal route redirections.";
     public const string HttpRequest_InputStreamAlreadyLoaded = "Unable to read InputStream as it has already been read.";
     public const string HttpRequest_AlreadyInStreamingState = "This HTTP request is already streaming another context.";
+    public const string HttpRequest_LateRequestBodyReadAfterStream = "A response stream context has been initiated in this request. Read the request body before starting the response stream.";
 
     public const string ForwardingResolverInvocationException = "Failed to resolve the {0} through the defined ForwardingResolver '{1}'. See the inner exception for details.";
 

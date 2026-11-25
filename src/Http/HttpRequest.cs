@@ -115,6 +115,9 @@ namespace Sisk.Core.Http {
 
         internal async Task<byte []> ReadRequestStreamContentsAsync ( CancellationToken cancellation = default ) {
             if (contentBytes is null) {
+                if (streamingEntity is not null) {
+                    throw new InvalidOperationException ( SR.HttpRequest_LateRequestBodyReadAfterStream );
+                }
                 if (ContentLength > Array.MaxLength) {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
@@ -145,6 +148,10 @@ namespace Sisk.Core.Http {
 
         byte [] ReadRequestStreamContents () {
             if (contentBytes is null) {
+                if (streamingEntity is not null) {
+                    throw new InvalidOperationException ( SR.HttpRequest_LateRequestBodyReadAfterStream );
+                }
+
                 if (ContentLength > Array.MaxLength) {
                     throw new InvalidOperationException ( SR.HttpRequest_ContentAbove2G );
                 }
@@ -187,6 +194,11 @@ namespace Sisk.Core.Http {
         /// Gets a unique identifier for this request.
         /// </summary>
         public Guid RequestId { get => traceIdentifier; }
+
+        /// <summary>
+        /// Gets a boolean indicating whether this request is in a response streaming context, such as WebSocket or Event Source.
+        /// </summary>
+        public bool IsStreamingResponse { get => streamingEntity is not null; }
 
         /// <summary>
         /// Gets a boolean indicating whether this request was locally made by an secure
