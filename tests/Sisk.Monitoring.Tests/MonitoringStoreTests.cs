@@ -475,7 +475,7 @@ public sealed class MonitoringStoreTests {
 
     sealed class SectionErrorConsole : MonitoringErrorConsole {
 
-        public override void OnException ( Exception exception, HttpContext? context ) {
+        protected override void OnException ( Exception exception, HttpContext? context ) {
             WriteException ( new MonitoringIssueContext ( exception, context,
                 MonitoringErrorSection.Create ( "Tenant", [ new KeyValuePair<string, string?> ( "Name", "acme & co" ) ] ) ) );
         }
