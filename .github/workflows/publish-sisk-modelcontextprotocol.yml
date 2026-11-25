@@ -1,0 +1,30 @@
+name: Publish Sisk.ModelContextProtocol
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Pack and verify the package without publishing it.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-sisk-modelcontextprotocol
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/publish-nuget
+        with:
+          project: extensions/Sisk.ModelContextProtocol/Sisk.ModelContextProtocol.csproj
+          package-id: Sisk.ModelContextProtocol
+          symbols: 'false'
+          dry-run: ${{ inputs.dry-run }}

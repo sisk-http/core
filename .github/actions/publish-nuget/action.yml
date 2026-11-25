@@ -1,0 +1,165 @@
+name: Publish NuGet package
+description: >-
+  Packs a Sisk package in Release and publishes it to nuget.org through Trusted
+  Publishing (OIDC), without storing any long-lived API key.
+
+inputs:
+  project:
+    description: Project file to pack, relative to the repository root.
+    required: true
+  package-id:
+    description: Package id expected in the produced artifact.
+    required: true
+  symbols:
+    description: >-
+      Produce and publish a .snupkg symbol package. Only packages whose
+      assemblies carry a portable PDB should enable it.
+    required: false
+    default: 'false'
+  dotnet-version:
+    description: .NET SDK version used to build the package.
+    required: false
+    default: '11.0.x'
+  dry-run:
+    description: Pack and verify the package without publishing it.
+    required: false
+    default: 'false'
+
+outputs:
+  package-path:
+    description: Absolute path of the produced .nupkg.
+    value: ${{ steps.verify.outputs.package-path }}
+  package-version:
+    description: Version of the produced .nupkg.
+    value: ${{ steps.verify.outputs.package-version }}
+  symbol-path:
+    description: Absolute path of the produced .snupkg, when symbols are enabled.
+    value: ${{ steps.verify.outputs.symbol-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Pack package
+      shell: bash
+      env:
+        PROJECT: ${{ inputs.project }}
+        ARTIFACTS: ${{ github.workspace }}/artifacts
+        SYMBOLS: ${{ inputs.symbols }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$ARTIFACTS"
+        args=(pack "$PROJECT" -c Release -o "$ARTIFACTS" --nologo -p:ContinuousIntegrationBuild=true)
+        if [ "$SYMBOLS" = "true" ]; then
+          # nuget.org only accepts the .snupkg format on its symbol server.
+          args+=("-p:SymbolPackageFormat=snupkg")
+        else
+          # These assemblies embed their PDBs, so a symbol package would be empty.
+          args+=("-p:IncludeSymbols=false")
+        fi
+        dotnet "${args[@]}"
+
+    - name: Verify artifacts
+      id: verify
+      shell: bash
+      env:
+        ARTIFACTS: ${{ github.workspace }}/artifacts
+        PACKAGE_ID: ${{ inputs.package-id }}
+        SYMBOLS: ${{ inputs.symbols }}
+      run: |
+        set -euo pipefail
+        cd "$ARTIFACTS"
+
+        packages=()
+        for file in *.nupkg; do
+          [ -e "$file" ] || continue
+          case "$file" in
+            *.symbols.nupkg) continue ;;
+          esac
+          packages+=("$file")
+        done
+
+        if [ "${#packages[@]}" -ne 1 ]; then
+          echo "::error::Expected exactly one .nupkg for $PACKAGE_ID, found ${#packages[@]}."
+          ls -la
+          exit 1
+        fi
+
+        package="${packages[0]}"
+        case "$package" in
+          "$PACKAGE_ID".*) ;;
+          *)
+            echo "::error::Artifact '$package' does not belong to package id '$PACKAGE_ID'."
+            exit 1
+            ;;
+        esac
+
+        version="$(basename "$package" .nupkg)"
+        version="${version#"$PACKAGE_ID."}"
+
+        symbol=""
+        if [ "$SYMBOLS" = "true" ]; then
+          symbol_file="$PACKAGE_ID.$version.snupkg"
+          if [ ! -f "$symbol_file" ]; then
+            echo "::error::Expected symbol package '$symbol_file' was not produced."
+            ls -la
+            exit 1
+          fi
+          symbol="$ARTIFACTS/$symbol_file"
+        elif [ -f "$PACKAGE_ID.$version.snupkg" ] || [ -f "$PACKAGE_ID.$version.symbols.nupkg" ]; then
+          echo "::error::Unexpected symbol package produced for $PACKAGE_ID."
+          ls -la
+          exit 1
+        fi
+
+        echo "Package: $PACKAGE_ID $version"
+        echo "Path:    $ARTIFACTS/$package"
+        if [ -n "$symbol" ]; then echo "Symbols: $symbol"; fi
+
+        {
+          echo "package-path=$ARTIFACTS/$package"
+          echo "package-version=$version"
+          echo "symbol-path=$symbol"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: NuGet login
+      id: login
+      if: inputs.dry-run != 'true'
+      uses: NuGet/login@v1
+      with:
+        user: cypherpotato
+
+    - name: Publish to nuget.org
+      if: inputs.dry-run != 'true'
+      shell: bash
+      env:
+        NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        PACKAGE_PATH: ${{ steps.verify.outputs.package-path }}
+      run: |
+        set -euo pipefail
+        # The V3 source publishes the matching .snupkg alongside the .nupkg,
+        # reusing the same short-lived key.
+        dotnet nuget push "$PACKAGE_PATH" \
+          --api-key "$NUGET_API_KEY" \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+    - name: Publish symbol package
+      if: inputs.dry-run != 'true' && inputs.symbols == 'true'
+      shell: bash
+      env:
+        NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        SYMBOL_PATH: ${{ steps.verify.outputs.symbol-path }}
+      run: |
+        set -euo pipefail
+        # The package push above already uploads the .snupkg, but it skips the
+        # symbol package whenever the .nupkg was a duplicate. Pushing it again
+        # makes a re-run repair a run that failed after the package upload.
+        dotnet nuget push "$SYMBOL_PATH" \
+          --api-key "$NUGET_API_KEY" \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate

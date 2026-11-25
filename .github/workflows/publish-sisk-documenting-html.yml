@@ -1,0 +1,30 @@
+name: Publish Sisk.Documenting.Html
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Pack and verify the package without publishing it.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-sisk-documenting-html
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/publish-nuget
+        with:
+          project: extensions/Sisk.Documenting.Html/Sisk.Documenting.Html.csproj
+          package-id: Sisk.Documenting.Html
+          symbols: 'false'
+          dry-run: ${{ inputs.dry-run }}

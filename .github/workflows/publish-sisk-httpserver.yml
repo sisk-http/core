@@ -1,0 +1,30 @@
+name: Publish Sisk.HttpServer
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Pack and verify the package without publishing it.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-sisk-httpserver
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/publish-nuget
+        with:
+          project: src/Sisk.Core.csproj
+          package-id: Sisk.HttpServer
+          symbols: 'false'
+          dry-run: ${{ inputs.dry-run }}
