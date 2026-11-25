@@ -41,6 +41,11 @@ public sealed class ApiEndpointAttribute : Attribute {
     public int Order { get; set; } = 0;
 
     /// <summary>
+    /// Gets or sets the classification flags of the API endpoint, such as its stability level or availability.
+    /// </summary>
+    public ApiEndpointFlags Flags { get; set; } = ApiEndpointFlags.None;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ApiEndpointAttribute"/> class.
     /// </summary>
     public ApiEndpointAttribute () {

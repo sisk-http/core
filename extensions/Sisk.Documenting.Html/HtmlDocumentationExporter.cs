@@ -278,6 +278,10 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                                         .WithStyle ( new { backgroundColor = GetRouteMethodHexColor ( endpoint.RouteMethod ) + "30" } );
 
                                     navItem += new HtmlElement ( "span", Ellipsis ( endpoint.Name, 25 ) );
+
+                                    var endpointFlags = endpoint.Flags.GetDefinedFlags ();
+                                    if (endpointFlags.Length > 0)
+                                        navItem.Attributes [ "title" ] = string.Join ( ", ", endpointFlags );
                                 } );
                             }
                         } );
@@ -329,6 +333,7 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                     .WithStyle ( new { backgroundColor = GetRouteMethodHexColor ( endpoint.RouteMethod ) + "35" } );
                 summary += new HtmlElement ( "span", endpoint.Path );
                 summary += new HtmlElement ( "span", endpoint.Name ).WithClass ( "muted" );
+                summary += CreateFlagsBadges ( endpoint.Flags );
             } );
 
             details += new HtmlElement ( "div", content => {
@@ -353,7 +358,12 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 content += new HtmlElement ( "div", header => {
                     header.ClassList.Add ( "endpoint-content-header" );
 
-                    header += new HtmlElement ( "h3", endpoint.Name );
+                    header += new HtmlElement ( "div", title => {
+                        title.ClassList.Add ( "endpoint-title" );
+
+                        title += new HtmlElement ( "h3", endpoint.Name );
+                        title += CreateFlagsBadges ( endpoint.Flags );
+                    } );
 
                     header += new HtmlElement ( "div", copyWrapper => {
                         copyWrapper.ClassList.Add ( "copy-button-wrapper" );
@@ -803,6 +813,26 @@ public class HtmlDocumentationExporter : IApiDocumentationExporter {
                 content.Attributes [ "data-tab-content" ] = "schema";
                 content += CreateCodeBlock ( jsonSchema!, "json" );
             } );
+        } );
+    }
+
+    /// <summary>
+    /// Creates the badges that classify an API endpoint with its flags.
+    /// </summary>
+    /// <param name="flags">The classification flags of the endpoint.</param>
+    /// <returns>The element containing one badge for each defined flag, or null when the endpoint has no flags.</returns>
+    protected virtual HtmlElement? CreateFlagsBadges ( ApiEndpointFlags flags ) {
+        var definedFlags = flags.GetDefinedFlags ();
+        if (definedFlags.Length == 0)
+            return null;
+
+        return new HtmlElement ( "span", span => {
+            span.ClassList.Add ( "endpoint-flags" );
+
+            foreach (var flag in definedFlags) {
+                span += new HtmlElement ( "span", flag )
+                    .WithClass ( "endpoint-flag", flag.ToString ().ToLowerInvariant () );
+            }
         } );
     }
 

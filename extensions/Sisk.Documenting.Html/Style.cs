@@ -1003,6 +1003,56 @@ internal class Style {
             user-select: none;
         }
 
+        /* Endpoint classification flags */
+        .endpoint-flags {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .endpoint-description > summary > .endpoint-flags {
+            margin-left: auto;
+        }
+
+        .endpoint-flag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            user-select: none;
+        }
+
+        .endpoint-flag.beta {
+            background: var(--info-bg);
+            color: var(--accent-color);
+        }
+
+        .endpoint-flag.experimental,
+        .endpoint-flag.preview {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .endpoint-flag.deprecated {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+        }
+
+        .endpoint-flag.internal {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+
+        .endpoint-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         /* Copy Button & Dropdown */
         .copy-button-wrapper {
             margin-left: auto;

@@ -199,6 +199,15 @@ public sealed class OpenApiExporter : IApiDocumentationExporter {
             operation [ "tags" ] = tags;
         }
 
+        foreach (var flag in endpoint.Flags.GetDefinedFlags ()) {
+            if (flag is ApiEndpointFlags.Deprecated) {
+                operation [ "deprecated" ] = true;
+            }
+            else {
+                operation [ $"x-{flag.ToString ().ToLowerInvariant ()}" ] = true;
+            }
+        }
+
         // Parameters
         var parameters = new JsonArray ();
 

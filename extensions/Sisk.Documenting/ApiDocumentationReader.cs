@@ -95,6 +95,7 @@ internal class ApiDocumentationReader {
 
             ApiEndpoint endpoint = new ApiEndpoint () {
                 Description = apiEndpointAttr.Description,
+                Flags = apiEndpointAttr.Flags,
                 Group = apiEndpointAttr.Group,
                 Name = endpointName,
                 Path = route.Path,

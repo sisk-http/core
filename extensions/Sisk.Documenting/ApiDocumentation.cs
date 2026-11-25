@@ -79,6 +79,11 @@ public sealed class ApiEndpoint {
     public string? Group { get; set; }
 
     /// <summary>
+    /// Gets the classification flags of the API endpoint, such as its stability level or availability.
+    /// </summary>
+    public ApiEndpointFlags Flags { get; set; } = ApiEndpointFlags.None;
+
+    /// <summary>
     /// Gets the route method used for the API endpoint.
     /// </summary>
     public RouteMethod RouteMethod { get; set; }

@@ -110,6 +110,10 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
                 sb.AppendLine ( $"- Method: {endpoint.RouteMethod}" );
                 sb.AppendLine ( $"- Path: {endpoint.Path}" );
                 sb.AppendLine ( $"- Canonical name: {endpoint.CanonicalName}" );
+                var endpointFlags = endpoint.Flags.GetDefinedFlags ();
+                if (endpointFlags.Length > 0) {
+                    sb.AppendLine ( $"- Flags: {string.Join ( ", ", endpointFlags )}" );
+                }
                 sb.AppendLine ();
                 if (endpoint.Headers.Any ()) {
                     sb.AppendLine ( "## Headers" );
@@ -271,7 +275,10 @@ public sealed class LlmsApiExporter : IApiDocumentationExporter {
                     _ => $"?endpoint={Uri.EscapeDataString ( endpointId )}"
                 };
 
-                sb.AppendLine ( $"- [{endpoint.Name}]({endpointPath}): {TruncateDescription ( endpoint.Description ) ?? "(no description available)"}" );
+                var flags = endpoint.Flags.GetDefinedFlags ();
+                var flagsLabel = flags.Length > 0 ? $" [{string.Join ( ", ", flags )}]" : string.Empty;
+
+                sb.AppendLine ( $"- [{endpoint.Name}]({endpointPath}){flagsLabel}: {TruncateDescription ( endpoint.Description ) ?? "(no description available)"}" );
             }
             sb.AppendLine ();
         }
